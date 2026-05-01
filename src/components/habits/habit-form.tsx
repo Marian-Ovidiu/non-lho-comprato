@@ -1,0 +1,270 @@
+"use client";
+
+import { useActionState, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+
+import { createHabit } from "@/src/actions/habits";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+type CategoryOption = {
+  id: string;
+  name: string;
+  slug: string;
+  color: string | null;
+  icon: string | null;
+};
+
+type FormState = {
+  success: boolean;
+  message: string;
+  errors?: Record<string, string>;
+};
+
+type HabitFormProps = {
+  categories: CategoryOption[];
+};
+
+const initialState: FormState = {
+  success: false,
+  message: "",
+  errors: {},
+};
+
+const weekdayOptions = [
+  { value: 1, label: "Lun" },
+  { value: 2, label: "Mar" },
+  { value: 3, label: "Mer" },
+  { value: 4, label: "Gio" },
+  { value: 5, label: "Ven" },
+  { value: 6, label: "Sab" },
+  { value: 7, label: "Dom" },
+] as const;
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) {
+    return null;
+  }
+
+  return <p className="text-sm text-rose-600">{message}</p>;
+}
+
+export function HabitForm({ categories }: HabitFormProps) {
+  const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const [categoryId, setCategoryId] = useState("");
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+
+  const [state, formAction, pending] = useActionState(
+    async (_previousState: FormState, formData: FormData) => {
+      const result = await createHabit(formData);
+
+      if (result.success) {
+        formRef.current?.reset();
+        setCategoryId("");
+        setSelectedDays([]);
+
+        window.setTimeout(() => {
+          router.refresh();
+        }, 500);
+      }
+
+      return result;
+    },
+    initialState,
+  );
+
+  const hasCategories = categories.length > 0;
+
+  const selectedLabels = useMemo(
+    () =>
+      weekdayOptions
+        .filter((day) => selectedDays.includes(day.value))
+        .map((day) => day.label),
+    [selectedDays],
+  );
+
+  function toggleDay(day: number) {
+    setSelectedDays((current) =>
+      current.includes(day)
+        ? current.filter((value) => value !== day)
+        : [...current, day].sort((a, b) => a - b),
+    );
+  }
+
+  return (
+    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
+      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
+        <CardTitle>Nuova abitudine</CardTitle>
+        <CardDescription className="max-w-2xl leading-6">
+          Imposta una spesa che torna spesso. Se non la segni, la consideriamo
+          già fatta.
+        </CardDescription>
+      </CardHeader>
+
+      <form ref={formRef} action={formAction}>
+        <CardContent className="space-y-6 p-5 sm:p-6">
+          {state.message ? (
+            <div
+              className={
+                state.success
+                  ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900"
+                  : "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900"
+              }
+              aria-live="polite"
+            >
+              {state.message}
+            </div>
+          ) : null}
+
+          <div className="space-y-2">
+            <Label htmlFor="name">Nome</Label>
+            <Input id="name" name="name" placeholder="Caffè al bar" />
+            <p className="text-xs text-zinc-500">
+              Semplice e riconoscibile, così lo ritrovi subito in lista.
+            </p>
+            <FieldError message={state.errors?.name} />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="categoryId">Categoria</Label>
+            <Select value={categoryId} onValueChange={setCategoryId} name="categoryId">
+              <SelectTrigger id="categoryId" className="w-full">
+                <SelectValue
+                  placeholder={
+                    hasCategories ? "Seleziona una categoria" : "Nessuna categoria"
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-zinc-500">
+              Ti aiuta a capire dove ti stai lasciando scappare più soldi.
+            </p>
+            <FieldError message={state.errors?.categoryId} />
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="amount">Costo abituale</Label>
+              <Input
+                id="amount"
+                name="amount"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="1.20"
+              />
+              <p className="text-xs text-zinc-500">Il costo normale in euro.</p>
+              <FieldError message={state.errors?.amount} />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Se non segno nulla</Label>
+              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
+                <p className="text-sm font-medium text-zinc-950">
+                  Conta come spesa fatta
+                </p>
+                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                  L&apos;abitudine verrà conteggiata come spesa se la lasci in
+                  sospeso.
+                </p>
+              </div>
+              <input type="hidden" name="defaultBehavior" value="spent" />
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>Giorni</Label>
+              <p className="text-xs text-zinc-500">
+                Seleziona i giorni in cui questa abitudine si ripete.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+              {weekdayOptions.map((day) => {
+                const id = `day-${day.value}`;
+                const checked = selectedDays.includes(day.value);
+
+                return (
+                  <label
+                    key={day.value}
+                    htmlFor={id}
+                    className={
+                      checked
+                        ? "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-zinc-950 bg-zinc-950 px-3 py-3 text-sm font-medium text-white transition"
+                        : "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
+                    }
+                  >
+                    <input
+                      id={id}
+                      type="checkbox"
+                      name="activeDays"
+                      value={day.value}
+                      checked={checked}
+                      onChange={() => toggleDay(day.value)}
+                      className="sr-only"
+                    />
+                    <span>{day.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {selectedLabels.length > 0 ? (
+                selectedLabels.map((label) => (
+                  <span
+                    key={label}
+                    className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700"
+                  >
+                    {label}
+                  </span>
+                ))
+              ) : (
+                <span className="text-xs text-zinc-500">
+                  Nessun giorno selezionato.
+                </span>
+              )}
+            </div>
+
+            <FieldError message={state.errors?.activeDays} />
+          </div>
+        </CardContent>
+
+        <div className="border-t border-zinc-200/70 bg-zinc-50/60 p-5 sm:p-6">
+          <Button
+            type="submit"
+            className="w-full sm:w-auto"
+            disabled={pending || !hasCategories}
+          >
+            {pending ? "Salvataggio..." : "Salva abitudine"}
+          </Button>
+        </div>
+      </form>
+    </Card>
+  );
+}

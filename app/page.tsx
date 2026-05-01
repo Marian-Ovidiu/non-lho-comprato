@@ -4,10 +4,17 @@ import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { SummaryCards } from "@/src/components/dashboard/summary-cards";
 import { PageHeader } from "@/src/components/layout/page-header";
+import {
+  ensureTodayHabitOccurrences,
+  finalizeOldPendingOccurrences,
+} from "@/src/actions/habits";
 import { Button } from "@/components/ui/button";
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 
 export default async function Home() {
+  await ensureTodayHabitOccurrences();
+  await finalizeOldPendingOccurrences();
+
   let summary = {
     totalRealSpent: 0,
     totalAlternativeCost: 0,
