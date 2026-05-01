@@ -1,0 +1,12 @@
+Loaded Prisma config from prisma.config.ts.
+
+[36m-[39m  Starting [7m[8m_[28mprisma dev[8m_[28m[27m server [36mdefault[39m...
+
+
+
+
+
+
+[32m√[39m  Your local Prisma Postgres server [36mdefault[39m is now running 👍
+[2026-05-01T15:49:00.069Z] [ERROR] (node:27076) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)

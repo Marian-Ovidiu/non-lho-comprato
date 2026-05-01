@@ -1,0 +1,4 @@
+interface:
+  display_name: "Non l'ho Comprato Backend Logic Builder"
+  short_description: "Implement MVP backend logic and actions"
+  default_prompt: "Use $non-lho-comprato-backend-logic-builder to implement the Next.js backend logic, money helpers, and entry server actions for Non l'ho comprato."

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Non l'ho Comprato Database Designer"
+  short_description: "Design Prisma schemas and data models"
+  default_prompt: "Use $non-lho-comprato-database-designer to design the Prisma/PostgreSQL schema for Non l'ho comprato."

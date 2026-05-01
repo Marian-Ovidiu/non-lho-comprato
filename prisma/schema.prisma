@@ -1,0 +1,81 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EntrySource {
+  manual
+  habit
+}
+
+enum HabitOccurrenceStatus {
+  pending
+  spent
+  avoided
+  skipped
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  color     String?
+  icon      String?
+  entries   Entry[]
+  habits    Habit[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Entry {
+  id                String           @id @default(cuid())
+  title             String
+  categoryId        String
+  category          Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  realCost          Decimal          @db.Decimal(10, 2)
+  alternativeCost   Decimal          @db.Decimal(10, 2)
+  savedAmount       Decimal          @db.Decimal(10, 2)
+  date              DateTime
+  note              String?
+  source            EntrySource      @default(manual)
+  habitOccurrenceId String?          @unique
+  habitOccurrence   HabitOccurrence? @relation(fields: [habitOccurrenceId], references: [id], onDelete: SetNull)
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+}
+
+model Habit {
+  id              String            @id @default(cuid())
+  name            String
+  categoryId      String
+  category        Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  amount          Decimal           @db.Decimal(10, 2)
+  activeDays      Json
+  isActive        Boolean           @default(true)
+  defaultBehavior String            @default("spent")
+  occurrences     HabitOccurrence[]
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model HabitOccurrence {
+  id        String                @id @default(cuid())
+  habitId   String
+  habit     Habit                 @relation(fields: [habitId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    HabitOccurrenceStatus @default(pending)
+  entry     Entry?
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+
+  @@unique([habitId, date])
+}
