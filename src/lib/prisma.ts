@@ -3,7 +3,6 @@ import { PrismaClient } from "@/src/lib/generated/prisma/client";
 import { Pool } from "pg";
 
 declare global {
-  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 

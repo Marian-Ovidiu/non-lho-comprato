@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { prisma } from "@/src/lib/prisma";
 
 type EntryState = {
   id: string;
