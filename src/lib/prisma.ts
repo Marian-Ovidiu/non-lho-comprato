@@ -3,6 +3,7 @@ import { PrismaClient } from "@/lib/generated/prisma/client";
 import { Pool } from "pg";
 
 declare global {
+  // eslint-disable-next-line no-var
   var prisma: PrismaClient | undefined;
 }
 
@@ -12,10 +13,20 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
-const pool = new Pool({ connectionString });
+const pool = new Pool({
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+});
+
 const adapter = new PrismaPg(pool);
 
-export const prisma = globalThis.prisma ?? new PrismaClient({ adapter });
+export const prisma =
+  globalThis.prisma ??
+  new PrismaClient({
+    adapter,
+  });
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.prisma = prisma;
