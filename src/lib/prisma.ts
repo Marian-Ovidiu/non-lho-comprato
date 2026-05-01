@@ -4,6 +4,7 @@ import { Pool } from "pg";
 
 declare global {
   var prisma: PrismaClient | undefined;
+  var prismaPool: Pool | undefined;
 }
 
 const connectionString = process.env.DATABASE_URL;
@@ -12,12 +13,19 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
-const pool = new Pool({
-  connectionString,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+const pool =
+  globalThis.prismaPool ??
+  new Pool({
+    connectionString,
+    ssl: {
+      rejectUnauthorized: false,
+    },
+    max: 1,
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalThis.prismaPool = pool;
+}
 
 const adapter = new PrismaPg(pool);
 
