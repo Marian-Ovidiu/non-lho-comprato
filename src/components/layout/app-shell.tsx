@@ -6,6 +6,7 @@ import { BarChart3, Home, List, PlusCircle, Repeat2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { InstallButton } from "@/src/components/pwa/install-button";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
@@ -31,6 +32,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <h1 className="text-lg font-semibold tracking-tight text-zinc-950">
                   Schiva spese inutili, un movimento alla volta.
                 </h1>
+              </div>
+
+              <div className="shrink-0">
+                <InstallButton />
               </div>
             </div>
 
@@ -67,6 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 );
               })}
             </nav>
+
           </div>
         </div>
       </header>

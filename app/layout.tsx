@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/src/components/layout/app-shell";
+import { RegisterSW } from "@/src/components/pwa/register-sw";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +16,37 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Non l'ho comprato",
-  description:
-    "App per tracciare quanto hai speso, quanto avresti speso e quanto hai risparmiato.",
+  description: "Traccia quanto spendi e quanto hai evitato di buttare.",
+  appleWebApp: {
+    capable: true,
+    title: "NLC",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [
+      {
+        url: "/icons/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+      {
+        url: "/icons/icon-512.png",
+        sizes: "512x512",
+        type: "image/png",
+      },
+    ],
+    apple: [
+      {
+        url: "/icons/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+      },
+    ],
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#020617",
 };
 
 export default function RootLayout({
@@ -31,6 +61,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <AppShell>{children}</AppShell>
+        <RegisterSW />
       </body>
     </html>
   );
