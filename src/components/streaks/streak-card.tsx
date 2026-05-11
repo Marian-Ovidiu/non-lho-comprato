@@ -10,7 +10,7 @@ export type StreakCardProps = {
   title: string;
   currentStreak: number;
   bestStreak: number;
-  person?: "MARIAN" | "MARTINA";
+  person?: "MARIAN" | "MARTINA" | "TUTTI";
 };
 
 function getPersonLabel(person?: StreakCardProps["person"]) {
@@ -22,7 +22,11 @@ function getPersonLabel(person?: StreakCardProps["person"]) {
     return "Martina";
   }
 
-  return "Tutti";
+  if (person === "TUTTI") {
+    return "Condivise";
+  }
+
+  return "Tutti i movimenti";
 }
 
 function getMicrocopy(currentStreak: number): string {

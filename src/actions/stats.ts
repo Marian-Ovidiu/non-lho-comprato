@@ -96,7 +96,7 @@ function sum(values: Array<unknown>): number {
 function normalizePerson(
   person?: PersonFilterValue,
 ): PersonFilterValue | undefined {
-  if (person === "MARIAN" || person === "MARTINA") {
+  if (person === "MARIAN" || person === "MARTINA" || person === "TUTTI") {
     return person;
   }
 

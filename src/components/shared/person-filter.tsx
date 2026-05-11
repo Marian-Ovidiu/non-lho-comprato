@@ -10,9 +10,10 @@ type PersonFilterProps = {
 
 export function PersonFilter({ person, basePath }: PersonFilterProps) {
   const options = [
-    { href: basePath, label: "Tutti", value: undefined },
+    { href: basePath, label: "Tutti i movimenti", value: undefined },
     { href: `${basePath}?person=MARIAN`, label: "Marian", value: "MARIAN" },
     { href: `${basePath}?person=MARTINA`, label: "Martina", value: "MARTINA" },
+    { href: `${basePath}?person=TUTTI`, label: "Condivise", value: "TUTTI" },
   ] satisfies Array<{
     href: string;
     label: string;
@@ -31,7 +32,7 @@ export function PersonFilter({ person, basePath }: PersonFilterProps) {
         >
           Persona
         </p>
-        <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {options.map((option) => {
             const isActive = option.value === person;
 

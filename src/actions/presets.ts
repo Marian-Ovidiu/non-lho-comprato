@@ -59,7 +59,7 @@ function getOptionalPerson(formData: FormData): {
     return { value: null };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA) {
+  if (raw === Person.MARIAN || raw === Person.MARTINA || raw === Person.TUTTI) {
     return { value: raw };
   }
 

@@ -11,7 +11,7 @@ type GoalActionResult = {
   errors?: Record<string, string>;
 };
 
-type GoalPerson = "MARIAN" | "MARTINA";
+type GoalPerson = "MARIAN" | "MARTINA" | "TUTTI";
 
 type GoalWithProgress = {
   id: string;
@@ -98,7 +98,7 @@ function getGoalPerson(formData: FormData): {
     return { value: null };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA) {
+  if (raw === Person.MARIAN || raw === Person.MARTINA || raw === Person.TUTTI) {
     return { value: raw };
   }
 
@@ -134,7 +134,7 @@ function getProgressAmount(
   person: GoalPerson | null,
   totals: Record<"all" | GoalPerson, number>,
 ): number {
-  if (person === "MARIAN" || person === "MARTINA") {
+  if (person === "MARIAN" || person === "MARTINA" || person === "TUTTI") {
     return totals[person];
   }
 
@@ -205,7 +205,7 @@ export async function createGoal(
 
 export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
   try {
-    const [goals, allSaved, marianSaved, martinaSaved] = await Promise.all([
+    const [goals, allSaved, marianSaved, martinaSaved, sharedSaved] = await Promise.all([
       prisma.goal.findMany({
         orderBy: [
           {
@@ -237,12 +237,21 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
           savedAmount: true,
         },
       }),
+      prisma.entry.aggregate({
+        where: {
+          person: Person.TUTTI,
+        },
+        _sum: {
+          savedAmount: true,
+        },
+      }),
     ]);
 
     const totals = {
       all: round2(toNumber(allSaved._sum.savedAmount)),
       MARIAN: round2(toNumber(marianSaved._sum.savedAmount)),
       MARTINA: round2(toNumber(martinaSaved._sum.savedAmount)),
+      TUTTI: round2(toNumber(sharedSaved._sum.savedAmount)),
     };
 
     return goals.map((goal) => {

@@ -19,7 +19,8 @@ export type EntrySource = (typeof EntrySource)[keyof typeof EntrySource]
 
 export const Person = {
   MARIAN: 'MARIAN',
-  MARTINA: 'MARTINA'
+  MARTINA: 'MARTINA',
+  TUTTI: 'TUTTI'
 } as const
 
 export type Person = (typeof Person)[keyof typeof Person]

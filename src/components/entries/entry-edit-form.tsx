@@ -2,9 +2,8 @@
 
 import { useActionState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
 
-import { createEntry } from "@/src/actions/entries";
+import { updateEntry } from "@/src/actions/entries";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,25 +32,36 @@ type CategoryOption = {
   icon: string | null;
 };
 
+type EntryToEdit = {
+  id: string;
+  title: string;
+  categoryId: string;
+  realCost: number;
+  alternativeCost: number;
+  date: string;
+  note: string | null;
+  source: string;
+  person: "MARIAN" | "MARTINA" | "TUTTI";
+};
+
 type FormState = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
 };
 
-type EntryFormProps = {
+type EntryEditFormProps = {
+  entry: EntryToEdit;
   categories: CategoryOption[];
 };
+
+const ROME_TIME_ZONE = "Europe/Rome";
 
 const initialState: FormState = {
   success: false,
   message: "",
   errors: {},
 };
-
-function getTodayLocal() {
-  return format(new Date(), "yyyy-MM-dd");
-}
 
 function FieldError({ message }: { message?: string }) {
   if (!message) {
@@ -61,12 +71,33 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-sm text-rose-600">{message}</p>;
 }
 
-export function EntryForm({ categories }: EntryFormProps) {
+function getDateValue(date: string) {
+  const parsed = new Date(date);
+
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: ROME_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(parsed);
+
+  const year = parts.find((part) => part.type === "year")?.value ?? "0000";
+  const month = parts.find((part) => part.type === "month")?.value ?? "00";
+  const day = parts.find((part) => part.type === "day")?.value ?? "00";
+
+  return `${year}-${month}-${day}`;
+}
+
+export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
-      return createEntry(formData);
+      return updateEntry(entry.id, formData);
     },
     initialState,
   );
@@ -79,24 +110,24 @@ export function EntryForm({ categories }: EntryFormProps) {
     }
 
     const timeout = window.setTimeout(() => {
-      router.replace("/");
+      router.replace("/entries");
     }, 800);
 
     return () => window.clearTimeout(timeout);
   }, [router, state.success]);
 
   const helperText = useMemo(() => {
-    if (!hasCategories) {
-      return "Nessuna categoria disponibile al momento.";
+    if (entry.source === "habit") {
+      return "Puoi correggere il movimento senza scollegarlo dall'abitudine.";
     }
 
-    return "Compila i campi, poi salviamo il movimento con il risparmio calcolato dal server.";
-  }, [hasCategories]);
+    return "Aggiorna i campi e il risparmio viene ricalcolato dal server.";
+  }, [entry.source]);
 
   return (
     <Card className="mx-auto w-full max-w-2xl overflow-hidden border-zinc-200/80 shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
-        <CardTitle>Nuovo movimento</CardTitle>
+        <CardTitle>Modifica movimento</CardTitle>
         <CardDescription className="max-w-xl leading-6">
           {helperText}
         </CardDescription>
@@ -124,26 +155,20 @@ export function EntryForm({ categories }: EntryFormProps) {
                 name="title"
                 placeholder="Pranzo a casa"
                 autoComplete="off"
+                defaultValue={entry.title}
                 aria-invalid={Boolean(state.errors?.title)}
               />
-              <p className="text-xs text-zinc-500">
-                Un nome veloce e chiaro ti aiuta a ritrovare il movimento in un attimo.
-              </p>
               <FieldError message={state.errors?.title} />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="categoryId">Categoria</Label>
-              <Select name="categoryId" defaultValue="">
+              <Select name="categoryId" defaultValue={entry.categoryId}>
                 <SelectTrigger
                   id="categoryId"
                   aria-invalid={Boolean(state.errors?.categoryId)}
                 >
-                  <SelectValue
-                    placeholder={
-                      hasCategories ? "Seleziona una categoria" : "Nessuna categoria"
-                    }
-                  />
+                  <SelectValue placeholder="Seleziona una categoria" />
                 </SelectTrigger>
                 <SelectContent>
                   {categories.map((category) => (
@@ -153,9 +178,6 @@ export function EntryForm({ categories }: EntryFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-zinc-500">
-                Le categorie servono per capire dove stai schivando più spese.
-              </p>
               <FieldError message={state.errors?.categoryId} />
             </div>
 
@@ -173,7 +195,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                     name="person"
                     type="radio"
                     value="MARIAN"
-                    defaultChecked
+                    defaultChecked={entry.person === "MARIAN"}
                     className="h-4 w-4 accent-zinc-950"
                   />
                   <span>Marian</span>
@@ -188,6 +210,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                     name="person"
                     type="radio"
                     value="MARTINA"
+                    defaultChecked={entry.person === "MARTINA"}
                     className="h-4 w-4 accent-zinc-950"
                   />
                   <span>Martina</span>
@@ -202,6 +225,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                     name="person"
                     type="radio"
                     value="TUTTI"
+                    defaultChecked={entry.person === "TUTTI"}
                     className="h-4 w-4 accent-zinc-950"
                   />
                   <span>Condivisa</span>
@@ -223,11 +247,9 @@ export function EntryForm({ categories }: EntryFormProps) {
                   min="0"
                   step="0.01"
                   placeholder="2.00"
+                  defaultValue={entry.realCost.toFixed(2)}
                   aria-invalid={Boolean(state.errors?.realCost)}
                 />
-                <p className="text-xs text-zinc-500">
-                  Inserisci la spesa reale in euro.
-                </p>
                 <FieldError message={state.errors?.realCost} />
               </div>
 
@@ -241,18 +263,12 @@ export function EntryForm({ categories }: EntryFormProps) {
                   min="0"
                   step="0.01"
                   placeholder="18.00"
+                  defaultValue={entry.alternativeCost.toFixed(2)}
                   aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
-                <p className="text-xs text-zinc-500">
-                  Il valore alternativo che stai evitando.
-                </p>
                 <FieldError message={state.errors?.alternativeCost} />
               </div>
             </div>
-
-            <p className="mt-3 text-xs leading-5 text-zinc-500">
-              Il risparmio finale viene calcolato dal server, così non devi fare conti a mano.
-            </p>
           </div>
 
           <div className="space-y-2">
@@ -261,12 +277,9 @@ export function EntryForm({ categories }: EntryFormProps) {
               id="date"
               name="date"
               type="date"
-              defaultValue={getTodayLocal()}
+              defaultValue={getDateValue(entry.date)}
               aria-invalid={Boolean(state.errors?.date)}
             />
-            <p className="text-xs text-zinc-500">
-              Di solito basta la data di oggi, ma puoi correggerla in un secondo.
-            </p>
             <FieldError message={state.errors?.date} />
           </div>
 
@@ -277,10 +290,8 @@ export function EntryForm({ categories }: EntryFormProps) {
               name="note"
               placeholder="Pasta al tonno invece di delivery"
               className="min-h-28"
+              defaultValue={entry.note ?? ""}
             />
-            <p className="text-xs text-zinc-500">
-              Facoltativa: utile quando vuoi ricordarti il contesto.
-            </p>
           </div>
         </CardContent>
 
@@ -290,7 +301,7 @@ export function EntryForm({ categories }: EntryFormProps) {
             className="h-11 w-full px-5 sm:w-auto"
             disabled={pending || !hasCategories}
           >
-            {pending ? "Salvataggio..." : "Salva movimento"}
+            {pending ? "Salvataggio..." : "Salva modifiche"}
           </Button>
         </CardFooter>
       </form>

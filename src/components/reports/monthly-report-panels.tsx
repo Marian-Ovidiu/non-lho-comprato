@@ -83,7 +83,7 @@ export function MonthlyReportPanels({ report }: MonthlyReportPanelsProps) {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {report.personSplit.map((item) => (
             <Card key={item.key} className="border-zinc-200/80 shadow-sm">
               <CardHeader className="space-y-2 p-5 pb-3">
@@ -157,7 +157,9 @@ export function MonthlyReportPanels({ report }: MonthlyReportPanelsProps) {
                   <span>
                     {report.biggestSaving.person === "MARIAN"
                       ? "Marian"
-                      : "Martina"}
+                      : report.biggestSaving.person === "MARTINA"
+                        ? "Martina"
+                        : "Condivise"}
                   </span>
                 </div>
                 <p className="text-sm font-medium text-emerald-700">

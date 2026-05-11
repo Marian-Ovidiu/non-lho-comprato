@@ -20,6 +20,7 @@ enum EntrySource {
 enum Person {
   MARIAN
   MARTINA
+  TUTTI
 }
 
 enum HabitOccurrenceStatus {

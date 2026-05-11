@@ -61,7 +61,11 @@ function getPersonLabel(person: PersonFilterValue | null) {
     return "Martina";
   }
 
-  return "Entrambi";
+  if (person === "TUTTI") {
+    return "Condivisa";
+  }
+
+  return "Da scegliere al momento";
 }
 
 export function PresetCard({
@@ -193,7 +197,7 @@ export function PresetCard({
             {isPending ? "Creazione..." : "Usa preset"}
           </Button>
         ) : (
-          <div className="grid w-full grid-cols-2 gap-2">
+          <div className="grid w-full grid-cols-3 gap-2">
             <Button
               type="button"
               variant="secondary"
@@ -211,6 +215,15 @@ export function PresetCard({
               disabled={isPending}
             >
               Martina
+            </Button>
+            <Button
+              type="button"
+              variant="secondary"
+              className="h-11 w-full"
+              onClick={() => handleCreate("TUTTI")}
+              disabled={isPending}
+            >
+              Condivisa
             </Button>
           </div>
         )}

@@ -10,7 +10,7 @@ type DashboardQuickActionsProps = {
     realCost: unknown;
     alternativeCost: unknown;
     note: string | null;
-    person: "MARIAN" | "MARTINA" | null;
+    person: "MARIAN" | "MARTINA" | "TUTTI" | null;
     createdAt: Date;
   }>;
 };

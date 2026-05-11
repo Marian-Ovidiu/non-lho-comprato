@@ -24,7 +24,7 @@ export type MonthlyReportOverview = {
 };
 
 export type MonthlyReportPersonSplitItem = {
-  key: "MARIAN" | "MARTINA" | "TOTAL";
+  key: "MARIAN" | "MARTINA" | "TUTTI" | "TOTAL";
   label: string;
   totalSaved: number;
   entriesCount: number;
@@ -317,6 +317,7 @@ function emptyReport(monthKey: string): MonthlyReportData {
     personSplit: [
       { key: "MARIAN", label: "Marian", totalSaved: 0, entriesCount: 0, sharePercent: 0 },
       { key: "MARTINA", label: "Martina", totalSaved: 0, entriesCount: 0, sharePercent: 0 },
+        { key: "TUTTI", label: "Condivise", totalSaved: 0, entriesCount: 0, sharePercent: 0 },
       { key: "TOTAL", label: "Totale", totalSaved: 0, entriesCount: 0, sharePercent: 100 },
     ],
     bestCategory: null,
@@ -455,6 +456,10 @@ export async function getMonthlyReport(
         totalSaved: 0,
         entriesCount: 0,
       },
+      TUTTI: {
+        totalSaved: 0,
+        entriesCount: 0,
+      },
     };
 
     for (const entry of monthEntries) {
@@ -483,6 +488,16 @@ export async function getMonthlyReport(
           totalSaved === 0
             ? 0
             : round2((personTotals.MARTINA.totalSaved / totalSaved) * 100),
+      },
+      {
+        key: "TUTTI",
+        label: "Condivise",
+        totalSaved: personTotals.TUTTI.totalSaved,
+        entriesCount: personTotals.TUTTI.entriesCount,
+        sharePercent:
+          totalSaved === 0
+            ? 0
+            : round2((personTotals.TUTTI.totalSaved / totalSaved) * 100),
       },
       {
         key: "TOTAL",
@@ -619,7 +634,7 @@ export async function getMonthlyReport(
 
     const recapParts = [
       `A ${monthLower} avete risparmiato ${formatMoney(totalSaved)}.`,
-      `Marian ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, Martina ${formatMoney(personTotals.MARTINA.totalSaved)}.`,
+      `Marian ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, Martina ${formatMoney(personTotals.MARTINA.totalSaved)}, Condivise ${formatMoney(personTotals.TUTTI.totalSaved)}.`,
       bestCategory
         ? `La categoria migliore e stata ${bestCategory.categoryName}.`
         : "Nessuna categoria si e distinta questo mese.",

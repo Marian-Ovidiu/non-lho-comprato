@@ -21,7 +21,7 @@ type GoalCardProps = {
     title: string;
     targetAmount: number;
     emoji: string | null;
-    person: "MARIAN" | "MARTINA" | null;
+    person: "MARIAN" | "MARTINA" | "TUTTI" | null;
     isActive: boolean;
     createdAt: string;
     progressAmount: number;
@@ -40,7 +40,11 @@ function getPersonLabel(person: GoalCardProps["goal"]["person"]) {
     return "Martina";
   }
 
-  return "Entrambi";
+  if (person === "TUTTI") {
+    return "Condivise";
+  }
+
+  return "Globale";
 }
 
 function getProgressWidth(progressPercent: number) {

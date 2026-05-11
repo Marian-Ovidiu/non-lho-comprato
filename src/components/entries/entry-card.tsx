@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -51,6 +52,10 @@ function getSourceLabel(source: string) {
 function getPersonLabel(person: string | null) {
   if (person === "MARTINA") {
     return "Martina";
+  }
+
+  if (person === "TUTTI") {
+    return "Condivisa";
   }
 
   return "Marian";
@@ -166,6 +171,15 @@ export function EntryCard({ entry }: EntryCardProps) {
         <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           <Badge variant="outline">{getSourceLabel(entry.source)}</Badge>
           <Badge variant="secondary">{getPersonLabel(entry.person)}</Badge>
+          <Button
+            asChild
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-8 px-3"
+          >
+            <Link href={`/entries/${entry.id}/edit`}>Modifica</Link>
+          </Button>
           <Button
             type="button"
             variant="destructive"
