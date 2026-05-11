@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
+import { GoalsPreview } from "@/src/components/dashboard/goals-preview";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { SummaryCards } from "@/src/components/dashboard/summary-cards";
 import { PageHeader } from "@/src/components/layout/page-header";
@@ -11,6 +12,7 @@ import {
 } from "@/src/actions/habits";
 import { Button } from "@/components/ui/button";
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
+import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getPersonFilter } from "@/src/lib/person-filter";
 
 type HomeProps = {
@@ -32,14 +34,17 @@ export default async function Home({ searchParams }: HomeProps) {
     entriesCount: 0,
   };
   let recentEntries: Awaited<ReturnType<typeof getEntries>> = [];
+  let activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
 
   try {
-    const [loadedSummary, loadedEntries] = await Promise.all([
+    const [loadedSummary, loadedEntries, loadedGoals] = await Promise.all([
       getDashboardSummary(person),
       getEntries(person),
+      getGoalsWithProgress(),
     ]);
     summary = loadedSummary;
     recentEntries = loadedEntries.slice(0, 5);
+    activeGoals = loadedGoals.filter((goal) => goal.isActive).slice(0, 3);
   } catch (error) {
     console.error("Failed to load dashboard data:", error);
   }
@@ -65,6 +70,8 @@ export default async function Home({ searchParams }: HomeProps) {
         totalSaved={summary.totalSaved}
         entriesCount={summary.entriesCount}
       />
+
+      <GoalsPreview goals={activeGoals} />
 
       {recentEntries.length > 0 ? (
         <RecentEntries entries={recentEntries} />

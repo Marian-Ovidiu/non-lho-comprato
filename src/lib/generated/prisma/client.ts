@@ -61,3 +61,8 @@ export type Habit = Prisma.HabitModel
  * 
  */
 export type HabitOccurrence = Prisma.HabitOccurrenceModel
+/**
+ * Model Goal
+ * 
+ */
+export type Goal = Prisma.GoalModel

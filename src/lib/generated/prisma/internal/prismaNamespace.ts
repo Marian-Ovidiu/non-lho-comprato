@@ -387,7 +387,8 @@ export const ModelName = {
   Category: 'Category',
   Entry: 'Entry',
   Habit: 'Habit',
-  HabitOccurrence: 'HabitOccurrence'
+  HabitOccurrence: 'HabitOccurrence',
+  Goal: 'Goal'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -403,7 +404,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "category" | "entry" | "habit" | "habitOccurrence"
+    modelProps: "category" | "entry" | "habit" | "habitOccurrence" | "goal"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -703,6 +704,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Goal: {
+      payload: Prisma.$GoalPayload<ExtArgs>
+      fields: Prisma.GoalFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.GoalFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.GoalFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>
+        }
+        findFirst: {
+          args: Prisma.GoalFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.GoalFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>
+        }
+        findMany: {
+          args: Prisma.GoalFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>[]
+        }
+        create: {
+          args: Prisma.GoalCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>
+        }
+        createMany: {
+          args: Prisma.GoalCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.GoalCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>[]
+        }
+        delete: {
+          args: Prisma.GoalDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>
+        }
+        update: {
+          args: Prisma.GoalUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>
+        }
+        deleteMany: {
+          args: Prisma.GoalDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.GoalUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.GoalUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>[]
+        }
+        upsert: {
+          args: Prisma.GoalUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$GoalPayload>
+        }
+        aggregate: {
+          args: Prisma.GoalAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateGoal>
+        }
+        groupBy: {
+          args: Prisma.GoalGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GoalGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.GoalCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.GoalCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -799,6 +874,20 @@ export const HabitOccurrenceScalarFieldEnum = {
 } as const
 
 export type HabitOccurrenceScalarFieldEnum = (typeof HabitOccurrenceScalarFieldEnum)[keyof typeof HabitOccurrenceScalarFieldEnum]
+
+
+export const GoalScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  targetAmount: 'targetAmount',
+  emoji: 'emoji',
+  person: 'person',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GoalScalarFieldEnum = (typeof GoalScalarFieldEnum)[keyof typeof GoalScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1079,6 +1168,7 @@ export type GlobalOmitConfig = {
   entry?: Prisma.EntryOmit
   habit?: Prisma.HabitOmit
   habitOccurrence?: Prisma.HabitOccurrenceOmit
+  goal?: Prisma.GoalOmit
 }
 
 /* Types for Logging */

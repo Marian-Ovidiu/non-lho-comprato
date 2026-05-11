@@ -54,7 +54,8 @@ export const ModelName = {
   Category: 'Category',
   Entry: 'Entry',
   Habit: 'Habit',
-  HabitOccurrence: 'HabitOccurrence'
+  HabitOccurrence: 'HabitOccurrence',
+  Goal: 'Goal'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -130,6 +131,20 @@ export const HabitOccurrenceScalarFieldEnum = {
 } as const
 
 export type HabitOccurrenceScalarFieldEnum = (typeof HabitOccurrenceScalarFieldEnum)[keyof typeof HabitOccurrenceScalarFieldEnum]
+
+
+export const GoalScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  targetAmount: 'targetAmount',
+  emoji: 'emoji',
+  person: 'person',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type GoalScalarFieldEnum = (typeof GoalScalarFieldEnum)[keyof typeof GoalScalarFieldEnum]
 
 
 export const SortOrder = {
