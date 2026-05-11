@@ -22,6 +22,7 @@ type EntryCardProps = {
     savedAmount: unknown;
     note: string | null;
     source: string;
+    person: string | null;
   };
 };
 
@@ -45,6 +46,14 @@ function getSourceLabel(source: string) {
   }
 
   return "Manuale";
+}
+
+function getPersonLabel(person: string | null) {
+  if (person === "MARTINA") {
+    return "Martina";
+  }
+
+  return "Marian";
 }
 
 export function EntryCard({ entry }: EntryCardProps) {
@@ -156,6 +165,7 @@ export function EntryCard({ entry }: EntryCardProps) {
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           <Badge variant="outline">{getSourceLabel(entry.source)}</Badge>
+          <Badge variant="secondary">{getPersonLabel(entry.person)}</Badge>
           <Button
             type="button"
             variant="destructive"

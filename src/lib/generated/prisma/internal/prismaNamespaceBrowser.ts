@@ -96,6 +96,7 @@ export const EntryScalarFieldEnum = {
   date: 'date',
   note: 'note',
   source: 'source',
+  person: 'person',
   habitOccurrenceId: 'habitOccurrenceId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

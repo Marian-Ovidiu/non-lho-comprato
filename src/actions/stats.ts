@@ -1,5 +1,7 @@
 "use server";
 
+import type { Prisma } from "@/src/lib/generated/prisma/client";
+import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 
 type StatsOverview = {
@@ -91,6 +93,50 @@ function sum(values: Array<unknown>): number {
   );
 }
 
+function normalizePerson(
+  person?: PersonFilterValue,
+): PersonFilterValue | undefined {
+  if (person === "MARIAN" || person === "MARTINA") {
+    return person;
+  }
+
+  return undefined;
+}
+
+function buildEntryWhere(
+  person?: PersonFilterValue,
+  where: Prisma.EntryWhereInput = {},
+): Prisma.EntryWhereInput {
+  const normalizedPerson = normalizePerson(person);
+
+  if (!normalizedPerson) {
+    return where;
+  }
+
+  return {
+    ...where,
+    person: normalizedPerson,
+  };
+}
+
+function buildHabitOccurrenceWhere(
+  person?: PersonFilterValue,
+): Prisma.HabitOccurrenceWhereInput {
+  const normalizedPerson = normalizePerson(person);
+
+  if (!normalizedPerson) {
+    return {};
+  }
+
+  return {
+    entry: {
+      is: {
+        person: normalizedPerson,
+      },
+    },
+  };
+}
+
 function getMonthKey(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -130,9 +176,12 @@ function emptyOverview(): StatsOverview {
   };
 }
 
-export async function getStatsOverview(): Promise<StatsOverview> {
+export async function getStatsOverview(
+  person?: PersonFilterValue,
+): Promise<StatsOverview> {
   try {
     const entries = await prisma.entry.findMany({
+      where: buildEntryWhere(person),
       select: {
         realCost: true,
         alternativeCost: true,
@@ -168,9 +217,12 @@ export async function getStatsOverview(): Promise<StatsOverview> {
   }
 }
 
-export async function getMonthlyStats(): Promise<MonthlyStatsItem[]> {
+export async function getMonthlyStats(
+  person?: PersonFilterValue,
+): Promise<MonthlyStatsItem[]> {
   try {
     const entries = await prisma.entry.findMany({
+      where: buildEntryWhere(person),
       select: {
         date: true,
         realCost: true,
@@ -233,9 +285,12 @@ export async function getMonthlyStats(): Promise<MonthlyStatsItem[]> {
   }
 }
 
-export async function getCategoryStats(): Promise<CategoryStatsItem[]> {
+export async function getCategoryStats(
+  person?: PersonFilterValue,
+): Promise<CategoryStatsItem[]> {
   try {
     const entries = await prisma.entry.findMany({
+      where: buildEntryWhere(person),
       select: {
         categoryId: true,
         realCost: true,
@@ -306,8 +361,22 @@ export async function getCategoryStats(): Promise<CategoryStatsItem[]> {
   }
 }
 
-export async function getTopSavings(limit = 10): Promise<TopSavingsItem[]> {
-  const safeLimit = Number.isFinite(limit) ? Math.max(0, Math.floor(limit)) : 10;
+export async function getTopSavings(
+  person?: PersonFilterValue,
+  limit?: number,
+): Promise<TopSavingsItem[]>;
+export async function getTopSavings(limit?: number): Promise<TopSavingsItem[]>;
+export async function getTopSavings(
+  personOrLimit?: PersonFilterValue | number,
+  limit = 10,
+): Promise<TopSavingsItem[]> {
+  const person =
+    typeof personOrLimit === "string" ? normalizePerson(personOrLimit) : undefined;
+  const requestedLimit =
+    typeof personOrLimit === "number" ? personOrLimit : limit;
+  const safeLimit = Number.isFinite(requestedLimit)
+    ? Math.max(0, Math.floor(requestedLimit))
+    : 10;
 
   if (safeLimit === 0) {
     return [];
@@ -315,11 +384,11 @@ export async function getTopSavings(limit = 10): Promise<TopSavingsItem[]> {
 
   try {
     const entries = await prisma.entry.findMany({
-      where: {
+      where: buildEntryWhere(person, {
         savedAmount: {
           gt: 0,
         },
-      },
+      }),
       orderBy: [
         {
           savedAmount: "desc",
@@ -361,9 +430,12 @@ export async function getTopSavings(limit = 10): Promise<TopSavingsItem[]> {
   }
 }
 
-export async function getHabitStats(): Promise<HabitStatsItem[]> {
+export async function getHabitStats(
+  person?: PersonFilterValue,
+): Promise<HabitStatsItem[]> {
   try {
     const occurrences = await prisma.habitOccurrence.findMany({
+      where: buildHabitOccurrenceWhere(person),
       select: {
         status: true,
         habit: {

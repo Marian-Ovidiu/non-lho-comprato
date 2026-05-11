@@ -17,6 +17,11 @@ enum EntrySource {
   habit
 }
 
+enum Person {
+  MARIAN
+  MARTINA
+}
+
 enum HabitOccurrenceStatus {
   pending
   spent
@@ -47,6 +52,7 @@ model Entry {
   date              DateTime
   note              String?
   source            EntrySource      @default(manual)
+  person            Person           @default(MARIAN)
   habitOccurrenceId String?          @unique
   habitOccurrence   HabitOccurrence? @relation(fields: [habitOccurrenceId], references: [id], onDelete: SetNull)
   createdAt         DateTime         @default(now())

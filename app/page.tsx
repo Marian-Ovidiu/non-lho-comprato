@@ -4,14 +4,24 @@ import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { SummaryCards } from "@/src/components/dashboard/summary-cards";
 import { PageHeader } from "@/src/components/layout/page-header";
+import { PersonFilter } from "@/src/components/shared/person-filter";
 import {
   ensureTodayHabitOccurrences,
   finalizeOldPendingOccurrences,
 } from "@/src/actions/habits";
 import { Button } from "@/components/ui/button";
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
+import { getPersonFilter } from "@/src/lib/person-filter";
 
-export default async function Home() {
+type HomeProps = {
+  searchParams: Promise<{
+    person?: string | string[];
+  }>;
+};
+
+export default async function Home({ searchParams }: HomeProps) {
+  const person = getPersonFilter((await searchParams).person);
+
   await ensureTodayHabitOccurrences();
   await finalizeOldPendingOccurrences();
 
@@ -25,8 +35,8 @@ export default async function Home() {
 
   try {
     const [loadedSummary, loadedEntries] = await Promise.all([
-      getDashboardSummary(),
-      getEntries(),
+      getDashboardSummary(person),
+      getEntries(person),
     ]);
     summary = loadedSummary;
     recentEntries = loadedEntries.slice(0, 5);
@@ -46,6 +56,8 @@ export default async function Home() {
           </Button>
         }
       />
+
+      <PersonFilter person={person} basePath="/" />
 
       <SummaryCards
         totalRealSpent={summary.totalRealSpent}

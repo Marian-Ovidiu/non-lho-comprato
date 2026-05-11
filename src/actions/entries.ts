@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
+import { Person } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
+import type { PersonFilterValue } from "@/src/lib/person-filter";
 
 type CreateEntryResult = {
   success: boolean;
@@ -22,6 +24,7 @@ type EntryWithCategory = {
   date: Date;
   note: string | null;
   source: string;
+  person: Person;
   habitOccurrenceId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -70,6 +73,26 @@ function getMoney(formData: FormData, name: string): {
   return { value };
 }
 
+function getPerson(formData: FormData): {
+  value: Person;
+  error?: string;
+} {
+  const raw = getText(formData, "person");
+
+  if (!raw) {
+    return { value: Person.MARIAN };
+  }
+
+  if (raw === Person.MARIAN || raw === Person.MARTINA) {
+    return { value: raw };
+  }
+
+  return {
+    value: Person.MARIAN,
+    error: "Seleziona una persona valida",
+  };
+}
+
 function toDecimalString(value: number): string {
   return value.toFixed(2);
 }
@@ -90,8 +113,19 @@ function tryRevalidatePath(path: string) {
   }
 }
 
-export async function getEntries(): Promise<EntryWithCategory[]> {
+function buildEntryPersonWhere(person?: PersonFilterValue) {
+  if (!person) {
+    return {};
+  }
+
+  return { person };
+}
+
+export async function getEntries(
+  person?: PersonFilterValue,
+): Promise<EntryWithCategory[]> {
   return prisma.entry.findMany({
+    where: buildEntryPersonWhere(person),
     orderBy: {
       date: "desc",
     },
@@ -101,13 +135,16 @@ export async function getEntries(): Promise<EntryWithCategory[]> {
   });
 }
 
-export async function getDashboardSummary(): Promise<MonthlySummary> {
+export async function getDashboardSummary(
+  person?: PersonFilterValue,
+): Promise<MonthlySummary> {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const nextMonthStart = startOfNextMonth(now);
 
   const entries = await prisma.entry.findMany({
     where: {
+      ...buildEntryPersonWhere(person),
       date: {
         gte: monthStart,
         lt: nextMonthStart,
@@ -177,6 +214,7 @@ export async function createEntry(
   const dateValue = getText(formData, "date");
   const realCost = getMoney(formData, "realCost");
   const alternativeCost = getMoney(formData, "alternativeCost");
+  const person = getPerson(formData);
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -194,6 +232,10 @@ export async function createEntry(
 
   if (alternativeCost.error) {
     errors.alternativeCost = alternativeCost.error;
+  }
+
+  if (person.error) {
+    errors.person = person.error;
   }
 
   const date = new Date(dateValue);
@@ -268,6 +310,7 @@ export async function createEntry(
         date,
         note: note || null,
         source: "manual",
+        person: person.value,
       },
     });
 

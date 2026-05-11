@@ -17,6 +17,14 @@ export const EntrySource = {
 export type EntrySource = (typeof EntrySource)[keyof typeof EntrySource]
 
 
+export const Person = {
+  MARIAN: 'MARIAN',
+  MARTINA: 'MARTINA'
+} as const
+
+export type Person = (typeof Person)[keyof typeof Person]
+
+
 export const HabitOccurrenceStatus = {
   pending: 'pending',
   spent: 'spent',

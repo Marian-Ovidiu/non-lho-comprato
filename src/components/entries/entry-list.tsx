@@ -19,6 +19,7 @@ type EntryListProps = {
     savedAmount: unknown;
     note: string | null;
     source: string;
+    person: string | null;
   }>;
 };
 

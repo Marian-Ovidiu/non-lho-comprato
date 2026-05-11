@@ -158,6 +158,43 @@ export function EntryForm({ categories }: EntryFormProps) {
               </p>
               <FieldError message={state.errors?.categoryId} />
             </div>
+
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-medium text-zinc-950">
+                Chi ha fatto la spesa?
+              </legend>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Label
+                  htmlFor="person-marian"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                >
+                  <input
+                    id="person-marian"
+                    name="person"
+                    type="radio"
+                    value="MARIAN"
+                    defaultChecked
+                    className="h-4 w-4 accent-zinc-950"
+                  />
+                  <span>Marian</span>
+                </Label>
+
+                <Label
+                  htmlFor="person-martina"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                >
+                  <input
+                    id="person-martina"
+                    name="person"
+                    type="radio"
+                    value="MARTINA"
+                    className="h-4 w-4 accent-zinc-950"
+                  />
+                  <span>Martina</span>
+                </Label>
+              </div>
+              <FieldError message={state.errors?.person} />
+            </fieldset>
           </div>
 
           <div className="rounded-3xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">

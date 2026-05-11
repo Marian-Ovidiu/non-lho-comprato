@@ -765,6 +765,7 @@ export const EntryScalarFieldEnum = {
   date: 'date',
   note: 'note',
   source: 'source',
+  person: 'person',
   habitOccurrenceId: 'habitOccurrenceId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -899,6 +900,20 @@ export type EnumEntrySourceFieldRefInput<$PrismaModel> = FieldRefInputType<$Pris
  * Reference to a field of type 'EntrySource[]'
  */
 export type ListEnumEntrySourceFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'EntrySource[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Person'
+ */
+export type EnumPersonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Person'>
+    
+
+
+/**
+ * Reference to a field of type 'Person[]'
+ */
+export type ListEnumPersonFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Person[]'>
     
 
 

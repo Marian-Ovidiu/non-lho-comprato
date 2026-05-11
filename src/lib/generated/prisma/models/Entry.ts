@@ -48,6 +48,7 @@ export type EntryMinAggregateOutputType = {
   date: Date | null
   note: string | null
   source: $Enums.EntrySource | null
+  person: $Enums.Person | null
   habitOccurrenceId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -63,6 +64,7 @@ export type EntryMaxAggregateOutputType = {
   date: Date | null
   note: string | null
   source: $Enums.EntrySource | null
+  person: $Enums.Person | null
   habitOccurrenceId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -78,6 +80,7 @@ export type EntryCountAggregateOutputType = {
   date: number
   note: number
   source: number
+  person: number
   habitOccurrenceId: number
   createdAt: number
   updatedAt: number
@@ -107,6 +110,7 @@ export type EntryMinAggregateInputType = {
   date?: true
   note?: true
   source?: true
+  person?: true
   habitOccurrenceId?: true
   createdAt?: true
   updatedAt?: true
@@ -122,6 +126,7 @@ export type EntryMaxAggregateInputType = {
   date?: true
   note?: true
   source?: true
+  person?: true
   habitOccurrenceId?: true
   createdAt?: true
   updatedAt?: true
@@ -137,6 +142,7 @@ export type EntryCountAggregateInputType = {
   date?: true
   note?: true
   source?: true
+  person?: true
   habitOccurrenceId?: true
   createdAt?: true
   updatedAt?: true
@@ -239,6 +245,7 @@ export type EntryGroupByOutputType = {
   date: Date
   note: string | null
   source: $Enums.EntrySource
+  person: $Enums.Person
   habitOccurrenceId: string | null
   createdAt: Date
   updatedAt: Date
@@ -277,6 +284,7 @@ export type EntryWhereInput = {
   date?: Prisma.DateTimeFilter<"Entry"> | Date | string
   note?: Prisma.StringNullableFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceFilter<"Entry"> | $Enums.EntrySource
+  person?: Prisma.EnumPersonFilter<"Entry"> | $Enums.Person
   habitOccurrenceId?: Prisma.StringNullableFilter<"Entry"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
@@ -294,6 +302,7 @@ export type EntryOrderByWithRelationInput = {
   date?: Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrder
+  person?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -315,6 +324,7 @@ export type EntryWhereUniqueInput = Prisma.AtLeast<{
   date?: Prisma.DateTimeFilter<"Entry"> | Date | string
   note?: Prisma.StringNullableFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceFilter<"Entry"> | $Enums.EntrySource
+  person?: Prisma.EnumPersonFilter<"Entry"> | $Enums.Person
   createdAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
@@ -331,6 +341,7 @@ export type EntryOrderByWithAggregationInput = {
   date?: Prisma.SortOrder
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrder
+  person?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -354,6 +365,7 @@ export type EntryScalarWhereWithAggregatesInput = {
   date?: Prisma.DateTimeWithAggregatesFilter<"Entry"> | Date | string
   note?: Prisma.StringNullableWithAggregatesFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceWithAggregatesFilter<"Entry"> | $Enums.EntrySource
+  person?: Prisma.EnumPersonWithAggregatesFilter<"Entry"> | $Enums.Person
   habitOccurrenceId?: Prisma.StringNullableWithAggregatesFilter<"Entry"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Entry"> | Date | string
@@ -368,6 +380,7 @@ export type EntryCreateInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   createdAt?: Date | string
   updatedAt?: Date | string
   category: Prisma.CategoryCreateNestedOneWithoutEntriesInput
@@ -384,6 +397,7 @@ export type EntryUncheckedCreateInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -398,6 +412,7 @@ export type EntryUpdateInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   category?: Prisma.CategoryUpdateOneRequiredWithoutEntriesNestedInput
@@ -414,6 +429,7 @@ export type EntryUncheckedUpdateInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -429,6 +445,7 @@ export type EntryCreateManyInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -443,6 +460,7 @@ export type EntryUpdateManyMutationInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -457,6 +475,7 @@ export type EntryUncheckedUpdateManyInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -482,6 +501,7 @@ export type EntryCountOrderByAggregateInput = {
   date?: Prisma.SortOrder
   note?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  person?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -503,6 +523,7 @@ export type EntryMaxOrderByAggregateInput = {
   date?: Prisma.SortOrder
   note?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  person?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -518,6 +539,7 @@ export type EntryMinOrderByAggregateInput = {
   date?: Prisma.SortOrder
   note?: Prisma.SortOrder
   source?: Prisma.SortOrder
+  person?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -588,6 +610,10 @@ export type EnumEntrySourceFieldUpdateOperationsInput = {
   set?: $Enums.EntrySource
 }
 
+export type EnumPersonFieldUpdateOperationsInput = {
+  set?: $Enums.Person
+}
+
 export type EntryCreateNestedOneWithoutHabitOccurrenceInput = {
   create?: Prisma.XOR<Prisma.EntryCreateWithoutHabitOccurrenceInput, Prisma.EntryUncheckedCreateWithoutHabitOccurrenceInput>
   connectOrCreate?: Prisma.EntryCreateOrConnectWithoutHabitOccurrenceInput
@@ -629,6 +655,7 @@ export type EntryCreateWithoutCategoryInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   createdAt?: Date | string
   updatedAt?: Date | string
   habitOccurrence?: Prisma.HabitOccurrenceCreateNestedOneWithoutEntryInput
@@ -643,6 +670,7 @@ export type EntryUncheckedCreateWithoutCategoryInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -687,6 +715,7 @@ export type EntryScalarWhereInput = {
   date?: Prisma.DateTimeFilter<"Entry"> | Date | string
   note?: Prisma.StringNullableFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceFilter<"Entry"> | $Enums.EntrySource
+  person?: Prisma.EnumPersonFilter<"Entry"> | $Enums.Person
   habitOccurrenceId?: Prisma.StringNullableFilter<"Entry"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
@@ -701,6 +730,7 @@ export type EntryCreateWithoutHabitOccurrenceInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   createdAt?: Date | string
   updatedAt?: Date | string
   category: Prisma.CategoryCreateNestedOneWithoutEntriesInput
@@ -716,6 +746,7 @@ export type EntryUncheckedCreateWithoutHabitOccurrenceInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -745,6 +776,7 @@ export type EntryUpdateWithoutHabitOccurrenceInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   category?: Prisma.CategoryUpdateOneRequiredWithoutEntriesNestedInput
@@ -760,6 +792,7 @@ export type EntryUncheckedUpdateWithoutHabitOccurrenceInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -773,6 +806,7 @@ export type EntryCreateManyCategoryInput = {
   date: Date | string
   note?: string | null
   source?: $Enums.EntrySource
+  person?: $Enums.Person
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -787,6 +821,7 @@ export type EntryUpdateWithoutCategoryInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   habitOccurrence?: Prisma.HabitOccurrenceUpdateOneWithoutEntryNestedInput
@@ -801,6 +836,7 @@ export type EntryUncheckedUpdateWithoutCategoryInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -815,6 +851,7 @@ export type EntryUncheckedUpdateManyWithoutCategoryInput = {
   date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -832,6 +869,7 @@ export type EntrySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   date?: boolean
   note?: boolean
   source?: boolean
+  person?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -849,6 +887,7 @@ export type EntrySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   date?: boolean
   note?: boolean
   source?: boolean
+  person?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -866,6 +905,7 @@ export type EntrySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   date?: boolean
   note?: boolean
   source?: boolean
+  person?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -883,12 +923,13 @@ export type EntrySelectScalar = {
   date?: boolean
   note?: boolean
   source?: boolean
+  person?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type EntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "categoryId" | "realCost" | "alternativeCost" | "savedAmount" | "date" | "note" | "source" | "habitOccurrenceId" | "createdAt" | "updatedAt", ExtArgs["result"]["entry"]>
+export type EntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "categoryId" | "realCost" | "alternativeCost" | "savedAmount" | "date" | "note" | "source" | "person" | "habitOccurrenceId" | "createdAt" | "updatedAt", ExtArgs["result"]["entry"]>
 export type EntryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   habitOccurrence?: boolean | Prisma.Entry$habitOccurrenceArgs<ExtArgs>
@@ -918,6 +959,7 @@ export type $EntryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     date: Date
     note: string | null
     source: $Enums.EntrySource
+    person: $Enums.Person
     habitOccurrenceId: string | null
     createdAt: Date
     updatedAt: Date
@@ -1355,6 +1397,7 @@ export interface EntryFieldRefs {
   readonly date: Prisma.FieldRef<"Entry", 'DateTime'>
   readonly note: Prisma.FieldRef<"Entry", 'String'>
   readonly source: Prisma.FieldRef<"Entry", 'EntrySource'>
+  readonly person: Prisma.FieldRef<"Entry", 'Person'>
   readonly habitOccurrenceId: Prisma.FieldRef<"Entry", 'String'>
   readonly createdAt: Prisma.FieldRef<"Entry", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Entry", 'DateTime'>

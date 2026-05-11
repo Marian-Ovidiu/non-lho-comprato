@@ -13,18 +13,27 @@ import { CategorySavingsChart } from "@/src/components/stats/category-savings-ch
 import { CategoryStatsList } from "@/src/components/stats/category-stats-list";
 import { HabitStatsList } from "@/src/components/stats/habit-stats-list";
 import { MonthlySavingsChart } from "@/src/components/stats/monthly-savings-chart";
+import { PersonFilter } from "@/src/components/shared/person-filter";
 import { StatsEmptyState } from "@/src/components/stats/stats-empty-state";
 import { StatsOverviewCards } from "@/src/components/stats/stats-overview-cards";
 import { TopSavingsList } from "@/src/components/stats/top-savings-list";
+import { getPersonFilter } from "@/src/lib/person-filter";
 
-export default async function StatsPage() {
+type StatsPageProps = {
+  searchParams: Promise<{
+    person?: string | string[];
+  }>;
+};
+
+export default async function StatsPage({ searchParams }: StatsPageProps) {
+  const person = getPersonFilter((await searchParams).person);
   const [overview, monthlyStats, categoryStats, topSavings, habitStats] =
     await Promise.all([
-      getStatsOverview(),
-      getMonthlyStats(),
-      getCategoryStats(),
-      getTopSavings(),
-      getHabitStats(),
+      getStatsOverview(person),
+      getMonthlyStats(person),
+      getCategoryStats(person),
+      getTopSavings(person),
+      getHabitStats(person),
     ]);
 
   const isCompletelyEmpty =
@@ -43,6 +52,8 @@ export default async function StatsPage() {
             </Button>
           }
         />
+
+        <PersonFilter person={person} basePath="/stats" />
 
         <StatsEmptyState />
       </main>
@@ -70,6 +81,8 @@ export default async function StatsPage() {
           </Button>
         }
       />
+
+      <PersonFilter person={person} basePath="/stats" />
 
       <StatsOverviewCards overview={overview} />
 
