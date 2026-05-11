@@ -2,7 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Home, List, PlusCircle, Repeat2, Target } from "lucide-react";
+import {
+  BarChart3,
+  Home,
+  List,
+  PlusCircle,
+  Repeat2,
+  Sparkles,
+  Target,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -11,6 +19,7 @@ import { InstallButton } from "@/src/components/pwa/install-button";
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/entries/new", label: "Aggiungi", icon: PlusCircle },
+  { href: "/presets", label: "Preset", icon: Sparkles },
   { href: "/entries", label: "Movimenti", icon: List },
   { href: "/goals", label: "Obiettivi", icon: Target },
   { href: "/stats", label: "Statistiche", icon: BarChart3 },

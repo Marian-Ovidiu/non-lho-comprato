@@ -388,7 +388,8 @@ export const ModelName = {
   Entry: 'Entry',
   Habit: 'Habit',
   HabitOccurrence: 'HabitOccurrence',
-  Goal: 'Goal'
+  Goal: 'Goal',
+  QuickPreset: 'QuickPreset'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -404,7 +405,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "category" | "entry" | "habit" | "habitOccurrence" | "goal"
+    modelProps: "category" | "entry" | "habit" | "habitOccurrence" | "goal" | "quickPreset"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -778,6 +779,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    QuickPreset: {
+      payload: Prisma.$QuickPresetPayload<ExtArgs>
+      fields: Prisma.QuickPresetFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.QuickPresetFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.QuickPresetFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>
+        }
+        findFirst: {
+          args: Prisma.QuickPresetFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.QuickPresetFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>
+        }
+        findMany: {
+          args: Prisma.QuickPresetFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>[]
+        }
+        create: {
+          args: Prisma.QuickPresetCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>
+        }
+        createMany: {
+          args: Prisma.QuickPresetCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.QuickPresetCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>[]
+        }
+        delete: {
+          args: Prisma.QuickPresetDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>
+        }
+        update: {
+          args: Prisma.QuickPresetUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>
+        }
+        deleteMany: {
+          args: Prisma.QuickPresetDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.QuickPresetUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.QuickPresetUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>[]
+        }
+        upsert: {
+          args: Prisma.QuickPresetUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuickPresetPayload>
+        }
+        aggregate: {
+          args: Prisma.QuickPresetAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQuickPreset>
+        }
+        groupBy: {
+          args: Prisma.QuickPresetGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.QuickPresetGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.QuickPresetCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.QuickPresetCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -888,6 +963,21 @@ export const GoalScalarFieldEnum = {
 } as const
 
 export type GoalScalarFieldEnum = (typeof GoalScalarFieldEnum)[keyof typeof GoalScalarFieldEnum]
+
+
+export const QuickPresetScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  categoryId: 'categoryId',
+  realCost: 'realCost',
+  alternativeCost: 'alternativeCost',
+  note: 'note',
+  person: 'person',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type QuickPresetScalarFieldEnum = (typeof QuickPresetScalarFieldEnum)[keyof typeof QuickPresetScalarFieldEnum]
 
 
 export const SortOrder = {
@@ -1169,6 +1259,7 @@ export type GlobalOmitConfig = {
   habit?: Prisma.HabitOmit
   habitOccurrence?: Prisma.HabitOccurrenceOmit
   goal?: Prisma.GoalOmit
+  quickPreset?: Prisma.QuickPresetOmit
 }
 
 /* Types for Logging */

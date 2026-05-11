@@ -55,7 +55,8 @@ export const ModelName = {
   Entry: 'Entry',
   Habit: 'Habit',
   HabitOccurrence: 'HabitOccurrence',
-  Goal: 'Goal'
+  Goal: 'Goal',
+  QuickPreset: 'QuickPreset'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -145,6 +146,21 @@ export const GoalScalarFieldEnum = {
 } as const
 
 export type GoalScalarFieldEnum = (typeof GoalScalarFieldEnum)[keyof typeof GoalScalarFieldEnum]
+
+
+export const QuickPresetScalarFieldEnum = {
+  id: 'id',
+  title: 'title',
+  categoryId: 'categoryId',
+  realCost: 'realCost',
+  alternativeCost: 'alternativeCost',
+  note: 'note',
+  person: 'person',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type QuickPresetScalarFieldEnum = (typeof QuickPresetScalarFieldEnum)[keyof typeof QuickPresetScalarFieldEnum]
 
 
 export const SortOrder = {

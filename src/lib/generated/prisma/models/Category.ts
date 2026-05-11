@@ -200,6 +200,7 @@ export type CategoryWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   entries?: Prisma.EntryListRelationFilter
   habits?: Prisma.HabitListRelationFilter
+  quickPresets?: Prisma.QuickPresetListRelationFilter
 }
 
 export type CategoryOrderByWithRelationInput = {
@@ -212,6 +213,7 @@ export type CategoryOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   entries?: Prisma.EntryOrderByRelationAggregateInput
   habits?: Prisma.HabitOrderByRelationAggregateInput
+  quickPresets?: Prisma.QuickPresetOrderByRelationAggregateInput
 }
 
 export type CategoryWhereUniqueInput = Prisma.AtLeast<{
@@ -227,6 +229,7 @@ export type CategoryWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Category"> | Date | string
   entries?: Prisma.EntryListRelationFilter
   habits?: Prisma.HabitListRelationFilter
+  quickPresets?: Prisma.QuickPresetListRelationFilter
 }, "id" | "name" | "slug">
 
 export type CategoryOrderByWithAggregationInput = {
@@ -265,6 +268,7 @@ export type CategoryCreateInput = {
   updatedAt?: Date | string
   entries?: Prisma.EntryCreateNestedManyWithoutCategoryInput
   habits?: Prisma.HabitCreateNestedManyWithoutCategoryInput
+  quickPresets?: Prisma.QuickPresetCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUncheckedCreateInput = {
@@ -277,6 +281,7 @@ export type CategoryUncheckedCreateInput = {
   updatedAt?: Date | string
   entries?: Prisma.EntryUncheckedCreateNestedManyWithoutCategoryInput
   habits?: Prisma.HabitUncheckedCreateNestedManyWithoutCategoryInput
+  quickPresets?: Prisma.QuickPresetUncheckedCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUpdateInput = {
@@ -289,6 +294,7 @@ export type CategoryUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   entries?: Prisma.EntryUpdateManyWithoutCategoryNestedInput
   habits?: Prisma.HabitUpdateManyWithoutCategoryNestedInput
+  quickPresets?: Prisma.QuickPresetUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateInput = {
@@ -301,6 +307,7 @@ export type CategoryUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   entries?: Prisma.EntryUncheckedUpdateManyWithoutCategoryNestedInput
   habits?: Prisma.HabitUncheckedUpdateManyWithoutCategoryNestedInput
+  quickPresets?: Prisma.QuickPresetUncheckedUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryCreateManyInput = {
@@ -408,6 +415,20 @@ export type CategoryUpdateOneRequiredWithoutHabitsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.CategoryUpdateToOneWithWhereWithoutHabitsInput, Prisma.CategoryUpdateWithoutHabitsInput>, Prisma.CategoryUncheckedUpdateWithoutHabitsInput>
 }
 
+export type CategoryCreateNestedOneWithoutQuickPresetsInput = {
+  create?: Prisma.XOR<Prisma.CategoryCreateWithoutQuickPresetsInput, Prisma.CategoryUncheckedCreateWithoutQuickPresetsInput>
+  connectOrCreate?: Prisma.CategoryCreateOrConnectWithoutQuickPresetsInput
+  connect?: Prisma.CategoryWhereUniqueInput
+}
+
+export type CategoryUpdateOneRequiredWithoutQuickPresetsNestedInput = {
+  create?: Prisma.XOR<Prisma.CategoryCreateWithoutQuickPresetsInput, Prisma.CategoryUncheckedCreateWithoutQuickPresetsInput>
+  connectOrCreate?: Prisma.CategoryCreateOrConnectWithoutQuickPresetsInput
+  upsert?: Prisma.CategoryUpsertWithoutQuickPresetsInput
+  connect?: Prisma.CategoryWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.CategoryUpdateToOneWithWhereWithoutQuickPresetsInput, Prisma.CategoryUpdateWithoutQuickPresetsInput>, Prisma.CategoryUncheckedUpdateWithoutQuickPresetsInput>
+}
+
 export type CategoryCreateWithoutEntriesInput = {
   id?: string
   name: string
@@ -417,6 +438,7 @@ export type CategoryCreateWithoutEntriesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   habits?: Prisma.HabitCreateNestedManyWithoutCategoryInput
+  quickPresets?: Prisma.QuickPresetCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUncheckedCreateWithoutEntriesInput = {
@@ -428,6 +450,7 @@ export type CategoryUncheckedCreateWithoutEntriesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   habits?: Prisma.HabitUncheckedCreateNestedManyWithoutCategoryInput
+  quickPresets?: Prisma.QuickPresetUncheckedCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryCreateOrConnectWithoutEntriesInput = {
@@ -455,6 +478,7 @@ export type CategoryUpdateWithoutEntriesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   habits?: Prisma.HabitUpdateManyWithoutCategoryNestedInput
+  quickPresets?: Prisma.QuickPresetUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateWithoutEntriesInput = {
@@ -466,6 +490,7 @@ export type CategoryUncheckedUpdateWithoutEntriesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   habits?: Prisma.HabitUncheckedUpdateManyWithoutCategoryNestedInput
+  quickPresets?: Prisma.QuickPresetUncheckedUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryCreateWithoutHabitsInput = {
@@ -477,6 +502,7 @@ export type CategoryCreateWithoutHabitsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   entries?: Prisma.EntryCreateNestedManyWithoutCategoryInput
+  quickPresets?: Prisma.QuickPresetCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryUncheckedCreateWithoutHabitsInput = {
@@ -488,6 +514,7 @@ export type CategoryUncheckedCreateWithoutHabitsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   entries?: Prisma.EntryUncheckedCreateNestedManyWithoutCategoryInput
+  quickPresets?: Prisma.QuickPresetUncheckedCreateNestedManyWithoutCategoryInput
 }
 
 export type CategoryCreateOrConnectWithoutHabitsInput = {
@@ -515,6 +542,7 @@ export type CategoryUpdateWithoutHabitsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   entries?: Prisma.EntryUpdateManyWithoutCategoryNestedInput
+  quickPresets?: Prisma.QuickPresetUpdateManyWithoutCategoryNestedInput
 }
 
 export type CategoryUncheckedUpdateWithoutHabitsInput = {
@@ -526,6 +554,71 @@ export type CategoryUncheckedUpdateWithoutHabitsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   entries?: Prisma.EntryUncheckedUpdateManyWithoutCategoryNestedInput
+  quickPresets?: Prisma.QuickPresetUncheckedUpdateManyWithoutCategoryNestedInput
+}
+
+export type CategoryCreateWithoutQuickPresetsInput = {
+  id?: string
+  name: string
+  slug: string
+  color?: string | null
+  icon?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  entries?: Prisma.EntryCreateNestedManyWithoutCategoryInput
+  habits?: Prisma.HabitCreateNestedManyWithoutCategoryInput
+}
+
+export type CategoryUncheckedCreateWithoutQuickPresetsInput = {
+  id?: string
+  name: string
+  slug: string
+  color?: string | null
+  icon?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  entries?: Prisma.EntryUncheckedCreateNestedManyWithoutCategoryInput
+  habits?: Prisma.HabitUncheckedCreateNestedManyWithoutCategoryInput
+}
+
+export type CategoryCreateOrConnectWithoutQuickPresetsInput = {
+  where: Prisma.CategoryWhereUniqueInput
+  create: Prisma.XOR<Prisma.CategoryCreateWithoutQuickPresetsInput, Prisma.CategoryUncheckedCreateWithoutQuickPresetsInput>
+}
+
+export type CategoryUpsertWithoutQuickPresetsInput = {
+  update: Prisma.XOR<Prisma.CategoryUpdateWithoutQuickPresetsInput, Prisma.CategoryUncheckedUpdateWithoutQuickPresetsInput>
+  create: Prisma.XOR<Prisma.CategoryCreateWithoutQuickPresetsInput, Prisma.CategoryUncheckedCreateWithoutQuickPresetsInput>
+  where?: Prisma.CategoryWhereInput
+}
+
+export type CategoryUpdateToOneWithWhereWithoutQuickPresetsInput = {
+  where?: Prisma.CategoryWhereInput
+  data: Prisma.XOR<Prisma.CategoryUpdateWithoutQuickPresetsInput, Prisma.CategoryUncheckedUpdateWithoutQuickPresetsInput>
+}
+
+export type CategoryUpdateWithoutQuickPresetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  entries?: Prisma.EntryUpdateManyWithoutCategoryNestedInput
+  habits?: Prisma.HabitUpdateManyWithoutCategoryNestedInput
+}
+
+export type CategoryUncheckedUpdateWithoutQuickPresetsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  color?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  icon?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  entries?: Prisma.EntryUncheckedUpdateManyWithoutCategoryNestedInput
+  habits?: Prisma.HabitUncheckedUpdateManyWithoutCategoryNestedInput
 }
 
 
@@ -536,11 +629,13 @@ export type CategoryUncheckedUpdateWithoutHabitsInput = {
 export type CategoryCountOutputType = {
   entries: number
   habits: number
+  quickPresets: number
 }
 
 export type CategoryCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   entries?: boolean | CategoryCountOutputTypeCountEntriesArgs
   habits?: boolean | CategoryCountOutputTypeCountHabitsArgs
+  quickPresets?: boolean | CategoryCountOutputTypeCountQuickPresetsArgs
 }
 
 /**
@@ -567,6 +662,13 @@ export type CategoryCountOutputTypeCountHabitsArgs<ExtArgs extends runtime.Types
   where?: Prisma.HabitWhereInput
 }
 
+/**
+ * CategoryCountOutputType without action
+ */
+export type CategoryCountOutputTypeCountQuickPresetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.QuickPresetWhereInput
+}
+
 
 export type CategorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -578,6 +680,7 @@ export type CategorySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   updatedAt?: boolean
   entries?: boolean | Prisma.Category$entriesArgs<ExtArgs>
   habits?: boolean | Prisma.Category$habitsArgs<ExtArgs>
+  quickPresets?: boolean | Prisma.Category$quickPresetsArgs<ExtArgs>
   _count?: boolean | Prisma.CategoryCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["category"]>
 
@@ -615,6 +718,7 @@ export type CategoryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs =
 export type CategoryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   entries?: boolean | Prisma.Category$entriesArgs<ExtArgs>
   habits?: boolean | Prisma.Category$habitsArgs<ExtArgs>
+  quickPresets?: boolean | Prisma.Category$quickPresetsArgs<ExtArgs>
   _count?: boolean | Prisma.CategoryCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type CategoryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -625,6 +729,7 @@ export type $CategoryPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
   objects: {
     entries: Prisma.$EntryPayload<ExtArgs>[]
     habits: Prisma.$HabitPayload<ExtArgs>[]
+    quickPresets: Prisma.$QuickPresetPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1030,6 +1135,7 @@ export interface Prisma__CategoryClient<T, Null = never, ExtArgs extends runtime
   readonly [Symbol.toStringTag]: "PrismaPromise"
   entries<T extends Prisma.Category$entriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Category$entriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   habits<T extends Prisma.Category$habitsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Category$habitsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HabitPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  quickPresets<T extends Prisma.Category$quickPresetsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Category$quickPresetsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuickPresetPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1504,6 +1610,30 @@ export type Category$habitsArgs<ExtArgs extends runtime.Types.Extensions.Interna
   take?: number
   skip?: number
   distinct?: Prisma.HabitScalarFieldEnum | Prisma.HabitScalarFieldEnum[]
+}
+
+/**
+ * Category.quickPresets
+ */
+export type Category$quickPresetsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the QuickPreset
+   */
+  select?: Prisma.QuickPresetSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the QuickPreset
+   */
+  omit?: Prisma.QuickPresetOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QuickPresetInclude<ExtArgs> | null
+  where?: Prisma.QuickPresetWhereInput
+  orderBy?: Prisma.QuickPresetOrderByWithRelationInput | Prisma.QuickPresetOrderByWithRelationInput[]
+  cursor?: Prisma.QuickPresetWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.QuickPresetScalarFieldEnum | Prisma.QuickPresetScalarFieldEnum[]
 }
 
 /**

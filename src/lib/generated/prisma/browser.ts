@@ -42,3 +42,8 @@ export type HabitOccurrence = Prisma.HabitOccurrenceModel
  * 
  */
 export type Goal = Prisma.GoalModel
+/**
+ * Model QuickPreset
+ * 
+ */
+export type QuickPreset = Prisma.QuickPresetModel
