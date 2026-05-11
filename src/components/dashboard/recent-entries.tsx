@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +28,7 @@ export function RecentEntries({ entries }: RecentEntriesProps) {
           <div className="space-y-1">
             <CardTitle className="text-base">Movimenti recenti</CardTitle>
             <p className="text-sm text-muted-text">
-              Gli ultimi 5 movimenti inseriti.
+              Gli ultimi 3 movimenti inseriti.
             </p>
           </div>
           <Button asChild variant="ghost" size="sm" className="w-fit px-0 text-muted-text">
@@ -46,7 +46,7 @@ export function RecentEntries({ entries }: RecentEntriesProps) {
                   {entry.title}
                 </p>
                 <p className="text-xs text-muted-text">
-                  {entry.category.name} • {formatDate(entry.date)}
+                  {entry.category.name} â€¢ {formatDate(entry.date)}
                 </p>
               </div>
               <p className="shrink-0 text-sm font-semibold text-success">
@@ -61,3 +61,5 @@ export function RecentEntries({ entries }: RecentEntriesProps) {
     </Card>
   );
 }
+
+

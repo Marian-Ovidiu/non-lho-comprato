@@ -50,11 +50,11 @@ function CategoryTooltip({
   const saved = payload[0]?.value ?? 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-surface p-3 shadow-lg">
-      <p className="text-sm font-semibold text-foreground">
+    <div className="rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-lg">
+      <p className="text-sm font-semibold text-popover-foreground">
         {label ?? "Categoria"}
       </p>
-      <p className="mt-1 text-sm text-muted-text">
+      <p className="mt-1 text-sm text-muted-foreground">
         Risparmiato: <span className="font-semibold">{formatMoney(saved)}</span>
       </p>
     </div>

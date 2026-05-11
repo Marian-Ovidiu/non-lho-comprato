@@ -9,10 +9,10 @@ function Card({
 }: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
   return (
     <div
-      data-slot="card"
-      data-size={size}
-      className={cn(
-        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-border has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        data-slot="card"
+        data-size={size}
+        className={cn(
+        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-border transition-[transform,box-shadow,border-color,background-color,opacity] duration-150 ease-out motion-reduce:transition-none hover:-translate-y-px hover:shadow-md active:translate-y-px active:scale-[0.995] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className,
       )}
       {...props}
@@ -50,7 +50,7 @@ function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card-description"
-      className={cn("text-sm text-muted-text", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );
@@ -82,9 +82,9 @@ function CardContent({ className, ...props }: React.ComponentProps<"div">) {
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
-      data-slot="card-footer"
-      className={cn(
-        "flex items-center rounded-b-xl border-t border-border bg-surface-muted/50 p-4 group-data-[size=sm]/card:p-3",
+        data-slot="card-footer"
+        className={cn(
+        "flex items-center rounded-b-xl border-t border-border bg-surface-muted/50 p-4 transition-colors duration-150 ease-out group-data-[size=sm]/card:p-3",
         className,
       )}
       {...props}

@@ -68,7 +68,7 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
-      <body className="min-h-full flex flex-col bg-background text-foreground">
+      <body className="min-h-screen flex flex-col bg-background text-foreground">
         <AppShell>{children}</AppShell>
         <RegisterSW />
       </body>

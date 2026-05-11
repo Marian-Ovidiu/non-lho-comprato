@@ -1,10 +1,12 @@
-import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
+﻿import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
 import { DashboardHabitsPreview } from "@/src/components/dashboard/dashboard-habits-preview";
 import { DashboardHudCards } from "@/src/components/dashboard/dashboard-hud-cards";
+import { DashboardQuickActions } from "@/src/components/dashboard/dashboard-quick-actions";
 import { GoalsPreview } from "@/src/components/dashboard/goals-preview";
 import { MonthlyReportPreview } from "@/src/components/dashboard/monthly-report-preview";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
+import { StreakHeroCard } from "@/src/components/dashboard/streak-hero-card";
 import { PersonFilter } from "@/src/components/shared/person-filter";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -70,7 +72,7 @@ export default async function Home({ searchParams }: HomeProps) {
 
     monthSaved = loadedSummary.totalSaved;
     todaySummary = loadedTodaySummary;
-    recentEntries = loadedEntries.slice(0, 5);
+    recentEntries = loadedEntries.slice(0, 3);
     activeGoals = loadedGoals.filter((goal) => goal.isActive).slice(0, 3);
     currentStreak = loadedStreak;
     todayHabits = loadedTodayHabits;
@@ -83,7 +85,7 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   return (
-    <main className="space-y-5 sm:space-y-6">
+    <main className="space-y-4 sm:space-y-5">
       <DailyCheckinOverlay
         savedToday={todaySummary.totalSavedToday}
         currentStreak={currentStreak.currentStreak}
@@ -107,16 +109,19 @@ export default async function Home({ searchParams }: HomeProps) {
         totalSavedToday={todaySummary.totalSavedToday}
         totalSavedMonth={monthSaved}
         currentStreak={currentStreak.currentStreak}
-        bestStreak={currentStreak.bestStreak}
         entriesTodayCount={todaySummary.entriesTodayCount}
       />
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <StreakHeroCard currentStreak={currentStreak.currentStreak} />
+
+      <DashboardQuickActions />
+
+      <section className="grid gap-3 xl:grid-cols-2">
         <DashboardHabitsPreview occurrences={todayHabits} />
         <GoalsPreview goals={activeGoals} />
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <MonthlyReportPreview report={monthlyReport} />
         {recentEntries.length > 0 ? (
           <RecentEntries entries={recentEntries} />
@@ -127,3 +132,5 @@ export default async function Home({ searchParams }: HomeProps) {
     </main>
   );
 }
+
+
