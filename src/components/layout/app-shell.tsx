@@ -6,25 +6,77 @@ import {
   BarChart3,
   Home,
   List,
-  PlusCircle,
-  Repeat2,
-  Sparkles,
+  MoreHorizontal,
   Target,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { InstallButton } from "@/src/components/pwa/install-button";
 
-const navItems = [
-  { href: "/", label: "Dashboard", icon: Home },
-  { href: "/entries/new", label: "Aggiungi", icon: PlusCircle },
-  { href: "/presets", label: "Preset", icon: Sparkles },
+const primaryNavItems = [
+  { href: "/", label: "Home", icon: Home },
   { href: "/entries", label: "Movimenti", icon: List },
   { href: "/goals", label: "Obiettivi", icon: Target },
   { href: "/stats", label: "Statistiche", icon: BarChart3 },
-  { href: "/habits", label: "Abitudini", icon: Repeat2 },
+  { href: "/more", label: "Altro", icon: MoreHorizontal },
 ] as const;
+
+const desktopNavItems = [
+  { href: "/", label: "Home", icon: Home },
+  { href: "/entries", label: "Movimenti", icon: List },
+  { href: "/goals", label: "Obiettivi", icon: Target },
+  { href: "/stats", label: "Statistiche", icon: BarChart3 },
+  { href: "/more", label: "Altro", icon: MoreHorizontal },
+] as const;
+
+function isActivePath(pathname: string, href: string) {
+  if (href === "/") {
+    return pathname === "/";
+  }
+
+  if (href === "/more") {
+    return pathname === "/more";
+  }
+
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+function NavButton({
+  href,
+  label,
+  icon: Icon,
+  active,
+  mobile = false,
+}: {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  active: boolean;
+  mobile?: boolean;
+}) {
+  return (
+    <Button
+      asChild
+      variant={active ? "default" : "ghost"}
+      size="sm"
+      className={cn(
+        mobile
+          ? "h-14 flex-col gap-1 rounded-2xl px-1 text-[11px] font-medium"
+          : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4",
+        active
+          ? "bg-zinc-950 text-white hover:bg-zinc-900"
+          : "text-zinc-600 hover:text-zinc-950",
+      )}
+    >
+      <Link href={href} aria-current={active ? "page" : undefined}>
+        <Icon className="size-4" aria-hidden="true" />
+        <span className="leading-none">{label}</span>
+      </Link>
+    </Button>
+  );
+}
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -49,47 +101,42 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
             </div>
 
-            <nav
-              aria-label="Navigazione principale"
-              className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]"
-            >
-              {navItems.map((item) => {
-                const active =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname === item.href ||
-                      pathname.startsWith(`${item.href}/`);
-                const Icon = item.icon;
-
-                return (
-                  <Button
-                    key={item.href}
-                    asChild
-                    variant={active ? "default" : "ghost"}
-                    size="sm"
-                    className={cn(
-                      "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4",
-                      active
-                        ? "bg-zinc-950 text-white hover:bg-zinc-900"
-                        : "text-zinc-600 hover:text-zinc-950"
-                    )}
-                  >
-                    <Link href={item.href}>
-                      <Icon className="size-4" aria-hidden="true" />
-                      <span>{item.label}</span>
-                    </Link>
-                  </Button>
-                );
-              })}
+            <nav aria-label="Navigazione desktop" className="hidden gap-2 md:flex">
+              {desktopNavItems.map((item) => (
+                <NavButton
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  active={isActivePath(pathname, item.href)}
+                />
+              ))}
             </nav>
-
           </div>
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-5 sm:px-6 sm:py-8 lg:px-8">
+      <div className="mx-auto w-full max-w-5xl px-4 py-5 pb-28 sm:px-6 sm:py-8 sm:pb-8 lg:px-8">
         {children}
       </div>
+
+      <nav
+        aria-label="Navigazione principale"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200/80 bg-white/95 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur supports-[backdrop-filter]:bg-white/90 md:hidden"
+      >
+        <div className="mx-auto grid w-full max-w-5xl grid-cols-5 gap-1 px-2">
+          {primaryNavItems.map((item) => (
+            <NavButton
+              key={item.href}
+              href={item.href}
+              label={item.label}
+              icon={item.icon}
+              active={isActivePath(pathname, item.href)}
+              mobile
+            />
+          ))}
+        </div>
+      </nav>
     </div>
   );
 }
