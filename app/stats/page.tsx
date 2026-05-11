@@ -15,6 +15,7 @@ import { HabitStatsList } from "@/src/components/stats/habit-stats-list";
 import { MonthlySavingsChart } from "@/src/components/stats/monthly-savings-chart";
 import { PersonFilter } from "@/src/components/shared/person-filter";
 import { StatsEmptyState } from "@/src/components/stats/stats-empty-state";
+import { StatsHeroCard } from "@/src/components/stats/stats-hero-card";
 import { StatsOverviewCards } from "@/src/components/stats/stats-overview-cards";
 import { TopSavingsList } from "@/src/components/stats/top-savings-list";
 import { getPersonFilter } from "@/src/lib/person-filter";
@@ -41,7 +42,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
   if (isCompletelyEmpty) {
     return (
-      <main className="space-y-6 sm:space-y-8">
+      <main className="space-y-5 sm:space-y-6">
         <PageHeader
           eyebrow="Statistiche"
           title="Statistiche"
@@ -60,6 +61,9 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     );
   }
 
+  const bestCategory = categoryStats[0] ?? null;
+  const biggestSaving = topSavings[0] ?? null;
+
   const monthlyChartData = monthlyStats.map((item) => ({
     month: item.month,
     label: item.label,
@@ -70,7 +74,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   }));
 
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Statistiche"
         title="Statistiche"
@@ -84,9 +88,16 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
       <PersonFilter person={person} basePath="/stats" />
 
+      <StatsHeroCard
+        totalSaved={overview.totalSaved}
+        savingRatePercent={overview.savingRatePercent}
+        bestCategoryName={bestCategory?.categoryName}
+        biggestSavingTitle={biggestSaving?.title}
+      />
+
       <StatsOverviewCards overview={overview} />
 
-      <section className="grid gap-4 xl:grid-cols-2">
+      <section className="grid gap-3 xl:grid-cols-2">
         <MonthlySavingsChart data={monthlyChartData} />
         <CategorySavingsChart data={categoryStats} />
       </section>

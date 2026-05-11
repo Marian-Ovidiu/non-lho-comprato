@@ -26,7 +26,7 @@ type MonthlySavingsChartProps = {
 
 function EmptyChart() {
   return (
-    <div className="flex h-[280px] items-center justify-center rounded-2xl border border-dashed border-border bg-surface-muted text-sm text-muted-text">
+    <div className="flex h-[220px] items-center justify-center rounded-2xl border border-dashed border-border bg-surface-muted px-4 text-center text-sm text-muted-text sm:h-[240px]">
       Nessun dato mensile ancora disponibile.
     </div>
   );
@@ -70,27 +70,27 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
-        <CardTitle>Risparmio mensile</CardTitle>
+      <CardHeader className="space-y-1 p-4 pb-0 sm:p-5">
+        <CardTitle className="text-base">Risparmio mensile</CardTitle>
         <p className="text-sm text-muted-text">
           Come sta andando il risparmio mese per mese.
         </p>
       </CardHeader>
-      <CardContent className="p-4 sm:p-6">
+      <CardContent className="p-4 pt-3 sm:p-5 sm:pt-3">
         {chartData.length === 0 ? (
           <EmptyChart />
         ) : (
-          <div className="h-[280px] w-full">
+          <div className="h-[230px] w-full sm:h-[260px]">
             <ResponsiveContainer
               width="100%"
               height="100%"
               minWidth={0}
-              minHeight={280}
+              minHeight={230}
               initialDimension={{ width: 0, height: 0 }}
             >
               <LineChart
                 data={chartData}
-                margin={{ top: 12, right: 16, left: 0, bottom: 8 }}
+                margin={{ top: 8, right: 12, left: 0, bottom: 4 }}
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis
@@ -100,12 +100,13 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
                   interval="preserveStartEnd"
                   minTickGap={16}
                   tick={{ fontSize: 12 }}
+                  tickMargin={8}
                   tickFormatter={formatMonthLabel}
                 />
                 <YAxis
                   tickLine={false}
                   axisLine={false}
-                  width={72}
+                  width={64}
                   tick={{ fontSize: 12 }}
                   tickFormatter={(value) => formatMoney(Number(value))}
                 />
