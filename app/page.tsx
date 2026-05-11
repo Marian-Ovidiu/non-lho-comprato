@@ -4,6 +4,7 @@ import { formatMoney } from "@/src/lib/formatters";
 import { ensureTodayHabitOccurrences, finalizeOldPendingOccurrences, getTodayHabitOccurrences } from "@/src/actions/habits";
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
+import { getMonthlyReport } from "@/src/actions/reports";
 import { getGlobalStreak, getPersonStreak } from "@/src/actions/streaks";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
 import { DashboardActions } from "@/src/components/dashboard/dashboard-actions";
@@ -11,6 +12,7 @@ import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-ov
 import { DashboardHabitsPreview } from "@/src/components/dashboard/dashboard-habits-preview";
 import { DashboardHudCards } from "@/src/components/dashboard/dashboard-hud-cards";
 import { GoalsPreview } from "@/src/components/dashboard/goals-preview";
+import { MonthlyReportPreview } from "@/src/components/dashboard/monthly-report-preview";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
 import { PersonFilter } from "@/src/components/shared/person-filter";
@@ -55,6 +57,8 @@ export default async function Home({ searchParams }: HomeProps) {
   let activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
   let todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
   let pendingHabitsCount = 0;
+  let monthlyReport: Awaited<ReturnType<typeof getMonthlyReport>>["report"] | null =
+    null;
   let currentStreak: Awaited<ReturnType<typeof getGlobalStreak>> = {
     currentStreak: 0,
     bestStreak: 0,
@@ -71,6 +75,7 @@ export default async function Home({ searchParams }: HomeProps) {
       loadedGoals,
       loadedStreak,
       loadedTodayHabits,
+      loadedMonthlyReport,
     ] = await Promise.all([
       getDashboardSummary(person),
       getTodayDashboardSummary(person),
@@ -78,6 +83,7 @@ export default async function Home({ searchParams }: HomeProps) {
       getGoalsWithProgress(),
       streakPromise,
       getTodayHabitOccurrences(),
+      getMonthlyReport(),
     ]);
 
     monthSaved = loadedSummary.totalSaved;
@@ -86,6 +92,7 @@ export default async function Home({ searchParams }: HomeProps) {
     activeGoals = loadedGoals.filter((goal) => goal.isActive).slice(0, 3);
     currentStreak = loadedStreak;
     todayHabits = loadedTodayHabits;
+    monthlyReport = loadedMonthlyReport.report;
     pendingHabitsCount = loadedTodayHabits.filter(
       (occurrence) => occurrence.status === "pending",
     ).length;
@@ -152,6 +159,8 @@ export default async function Home({ searchParams }: HomeProps) {
       />
 
       <DashboardHabitsPreview occurrences={todayHabits} />
+
+      <MonthlyReportPreview report={monthlyReport} />
 
       <GoalsPreview goals={activeGoals} />
 

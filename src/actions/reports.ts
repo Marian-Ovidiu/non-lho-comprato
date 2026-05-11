@@ -19,8 +19,12 @@ export type MonthlyReportOverview = {
   totalAlternativeCost: number;
   totalSaved: number;
   entriesCount: number;
-  averageSavedPerEntry: number;
   savingRatePercent: number;
+};
+
+export type MonthlyReportPersonSummary = {
+  totalSaved: number;
+  entriesCount: number;
 };
 
 export type MonthlyReportPersonSplitItem = {
@@ -31,55 +35,80 @@ export type MonthlyReportPersonSplitItem = {
   sharePercent: number;
 };
 
+export type MonthlyReportPersonSplit = MonthlyReportPersonSplitItem[] & {
+  marian: MonthlyReportPersonSummary;
+  martina: MonthlyReportPersonSummary;
+  condivise: MonthlyReportPersonSummary;
+  total: MonthlyReportPersonSummary;
+};
+
 export type MonthlyReportBestCategory = {
-  categoryId: string;
-  categoryName: string;
-  categorySlug: string;
+  name: string;
   totalSaved: number;
   entriesCount: number;
+  categoryId: string;
+  categorySlug: string;
+  categoryName: string;
+} | null;
+
+export type MonthlyReportWorstCategory = {
+  name: string;
+  totalRealSpent: number;
+  entriesCount: number;
+  categoryId: string;
+  categorySlug: string;
+  categoryName: string;
 } | null;
 
 export type MonthlyReportBiggestSaving = {
   id: string;
   title: string;
+  savedAmount: number;
+  date: string;
+  person: "MARIAN" | "MARTINA" | "TUTTI";
   categoryName: string;
-  date: Date;
   realCost: number;
   alternativeCost: number;
-  savedAmount: number;
-  person: PersonFilterValue;
   note: string | null;
 } | null;
 
 export type MonthlyReportHabitSummary = {
-  totalHabits: number;
   totalOccurrences: number;
+  completed: number;
+  skipped: number;
+  skippedCount: number;
+  totalHabits: number;
   spentCount: number;
   avoidedCount: number;
-  skippedCount: number;
   pendingCount: number;
   totalSaved: number;
   disciplineRatePercent: number;
 };
 
 export type MonthlyReportStreakSummary = {
-  currentStreak: number;
   bestStreak: number;
+  currentStreak: number;
   streakDates: string[];
   savedDaysCount: number;
 };
 
 export type MonthlyReportData = {
+  month: string;
+  label: string;
+  overview: MonthlyReportOverview;
+  personSplit: MonthlyReportPersonSplit;
+  bestCategory: MonthlyReportBestCategory;
+  worstCategory: MonthlyReportWorstCategory;
+  biggestSaving: MonthlyReportBiggestSaving;
+  streakSummary: MonthlyReportStreakSummary;
+  habitsSummary: MonthlyReportHabitSummary;
+  recapText: string;
+  hasData: boolean;
+  // compatibility aliases used by the current UI
   monthKey: string;
   monthLabel: string;
-  hasData: boolean;
-  overview: MonthlyReportOverview;
-  personSplit: MonthlyReportPersonSplitItem[];
-  bestCategory: MonthlyReportBestCategory;
-  biggestSaving: MonthlyReportBiggestSaving;
-  habitSummary: MonthlyReportHabitSummary;
-  streakSummary: MonthlyReportStreakSummary;
   recap: string;
+  habitSummary: MonthlyReportHabitSummary;
 };
 
 export type MonthlyReportPageData = {
@@ -230,6 +259,23 @@ function buildMonthOptions(dates: Date[]): MonthlyReportMonthOption[] {
     }));
 }
 
+function ensureSelectedMonthOption(
+  options: MonthlyReportMonthOption[],
+  selectedMonth: string,
+): MonthlyReportMonthOption[] {
+  if (options.some((option) => option.value === selectedMonth)) {
+    return options;
+  }
+
+  return [
+    {
+      value: selectedMonth,
+      label: formatMonthLabel(selectedMonth),
+    },
+    ...options,
+  ];
+}
+
 function buildEntryWhere(monthKey: string): Prisma.EntryWhereInput {
   const { start, end } = getMonthRangeUtc(monthKey);
 
@@ -250,6 +296,79 @@ function buildHabitOccurrenceWhere(monthKey: string): Prisma.HabitOccurrenceWher
       lt: end,
     },
   };
+}
+
+function getMonthPersonSummary(entryCount: number, totalSaved: number): MonthlyReportPersonSummary {
+  return {
+    entriesCount: entryCount,
+    totalSaved: round2(totalSaved),
+  };
+}
+
+function buildPersonSplit(
+  totals: {
+    MARIAN: MonthlyReportPersonSummary;
+    MARTINA: MonthlyReportPersonSummary;
+    TUTTI: MonthlyReportPersonSummary;
+  },
+  totalSaved: number,
+  entriesCount: number,
+): MonthlyReportPersonSplit {
+  const split = [
+    {
+      key: "MARIAN" as const,
+      label: "Marian",
+      totalSaved: totals.MARIAN.totalSaved,
+      entriesCount: totals.MARIAN.entriesCount,
+      sharePercent:
+        totalSaved === 0
+          ? 0
+          : round2((totals.MARIAN.totalSaved / totalSaved) * 100),
+    },
+    {
+      key: "MARTINA" as const,
+      label: "Martina",
+      totalSaved: totals.MARTINA.totalSaved,
+      entriesCount: totals.MARTINA.entriesCount,
+      sharePercent:
+        totalSaved === 0
+          ? 0
+          : round2((totals.MARTINA.totalSaved / totalSaved) * 100),
+    },
+    {
+      key: "TUTTI" as const,
+      label: "Condivise",
+      totalSaved: totals.TUTTI.totalSaved,
+      entriesCount: totals.TUTTI.entriesCount,
+      sharePercent:
+        totalSaved === 0
+          ? 0
+          : round2((totals.TUTTI.totalSaved / totalSaved) * 100),
+    },
+    {
+      key: "TOTAL" as const,
+      label: "Totale",
+      totalSaved,
+      entriesCount,
+      sharePercent: 100,
+    },
+  ] as MonthlyReportPersonSplitItem[];
+
+  return Object.assign(split, {
+    marian: getMonthPersonSummary(
+      totals.MARIAN.entriesCount,
+      totals.MARIAN.totalSaved,
+    ),
+    martina: getMonthPersonSummary(
+      totals.MARTINA.entriesCount,
+      totals.MARTINA.totalSaved,
+    ),
+    condivise: getMonthPersonSummary(
+      totals.TUTTI.entriesCount,
+      totals.TUTTI.totalSaved,
+    ),
+    total: getMonthPersonSummary(entriesCount, totalSaved),
+  });
 }
 
 function buildStreakSummary(dayTotals: Map<string, number>): MonthlyReportStreakSummary {
@@ -301,45 +420,83 @@ function buildStreakSummary(dayTotals: Map<string, number>): MonthlyReportStreak
   };
 }
 
-function emptyReport(monthKey: string): MonthlyReportData {
+function buildEmptyReport(monthKey: string): MonthlyReportData {
   return {
-    monthKey,
-    monthLabel: formatMonthLabel(monthKey),
-    hasData: false,
+    month: monthKey,
+    label: formatMonthLabel(monthKey),
     overview: {
       totalRealSpent: 0,
       totalAlternativeCost: 0,
       totalSaved: 0,
       entriesCount: 0,
-      averageSavedPerEntry: 0,
       savingRatePercent: 0,
     },
-    personSplit: [
-      { key: "MARIAN", label: "Marian", totalSaved: 0, entriesCount: 0, sharePercent: 0 },
-      { key: "MARTINA", label: "Martina", totalSaved: 0, entriesCount: 0, sharePercent: 0 },
-        { key: "TUTTI", label: "Condivise", totalSaved: 0, entriesCount: 0, sharePercent: 0 },
-      { key: "TOTAL", label: "Totale", totalSaved: 0, entriesCount: 0, sharePercent: 100 },
-    ],
+    personSplit: buildPersonSplit(
+      {
+        MARIAN: { totalSaved: 0, entriesCount: 0 },
+        MARTINA: { totalSaved: 0, entriesCount: 0 },
+        TUTTI: { totalSaved: 0, entriesCount: 0 },
+      },
+      0,
+      0,
+    ),
     bestCategory: null,
+    worstCategory: null,
     biggestSaving: null,
-    habitSummary: {
-      totalHabits: 0,
-      totalOccurrences: 0,
-      spentCount: 0,
-      avoidedCount: 0,
-      skippedCount: 0,
-      pendingCount: 0,
-      totalSaved: 0,
-      disciplineRatePercent: 0,
-    },
     streakSummary: {
       currentStreak: 0,
       bestStreak: 0,
       streakDates: [],
       savedDaysCount: 0,
     },
+    habitsSummary: {
+      totalOccurrences: 0,
+      completed: 0,
+      skipped: 0,
+      skippedCount: 0,
+      totalHabits: 0,
+      spentCount: 0,
+      avoidedCount: 0,
+      pendingCount: 0,
+      totalSaved: 0,
+      disciplineRatePercent: 0,
+    },
+    recapText: `Nessun dato disponibile per ${formatMonthLabel(monthKey).toLowerCase()}.`,
+    hasData: false,
+    monthKey,
+    monthLabel: formatMonthLabel(monthKey),
     recap: `Nessun dato disponibile per ${formatMonthLabel(monthKey).toLowerCase()}.`,
+    habitSummary: {
+      totalOccurrences: 0,
+      completed: 0,
+      skipped: 0,
+      skippedCount: 0,
+      totalHabits: 0,
+      spentCount: 0,
+      avoidedCount: 0,
+      pendingCount: 0,
+      totalSaved: 0,
+      disciplineRatePercent: 0,
+    },
   };
+}
+
+export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOption[]> {
+  try {
+    const dates = await prisma.entry.findMany({
+      select: {
+        date: true,
+      },
+      orderBy: {
+        date: "desc",
+      },
+    });
+
+    return buildMonthOptions(dates.map((item) => item.date));
+  } catch (error) {
+    console.error("Failed to load available report months:", error);
+    return [];
+  }
 }
 
 export async function getMonthlyReport(
@@ -348,12 +505,7 @@ export async function getMonthlyReport(
   const selectedMonth = normalizeMonthKey(requestedMonth);
 
   try {
-    const [
-      monthEntries,
-      monthOccurrences,
-      allEntryDates,
-      allOccurrenceDates,
-    ] = await Promise.all([
+    const [monthEntries] = await Promise.all([
       prisma.entry.findMany({
         where: buildEntryWhere(selectedMonth),
         select: {
@@ -376,54 +528,37 @@ export async function getMonthlyReport(
           date: "asc",
         },
       }),
-      prisma.habitOccurrence.findMany({
-        where: buildHabitOccurrenceWhere(selectedMonth),
-        select: {
-          status: true,
-          habitId: true,
-          habit: {
-            select: {
-              id: true,
-              name: true,
-              amount: true,
-              category: {
-                select: {
-                  name: true,
-                },
+    ]);
+
+    const availableMonths = await getAvailableReportMonths();
+    const monthOptions = ensureSelectedMonthOption(availableMonths, selectedMonth);
+
+    const monthOccurrences = await prisma.habitOccurrence.findMany({
+      where: buildHabitOccurrenceWhere(selectedMonth),
+      select: {
+        status: true,
+        habitId: true,
+        habit: {
+          select: {
+            id: true,
+            name: true,
+            amount: true,
+            category: {
+              select: {
+                name: true,
               },
             },
           },
         },
-      }),
-      prisma.entry.findMany({
-        select: {
-          date: true,
-        },
-        orderBy: {
-          date: "asc",
-        },
-      }),
-      prisma.habitOccurrence.findMany({
-        select: {
-          date: true,
-        },
-        orderBy: {
-          date: "asc",
-        },
-      }),
-    ]);
-
-    const monthOptions = buildMonthOptions([
-      ...allEntryDates.map((item) => item.date),
-      ...allOccurrenceDates.map((item) => item.date),
-    ]);
+      },
+    });
 
     if (monthEntries.length === 0 && monthOccurrences.length === 0) {
       return {
         selectedMonth,
         selectedMonthLabel: formatMonthLabel(selectedMonth),
         monthOptions,
-        report: emptyReport(selectedMonth),
+        report: buildEmptyReport(selectedMonth),
       };
     }
 
@@ -440,8 +575,6 @@ export async function getMonthlyReport(
       monthEntries.reduce((total, entry) => total + toNumber(entry.savedAmount), 0),
     );
     const entriesCount = monthEntries.length;
-    const averageSavedPerEntry =
-      entriesCount === 0 ? 0 : round2(totalSaved / entriesCount);
     const savingRatePercent =
       totalAlternativeCost === 0
         ? 0
@@ -468,45 +601,7 @@ export async function getMonthlyReport(
       current.entriesCount += 1;
     }
 
-    const personSplit: MonthlyReportPersonSplitItem[] = [
-      {
-        key: "MARIAN",
-        label: "Marian",
-        totalSaved: personTotals.MARIAN.totalSaved,
-        entriesCount: personTotals.MARIAN.entriesCount,
-        sharePercent:
-          totalSaved === 0
-            ? 0
-            : round2((personTotals.MARIAN.totalSaved / totalSaved) * 100),
-      },
-      {
-        key: "MARTINA",
-        label: "Martina",
-        totalSaved: personTotals.MARTINA.totalSaved,
-        entriesCount: personTotals.MARTINA.entriesCount,
-        sharePercent:
-          totalSaved === 0
-            ? 0
-            : round2((personTotals.MARTINA.totalSaved / totalSaved) * 100),
-      },
-      {
-        key: "TUTTI",
-        label: "Condivise",
-        totalSaved: personTotals.TUTTI.totalSaved,
-        entriesCount: personTotals.TUTTI.entriesCount,
-        sharePercent:
-          totalSaved === 0
-            ? 0
-            : round2((personTotals.TUTTI.totalSaved / totalSaved) * 100),
-      },
-      {
-        key: "TOTAL",
-        label: "Totale",
-        totalSaved,
-        entriesCount,
-        sharePercent: 100,
-      },
-    ];
+    const personSplit = buildPersonSplit(personTotals, totalSaved, entriesCount);
 
     const categoryMap = new Map<
       string,
@@ -540,7 +635,7 @@ export async function getMonthlyReport(
           id: entry.id,
           title: entry.title,
           categoryName: entry.category.name,
-          date: entry.date,
+          date: entry.date.toISOString(),
           realCost: toNumber(entry.realCost),
           alternativeCost: toNumber(entry.alternativeCost),
           savedAmount: toNumber(entry.savedAmount),
@@ -560,6 +655,7 @@ export async function getMonthlyReport(
               categorySlug: totals.categorySlug,
               totalSaved: totals.totalSaved,
               entriesCount: totals.entriesCount,
+              name: totals.categoryName,
             }))
             .sort((left, right) => {
               if (right.totalSaved !== left.totalSaved) {
@@ -569,7 +665,29 @@ export async function getMonthlyReport(
               return right.entriesCount - left.entriesCount;
             })[0] ?? null;
 
-    const habitSummary: MonthlyReportHabitSummary = monthOccurrences.reduce(
+    const worstCategory =
+      categoryMap.size === 0
+        ? null
+        : Array.from(categoryMap.entries())
+            .map(([categoryId, totals]) => ({
+              categoryId,
+              categoryName: totals.categoryName,
+              categorySlug: totals.categorySlug,
+              totalRealSpent: monthEntries
+                .filter((entry) => entry.category.slug === categoryId)
+                .reduce((total, entry) => total + toNumber(entry.realCost), 0),
+              entriesCount: totals.entriesCount,
+              name: totals.categoryName,
+            }))
+            .sort((left, right) => {
+              if (right.totalRealSpent !== left.totalRealSpent) {
+                return right.totalRealSpent - left.totalRealSpent;
+              }
+
+              return right.entriesCount - left.entriesCount;
+            })[0] ?? null;
+
+    const habitsSummary: MonthlyReportHabitSummary = monthOccurrences.reduce(
       (summary, occurrence) => {
         summary.totalOccurrences += 1;
 
@@ -584,6 +702,7 @@ export async function getMonthlyReport(
             );
             break;
           case "skipped":
+            summary.skipped += 1;
             summary.skippedCount += 1;
             break;
           default:
@@ -594,26 +713,30 @@ export async function getMonthlyReport(
         return summary;
       },
       {
-        totalHabits: 0,
         totalOccurrences: 0,
+        completed: 0,
+        skipped: 0,
+        skippedCount: 0,
+        totalHabits: 0,
         spentCount: 0,
         avoidedCount: 0,
-        skippedCount: 0,
         pendingCount: 0,
         totalSaved: 0,
         disciplineRatePercent: 0,
       },
     );
 
-    habitSummary.totalHabits = new Set(
+    habitsSummary.totalHabits = new Set(
       monthOccurrences.map((item) => item.habitId),
     ).size;
-    habitSummary.disciplineRatePercent =
-      habitSummary.avoidedCount + habitSummary.spentCount === 0
+    habitsSummary.completed =
+      habitsSummary.avoidedCount + habitsSummary.spentCount;
+    habitsSummary.disciplineRatePercent =
+      habitsSummary.avoidedCount + habitsSummary.spentCount === 0
         ? 0
         : round2(
-            (habitSummary.avoidedCount /
-              (habitSummary.avoidedCount + habitSummary.spentCount)) *
+            (habitsSummary.avoidedCount /
+              (habitsSummary.avoidedCount + habitsSummary.spentCount)) *
               100,
           );
 
@@ -650,6 +773,8 @@ export async function getMonthlyReport(
       selectedMonthLabel: monthLabel,
       monthOptions,
       report: {
+        month: selectedMonth,
+        label: monthLabel,
         monthKey: selectedMonth,
         monthLabel,
         hasData: true,
@@ -658,26 +783,28 @@ export async function getMonthlyReport(
           totalAlternativeCost,
           totalSaved,
           entriesCount,
-          averageSavedPerEntry,
           savingRatePercent,
         },
         personSplit,
         bestCategory,
+        worstCategory,
         biggestSaving,
-        habitSummary,
         streakSummary,
+        habitsSummary,
+        recapText: recapParts.join(" "),
         recap: recapParts.join(" "),
+        habitSummary: habitsSummary,
       },
     };
   } catch (error) {
     console.error("Failed to load monthly report:", error);
-    const monthOptions = buildMonthOptions([]);
+    const monthOptions = ensureSelectedMonthOption([], selectedMonth);
 
     return {
       selectedMonth,
       selectedMonthLabel: formatMonthLabel(selectedMonth),
       monthOptions,
-      report: emptyReport(selectedMonth),
+      report: buildEmptyReport(selectedMonth),
     };
   }
 }
