@@ -89,7 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="shrink-0">
-                <InstallButton />
+                <InstallButton compact />
               </div>
             </div>
 

@@ -1,7 +1,7 @@
 ﻿import Link from "next/link";
 import { BarChart3, Download, Layers3, MoonStar, Repeat2 } from "lucide-react";
 
-import { InstallButton } from "@/src/components/pwa/install-button";
+import { PwaInstallContent } from "@/src/components/pwa/install-button";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { ThemeSelector } from "@/src/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -171,7 +171,7 @@ export default function MorePage() {
             </CardHeader>
 
             <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
-              <InstallButton />
+              <PwaInstallContent />
             </CardContent>
           </Card>
         </div>
