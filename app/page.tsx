@@ -1,5 +1,4 @@
 import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
-import { DashboardActions } from "@/src/components/dashboard/dashboard-actions";
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
 import { DashboardHabitsPreview } from "@/src/components/dashboard/dashboard-habits-preview";
 import { DashboardHudCards } from "@/src/components/dashboard/dashboard-hud-cards";
@@ -8,6 +7,8 @@ import { MonthlyReportPreview } from "@/src/components/dashboard/monthly-report-
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { PersonFilter } from "@/src/components/shared/person-filter";
 import { PageHeader } from "@/src/components/layout/page-header";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { ensureTodayHabitOccurrences, finalizeOldPendingOccurrences, getTodayHabitOccurrences } from "@/src/actions/habits";
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
@@ -82,7 +83,7 @@ export default async function Home({ searchParams }: HomeProps) {
   }
 
   return (
-    <main className="space-y-6 sm:space-y-7">
+    <main className="space-y-5 sm:space-y-6">
       <DailyCheckinOverlay
         savedToday={todaySummary.totalSavedToday}
         currentStreak={currentStreak.currentStreak}
@@ -93,6 +94,11 @@ export default async function Home({ searchParams }: HomeProps) {
         eyebrow="Home"
         title="Portafoglio"
         description="Qui trovi subito lo stato del giorno, le azioni rapide e ciò che richiede attenzione."
+        action={
+          <Button asChild className="h-11 rounded-2xl px-4">
+            <Link href="/entries/new">Nuovo movimento</Link>
+          </Button>
+        }
       />
 
       <PersonFilter person={person} basePath="/" compact />
@@ -105,14 +111,12 @@ export default async function Home({ searchParams }: HomeProps) {
         entriesTodayCount={todaySummary.entriesTodayCount}
       />
 
-      <DashboardActions />
-
-      <section className="grid gap-6 xl:grid-cols-2">
+      <section className="grid gap-4 xl:grid-cols-2">
         <DashboardHabitsPreview occurrences={todayHabits} />
         <GoalsPreview goals={activeGoals} />
       </section>
 
-      <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
         <MonthlyReportPreview report={monthlyReport} />
         {recentEntries.length > 0 ? (
           <RecentEntries entries={recentEntries} />

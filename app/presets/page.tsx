@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+﻿export const dynamic = "force-dynamic";
 
 import { getCategories } from "@/src/actions/entries";
 import { getPresets } from "@/src/actions/presets";
@@ -21,8 +21,8 @@ export default async function PresetsPage() {
 
       <section className="space-y-4">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-zinc-950">Preset salvati</h2>
-          <p className="text-sm text-zinc-500">
+          <h2 className="text-lg font-semibold text-foreground">Preset salvati</h2>
+          <p className="text-sm text-muted-text">
             I modelli più recenti, pronti da usare o eliminare.
           </p>
         </div>
@@ -32,3 +32,4 @@ export default async function PresetsPage() {
     </main>
   );
 }
+

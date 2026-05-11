@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
@@ -31,8 +31,8 @@ export function PersonFilter({
       aria-labelledby="person-filter-title"
       className={
         compact
-          ? "rounded-xl border border-zinc-200/80 bg-white p-3 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
-          : "rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950"
+          ? "rounded-xl border border-border bg-surface p-3 shadow-sm dark:border-border dark:bg-accent"
+          : "rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-border dark:bg-accent"
       }
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -40,8 +40,8 @@ export function PersonFilter({
           id="person-filter-title"
           className={
             compact
-              ? "text-xs font-medium uppercase tracking-[0.16em] text-zinc-500"
-              : "text-sm font-medium text-zinc-950"
+              ? "text-xs font-medium uppercase tracking-[0.16em] text-muted-text"
+              : "text-sm font-medium text-foreground"
           }
         >
           Persona
@@ -76,3 +76,4 @@ export function PersonFilter({
     </section>
   );
 }
+

@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Repeat2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -70,10 +70,10 @@ export function HabitList({ habits }: HabitListProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <CardTitle>Le tue abitudini</CardTitle>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-text">
           Le regole che hai già impostato, ordinate per nome.
         </p>
       </CardHeader>
@@ -86,17 +86,17 @@ export function HabitList({ habits }: HabitListProps) {
             <div key={habit.id} className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div className="min-w-0 space-y-1">
-                  <p className="truncate text-lg font-semibold text-zinc-950">
+                  <p className="truncate text-lg font-semibold text-foreground">
                     {habit.name}
                   </p>
-                  <p className="text-sm text-zinc-500">{habit.category.name}</p>
+                  <p className="text-sm text-muted-text">{habit.category.name}</p>
                 </div>
 
                 <div className="text-left sm:text-right">
-                  <p className="text-2xl font-semibold tracking-tight text-zinc-950">
+                  <p className="text-2xl font-semibold tracking-tight text-foreground">
                     {formatMoney(habit.amount)}
                   </p>
-                  <p className="text-xs text-zinc-500">
+                  <p className="text-xs text-muted-text">
                     {habit.isActive ? "Attiva" : "In pausa"}
                   </p>
                 </div>
@@ -130,3 +130,4 @@ export function HabitList({ habits }: HabitListProps) {
     </Card>
   );
 }
+

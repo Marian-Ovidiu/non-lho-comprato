@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -69,7 +69,7 @@ function FieldError({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-sm text-rose-600">{message}</p>;
+  return <p className="text-sm text-destructive">{message}</p>;
 }
 
 function getDateValue(date: string) {
@@ -126,7 +126,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
   }, [entry.source]);
 
   return (
-    <Card className="mx-auto w-full max-w-2xl overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <CardTitle>Modifica movimento</CardTitle>
         <CardDescription className="max-w-xl leading-6">
@@ -140,8 +140,8 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
             <div
               className={
                 state.success
-                  ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900"
-                  : "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900"
+                  ? "rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm leading-6 text-success"
+                  : "rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive"
               }
             >
               {state.message}
@@ -183,13 +183,13 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
             </div>
 
             <fieldset className="space-y-3">
-              <legend className="text-sm font-medium text-zinc-950">
+              <legend className="text-sm font-medium text-foreground">
                 Chi ha fatto la spesa?
               </legend>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Label
                   htmlFor="person-marian"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
                 >
                   <input
                     id="person-marian"
@@ -197,14 +197,14 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
                     type="radio"
                     value="MARIAN"
                     defaultChecked={entry.person === "MARIAN"}
-                    className="h-4 w-4 accent-zinc-950"
+                    className="h-4 w-4 accent-accent"
                   />
                   <span>{PERSON_OWNERSHIP_LABELS.MARIAN}</span>
                 </Label>
 
                 <Label
                   htmlFor="person-martina"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
                 >
                   <input
                     id="person-martina"
@@ -212,14 +212,14 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
                     type="radio"
                     value="MARTINA"
                     defaultChecked={entry.person === "MARTINA"}
-                    className="h-4 w-4 accent-zinc-950"
+                    className="h-4 w-4 accent-accent"
                   />
                   <span>{PERSON_OWNERSHIP_LABELS.MARTINA}</span>
                 </Label>
 
                 <Label
                   htmlFor="person-tutti"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
                 >
                   <input
                     id="person-tutti"
@@ -227,7 +227,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
                     type="radio"
                     value="TUTTI"
                     defaultChecked={entry.person === "TUTTI"}
-                    className="h-4 w-4 accent-zinc-950"
+                    className="h-4 w-4 accent-accent"
                   />
                   <span>{PERSON_OWNERSHIP_LABELS.TUTTI}</span>
                 </Label>
@@ -236,7 +236,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
             </fieldset>
           </div>
 
-          <div className="rounded-3xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
+          <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="realCost">Quanto hai speso davvero</Label>
@@ -296,7 +296,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="flex-col gap-3 border-t border-zinc-200/70 bg-zinc-50/50 p-5 sm:flex-row sm:justify-end sm:p-6">
+        <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-5 sm:flex-row sm:justify-end sm:p-6">
           <Button
             type="submit"
             className="h-11 w-full px-5 sm:w-auto"
@@ -309,3 +309,4 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
     </Card>
   );
 }
+

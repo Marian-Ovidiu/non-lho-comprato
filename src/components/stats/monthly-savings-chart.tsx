@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import {
   CartesianGrid,
@@ -26,7 +26,7 @@ type MonthlySavingsChartProps = {
 
 function EmptyChart() {
   return (
-    <div className="flex h-[280px] items-center justify-center rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 text-sm text-zinc-500">
+    <div className="flex h-[280px] items-center justify-center rounded-2xl border border-dashed border-border bg-surface-muted text-sm text-muted-text">
       Nessun dato mensile ancora disponibile.
     </div>
   );
@@ -52,11 +52,11 @@ function MonthlyTooltip({
   const saved = payload[0]?.value ?? 0;
 
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-3 shadow-lg">
-      <p className="text-sm font-semibold text-zinc-950">
+    <div className="rounded-2xl border border-border bg-surface p-3 shadow-lg">
+      <p className="text-sm font-semibold text-foreground">
         {label ? `Mese: ${label}` : "Mese"}
       </p>
-      <p className="mt-1 text-sm text-zinc-600">
+      <p className="mt-1 text-sm text-muted-text">
         Risparmiato: <span className="font-semibold">{formatMoney(saved)}</span>
       </p>
     </div>
@@ -69,10 +69,10 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
   );
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <CardTitle>Risparmio mensile</CardTitle>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-text">
           Come sta andando il risparmio mese per mese.
         </p>
       </CardHeader>
@@ -92,7 +92,7 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
                 data={chartData}
                 margin={{ top: 12, right: 16, left: 0, bottom: 8 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis
                   dataKey="label"
                   tickLine={false}
@@ -113,9 +113,9 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
                 <Line
                   type="monotone"
                   dataKey="totalSaved"
-                  stroke="#059669"
+                  stroke="var(--success)"
                   strokeWidth={3}
-                  dot={{ r: 3, fill: "#059669" }}
+                  dot={{ r: 3, fill: "var(--success)" }}
                   activeDot={{ r: 5 }}
                 />
               </LineChart>
@@ -126,3 +126,4 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
     </Card>
   );
 }
+

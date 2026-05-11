@@ -30,12 +30,12 @@ export function DashboardHabitsPreview({
   const remainingCount = pendingOccurrences.length - visibleOccurrences.length;
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm dark:border-zinc-800">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-4 pb-0 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Abitudini di oggi</CardTitle>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm text-muted-text">
               Le abitudini ancora da controllare oggi.
             </p>
           </div>
@@ -46,12 +46,9 @@ export function DashboardHabitsPreview({
       <CardContent className="space-y-4 p-4 sm:p-5">
         {pendingOccurrences.length === 0 ? (
           <>
-            <div className="flex items-center gap-3 rounded-2xl bg-zinc-50 px-4 py-3 dark:bg-zinc-900">
-              <SunMedium
-                className="size-5 shrink-0 text-amber-500"
-                aria-hidden="true"
-              />
-              <p className="text-sm text-zinc-600 dark:text-zinc-300">
+            <div className="flex items-center gap-3 rounded-2xl bg-surface-muted px-4 py-3">
+              <SunMedium className="size-5 shrink-0 text-success" aria-hidden="true" />
+              <p className="text-sm text-muted-text">
                 Nessun controllo urgente da fare adesso.
               </p>
             </div>
@@ -69,18 +66,18 @@ export function DashboardHabitsPreview({
               {visibleOccurrences.map((occurrence) => (
                 <div
                   key={occurrence.id}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-zinc-50 px-3 py-2.5 dark:bg-zinc-900"
+                  className="flex items-center justify-between gap-3 rounded-xl bg-surface-muted px-3 py-2.5"
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-50">
+                    <p className="truncate text-sm font-medium text-foreground">
                       {occurrence.habit.name}
                     </p>
-                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                    <p className="text-xs text-muted-text">
                       {occurrence.habit.category.name}
                     </p>
                   </div>
 
-                  <p className="shrink-0 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                  <p className="shrink-0 text-sm font-semibold text-foreground">
                     {formatMoney(occurrence.habit.amount)}
                   </p>
                 </div>
@@ -88,7 +85,7 @@ export function DashboardHabitsPreview({
             </div>
 
             {remainingCount > 0 ? (
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-muted-text">
                 E altre {remainingCount} abitudini da controllare.
               </p>
             ) : null}

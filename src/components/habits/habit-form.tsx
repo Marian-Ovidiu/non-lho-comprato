@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -61,7 +61,7 @@ function FieldError({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-sm text-rose-600">{message}</p>;
+  return <p className="text-sm text-destructive">{message}</p>;
 }
 
 export function HabitForm({ categories }: HabitFormProps) {
@@ -108,7 +108,7 @@ export function HabitForm({ categories }: HabitFormProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <CardTitle>Nuova abitudine</CardTitle>
         <CardDescription className="max-w-2xl leading-6">
@@ -123,8 +123,8 @@ export function HabitForm({ categories }: HabitFormProps) {
             <div
               className={
                 state.success
-                  ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900"
-                  : "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900"
+                  ? "rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm leading-6 text-success"
+                  : "rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive"
               }
               aria-live="polite"
             >
@@ -135,7 +135,7 @@ export function HabitForm({ categories }: HabitFormProps) {
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input id="name" name="name" placeholder="Caffè al bar" />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-text">
               Semplice e riconoscibile, così lo ritrovi subito in lista.
             </p>
             <FieldError message={state.errors?.name} />
@@ -159,7 +159,7 @@ export function HabitForm({ categories }: HabitFormProps) {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-text">
               Ti aiuta a capire dove ti stai lasciando scappare più soldi.
             </p>
             <FieldError message={state.errors?.categoryId} />
@@ -177,17 +177,17 @@ export function HabitForm({ categories }: HabitFormProps) {
                 step="0.01"
                 placeholder="1.20"
               />
-              <p className="text-xs text-zinc-500">Il costo normale in euro.</p>
+              <p className="text-xs text-muted-text">Il costo normale in euro.</p>
               <FieldError message={state.errors?.amount} />
             </div>
 
             <div className="space-y-2">
               <Label>Se non segno nulla</Label>
-              <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3">
-                <p className="text-sm font-medium text-zinc-950">
+              <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
+                <p className="text-sm font-medium text-foreground">
                   Conta come spesa fatta
                 </p>
-                <p className="mt-1 text-xs leading-5 text-zinc-500">
+                <p className="mt-1 text-xs leading-5 text-muted-text">
                   L&apos;abitudine verrà conteggiata come spesa se la lasci in
                   sospeso.
                 </p>
@@ -199,7 +199,7 @@ export function HabitForm({ categories }: HabitFormProps) {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Giorni</Label>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-text">
                 Seleziona i giorni in cui questa abitudine si ripete.
               </p>
             </div>
@@ -215,8 +215,8 @@ export function HabitForm({ categories }: HabitFormProps) {
                     htmlFor={id}
                     className={
                       checked
-                        ? "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-zinc-950 bg-zinc-950 px-3 py-3 text-sm font-medium text-white transition"
-                        : "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-zinc-200 bg-white px-3 py-3 text-sm font-medium text-zinc-700 transition hover:border-zinc-300 hover:bg-zinc-50"
+                        ? "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-accent bg-accent px-3 py-3 text-sm font-medium text-background transition"
+                        : "flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-border bg-surface px-3 py-3 text-sm font-medium text-foreground transition hover:border-border hover:bg-surface-muted"
                     }
                   >
                     <input
@@ -239,13 +239,13 @@ export function HabitForm({ categories }: HabitFormProps) {
                 selectedLabels.map((label) => (
                   <span
                     key={label}
-                    className="rounded-full bg-zinc-100 px-3 py-1 text-xs font-medium text-zinc-700"
+                    className="rounded-full bg-surface-muted px-3 py-1 text-xs font-medium text-foreground"
                   >
                     {label}
                   </span>
                 ))
               ) : (
-                <span className="text-xs text-zinc-500">
+                <span className="text-xs text-muted-text">
                   Nessun giorno selezionato.
                 </span>
               )}
@@ -255,7 +255,7 @@ export function HabitForm({ categories }: HabitFormProps) {
           </div>
         </CardContent>
 
-        <div className="border-t border-zinc-200/70 bg-zinc-50/60 p-5 sm:p-6">
+        <div className="border-t border-border bg-surface-muted p-5 sm:p-6">
           <Button
             type="submit"
             className="w-full sm:w-auto"
@@ -268,3 +268,5 @@ export function HabitForm({ categories }: HabitFormProps) {
     </Card>
   );
 }
+
+

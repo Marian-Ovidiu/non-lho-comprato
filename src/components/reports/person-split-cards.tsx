@@ -1,4 +1,4 @@
-import { Badge } from "@/components/ui/badge";
+﻿import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
 import { getPersonFilterLabel } from "@/src/lib/person-labels";
@@ -16,10 +16,10 @@ type PersonSplitCardsProps = {
 
 function getPersonCardTone(index: number) {
   if (index === 2) {
-    return "border-zinc-200/80 bg-zinc-50/70";
+    return "border-border bg-surface-muted";
   }
 
-  return "border-zinc-200/80 bg-white";
+  return "border-border bg-surface";
 }
 
 function PersonCard({
@@ -35,7 +35,7 @@ function PersonCard({
     <Card className={getPersonCardTone(toneIndex)}>
       <CardHeader className="space-y-2 p-5 pb-3">
         <div className="flex items-center justify-between gap-3">
-          <CardTitle className="text-sm font-medium text-zinc-600">
+          <CardTitle className="text-sm font-medium text-muted-text">
             {label}
           </CardTitle>
           <Badge variant="secondary">
@@ -44,10 +44,10 @@ function PersonCard({
         </div>
       </CardHeader>
       <CardContent className="space-y-2 p-5 pt-0">
-        <p className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+        <p className="text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">
           {formatMoney(summary?.totalSaved ?? 0)}
         </p>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-text dark:text-muted-text">
           Risparmio attribuito alla persona selezionata.
         </p>
       </CardContent>
@@ -63,10 +63,10 @@ export function PersonSplitCards({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
           Ripartizione per persona
         </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-text dark:text-muted-text">
           Quanto ha contribuito ciascuno al risparmio del mese.
         </p>
       </div>
@@ -91,3 +91,4 @@ export function PersonSplitCards({
     </section>
   );
 }
+

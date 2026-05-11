@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { SunMedium } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -55,11 +55,11 @@ const statusLabels = {
 function getStatusBadgeClass(status: keyof typeof statusLabels) {
   switch (status) {
     case "spent":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "border-success/20 bg-success/10 text-success";
     case "avoided":
       return "border-sky-200 bg-sky-50 text-sky-700";
     case "skipped":
-      return "border-zinc-200 bg-zinc-100 text-zinc-600";
+      return "border-border bg-surface-muted text-muted-text";
     default:
       return "border-amber-200 bg-amber-50 text-amber-700";
   }
@@ -83,12 +83,12 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
   }
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <CardTitle>Oggi</CardTitle>
-            <p className="text-sm text-zinc-500">
+            <p className="text-sm text-muted-text">
               Le abitudini previste per oggi. Segnale quando le fai o quando le eviti.
             </p>
           </div>
@@ -105,17 +105,17 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
           return (
             <div
               key={occurrence.id}
-              className="rounded-3xl border border-zinc-200 bg-zinc-50/60 p-4 shadow-sm sm:p-5"
+              className="rounded-3xl border border-border bg-surface-muted p-4 shadow-sm sm:p-5"
             >
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 space-y-1">
-                    <p className="truncate text-lg font-semibold text-zinc-950">
+                    <p className="truncate text-lg font-semibold text-foreground">
                       {occurrence.habit.name}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-zinc-500">
+                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-text">
                       <span>{occurrence.habit.category.name}</span>
-                      <span aria-hidden="true">•</span>
+                      <span aria-hidden="true">â€¢</span>
                       <span>{formatMoney(occurrence.habit.amount)}</span>
                     </div>
                   </div>
@@ -126,27 +126,27 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                 </div>
 
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <div className="rounded-2xl bg-white px-3 py-2">
-                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  <div className="rounded-2xl bg-surface px-3 py-2">
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                       Costo abituale
                     </p>
-                    <p className="mt-1 font-semibold text-zinc-950">
+                    <p className="mt-1 font-semibold text-foreground">
                       {formatMoney(occurrence.habit.amount)}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white px-3 py-2">
-                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  <div className="rounded-2xl bg-surface px-3 py-2">
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                       Categoria
                     </p>
-                    <p className="mt-1 font-semibold text-zinc-950">
+                    <p className="mt-1 font-semibold text-foreground">
                       {occurrence.habit.category.name}
                     </p>
                   </div>
-                  <div className="rounded-2xl bg-white px-3 py-2">
-                    <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+                  <div className="rounded-2xl bg-surface px-3 py-2">
+                    <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                       Stato
                     </p>
-                    <p className="mt-1 font-semibold text-zinc-950">
+                    <p className="mt-1 font-semibold text-foreground">
                       {statusLabels[status]}
                     </p>
                   </div>
@@ -164,3 +164,4 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
     </Card>
   );
 }
+

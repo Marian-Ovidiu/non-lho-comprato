@@ -24,11 +24,11 @@ type MonthlyReportPreviewProps = {
 
 export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm dark:border-zinc-800">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-4 pb-0 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
               {report?.hasData ? (
                 <Sparkles className="size-4" aria-hidden="true" />
               ) : (
@@ -36,10 +36,10 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
               )}
             </div>
             <div className="space-y-1">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
                 Questo mese
               </p>
-              <CardTitle className="text-base text-zinc-950 dark:text-zinc-50">
+              <CardTitle className="text-base text-foreground">
                 {report?.label ?? "Nessun report disponibile"}
               </CardTitle>
             </div>
@@ -56,34 +56,34 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
 
       <CardContent className="space-y-3 p-4 sm:p-5">
         {!report || !report.hasData ? (
-          <p className="text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm leading-6 text-muted-text">
             Appena arrivano movimenti nel mese in corso, qui trovi il riepilogo.
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Risparmiato
               </p>
-              <p className="mt-1 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <p className="mt-1 text-lg font-semibold text-foreground">
                 {formatMoney(report.overview.totalSaved)}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Categoria top
               </p>
-              <p className="mt-1 truncate text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <p className="mt-1 truncate text-lg font-semibold text-foreground">
                 {report.bestCategory?.name ?? "Nessuna"}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500 dark:text-zinc-400">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Schivata top
               </p>
-              <p className="mt-1 truncate text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <p className="mt-1 truncate text-lg font-semibold text-foreground">
                 {report.biggestSaving?.title ?? "Nessuna"}
               </p>
             </div>

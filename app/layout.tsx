@@ -1,7 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+
 import { AppShell } from "@/src/components/layout/app-shell";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
+import { getThemeBootstrapScript } from "@/src/lib/theme";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -46,7 +48,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#020617",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+  ],
 };
 
 export default function RootLayout({
@@ -58,8 +63,12 @@ export default function RootLayout({
     <html
       lang="it"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
+      </head>
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <AppShell>{children}</AppShell>
         <RegisterSW />
       </body>

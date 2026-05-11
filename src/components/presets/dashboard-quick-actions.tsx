@@ -1,4 +1,4 @@
-import { PresetCard } from "@/src/components/presets/preset-card";
+﻿import { PresetCard } from "@/src/components/presets/preset-card";
 
 type DashboardQuickActionsProps = {
   presets: Array<{
@@ -21,14 +21,14 @@ export function DashboardQuickActions({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-zinc-950">Azioni rapide</h2>
-        <p className="text-sm text-zinc-500">
+        <h2 className="text-lg font-semibold text-foreground">Azioni rapide</h2>
+        <p className="text-sm text-muted-text">
           Un tocco per trasformare una spesa evitata in un movimento.
         </p>
       </div>
 
       {presets.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-4 py-5 text-sm leading-6 text-zinc-600">
+        <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-5 text-sm leading-6 text-muted-text">
           Nessun preset ancora. Crea un preset per usare azioni rapide dal dashboard.
         </p>
       ) : (
@@ -46,3 +46,4 @@ export function DashboardQuickActions({
     </section>
   );
 }
+

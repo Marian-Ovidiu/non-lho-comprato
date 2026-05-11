@@ -1,4 +1,4 @@
-import { StreakCard, type StreakCardProps } from "@/src/components/streaks/streak-card";
+﻿import { StreakCard, type StreakCardProps } from "@/src/components/streaks/streak-card";
 
 type StreakSummaryProps = {
   title?: string;
@@ -12,10 +12,10 @@ export function StreakSummary({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+        <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
           {title}
         </h2>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-text dark:text-muted-text">
           Un riepilogo rapido delle serie di risparmio.
         </p>
       </div>
@@ -27,10 +27,11 @@ export function StreakSummary({
           ))}
         </div>
       ) : (
-        <p className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-4 py-5 text-sm text-zinc-500 dark:border-zinc-800 dark:bg-zinc-950/40">
+        <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-5 text-sm text-muted-text dark:border-border dark:bg-accent/40">
           Nessuna serie da mostrare.
         </p>
       )}
     </section>
   );
 }
+

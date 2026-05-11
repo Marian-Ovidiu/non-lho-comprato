@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+﻿import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 
 type MonthOption = {
@@ -21,7 +21,7 @@ export function MonthSelector({ months, selectedMonth }: MonthSelectorProps) {
     <form
       action="/reports/monthly"
       method="get"
-      className="rounded-2xl border border-zinc-200/80 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-950 sm:p-5"
+      className="rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-border dark:bg-accent sm:p-5"
     >
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
         <div className="space-y-2">
@@ -30,7 +30,7 @@ export function MonthSelector({ months, selectedMonth }: MonthSelectorProps) {
             id="month"
             name="month"
             defaultValue={selectedMonth}
-            className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none transition-colors focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200 dark:border-zinc-800 dark:bg-zinc-950 dark:text-zinc-50 dark:focus:border-zinc-600 dark:focus:ring-zinc-800"
+            className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40 dark:border-border dark:bg-accent dark:text-foreground dark:focus:border-border dark:focus:ring-border/40"
           >
             {options.map((option) => (
               <option key={option.value} value={option.value}>
@@ -47,3 +47,5 @@ export function MonthSelector({ months, selectedMonth }: MonthSelectorProps) {
     </form>
   );
 }
+
+

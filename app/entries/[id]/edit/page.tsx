@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+﻿export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
@@ -29,12 +29,12 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
           description="Non riesco a trovare il movimento richiesto."
         />
 
-        <Card className="border-zinc-200/80 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardHeader className="space-y-1 p-5 pb-3">
             <CardTitle className="text-base">Movimento non trovato</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 p-5 pt-0">
-            <p className="text-sm leading-6 text-zinc-600">
+            <p className="text-sm leading-6 text-muted-text">
               Il movimento potrebbe essere stato eliminato oppure l&apos;indirizzo
               non e piu valido.
             </p>
@@ -71,3 +71,4 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
     </main>
   );
 }
+

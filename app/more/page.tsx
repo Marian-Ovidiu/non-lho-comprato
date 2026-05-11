@@ -1,8 +1,9 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { BarChart3, Download, Layers3, MoonStar, Repeat2 } from "lucide-react";
 
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { PageHeader } from "@/src/components/layout/page-header";
+import { ThemeSelector } from "@/src/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -24,17 +25,17 @@ function ToolCard({
   disabled = false,
 }: ToolCardProps) {
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm dark:border-zinc-800">
+    <Card className="overflow-hidden border-border shadow-sm dark:border-border">
       <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
         <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
             <Icon className="size-5" aria-hidden="true" />
           </div>
           <div className="min-w-0 space-y-1">
-            <CardTitle className="text-base text-zinc-950 dark:text-zinc-50">
+            <CardTitle className="text-base text-foreground dark:text-foreground">
               {label}
             </CardTitle>
-            <p className="text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+            <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
               {description}
             </p>
           </div>
@@ -72,10 +73,10 @@ export default function MorePage() {
 
       <section className="space-y-4">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+          <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
             Gestione quotidiana
           </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-text dark:text-muted-text">
             Le cose che usi più spesso nella giornata.
           </p>
         </div>
@@ -100,10 +101,10 @@ export default function MorePage() {
 
       <section className="space-y-4">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+          <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
             Analisi
           </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-text dark:text-muted-text">
             I riepiloghi che ti aiutano a leggere il mese.
           </p>
         </div>
@@ -121,34 +122,48 @@ export default function MorePage() {
 
       <section className="space-y-4">
         <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+          <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
             App
           </h2>
-          <p className="text-sm text-zinc-500 dark:text-zinc-400">
+          <p className="text-sm text-muted-text dark:text-muted-text">
             Preferenze e installazione dell'app.
           </p>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
-          <ToolCard
-            label="Tema"
-            description="Chiaro o scuro"
-            icon={MoonStar}
-            actionLabel="In arrivo"
-            disabled
-          />
-
-          <Card className="overflow-hidden border-zinc-200/80 shadow-sm dark:border-zinc-800">
+          <Card className="overflow-hidden border-border shadow-sm dark:border-border">
             <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
               <div className="flex items-start gap-3">
-                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
+                  <MoonStar className="size-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-base text-foreground dark:text-foreground">
+                    Tema
+                  </CardTitle>
+                  <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
+                    Chiaro o scuro, salvato su questo dispositivo
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
+              <ThemeSelector />
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border-border shadow-sm dark:border-border">
+            <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
                   <Download className="size-5" aria-hidden="true" />
                 </div>
                 <div className="min-w-0 space-y-1">
-                  <CardTitle className="text-base text-zinc-950 dark:text-zinc-50">
-                    PWA install
+                  <CardTitle className="text-base text-foreground dark:text-foreground">
+                    Installa app
                   </CardTitle>
-                  <p className="text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
                     Aggiungi l&apos;app alla schermata Home
                   </p>
                 </div>
@@ -164,3 +179,4 @@ export default function MorePage() {
     </main>
   );
 }
+

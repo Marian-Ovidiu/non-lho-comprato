@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -47,7 +47,7 @@ function FieldError({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-sm text-rose-600">{message}</p>;
+  return <p className="text-sm text-destructive">{message}</p>;
 }
 
 export function PresetForm({ categories }: PresetFormProps) {
@@ -72,7 +72,7 @@ export function PresetForm({ categories }: PresetFormProps) {
   }, [router, state.success]);
 
   return (
-    <Card className="border-zinc-200/80 shadow-sm">
+    <Card className="border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <CardTitle>Nuovo preset</CardTitle>
         <CardDescription>
@@ -86,8 +86,8 @@ export function PresetForm({ categories }: PresetFormProps) {
             <div
               className={
                 state.success
-                  ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900"
-                  : "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900"
+                  ? "rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm leading-6 text-success"
+                  : "rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive"
               }
             >
               {state.message}
@@ -113,7 +113,7 @@ export function PresetForm({ categories }: PresetFormProps) {
                 id="categoryId"
                 name="categoryId"
                 defaultValue=""
-                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none transition-colors focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40"
                 aria-invalid={Boolean(state.errors?.categoryId)}
               >
                 <option value="" disabled>
@@ -164,7 +164,7 @@ export function PresetForm({ categories }: PresetFormProps) {
                 id="person"
                 name="person"
                 defaultValue=""
-                className="h-10 w-full rounded-lg border border-zinc-200 bg-white px-3 text-sm text-zinc-950 shadow-sm outline-none transition-colors focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200"
+                className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40"
                 aria-invalid={Boolean(state.errors?.person)}
               >
                 <option value="">{PRESET_PERSON_LABELS.DEFAULT}</option>
@@ -187,7 +187,7 @@ export function PresetForm({ categories }: PresetFormProps) {
           </div>
         </CardContent>
 
-        <CardFooter className="justify-end border-t border-zinc-200/70 bg-zinc-50/50 p-5 sm:p-6">
+        <CardFooter className="justify-end border-t border-border bg-surface-muted/50 p-5 sm:p-6">
           <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
             {pending ? "Salvataggio..." : "Salva preset"}
           </Button>
@@ -196,3 +196,5 @@ export function PresetForm({ categories }: PresetFormProps) {
     </Card>
   );
 }
+
+

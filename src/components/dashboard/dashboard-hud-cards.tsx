@@ -22,14 +22,14 @@ function HudCard({
   value: string;
   description: string;
   icon: typeof Wallet;
-  tone?: "default" | "emerald";
+  tone?: "default" | "success";
 }) {
   return (
     <Card
       className={
-        tone === "emerald"
-          ? "overflow-hidden border-emerald-200 bg-emerald-50/70 shadow-sm"
-          : "overflow-hidden border-zinc-200/80 shadow-sm"
+        tone === "success"
+          ? "overflow-hidden border-success/20 bg-success/10 shadow-sm"
+          : "overflow-hidden border-border shadow-sm"
       }
     >
       <CardContent className="space-y-2 p-3 sm:p-4">
@@ -37,18 +37,18 @@ function HudCard({
           <div className="space-y-1">
             <p
               className={
-                tone === "emerald"
-                  ? "text-xs font-medium uppercase tracking-[0.18em] text-emerald-700"
-                  : "text-xs font-medium uppercase tracking-[0.18em] text-zinc-500"
+                tone === "success"
+                  ? "text-xs font-medium uppercase tracking-[0.18em] text-success"
+                  : "text-xs font-medium uppercase tracking-[0.18em] text-muted-text"
               }
             >
               {label}
             </p>
             <p
               className={
-                tone === "emerald"
-                  ? "text-xl font-semibold tracking-tight text-emerald-700 sm:text-2xl"
-                  : "text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl"
+                tone === "success"
+                  ? "text-xl font-semibold tracking-tight text-success sm:text-2xl"
+                  : "text-xl font-semibold tracking-tight text-foreground sm:text-2xl"
               }
             >
               {value}
@@ -57,9 +57,9 @@ function HudCard({
 
           <div
             className={
-              tone === "emerald"
-                ? "flex size-9 items-center justify-center rounded-2xl bg-emerald-600 text-white"
-                : "flex size-9 items-center justify-center rounded-2xl bg-zinc-950 text-white"
+              tone === "success"
+                ? "flex size-9 items-center justify-center rounded-2xl bg-success text-background"
+                : "flex size-9 items-center justify-center rounded-2xl bg-accent text-background"
             }
           >
             <Icon className="size-4.5" aria-hidden="true" />
@@ -68,9 +68,9 @@ function HudCard({
 
         <p
           className={
-            tone === "emerald"
-              ? "text-xs leading-5 text-emerald-700/90"
-              : "text-xs leading-5 text-zinc-500"
+            tone === "success"
+              ? "text-xs leading-5 text-success/90"
+              : "text-xs leading-5 text-muted-text"
           }
         >
           {description}
@@ -98,7 +98,7 @@ export function DashboardHudCards({
             : "Nessun risparmio registrato oggi."
         }
         icon={Wallet}
-        tone="emerald"
+        tone="success"
       />
 
       <HudCard

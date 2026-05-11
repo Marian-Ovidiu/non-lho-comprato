@@ -34,10 +34,7 @@ export function DailyCheckinOverlay({
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  const title = useMemo(
-    () => "Situazione portafoglio",
-    [],
-  );
+  const title = useMemo(() => "Situazione portafoglio", []);
 
   useEffect(() => {
     setMounted(true);
@@ -62,7 +59,7 @@ export function DailyCheckinOverlay({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-zinc-950/50 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 p-4 backdrop-blur-sm sm:items-center"
       role="presentation"
       onClick={() => setIsOpen(false)}
     >
@@ -70,22 +67,22 @@ export function DailyCheckinOverlay({
         role="dialog"
         aria-modal="true"
         aria-labelledby="daily-checkin-title"
-        className="w-full max-w-lg overflow-hidden border-zinc-200/80 bg-white shadow-2xl dark:border-zinc-800 dark:bg-zinc-950"
+        className="w-full max-w-lg overflow-hidden border-border bg-surface shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
         <CardHeader className="space-y-3 p-5 pb-0 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950">
+              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
                 <Sparkles className="size-5" aria-hidden="true" />
               </div>
               <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
                   Check veloce del giorno
                 </p>
                 <CardTitle
                   id="daily-checkin-title"
-                  className="text-xl tracking-tight text-zinc-950 dark:text-zinc-50"
+                  className="text-xl tracking-tight text-foreground"
                 >
                   {title}
                 </CardTitle>
@@ -96,7 +93,7 @@ export function DailyCheckinOverlay({
               type="button"
               variant="ghost"
               size="icon"
-              className="shrink-0 rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-950 dark:hover:bg-zinc-900 dark:hover:text-zinc-50"
+              className="shrink-0 rounded-full text-muted-text hover:bg-surface-muted hover:text-foreground"
               onClick={() => setIsOpen(false)}
               aria-label="Chiudi"
             >
@@ -107,29 +104,29 @@ export function DailyCheckinOverlay({
 
         <CardContent className="space-y-5 p-5 pt-4 sm:p-6 sm:pt-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Risparmiato oggi
               </p>
-              <p className="mt-1 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <p className="mt-1 text-lg font-semibold text-foreground">
                 {formatMoney(savedToday)}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Serie attuale
               </p>
-              <p className="mt-1 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <p className="mt-1 text-lg font-semibold text-foreground">
                 {currentStreak} giorni
               </p>
             </div>
 
-            <div className="rounded-2xl border border-zinc-200 bg-zinc-50 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
-              <p className="text-xs uppercase tracking-[0.16em] text-zinc-500">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
+              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Abitudini in attesa
               </p>
-              <p className="mt-1 text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <p className="mt-1 text-lg font-semibold text-foreground">
                 {typeof pendingHabitsCount === "number"
                   ? `${pendingHabitsCount}`
                   : "—"}
@@ -137,10 +134,10 @@ export function DailyCheckinOverlay({
             </div>
           </div>
 
-          <p className="text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+          <p className="text-sm leading-6 text-muted-text">
             {savedToday > 0
               ? `Oggi avete già schivato ${formatMoney(savedToday)}.`
-              : "Oggi ancora niente. C&apos;è tempo per muovere il portafoglio nella direzione giusta."}
+              : "Oggi ancora niente. C'è tempo per muovere il portafoglio nella direzione giusta."}
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row">

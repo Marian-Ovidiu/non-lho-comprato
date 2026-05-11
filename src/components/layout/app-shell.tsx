@@ -23,13 +23,7 @@ const primaryNavItems = [
   { href: "/more", label: "Altro", icon: MoreHorizontal },
 ] as const;
 
-const desktopNavItems = [
-  { href: "/", label: "Home", icon: Home },
-  { href: "/entries", label: "Movimenti", icon: List },
-  { href: "/goals", label: "Obiettivi", icon: Target },
-  { href: "/stats", label: "Statistiche", icon: BarChart3 },
-  { href: "/more", label: "Altro", icon: MoreHorizontal },
-] as const;
+const desktopNavItems = primaryNavItems;
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") {
@@ -65,9 +59,7 @@ function NavButton({
         mobile
           ? "h-14 flex-col gap-1 rounded-2xl px-1 text-[11px] font-medium"
           : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4",
-        active
-          ? "bg-zinc-950 text-white hover:bg-zinc-900"
-          : "text-zinc-600 hover:text-zinc-950",
+        active ? "bg-accent text-background hover:bg-accent/90" : "text-muted-text hover:text-foreground",
       )}
     >
       <Link href={href} aria-current={active ? "page" : undefined}>
@@ -82,16 +74,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-zinc-50 text-zinc-950">
-      <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/80">
+    <div className="min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/90 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
         <div className="mx-auto w-full max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-zinc-500">
+                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
                   Non l&apos;ho comprato
                 </p>
-                <h1 className="text-lg font-semibold tracking-tight text-zinc-950">
+                <h1 className="text-lg font-semibold tracking-tight text-foreground">
                   Schiva spese inutili, un movimento alla volta.
                 </h1>
               </div>
@@ -122,7 +114,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <nav
         aria-label="Navigazione principale"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-zinc-200/80 bg-white/95 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur supports-[backdrop-filter]:bg-white/90 md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 pb-[calc(env(safe-area-inset-bottom)+0.5rem)] pt-2 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] backdrop-blur supports-[backdrop-filter]:bg-surface/90 md:hidden"
       >
         <div className="mx-auto grid w-full max-w-5xl grid-cols-5 gap-1 px-2">
           {primaryNavItems.map((item) => (

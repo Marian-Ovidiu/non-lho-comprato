@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -92,10 +92,10 @@ export function HabitOccurrenceActions({
       <p
         className={
           feedback?.kind === "error"
-            ? "text-sm text-rose-600"
+            ? "text-sm text-destructive"
             : feedback?.kind === "success"
-              ? "text-sm text-emerald-700"
-              : "text-xs text-zinc-500"
+              ? "text-sm text-success"
+              : "text-xs text-muted-text"
         }
         aria-live="polite"
       >
@@ -104,3 +104,4 @@ export function HabitOccurrenceActions({
     </div>
   );
 }
+

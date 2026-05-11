@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import { Download } from "lucide-react";
@@ -100,14 +100,15 @@ export function InstallButton() {
         onClick={() => {
           void handleInstall();
         }}
-        className="gap-2 rounded-full border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50 hover:text-zinc-950"
+        className="gap-2 rounded-full border-border bg-surface text-foreground hover:bg-surface-muted hover:text-foreground"
       >
         <Download className="size-4" aria-hidden="true" />
         <span>Installa app</span>
       </Button>
-      <p className="max-w-[18rem] text-xs leading-5 text-zinc-500">
+      <p className="max-w-[18rem] text-xs leading-5 text-muted-text">
         Aggiungi Non l&apos;ho comprato alla schermata Home.
       </p>
     </div>
   );
 }
+

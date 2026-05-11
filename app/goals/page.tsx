@@ -1,4 +1,4 @@
-import { getGoalsWithProgress } from "@/src/actions/goals";
+﻿import { getGoalsWithProgress } from "@/src/actions/goals";
 import { GoalCard } from "@/src/components/goals/goal-card";
 import { GoalForm } from "@/src/components/goals/goal-form";
 import { PageHeader } from "@/src/components/layout/page-header";
@@ -19,8 +19,8 @@ function GoalsSection({
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-zinc-950">{title}</h2>
-        <p className="text-sm text-zinc-500">{description}</p>
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <p className="text-sm text-muted-text">{description}</p>
       </div>
 
       {goals.length > 0 ? (
@@ -30,7 +30,7 @@ function GoalsSection({
           ))}
         </div>
       ) : (
-        <p className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-4 py-5 text-sm text-zinc-500">
+        <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-5 text-sm text-muted-text">
           Nessun obiettivo in questa sezione.
         </p>
       )}
@@ -54,7 +54,7 @@ export default async function GoalsPage() {
       <GoalForm />
 
       {goals.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-4 py-6 text-sm leading-6 text-zinc-600">
+        <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-6 text-sm leading-6 text-muted-text">
           Ancora nessun obiettivo. Scegli qualcosa per cui vale la pena
           schivare spese inutili.
         </p>
@@ -76,3 +76,4 @@ export default async function GoalsPage() {
     </main>
   );
 }
+

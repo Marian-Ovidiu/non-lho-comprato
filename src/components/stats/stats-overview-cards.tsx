@@ -97,16 +97,16 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
             key={card.key}
             className={
               card.variant === "highlight"
-                ? "overflow-hidden border-emerald-200 bg-emerald-50/70 shadow-sm"
-                : "overflow-hidden border-zinc-200/80"
+                ? "overflow-hidden border-success/20 bg-success/10 shadow-sm"
+                : "overflow-hidden border-border"
             }
           >
             <CardHeader className="space-y-1 p-5 pb-3">
               <CardTitle
                 className={
                   card.variant === "highlight"
-                    ? "text-sm font-medium text-emerald-700"
-                    : "text-sm font-medium text-zinc-600"
+                    ? "text-sm font-medium text-success"
+                    : "text-sm font-medium text-muted-text"
                 }
               >
                 {card.label}
@@ -114,8 +114,8 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
               <p
                 className={
                   card.variant === "highlight"
-                    ? "text-xs text-emerald-700/80"
-                    : "text-xs text-zinc-500"
+                    ? "text-xs text-success/80"
+                    : "text-xs text-muted-text"
                 }
               >
                 {card.description}
@@ -125,8 +125,8 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
               <p
                 className={
                   card.variant === "highlight"
-                    ? "text-3xl font-semibold tracking-tight text-emerald-700"
-                    : "text-3xl font-semibold tracking-tight text-zinc-950"
+                    ? "text-3xl font-semibold tracking-tight text-success"
+                    : "text-3xl font-semibold tracking-tight text-foreground"
                 }
               >
                 {value}
@@ -138,3 +138,4 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
     </div>
   );
 }
+

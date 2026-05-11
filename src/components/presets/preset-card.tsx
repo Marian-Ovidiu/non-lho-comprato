@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -110,14 +110,14 @@ export function PresetCard({
   }
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className={cn("space-y-3 p-5 pb-0", compact && "p-4 pb-0")}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <h3 className="truncate text-base font-semibold text-zinc-950">
+            <h3 className="truncate text-base font-semibold text-foreground">
               {preset.title}
             </h3>
-            <p className="text-sm text-zinc-500">{preset.category.name}</p>
+            <p className="text-sm text-muted-text">{preset.category.name}</p>
           </div>
 
           <Badge variant="secondary" className="shrink-0 gap-1">
@@ -129,29 +129,29 @@ export function PresetCard({
 
       <CardContent className={cn("space-y-4 p-5", compact && "p-4")}>
         <div className="grid grid-cols-2 gap-3 text-sm">
-          <div className="rounded-2xl bg-zinc-50 px-3 py-2">
-            <p className="text-zinc-500">Reale</p>
+          <div className="rounded-2xl bg-surface-muted px-3 py-2">
+            <p className="text-muted-text">Reale</p>
             <p className="font-medium">{formatMoney(preset.realCost)}</p>
           </div>
-          <div className="rounded-2xl bg-zinc-50 px-3 py-2">
-            <p className="text-zinc-500">Alternativo</p>
+          <div className="rounded-2xl bg-surface-muted px-3 py-2">
+            <p className="text-muted-text">Alternativo</p>
             <p className="font-medium">{formatMoney(preset.alternativeCost)}</p>
           </div>
-          <div className="col-span-2 rounded-2xl bg-emerald-50 px-3 py-2">
-            <p className="text-emerald-700">Risparmio stimato</p>
-            <p className="font-semibold text-emerald-700">
+          <div className="col-span-2 rounded-2xl bg-success/10 px-3 py-2">
+            <p className="text-success">Risparmio stimato</p>
+            <p className="font-semibold text-success">
               {formatMoney(savings)}
             </p>
           </div>
         </div>
 
         {preset.note ? (
-          <p className="rounded-2xl bg-zinc-50 px-3 py-3 text-sm leading-6 text-zinc-600">
+          <p className="rounded-2xl bg-surface-muted px-3 py-3 text-sm leading-6 text-muted-text">
             {preset.note}
           </p>
         ) : null}
 
-        <div className="flex items-center gap-2 text-xs text-zinc-500">
+        <div className="flex items-center gap-2 text-xs text-muted-text">
           <CalendarDays className="size-3.5" aria-hidden="true" />
           <span>Creato il {formatDate(preset.createdAt)}</span>
         </div>
@@ -161,8 +161,8 @@ export function PresetCard({
             className={cn(
               "rounded-2xl px-3 py-2 text-sm leading-6",
               messageTone === "success"
-                ? "bg-emerald-50 text-emerald-800"
-                : "bg-rose-50 text-rose-800",
+                ? "bg-success/10 text-success"
+                : "bg-destructive/10 text-destructive",
             )}
           >
             {message}
@@ -172,7 +172,7 @@ export function PresetCard({
 
       <CardFooter
         className={cn(
-          "flex-col gap-3 border-t border-zinc-200/70 bg-zinc-50/50 p-5",
+          "flex-col gap-3 border-t border-border bg-surface-muted/50 p-5",
           compact && "p-4",
         )}
       >
@@ -221,7 +221,7 @@ export function PresetCard({
           <Button
             type="button"
             variant="ghost"
-            className="h-10 w-full gap-2 text-zinc-600"
+            className="h-10 w-full gap-2 text-muted-text"
             onClick={handleDelete}
             disabled={isPending}
           >
@@ -233,3 +233,4 @@ export function PresetCard({
     </Card>
   );
 }
+

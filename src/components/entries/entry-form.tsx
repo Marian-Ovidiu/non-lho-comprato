@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useActionState, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -59,7 +59,7 @@ function FieldError({ message }: { message?: string }) {
     return null;
   }
 
-  return <p className="text-sm text-rose-600">{message}</p>;
+  return <p className="text-sm text-destructive">{message}</p>;
 }
 
 export function EntryForm({ categories }: EntryFormProps) {
@@ -95,7 +95,7 @@ export function EntryForm({ categories }: EntryFormProps) {
   }, [hasCategories]);
 
   return (
-    <Card className="mx-auto w-full max-w-2xl overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <CardTitle>Nuovo movimento</CardTitle>
         <CardDescription className="max-w-xl leading-6">
@@ -109,8 +109,8 @@ export function EntryForm({ categories }: EntryFormProps) {
             <div
               className={
                 state.success
-                  ? "rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-900"
-                  : "rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm leading-6 text-rose-900"
+                  ? "rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm leading-6 text-success"
+                  : "rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive"
               }
             >
               {state.message}
@@ -127,7 +127,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                 autoComplete="off"
                 aria-invalid={Boolean(state.errors?.title)}
               />
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-text">
                 Un nome veloce e chiaro ti aiuta a ritrovare il movimento in un attimo.
               </p>
               <FieldError message={state.errors?.title} />
@@ -154,20 +154,20 @@ export function EntryForm({ categories }: EntryFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-zinc-500">
+              <p className="text-xs text-muted-text">
                 Le categorie servono per capire dove stai schivando più spese.
               </p>
               <FieldError message={state.errors?.categoryId} />
             </div>
 
             <fieldset className="space-y-3">
-              <legend className="text-sm font-medium text-zinc-950">
+              <legend className="text-sm font-medium text-foreground">
                 Chi ha fatto la spesa?
               </legend>
               <div className="grid gap-3 sm:grid-cols-3">
                 <Label
                   htmlFor="person-marian"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
                 >
                   <input
                     id="person-marian"
@@ -175,35 +175,35 @@ export function EntryForm({ categories }: EntryFormProps) {
                     type="radio"
                     value="MARIAN"
                     defaultChecked
-                    className="h-4 w-4 accent-zinc-950"
+                    className="h-4 w-4 accent-accent"
                   />
                   <span>{PERSON_OWNERSHIP_LABELS.MARIAN}</span>
                 </Label>
 
                 <Label
                   htmlFor="person-martina"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
                 >
                   <input
                     id="person-martina"
                     name="person"
                     type="radio"
                     value="MARTINA"
-                    className="h-4 w-4 accent-zinc-950"
+                    className="h-4 w-4 accent-accent"
                   />
                   <span>{PERSON_OWNERSHIP_LABELS.MARTINA}</span>
                 </Label>
 
                 <Label
                   htmlFor="person-tutti"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-zinc-50"
+                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
                 >
                   <input
                     id="person-tutti"
                     name="person"
                     type="radio"
                     value="TUTTI"
-                    className="h-4 w-4 accent-zinc-950"
+                    className="h-4 w-4 accent-accent"
                   />
                   <span>{PERSON_OWNERSHIP_LABELS.TUTTI}</span>
                 </Label>
@@ -212,7 +212,7 @@ export function EntryForm({ categories }: EntryFormProps) {
             </fieldset>
           </div>
 
-          <div className="rounded-3xl border border-zinc-200 bg-zinc-50/70 p-4 sm:p-5">
+          <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="realCost">Quanto hai speso davvero</Label>
@@ -226,7 +226,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                   placeholder="2.00"
                   aria-invalid={Boolean(state.errors?.realCost)}
                 />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-muted-text">
                   Inserisci la spesa reale in euro.
                 </p>
                 <FieldError message={state.errors?.realCost} />
@@ -244,14 +244,14 @@ export function EntryForm({ categories }: EntryFormProps) {
                   placeholder="18.00"
                   aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
-                <p className="text-xs text-zinc-500">
+                <p className="text-xs text-muted-text">
                   Il valore alternativo che stai evitando.
                 </p>
                 <FieldError message={state.errors?.alternativeCost} />
               </div>
             </div>
 
-            <p className="mt-3 text-xs leading-5 text-zinc-500">
+            <p className="mt-3 text-xs leading-5 text-muted-text">
               Il risparmio finale viene calcolato dal server, così non devi fare conti a mano.
             </p>
           </div>
@@ -265,7 +265,7 @@ export function EntryForm({ categories }: EntryFormProps) {
               defaultValue={getTodayLocal()}
               aria-invalid={Boolean(state.errors?.date)}
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-text">
               Di solito basta la data di oggi, ma puoi correggerla in un secondo.
             </p>
             <FieldError message={state.errors?.date} />
@@ -279,13 +279,13 @@ export function EntryForm({ categories }: EntryFormProps) {
               placeholder="Pasta al tonno invece di delivery"
               className="min-h-28"
             />
-            <p className="text-xs text-zinc-500">
+            <p className="text-xs text-muted-text">
               Facoltativa: utile quando vuoi ricordarti il contesto.
             </p>
           </div>
         </CardContent>
 
-        <CardFooter className="flex-col gap-3 border-t border-zinc-200/70 bg-zinc-50/50 p-5 sm:flex-row sm:justify-end sm:p-6">
+        <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-5 sm:flex-row sm:justify-end sm:p-6">
           <Button
             type="submit"
             className="h-11 w-full px-5 sm:w-auto"
@@ -298,3 +298,4 @@ export function EntryForm({ categories }: EntryFormProps) {
     </Card>
   );
 }
+

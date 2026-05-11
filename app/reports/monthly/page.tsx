@@ -1,4 +1,4 @@
-export const dynamic = "force-dynamic";
+﻿export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
@@ -65,48 +65,48 @@ export default async function MonthlyReportPage({
 
           <section className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
                 Serie
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-muted-text dark:text-muted-text">
                 Quanto siete stati costanti in questo mese.
               </p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              <Card className="border-zinc-200/80 shadow-sm dark:border-zinc-800">
+              <Card className="border-border shadow-sm dark:border-border">
                 <CardHeader className="space-y-2 p-5 pb-3">
                   <div className="flex items-center justify-between gap-3">
-                    <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    <CardTitle className="text-sm font-medium text-muted-text dark:text-muted-text">
                       Miglior streak
                     </CardTitle>
                     <Badge variant="secondary">Massimo</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-5 pt-0">
-                  <p className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  <p className="text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">
                     {report.streakSummary.bestStreak}
                   </p>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm text-muted-text dark:text-muted-text">
                     Giorni consecutivi con risparmio.
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-zinc-200/80 shadow-sm dark:border-zinc-800">
+              <Card className="border-border shadow-sm dark:border-border">
                 <CardHeader className="space-y-2 p-5 pb-3">
                   <div className="flex items-center justify-between gap-3">
-                    <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    <CardTitle className="text-sm font-medium text-muted-text dark:text-muted-text">
                       Streak attuale
                     </CardTitle>
                     <Badge variant="secondary">Ora</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-5 pt-0">
-                  <p className="text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50">
+                  <p className="text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">
                     {report.streakSummary.currentStreak}
                   </p>
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm text-muted-text dark:text-muted-text">
                     La serie in corso nel mese selezionato.
                   </p>
                 </CardContent>
@@ -116,42 +116,42 @@ export default async function MonthlyReportPage({
 
           <section className="space-y-4">
             <div className="space-y-1">
-              <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
                 Abitudini
               </h2>
-              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm text-muted-text dark:text-muted-text">
                 Quante abitudini sono state portate a termine o saltate.
               </p>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
-              <Card className="border-zinc-200/80 shadow-sm dark:border-zinc-800">
+              <Card className="border-border shadow-sm dark:border-border">
                 <CardHeader className="space-y-2 p-5 pb-3">
                   <div className="flex items-center justify-between gap-3">
-                    <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    <CardTitle className="text-sm font-medium text-muted-text dark:text-muted-text">
                       Completate
                     </CardTitle>
                     <Badge variant="secondary">{report.habitsSummary.completed}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-5 pt-0">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm text-muted-text dark:text-muted-text">
                     Occorrenze segnate come spese o evitate.
                   </p>
                 </CardContent>
               </Card>
 
-              <Card className="border-zinc-200/80 shadow-sm dark:border-zinc-800">
+              <Card className="border-border shadow-sm dark:border-border">
                 <CardHeader className="space-y-2 p-5 pb-3">
                   <div className="flex items-center justify-between gap-3">
-                    <CardTitle className="text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    <CardTitle className="text-sm font-medium text-muted-text dark:text-muted-text">
                       Saltate
                     </CardTitle>
                     <Badge variant="secondary">{report.habitsSummary.skipped}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent className="p-5 pt-0">
-                  <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                  <p className="text-sm text-muted-text dark:text-muted-text">
                     Occorrenze segnate come saltate.
                   </p>
                 </CardContent>
@@ -162,13 +162,13 @@ export default async function MonthlyReportPage({
           <MonthlyRecapCard recapText={report.recapText} />
         </div>
       ) : (
-        <Card className="border-zinc-200/80 shadow-sm dark:border-zinc-800">
+        <Card className="border-border shadow-sm dark:border-border">
           <CardContent className="space-y-4 p-6">
             <div className="space-y-2">
-              <h2 className="text-lg font-semibold text-zinc-950 dark:text-zinc-50">
+              <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
                 Nessun report disponibile ancora.
               </h2>
-              <p className="text-sm leading-6 text-zinc-500 dark:text-zinc-400">
+              <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
                 Appena ci saranno movimenti nel mese selezionato, il riepilogo
                 comparirà qui.
               </p>
@@ -183,3 +183,4 @@ export default async function MonthlyReportPage({
     </main>
   );
 }
+

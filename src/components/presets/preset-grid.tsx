@@ -1,4 +1,4 @@
-import { PresetCard } from "@/src/components/presets/preset-card";
+﻿import { PresetCard } from "@/src/components/presets/preset-card";
 
 type PresetGridProps = {
   presets: Array<{
@@ -18,7 +18,7 @@ type PresetGridProps = {
 export function PresetGrid({ presets }: PresetGridProps) {
   if (presets.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50/60 px-4 py-5 text-sm leading-6 text-zinc-600">
+      <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-5 text-sm leading-6 text-muted-text">
         Ancora nessun preset. Salva una spesa ricorrente per riusarla in un tocco.
       </p>
     );
@@ -32,3 +32,4 @@ export function PresetGrid({ presets }: PresetGridProps) {
     </div>
   );
 }
+

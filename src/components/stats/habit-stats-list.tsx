@@ -26,16 +26,16 @@ function formatPercent(value: number): string {
 
 export function HabitStatsList({ habits }: HabitStatsListProps) {
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
+    <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
         <CardTitle>Performance abitudini</CardTitle>
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-muted-text">
           Qui vedi come stanno andando le abitudini ricorrenti.
         </p>
       </CardHeader>
       <CardContent className="p-5 sm:p-6">
         {habits.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-200 bg-zinc-50 p-5 text-sm text-zinc-500">
+          <div className="rounded-2xl border border-dashed border-border bg-surface-muted p-5 text-sm text-muted-text">
             Nessuna abitudine ancora tracciata.
           </div>
         ) : (
@@ -43,19 +43,19 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
             {habits.map((habit) => (
               <div
                 key={habit.habitId}
-                className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-4"
+                className="rounded-2xl border border-border bg-surface-muted p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
-                    <p className="font-semibold text-zinc-950">{habit.habitName}</p>
-                    <p className="text-sm text-zinc-500">{habit.categoryName}</p>
+                    <p className="font-semibold text-foreground">{habit.habitName}</p>
+                    <p className="text-sm text-muted-text">{habit.categoryName}</p>
                   </div>
 
                   <div className="text-left sm:text-right">
-                    <p className="text-lg font-semibold text-emerald-700">
+                    <p className="text-lg font-semibold text-success">
                       {formatMoney(habit.totalSaved)}
                     </p>
-                    <p className="text-xs text-zinc-500">Risparmiati</p>
+                    <p className="text-xs text-muted-text">Risparmiati</p>
                   </div>
                 </div>
 
@@ -67,13 +67,13 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
                 </div>
 
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <p className="text-sm text-zinc-600">
+                  <p className="text-sm text-muted-text">
                     Totale occorrenze:{" "}
-                    <span className="font-semibold text-zinc-950">
+                    <span className="font-semibold text-foreground">
                       {habit.totalOccurrences}
                     </span>
                   </p>
-                  <Badge className="w-fit bg-zinc-950 text-white hover:bg-zinc-950">
+                  <Badge className="w-fit bg-accent text-background hover:bg-accent">
                     Disciplina {formatPercent(habit.disciplineRatePercent)}
                   </Badge>
                 </div>
@@ -85,3 +85,4 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
     </Card>
   );
 }
+

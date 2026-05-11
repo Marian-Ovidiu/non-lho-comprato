@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type MonthlyRecapCardProps = {
   recapText?: string | null;
@@ -6,17 +6,17 @@ type MonthlyRecapCardProps = {
 
 export function MonthlyRecapCard({ recapText }: MonthlyRecapCardProps) {
   return (
-    <Card className="border-zinc-200/80 shadow-sm dark:border-zinc-800">
+    <Card className="border-border shadow-sm dark:border-border">
       <CardHeader className="space-y-1 p-5 pb-3">
-        <CardTitle className="text-base text-zinc-950 dark:text-zinc-50">
+        <CardTitle className="text-base text-foreground dark:text-foreground">
           Recap mensile
         </CardTitle>
-        <p className="text-sm text-zinc-500 dark:text-zinc-400">
+        <p className="text-sm text-muted-text dark:text-muted-text">
           Un testo pronto da leggere o condividere.
         </p>
       </CardHeader>
       <CardContent className="p-5 pt-0">
-        <p className="text-sm leading-7 text-zinc-700 dark:text-zinc-300">
+        <p className="text-sm leading-7 text-foreground dark:text-muted-text">
           {recapText?.trim()
             ? recapText
             : "Nessun recap disponibile per questo mese."}
@@ -25,3 +25,4 @@ export function MonthlyRecapCard({ recapText }: MonthlyRecapCardProps) {
     </Card>
   );
 }
+

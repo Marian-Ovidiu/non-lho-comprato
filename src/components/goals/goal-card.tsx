@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -87,8 +87,8 @@ export function GoalCard({ goal }: GoalCardProps) {
     <Card
       className={
         goal.isCompleted
-          ? "border-emerald-200 bg-emerald-50/40 shadow-sm"
-          : "border-zinc-200/80 shadow-sm"
+          ? "border-success/20 bg-success/10 shadow-sm"
+          : "border-border shadow-sm"
       }
     >
       <CardHeader className="gap-3 p-5 pb-0 sm:p-6">
@@ -100,7 +100,7 @@ export function GoalCard({ goal }: GoalCardProps) {
                 {goal.title}
               </CardTitle>
               {goal.isCompleted ? (
-                <Badge className="bg-emerald-600 text-white">Completato</Badge>
+                <Badge className="bg-success text-background">Completato</Badge>
               ) : null}
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -111,8 +111,8 @@ export function GoalCard({ goal }: GoalCardProps) {
             </div>
           </div>
           <div className="text-left sm:text-right">
-            <p className="text-sm text-zinc-500">Obiettivo</p>
-            <p className="text-lg font-semibold text-zinc-950">
+            <p className="text-sm text-muted-text">Obiettivo</p>
+            <p className="text-lg font-semibold text-foreground">
               {formatMoney(goal.targetAmount)}
             </p>
           </div>
@@ -122,17 +122,17 @@ export function GoalCard({ goal }: GoalCardProps) {
       <CardContent className="space-y-4 p-5 sm:p-6">
         <div className="space-y-2">
           <div className="flex items-center justify-between gap-3 text-sm">
-            <span className="text-zinc-500">Progresso</span>
-            <span className="font-medium text-zinc-950">
+            <span className="text-muted-text">Progresso</span>
+            <span className="font-medium text-foreground">
               {goal.progressPercent}%
             </span>
           </div>
-          <div className="h-3 overflow-hidden rounded-full bg-zinc-100">
+          <div className="h-3 overflow-hidden rounded-full bg-surface-muted">
             <div
               className={
                 goal.isCompleted
-                  ? "h-full rounded-full bg-emerald-600"
-                  : "h-full rounded-full bg-emerald-500"
+                  ? "h-full rounded-full bg-success"
+                  : "h-full rounded-full bg-success"
               }
               style={{ width: `${progressWidth}%` }}
             />
@@ -140,32 +140,32 @@ export function GoalCard({ goal }: GoalCardProps) {
         </div>
 
         <div className="grid gap-3 text-sm sm:grid-cols-3">
-          <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-zinc-100">
-            <p className="text-zinc-500">Risparmiati</p>
-            <p className="font-medium text-zinc-950">
+          <div className="rounded-2xl bg-surface/70 px-3 py-2 ring-1 ring-border">
+            <p className="text-muted-text">Risparmiati</p>
+            <p className="font-medium text-foreground">
               {formatMoney(goal.progressAmount)}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-zinc-100">
-            <p className="text-zinc-500">Obiettivo</p>
-            <p className="font-medium text-zinc-950">
+          <div className="rounded-2xl bg-surface/70 px-3 py-2 ring-1 ring-border">
+            <p className="text-muted-text">Obiettivo</p>
+            <p className="font-medium text-foreground">
               {formatMoney(goal.targetAmount)}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/70 px-3 py-2 ring-1 ring-zinc-100">
-            <p className="text-zinc-500">Mancano</p>
-            <p className="font-medium text-zinc-950">
+          <div className="rounded-2xl bg-surface/70 px-3 py-2 ring-1 ring-border">
+            <p className="text-muted-text">Mancano</p>
+            <p className="font-medium text-foreground">
               {formatMoney(goal.remainingAmount)}
             </p>
           </div>
         </div>
 
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-muted-text">
           Creato il {formatDate(goal.createdAt)}
         </p>
       </CardContent>
 
-      <CardFooter className="flex-col gap-2 border-t border-zinc-200/70 bg-zinc-50/50 p-5 sm:flex-row sm:justify-end sm:p-6">
+      <CardFooter className="flex-col gap-2 border-t border-border bg-surface-muted/50 p-5 sm:flex-row sm:justify-end sm:p-6">
         <Button
           type="button"
           variant="outline"
@@ -190,3 +190,5 @@ export function GoalCard({ goal }: GoalCardProps) {
     </Card>
   );
 }
+
+
