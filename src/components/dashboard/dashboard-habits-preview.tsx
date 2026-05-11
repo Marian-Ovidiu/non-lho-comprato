@@ -4,7 +4,6 @@ import { ArrowRight, SunMedium } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/src/components/shared/empty-state";
 import { formatMoney } from "@/src/lib/formatters";
 
 type DashboardHabitsPreviewProps = {
@@ -27,79 +26,81 @@ export function DashboardHabitsPreview({
   const pendingOccurrences = occurrences.filter(
     (occurrence) => occurrence.status === "pending",
   );
-
-  if (pendingOccurrences.length === 0) {
-    return (
-      <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
-        <CardContent className="p-5 sm:p-6">
-          <EmptyState
-            title="Nessuna abitudine in attesa"
-            description="Oggi non c'è nulla da segnare. Se vuoi vedere o gestire le ricorrenze, passa dalla pagina Abitudini."
-            note="Da qui puoi comunque raggiungere il controllo completo delle abitudini."
-            icon={<SunMedium className="size-5" aria-hidden="true" />}
-            action={
-              <Button asChild className="w-full sm:w-auto">
-                <Link href="/habits">Vai alle abitudini</Link>
-              </Button>
-            }
-          />
-        </CardContent>
-      </Card>
-    );
-  }
-
   const visibleOccurrences = pendingOccurrences.slice(0, 3);
   const remainingCount = pendingOccurrences.length - visibleOccurrences.length;
 
   return (
-    <Card className="overflow-hidden border-zinc-200/80 shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
+    <Card className="overflow-hidden border-zinc-200/80 shadow-sm dark:border-zinc-800">
+      <CardHeader className="space-y-2 p-4 pb-0 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <CardTitle>Abitudini di oggi</CardTitle>
-            <p className="text-sm text-zinc-500">
-              Le abitudini ancora da decidere oggi.
+            <CardTitle className="text-base">Abitudini di oggi</CardTitle>
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">
+              Le abitudini ancora da controllare oggi.
             </p>
           </div>
           <Badge variant="secondary">{pendingOccurrences.length} in attesa</Badge>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 p-5 sm:p-6">
-        <div className="space-y-3">
-          {visibleOccurrences.map((occurrence) => (
-            <div
-              key={occurrence.id}
-              className="flex items-center justify-between gap-3 rounded-2xl bg-zinc-50 px-4 py-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium text-zinc-950">
-                  {occurrence.habit.name}
-                </p>
-                <p className="text-sm text-zinc-500">
-                  {occurrence.habit.category.name}
-                </p>
-              </div>
-
-              <p className="shrink-0 text-sm font-semibold text-zinc-950">
-                {formatMoney(occurrence.habit.amount)}
+      <CardContent className="space-y-4 p-4 sm:p-5">
+        {pendingOccurrences.length === 0 ? (
+          <>
+            <div className="flex items-center gap-3 rounded-2xl bg-zinc-50 px-4 py-3 dark:bg-zinc-900">
+              <SunMedium
+                className="size-5 shrink-0 text-amber-500"
+                aria-hidden="true"
+              />
+              <p className="text-sm text-zinc-600 dark:text-zinc-300">
+                Nessun controllo urgente da fare adesso.
               </p>
             </div>
-          ))}
-        </div>
 
-        {remainingCount > 0 ? (
-          <p className="text-sm text-zinc-500">
-            E altre {remainingCount} abitudini da controllare.
-          </p>
-        ) : null}
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link href="/habits" className="inline-flex items-center gap-2">
+                Vedi tutte
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          </>
+        ) : (
+          <>
+            <div className="space-y-3">
+              {visibleOccurrences.map((occurrence) => (
+                <div
+                  key={occurrence.id}
+                  className="flex items-center justify-between gap-3 rounded-xl bg-zinc-50 px-3 py-2.5 dark:bg-zinc-900"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-zinc-950 dark:text-zinc-50">
+                      {occurrence.habit.name}
+                    </p>
+                    <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                      {occurrence.habit.category.name}
+                    </p>
+                  </div>
 
-        <Button asChild variant="outline" className="w-full sm:w-auto">
-          <Link href="/habits" className="inline-flex items-center gap-2">
-            Apri abitudini
-            <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
-        </Button>
+                  <p className="shrink-0 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
+                    {formatMoney(occurrence.habit.amount)}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {remainingCount > 0 ? (
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                E altre {remainingCount} abitudini da controllare.
+              </p>
+            ) : null}
+
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link href="/habits" className="inline-flex items-center gap-2">
+                Vedi tutte
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   );

@@ -43,7 +43,7 @@ const cards: OverviewCard[] = [
   {
     key: "entriesCount",
     label: "Movimenti",
-    description: "Tutti i movimenti registrati.",
+    description: "Movimenti registrati.",
     variant: "default",
   },
   {

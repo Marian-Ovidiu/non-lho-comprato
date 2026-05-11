@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
+import { getEntryOwnershipLabel } from "@/src/lib/person-labels";
 
 type CategoryHighlight = {
   name: string;
@@ -91,11 +92,7 @@ export function MonthlyHighlightCard({
               </p>
               {biggestSaving ? (
                 <Badge variant="secondary" className="bg-white/80">
-                  {biggestSaving.person === "MARIAN"
-                    ? "Marian"
-                    : biggestSaving.person === "MARTINA"
-                      ? "Martina"
-                      : "Condivise"}
+                  {getEntryOwnershipLabel(biggestSaving.person)}
                 </Badge>
               ) : null}
             </div>

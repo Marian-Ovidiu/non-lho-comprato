@@ -32,7 +32,7 @@ function HudCard({
           : "overflow-hidden border-zinc-200/80 shadow-sm"
       }
     >
-      <CardContent className="space-y-3 p-4 sm:p-5">
+      <CardContent className="space-y-2 p-3 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <p
@@ -47,8 +47,8 @@ function HudCard({
             <p
               className={
                 tone === "emerald"
-                  ? "text-2xl font-semibold tracking-tight text-emerald-700 sm:text-3xl"
-                  : "text-2xl font-semibold tracking-tight text-zinc-950 sm:text-3xl"
+                  ? "text-xl font-semibold tracking-tight text-emerald-700 sm:text-2xl"
+                  : "text-xl font-semibold tracking-tight text-zinc-950 sm:text-2xl"
               }
             >
               {value}
@@ -58,19 +58,19 @@ function HudCard({
           <div
             className={
               tone === "emerald"
-                ? "flex size-10 items-center justify-center rounded-2xl bg-emerald-600 text-white"
-                : "flex size-10 items-center justify-center rounded-2xl bg-zinc-950 text-white"
+                ? "flex size-9 items-center justify-center rounded-2xl bg-emerald-600 text-white"
+                : "flex size-9 items-center justify-center rounded-2xl bg-zinc-950 text-white"
             }
           >
-            <Icon className="size-5" aria-hidden="true" />
+            <Icon className="size-4.5" aria-hidden="true" />
           </div>
         </div>
 
         <p
           className={
             tone === "emerald"
-              ? "text-sm leading-6 text-emerald-700/90"
-              : "text-sm leading-6 text-zinc-500"
+              ? "text-xs leading-5 text-emerald-700/90"
+              : "text-xs leading-5 text-zinc-500"
           }
         >
           {description}

@@ -11,6 +11,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import { cn } from "@/lib/utils";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
+import { PERSON_OWNERSHIP_LABELS, getPresetPersonLabel } from "@/src/lib/person-labels";
 
 type PresetCardData = {
   id: string;
@@ -53,19 +54,7 @@ function toNumber(value: unknown): number {
 }
 
 function getPersonLabel(person: PersonFilterValue | null) {
-  if (person === "MARIAN") {
-    return "Marian";
-  }
-
-  if (person === "MARTINA") {
-    return "Martina";
-  }
-
-  if (person === "TUTTI") {
-    return "Condivisa";
-  }
-
-  return "Da scegliere al momento";
+  return getPresetPersonLabel(person);
 }
 
 export function PresetCard({
@@ -205,7 +194,7 @@ export function PresetCard({
               onClick={() => handleCreate("MARIAN")}
               disabled={isPending}
             >
-              Marian
+              {PERSON_OWNERSHIP_LABELS.MARIAN}
             </Button>
             <Button
               type="button"
@@ -214,7 +203,7 @@ export function PresetCard({
               onClick={() => handleCreate("MARTINA")}
               disabled={isPending}
             >
-              Martina
+              {PERSON_OWNERSHIP_LABELS.MARTINA}
             </Button>
             <Button
               type="button"
@@ -223,7 +212,7 @@ export function PresetCard({
               onClick={() => handleCreate("TUTTI")}
               disabled={isPending}
             >
-              Condivisa
+              {PERSON_OWNERSHIP_LABELS.TUTTI}
             </Button>
           </div>
         )}

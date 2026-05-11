@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
+import { getGoalScopeLabel } from "@/src/lib/person-labels";
 
 type GoalCardProps = {
   goal: {
@@ -32,19 +33,7 @@ type GoalCardProps = {
 };
 
 function getPersonLabel(person: GoalCardProps["goal"]["person"]) {
-  if (person === "MARIAN") {
-    return "Marian";
-  }
-
-  if (person === "MARTINA") {
-    return "Martina";
-  }
-
-  if (person === "TUTTI") {
-    return "Condivise";
-  }
-
-  return "Globale";
+  return getGoalScopeLabel(person);
 }
 
 function getProgressWidth(progressPercent: number) {

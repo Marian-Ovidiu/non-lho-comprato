@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { PERSON_OWNERSHIP_LABELS } from "@/src/lib/person-labels";
 
 type CategoryOption = {
   id: string;
@@ -198,7 +199,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
                     defaultChecked={entry.person === "MARIAN"}
                     className="h-4 w-4 accent-zinc-950"
                   />
-                  <span>Marian</span>
+                  <span>{PERSON_OWNERSHIP_LABELS.MARIAN}</span>
                 </Label>
 
                 <Label
@@ -213,7 +214,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
                     defaultChecked={entry.person === "MARTINA"}
                     className="h-4 w-4 accent-zinc-950"
                   />
-                  <span>Martina</span>
+                  <span>{PERSON_OWNERSHIP_LABELS.MARTINA}</span>
                 </Label>
 
                 <Label
@@ -228,7 +229,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
                     defaultChecked={entry.person === "TUTTI"}
                     className="h-4 w-4 accent-zinc-950"
                   />
-                  <span>Condivisa</span>
+                  <span>{PERSON_OWNERSHIP_LABELS.TUTTI}</span>
                 </Label>
               </div>
               <FieldError message={state.errors?.person} />

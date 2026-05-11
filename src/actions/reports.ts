@@ -4,6 +4,7 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { formatMoney } from "@/src/lib/formatters";
 import { prisma } from "@/src/lib/prisma";
+import { getPersonFilterLabel } from "@/src/lib/person-labels";
 
 type DecimalLike = {
   toString?: () => string;
@@ -317,7 +318,7 @@ function buildPersonSplit(
   const split = [
     {
       key: "MARIAN" as const,
-      label: "Marian",
+      label: getPersonFilterLabel("MARIAN"),
       totalSaved: totals.MARIAN.totalSaved,
       entriesCount: totals.MARIAN.entriesCount,
       sharePercent:
@@ -327,7 +328,7 @@ function buildPersonSplit(
     },
     {
       key: "MARTINA" as const,
-      label: "Martina",
+      label: getPersonFilterLabel("MARTINA"),
       totalSaved: totals.MARTINA.totalSaved,
       entriesCount: totals.MARTINA.entriesCount,
       sharePercent:
@@ -337,7 +338,7 @@ function buildPersonSplit(
     },
     {
       key: "TUTTI" as const,
-      label: "Condivise",
+      label: getPersonFilterLabel("TUTTI"),
       totalSaved: totals.TUTTI.totalSaved,
       entriesCount: totals.TUTTI.entriesCount,
       sharePercent:
@@ -757,7 +758,7 @@ export async function getMonthlyReport(
 
     const recapParts = [
       `A ${monthLower} avete risparmiato ${formatMoney(totalSaved)}.`,
-      `Marian ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, Martina ${formatMoney(personTotals.MARTINA.totalSaved)}, Condivise ${formatMoney(personTotals.TUTTI.totalSaved)}.`,
+      `${getPersonFilterLabel("MARIAN")} ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, ${getPersonFilterLabel("MARTINA")} ${formatMoney(personTotals.MARTINA.totalSaved)}, ${getPersonFilterLabel("TUTTI")} ${formatMoney(personTotals.TUTTI.totalSaved)}.`,
       bestCategory
         ? `La categoria migliore e stata ${bestCategory.categoryName}.`
         : "Nessuna categoria si e distinta questo mese.",

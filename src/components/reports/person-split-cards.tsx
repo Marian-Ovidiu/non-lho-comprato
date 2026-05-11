@@ -1,6 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
+import { getPersonFilterLabel } from "@/src/lib/person-labels";
 
 type PersonSummary = {
   totalSaved: number;
@@ -71,9 +72,21 @@ export function PersonSplitCards({
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <PersonCard label="Marian" summary={marian} toneIndex={0} />
-        <PersonCard label="Martina" summary={martina} toneIndex={1} />
-        <PersonCard label="Condivise" summary={condivise} toneIndex={2} />
+        <PersonCard
+          label={getPersonFilterLabel("MARIAN")}
+          summary={marian}
+          toneIndex={0}
+        />
+        <PersonCard
+          label={getPersonFilterLabel("MARTINA")}
+          summary={martina}
+          toneIndex={1}
+        />
+        <PersonCard
+          label={getPersonFilterLabel("TUTTI")}
+          summary={condivise}
+          toneIndex={2}
+        />
       </div>
     </section>
   );

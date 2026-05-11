@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
+import { getEntryOwnershipLabel } from "@/src/lib/person-labels";
 
 type EntryCardProps = {
   entry: {
@@ -50,15 +51,7 @@ function getSourceLabel(source: string) {
 }
 
 function getPersonLabel(person: string | null) {
-  if (person === "MARTINA") {
-    return "Martina";
-  }
-
-  if (person === "TUTTI") {
-    return "Condivisa";
-  }
-
-  return "Marian";
+  return getEntryOwnershipLabel(person as "MARIAN" | "MARTINA" | "TUTTI" | null);
 }
 
 export function EntryCard({ entry }: EntryCardProps) {

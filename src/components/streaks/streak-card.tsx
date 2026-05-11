@@ -5,6 +5,7 @@ import { Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { getPersonFilterLabel } from "@/src/lib/person-labels";
 
 export type StreakCardProps = {
   title: string;
@@ -14,19 +15,7 @@ export type StreakCardProps = {
 };
 
 function getPersonLabel(person?: StreakCardProps["person"]) {
-  if (person === "MARIAN") {
-    return "Marian";
-  }
-
-  if (person === "MARTINA") {
-    return "Martina";
-  }
-
-  if (person === "TUTTI") {
-    return "Condivise";
-  }
-
-  return "Tutti i movimenti";
+  return getPersonFilterLabel(person);
 }
 
 function getMicrocopy(currentStreak: number): string {
