@@ -50,17 +50,20 @@ export function DashboardActions() {
               key={action.href}
               asChild
               variant="outline"
-              className="h-auto justify-start rounded-3xl border-zinc-200 bg-white p-4 text-left shadow-sm"
+              className="h-auto w-full min-w-0 justify-start overflow-hidden rounded-3xl border-zinc-200 bg-white p-4 text-left shadow-sm"
             >
-              <Link href={action.href} className="flex w-full items-start gap-3">
+              <Link
+                href={action.href}
+                className="flex w-full min-w-0 items-start gap-3"
+              >
                 <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-zinc-950 text-white">
                   <Icon className="size-5" aria-hidden="true" />
                 </div>
-                <div className="min-w-0 space-y-1">
-                  <p className="text-sm font-semibold text-zinc-950">
+                <div className="min-w-0 flex-1 space-y-1">
+                  <p className="break-words text-sm font-semibold text-zinc-950">
                     {action.label}
                   </p>
-                  <p className="text-sm font-normal leading-5 text-zinc-500">
+                  <p className="break-words text-sm font-normal leading-5 text-zinc-500">
                     {action.description}
                   </p>
                 </div>
