@@ -72,7 +72,7 @@ function NavButton({
         asChild
         variant="default"
         size="icon"
-        className="size-12 -mt-4 rounded-full border border-border/70 bg-primary text-primary-foreground shadow-[0_18px_40px_rgba(0,0,0,0.2)] transition-all duration-150 ease-out hover:-translate-y-px hover:bg-primary/90 active:translate-y-0 active:scale-[0.98]"
+        className="size-12 -mt-4 rounded-full border border-premium-accent/30 bg-primary text-primary-foreground shadow-lg transition-all duration-150 ease-out hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:scale-[0.98]"
       >
         <Link href={href} aria-label={label}>
           <Plus className="size-5" aria-hidden="true" />
@@ -91,7 +91,7 @@ function NavButton({
           ? "h-12 flex-col gap-1 rounded-2xl px-1 text-[10px] font-medium transition-all duration-150 ease-out"
           : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4",
         active
-          ? "bg-surface-muted/90 text-foreground ring-1 ring-border/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:bg-surface-muted/90"
+          ? "bg-primary/12 text-primary ring-1 ring-primary/20 shadow-sm hover:bg-primary/12"
           : "text-muted-text hover:bg-surface-muted/60 hover:text-foreground",
       )}
     >
