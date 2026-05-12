@@ -40,11 +40,10 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   const isCompletelyEmpty =
     overview.entriesCount === 0 && habitStats.length === 0;
 
-  if (isCompletelyEmpty) {
+      if (isCompletelyEmpty) {
     return (
       <main className="space-y-5 sm:space-y-6">
         <PageHeader
-          eyebrow="Statistiche"
           title="Statistiche"
           context="Panoramica di risparmi, movimenti e abitudini."
           action={
@@ -80,7 +79,6 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="Statistiche"
         title="Statistiche"
         context="Panoramica di risparmi, movimenti e abitudini."
         action={

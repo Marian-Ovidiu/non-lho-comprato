@@ -50,7 +50,6 @@ export default async function GoalsPage() {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="Obiettivi"
         title="Obiettivi"
         context={`${activeGoals.length} attivi • ${inactiveGoals.length} in pausa`}
         action={

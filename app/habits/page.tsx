@@ -39,7 +39,6 @@ export default async function HabitsPage() {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="Ricorrenti"
         title="Abitudini"
         context={`${todayOccurrences.length} attive oggi`}
         action={

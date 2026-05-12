@@ -14,7 +14,6 @@ import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { AuthControls } from "@/src/components/auth/auth-controls";
 import { InstallButton } from "@/src/components/pwa/install-button";
 
 export type AppShellWorkspace = {
@@ -110,6 +109,45 @@ function NavButton({
   );
 }
 
+function AccountButton({
+  isAuthenticated,
+  userLabel,
+}: AppShellAuth) {
+  const initials = userLabel
+    ? userLabel
+        .split(" ")
+        .map((part) => part.trim().charAt(0))
+        .filter(Boolean)
+        .slice(0, 2)
+        .join("")
+        .toUpperCase()
+    : "M";
+
+  if (!isAuthenticated) {
+    return (
+      <Button asChild variant="outline" size="sm" className="h-9 rounded-full px-3">
+        <Link href="/login">Accedi</Link>
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      asChild
+      variant="ghost"
+      size="sm"
+      className="h-9 gap-2 rounded-full border border-border/70 bg-background/60 px-3 text-foreground hover:bg-surface-muted/70"
+    >
+      <Link href="/more" aria-label="Apri profilo">
+        <span className="inline-flex size-6 items-center justify-center rounded-full border border-border bg-surface text-[10px] font-semibold text-foreground">
+          {initials}
+        </span>
+        <span className="hidden sm:inline">Profilo</span>
+      </Link>
+    </Button>
+  );
+}
+
 export function AppShell({
   children,
   workspace,
@@ -123,33 +161,30 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border bg-surface/86 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-        <div className="mx-auto w-full max-w-5xl px-4 py-2.5 sm:px-6 lg:px-8 lg:py-3">
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/84 backdrop-blur supports-[backdrop-filter]:bg-surface/78">
+        <div className="mx-auto w-full max-w-5xl px-4 py-2 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 space-y-1">
-              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
-                Non l&apos;ho comprato
-              </p>
+            <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text">
                 <span className="rounded-full border border-border bg-background/60 px-3 py-1 font-medium text-foreground">
                   {workspace.name}
                 </span>
                 <span className="hidden sm:inline">
-                  {workspace.isShared ? "Workspace condiviso" : "Workspace privato"}
+                  {workspace.isShared ? "Condiviso" : "Privato"}
                 </span>
               </div>
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
-              <AuthControls
+              <InstallButton compact />
+              <AccountButton
                 isAuthenticated={auth.isAuthenticated}
                 userLabel={auth.userLabel}
               />
-              <InstallButton compact />
             </div>
           </div>
 
-          <nav aria-label="Navigazione desktop" className="hidden gap-2 md:flex">
+          <nav aria-label="Navigazione desktop" className="mt-2 hidden gap-2 md:flex">
             {desktopNavItems.map((item) => (
               <NavButton
                 key={item.href}

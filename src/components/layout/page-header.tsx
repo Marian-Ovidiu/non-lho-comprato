@@ -1,10 +1,13 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
+import { ChevronLeft } from "lucide-react";
 
 type PageHeaderProps = {
   eyebrow?: string;
   title: string;
   context?: string;
   action?: ReactNode;
+  backHref?: string;
   chips?: Array<{
     label: string;
     tone?: "default" | "success" | "premium";
@@ -16,6 +19,7 @@ export function PageHeader({
   title,
   context,
   action,
+  backHref,
   chips,
 }: PageHeaderProps) {
   return (
@@ -28,9 +32,19 @@ export function PageHeader({
                 {eyebrow}
               </p>
             ) : null}
-            <h1 className="text-[1.3rem] font-semibold tracking-tight text-foreground sm:text-[1.5rem]">
-              {title}
-            </h1>
+            {backHref ? (
+              <Link
+                href={backHref}
+                className="inline-flex items-center gap-1.5 text-[1.3rem] font-semibold tracking-tight text-foreground transition-colors hover:text-foreground/90 sm:text-[1.5rem]"
+              >
+                <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
+                <span>{title}</span>
+              </Link>
+            ) : (
+              <h1 className="text-[1.3rem] font-semibold tracking-tight text-foreground sm:text-[1.5rem]">
+                {title}
+              </h1>
+            )}
             {context ? (
               <p className="max-w-2xl text-sm leading-6 text-muted-text">
                 {context}

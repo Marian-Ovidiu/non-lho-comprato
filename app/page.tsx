@@ -124,7 +124,6 @@ export default async function Home() {
       />
 
       <PageHeader
-        eyebrow="Home"
         title={getGreeting()}
         context={`Hai tenuto ${formatEuro(todaySummary.totalSavedToday)} oggi`}
         action={

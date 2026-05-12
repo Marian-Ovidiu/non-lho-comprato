@@ -20,9 +20,8 @@ export default async function NewEntryPage() {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="Aggiungi"
+        backHref="/entries"
         title="Nuovo movimento"
-        context="Registra quello che hai speso davvero e quello che avresti speso nell'alternativa."
       />
 
       <EntryForm categories={categories} />

@@ -12,7 +12,6 @@ export default async function PresetsPage() {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="Strumenti"
         title="Azioni rapide"
         context="Salva modelli ricorrenti per creare movimenti in un tocco."
         chips={[

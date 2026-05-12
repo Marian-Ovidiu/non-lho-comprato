@@ -24,14 +24,9 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
     return (
       <main className="space-y-5 sm:space-y-6">
         <PageHeader
-          eyebrow="Movimenti"
+          backHref="/entries"
           title="Movimento non trovato"
           context="Non riesco a trovare il movimento richiesto."
-          action={
-            <Button asChild className="h-10 rounded-2xl px-4">
-              <Link href="/entries">Torna ai movimenti</Link>
-            </Button>
-          }
         />
 
         <Card className="border-border shadow-sm">
@@ -67,14 +62,8 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="Movimenti"
+        backHref="/entries"
         title="Modifica movimento"
-        context="Aggiorna i dettagli senza perdere il collegamento ai dati storici."
-        action={
-          <Button asChild variant="outline" className="h-10 rounded-2xl px-4">
-            <Link href="/entries">Torna ai movimenti</Link>
-          </Button>
-        }
       />
 
       <EntryEditForm entry={entry} categories={resolvedCategories} />

@@ -35,7 +35,6 @@ export default async function MonthlyReportPage({
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        eyebrow="Report"
         title="Report"
         context="Riepilogo del mese selezionato."
         action={<MonthSelector months={months} selectedMonth={selectedMonth} compact />}
