@@ -20,15 +20,15 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <section className="rounded-3xl border border-border/70 bg-surface/70 p-4 shadow-sm sm:p-5">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0 space-y-1.5">
+      <div className="flex flex-col gap-2.5">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 space-y-1">
             {eyebrow ? (
               <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
                 {eyebrow}
               </p>
             ) : null}
-            <h1 className="text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
+            <h1 className="text-[1.3rem] font-semibold tracking-tight text-foreground sm:text-[1.5rem]">
               {title}
             </h1>
             {context ? (
@@ -42,7 +42,7 @@ export function PageHeader({
         </div>
 
         {chips && chips.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {chips.map((chip) => (
               <span
                 key={chip.label}

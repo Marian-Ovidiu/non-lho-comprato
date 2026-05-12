@@ -35,7 +35,7 @@ function GoalsSection({
         </div>
       ) : (
         <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-5 text-sm text-muted-text">
-          Nessun obiettivo in questa sezione.
+          Nessun obiettivo qui.
         </p>
       )}
     </section>
@@ -73,20 +73,19 @@ export default async function GoalsPage() {
 
       {goals.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-6 text-sm leading-6 text-muted-text">
-          Ancora nessun obiettivo. Scegli qualcosa per cui vale la pena
-          schivare spese inutili.
+          Ancora nessun obiettivo. Aggiungi quello che vuoi proteggere.
         </p>
       ) : (
         <>
           <GoalsSection
             title="Obiettivi attivi"
-            description="Quelli che state portando avanti adesso."
+            description="Quelli che state seguendo adesso."
             goals={activeGoals}
           />
 
           <GoalsSection
             title="Obiettivi in pausa"
-            description="Quelli messi da parte, senza perderli."
+            description="Quelli messi da parte, senza perderli di vista."
             goals={inactiveGoals}
           />
         </>

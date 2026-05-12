@@ -8,8 +8,8 @@ export function StatsEmptyState() {
   return (
     <EmptyState
       title="Ancora niente statistiche"
-      description="Prima devi schivare qualche spesa, piccolo ninja del portafoglio."
-      note="Appena inserisci i primi movimenti, qui inizieranno a comparire grafici e confronti."
+      description="Aggiungi i primi movimenti e qui compariranno grafici e confronti."
+      note="Bastano pochi dati per vedere i primi pattern."
       icon={<BarChart3 className="size-5" aria-hidden="true" />}
       action={
         <Button asChild className="w-full sm:w-auto">

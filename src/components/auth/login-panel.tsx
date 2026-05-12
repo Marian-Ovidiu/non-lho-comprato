@@ -71,13 +71,13 @@ export function LoginPanel({
   }
 
   if (compact) {
-    return (
-      <div
-        className={cn(
-          "rounded-3xl border border-border/80 bg-surface/80 p-4 shadow-sm sm:p-5",
-          "grid gap-2.5",
-          visibleProviders.length > 1 ? "sm:grid-cols-2" : undefined,
-          className,
+      return (
+        <div
+          className={cn(
+            "rounded-3xl border border-border/80 bg-surface/80 p-3.5 shadow-sm sm:p-4",
+            "grid gap-2.5",
+            visibleProviders.length > 1 ? "sm:grid-cols-2" : undefined,
+            className,
         )}
       >
         {visibleProviders.map((provider) => {
@@ -107,12 +107,12 @@ export function LoginPanel({
   }
 
   return (
-    <Card
-      className={cn("border-border/80 bg-surface/80 shadow-sm", className)}
-    >
-      <CardHeader className="space-y-1.5 p-5 pb-0 sm:p-6">
-        <CardTitle className="text-lg">{title}</CardTitle>
-        <CardDescription className="max-w-md leading-6">
+      <Card
+        className={cn("border-border/80 bg-surface/80 shadow-sm", className)}
+      >
+      <CardHeader className="space-y-1.5 p-5 pb-0 sm:p-5">
+        <CardTitle className="text-base font-semibold">{title}</CardTitle>
+        <CardDescription className="max-w-md text-sm leading-6">
           {description}
         </CardDescription>
       </CardHeader>

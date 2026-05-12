@@ -81,7 +81,7 @@ export default function MorePage() {
             Gestione quotidiana
           </h2>
           <p className="text-sm text-muted-text dark:text-muted-text">
-            Le cose che usi più spesso nella giornata.
+            Le cose che usi ogni giorno.
           </p>
         </div>
 
@@ -89,14 +89,14 @@ export default function MorePage() {
           <ToolCard
             href="/habits"
             label="Abitudini"
-            description="Gestisci spese ricorrenti"
+            description="Spese ricorrenti e ripetute"
             icon={Repeat2}
             actionLabel="Apri abitudini"
           />
           <ToolCard
             href="/presets"
             label="Preset rapidi"
-            description="Azioni veloci in un tap"
+            description="Modelli veloci in un tap"
             icon={Layers3}
             actionLabel="Apri preset"
           />
@@ -109,7 +109,7 @@ export default function MorePage() {
             Analisi
           </h2>
           <p className="text-sm text-muted-text dark:text-muted-text">
-            I riepiloghi che ti aiutano a leggere il mese.
+            I riepiloghi del mese.
           </p>
         </div>
 
@@ -117,7 +117,7 @@ export default function MorePage() {
           <ToolCard
             href="/reports/monthly"
             label="Report mensile"
-            description="Vedi il riepilogo del mese"
+            description="Riepilogo del mese"
             icon={BarChart3}
             actionLabel="Apri report"
           />
@@ -130,7 +130,7 @@ export default function MorePage() {
             App
           </h2>
           <p className="text-sm text-muted-text dark:text-muted-text">
-            Preferenze e installazione dell&apos;app.
+            Preferenze e installazione.
           </p>
         </div>
 
@@ -146,7 +146,7 @@ export default function MorePage() {
                     Tema
                   </CardTitle>
                   <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
-                    Chiaro o scuro, salvato su questo dispositivo
+                    Chiaro o scuro, salvato su questo dispositivo.
                   </p>
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function MorePage() {
                     Installa app
                   </CardTitle>
                   <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
-                    Aggiungi l&apos;app alla schermata Home
+                    Aggiungi l&apos;app alla schermata Home.
                   </p>
                 </div>
               </div>

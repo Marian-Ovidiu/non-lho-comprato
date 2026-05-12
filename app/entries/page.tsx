@@ -20,7 +20,7 @@ export default async function EntriesPage() {
       <PageHeader
         eyebrow="Movimenti"
         title="Movimenti"
-        context="Cronologia completa di ciò che hai speso e di ciò che hai evitato."
+        context="Cronologia di ciò che hai speso e di ciò che hai evitato."
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Aggiungi movimento</Link>
