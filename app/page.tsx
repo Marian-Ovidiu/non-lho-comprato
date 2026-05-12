@@ -6,11 +6,8 @@ import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-ov
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
 import { DashboardHabitsPreview } from "@/src/components/dashboard/dashboard-habits-preview";
 import { DashboardHudCards } from "@/src/components/dashboard/dashboard-hud-cards";
-import { DashboardQuickActions } from "@/src/components/dashboard/dashboard-quick-actions";
 import { GoalsPreview } from "@/src/components/dashboard/goals-preview";
-import { MonthlyReportPreview } from "@/src/components/dashboard/monthly-report-preview";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
-import { StreakHeroCard } from "@/src/components/dashboard/streak-hero-card";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,7 +17,6 @@ import {
 } from "@/src/actions/habits";
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
-import { getMonthlyReport } from "@/src/actions/reports";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
 
@@ -72,8 +68,6 @@ export default async function Home() {
   let activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
   let todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
   let pendingHabitsCount = 0;
-  let monthlyReport: Awaited<ReturnType<typeof getMonthlyReport>>["report"] | null =
-    null;
   let currentStreak: Awaited<ReturnType<typeof getGlobalStreak>> = {
     currentStreak: 0,
     bestStreak: 0,
@@ -90,7 +84,6 @@ export default async function Home() {
       loadedGoals,
       loadedStreak,
       loadedTodayHabits,
-      loadedMonthlyReport,
     ] = await Promise.all([
       getDashboardSummary(),
       getTodayDashboardSummary(),
@@ -98,7 +91,6 @@ export default async function Home() {
       getGoalsWithProgress(),
       streakPromise,
       getTodayHabitOccurrences(),
-      getMonthlyReport(),
     ]);
 
     monthSaved = loadedSummary.totalSaved;
@@ -107,7 +99,6 @@ export default async function Home() {
     activeGoals = loadedGoals.filter((goal) => goal.isActive).slice(0, 3);
     currentStreak = loadedStreak;
     todayHabits = loadedTodayHabits;
-    monthlyReport = loadedMonthlyReport.report;
     pendingHabitsCount = loadedTodayHabits.filter(
       (occurrence) => occurrence.status === "pending",
     ).length;
@@ -115,8 +106,10 @@ export default async function Home() {
     console.error("Failed to load dashboard data:", error);
   }
 
+  const hasUtilityPanels = todayHabits.length > 0 || activeGoals.length > 0;
+
   return (
-    <main className="space-y-4 sm:space-y-5">
+    <main className="space-y-3 sm:space-y-4">
       <DailyCheckinOverlay
         savedToday={todaySummary.totalSavedToday}
         currentStreak={currentStreak.currentStreak}
@@ -137,7 +130,7 @@ export default async function Home() {
             tone: "premium",
           },
           {
-            label: `☕ ${todaySummary.entriesTodayCount} movimenti`,
+            label: `☕ ${pendingHabitsCount} in attesa`,
           },
           {
             label: `💰 ${formatEuro(monthSaved)} mese`,
@@ -153,22 +146,28 @@ export default async function Home() {
         entriesTodayCount={todaySummary.entriesTodayCount}
       />
 
-      <StreakHeroCard currentStreak={currentStreak.currentStreak} />
-
-      <DashboardQuickActions />
-
-      <section className="grid gap-3 xl:grid-cols-2">
-        <DashboardHabitsPreview occurrences={todayHabits} />
-        <GoalsPreview goals={activeGoals} />
-      </section>
-
-      <section className="grid gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)]">
-        <MonthlyReportPreview report={monthlyReport} />
+      <section
+        className={
+          hasUtilityPanels
+            ? "grid gap-3 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,0.85fr)]"
+            : "grid gap-3"
+        }
+      >
         {recentEntries.length > 0 ? (
           <RecentEntries entries={recentEntries} />
         ) : (
           <DashboardEmptyState />
         )}
+
+        {hasUtilityPanels ? (
+          <div className="grid gap-3">
+            {todayHabits.length > 0 ? (
+              <DashboardHabitsPreview occurrences={todayHabits} />
+            ) : null}
+
+            {activeGoals.length > 0 ? <GoalsPreview goals={activeGoals} /> : null}
+          </div>
+        ) : null}
       </section>
     </main>
   );
