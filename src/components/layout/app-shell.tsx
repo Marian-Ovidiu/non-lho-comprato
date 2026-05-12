@@ -72,7 +72,7 @@ function NavButton({
         asChild
         variant="default"
         size="icon"
-        className="size-12 rounded-full border border-border/70 bg-primary text-primary-foreground shadow-[0_18px_40px_rgba(0,0,0,0.2)] hover:bg-primary/90"
+        className="size-12 -mt-4 rounded-full border border-border/70 bg-primary text-primary-foreground shadow-[0_18px_40px_rgba(0,0,0,0.2)] transition-all duration-150 ease-out hover:-translate-y-px hover:bg-primary/90 active:translate-y-0 active:scale-[0.98]"
       >
         <Link href={href} aria-label={label}>
           <Plus className="size-5" aria-hidden="true" />
@@ -88,15 +88,22 @@ function NavButton({
       size="sm"
       className={cn(
         mobile
-          ? "h-12 flex-col gap-1 rounded-2xl px-1 text-[10px] font-medium"
+          ? "h-12 flex-col gap-1 rounded-2xl px-1 text-[10px] font-medium transition-all duration-150 ease-out"
           : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4",
         active
-          ? "bg-surface-muted text-foreground ring-1 ring-border/80 hover:bg-surface-muted"
+          ? "bg-surface-muted/90 text-foreground ring-1 ring-border/80 shadow-[0_8px_24px_rgba(0,0,0,0.08)] hover:bg-surface-muted/90"
           : "text-muted-text hover:bg-surface-muted/60 hover:text-foreground",
       )}
     >
       <Link href={href} aria-current={active ? "page" : undefined}>
-        <Icon className={cn("size-4", mobile && "size-5")} aria-hidden="true" />
+        <Icon
+          className={cn(
+            "size-4 transition-transform duration-150 ease-out",
+            mobile && "size-5",
+            active && "scale-110",
+          )}
+          aria-hidden="true"
+        />
         <span className="leading-none">{label}</span>
       </Link>
     </Button>
@@ -116,21 +123,21 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border bg-surface/88 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-        <div className="mx-auto w-full max-w-5xl px-4 py-3 sm:px-6 lg:px-8 lg:py-4">
-          <div className="flex flex-col gap-3">
+      <header className="sticky top-0 z-30 border-b border-border bg-surface/86 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+        <div className="mx-auto w-full max-w-5xl px-4 py-2.5 sm:px-6 lg:px-8 lg:py-3">
+          <div className="flex flex-col gap-2.5">
             <div className="flex items-start justify-between gap-3">
               <div className="space-y-0.5">
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
                   Non l&apos;ho comprato
                 </p>
-                <h1 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+                <h1 className="max-w-[14rem] text-base font-semibold tracking-tight text-foreground sm:max-w-none sm:text-lg">
                   Schiva spese inutili, un movimento alla volta.
                 </h1>
               </div>
 
               <div className="shrink-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
                   <AuthControls
                     isAuthenticated={auth.isAuthenticated}
                     userLabel={auth.userLabel}
@@ -170,10 +177,10 @@ export function AppShell({
 
       <nav
         aria-label="Navigazione principale"
-        className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] md:hidden"
       >
-        <div className="mx-auto max-w-md rounded-[1.75rem] border border-border/70 bg-surface/88 px-2.5 pb-2.5 pt-3 shadow-[0_18px_50px_rgba(0,0,0,0.2)] backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-          <div className="grid grid-cols-5 items-end gap-1">
+        <div className="mx-auto max-w-[24rem] rounded-[1.9rem] border border-border/70 bg-surface/86 px-2.5 pb-2.5 pt-3 shadow-[0_24px_60px_rgba(0,0,0,0.22)] backdrop-blur supports-[backdrop-filter]:bg-surface/80">
+          <div className="grid grid-cols-5 items-end gap-1.5">
             <NavButton
               href={primaryNavItems[0].href}
               label={primaryNavItems[0].label}
@@ -189,7 +196,13 @@ export function AppShell({
               mobile
             />
             <div className="flex justify-center">
-              <NavButton href="/entries/new" label="Nuovo movimento" icon={Plus} active={false} center />
+              <NavButton
+                href="/entries/new"
+                label="Nuovo movimento"
+                icon={Plus}
+                active={false}
+                center
+              />
             </div>
             <NavButton
               href={primaryNavItems[3].href}
