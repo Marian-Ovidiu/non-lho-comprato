@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useEffect, useMemo, useRef } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 
@@ -65,6 +65,8 @@ function FieldError({ message }: { message?: string }) {
 export function EntryForm({ categories }: EntryFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const didHandleSuccessRef = useRef(false);
+  const redirect = useCallback((path: string) => router.replace(path), [router]);
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
       return createEntry(formData);
@@ -76,15 +78,22 @@ export function EntryForm({ categories }: EntryFormProps) {
 
   useEffect(() => {
     if (!state.success) {
+      didHandleSuccessRef.current = false;
       return;
     }
 
+    if (didHandleSuccessRef.current) {
+      return;
+    }
+
+    didHandleSuccessRef.current = true;
+
     const timeout = window.setTimeout(() => {
-      router.replace("/");
+      redirect("/");
     }, 800);
 
     return () => window.clearTimeout(timeout);
-  }, [router, state.success]);
+  }, [redirect, state.success]);
 
   const helperText = useMemo(() => {
     if (!hasCategories) {

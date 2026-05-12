@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useEffect, useMemo, useRef } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { updateEntry } from "@/src/actions/entries";
@@ -96,6 +96,8 @@ function getDateValue(date: string) {
 export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const didHandleSuccessRef = useRef(false);
+  const redirect = useCallback((path: string) => router.replace(path), [router]);
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
       return updateEntry(entry.id, formData);
@@ -107,15 +109,22 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
 
   useEffect(() => {
     if (!state.success) {
+      didHandleSuccessRef.current = false;
       return;
     }
 
+    if (didHandleSuccessRef.current) {
+      return;
+    }
+
+    didHandleSuccessRef.current = true;
+
     const timeout = window.setTimeout(() => {
-      router.replace("/entries");
+      redirect("/entries");
     }, 800);
 
     return () => window.clearTimeout(timeout);
-  }, [router, state.success]);
+  }, [redirect, state.success]);
 
   const helperText = useMemo(() => {
     if (entry.source === "habit") {

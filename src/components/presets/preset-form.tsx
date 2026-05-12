@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { createPreset } from "@/src/actions/presets";
@@ -53,6 +53,8 @@ function FieldError({ message }: { message?: string }) {
 export function PresetForm({ categories }: PresetFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const didHandleSuccessRef = useRef(false);
+  const refresh = useCallback(() => router.refresh(), [router]);
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
       return createPreset(formData);
@@ -64,12 +66,19 @@ export function PresetForm({ categories }: PresetFormProps) {
 
   useEffect(() => {
     if (!state.success) {
+      didHandleSuccessRef.current = false;
       return;
     }
 
+    if (didHandleSuccessRef.current) {
+      return;
+    }
+
+    didHandleSuccessRef.current = true;
+
     formRef.current?.reset();
-    router.refresh();
-  }, [router, state.success]);
+    refresh();
+  }, [refresh, state.success]);
 
   return (
     <Card className="border-border shadow-sm">

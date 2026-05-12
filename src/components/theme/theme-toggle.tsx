@@ -24,38 +24,29 @@ const options: Array<{
 ];
 
 export function ThemeSelector() {
-  const [mounted, setMounted] = useState(false);
-  const [preference, setPreference] = useState<ThemePreference>("system");
-  const [systemTheme, setSystemTheme] = useState<"light" | "dark">("light");
-
-  useEffect(() => {
-    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    const initialTheme =
-      storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
-        ? storedTheme
-        : "system";
-
-    setPreference(initialTheme);
-    setSystemTheme(getSystemTheme());
-    applyTheme(resolveTheme(initialTheme));
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) {
-      return;
+  const [preference, setPreference] = useState<ThemePreference>(() => {
+    if (typeof window === "undefined") {
+      return "system";
     }
 
+    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
+    return storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
+      ? storedTheme
+      : "system";
+  });
+  const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() =>
+    getSystemTheme(),
+  );
+
+  useEffect(() => {
     const resolvedTheme = resolveTheme(preference);
     applyTheme(resolvedTheme);
-    window.localStorage.setItem(THEME_STORAGE_KEY, preference);
-  }, [mounted, preference]);
+    if (window.localStorage.getItem(THEME_STORAGE_KEY) !== preference) {
+      window.localStorage.setItem(THEME_STORAGE_KEY, preference);
+    }
+  }, [preference]);
 
   useEffect(() => {
-    if (!mounted) {
-      return;
-    }
-
     const handleStorage = (event: StorageEvent) => {
       if (
         event.key === THEME_STORAGE_KEY &&
@@ -63,17 +54,20 @@ export function ThemeSelector() {
           event.newValue === "dark" ||
           event.newValue === "system")
       ) {
-        setPreference(event.newValue);
+        const nextPreference = event.newValue as ThemePreference;
+        setPreference((current) =>
+          current === nextPreference ? current : nextPreference,
+        );
         applyTheme(resolveTheme(event.newValue));
       }
     };
 
     window.addEventListener("storage", handleStorage);
     return () => window.removeEventListener("storage", handleStorage);
-  }, [mounted]);
+  }, []);
 
   useEffect(() => {
-    if (!mounted || preference !== "system") {
+    if (preference !== "system") {
       return;
     }
 
@@ -86,7 +80,7 @@ export function ThemeSelector() {
 
     media.addEventListener("change", handleChange);
     return () => media.removeEventListener("change", handleChange);
-  }, [mounted, preference]);
+  }, [preference]);
 
   const selectedLabel = useMemo(() => {
     return options.find((option) => option.value === preference)?.label ?? "Sistema";
@@ -101,7 +95,7 @@ export function ThemeSelector() {
       >
         {options.map((option) => {
           const Icon = option.icon;
-          const active = mounted && preference === option.value;
+          const active = preference === option.value;
 
           return (
             <Button
@@ -117,7 +111,6 @@ export function ThemeSelector() {
               )}
               onClick={() => setPreference(option.value)}
               aria-pressed={active}
-              disabled={!mounted}
             >
               <Icon className="size-3.5" aria-hidden="true" />
               <span className="leading-none">{option.label}</span>

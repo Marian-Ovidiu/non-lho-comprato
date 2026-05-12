@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useActionState, useEffect, useRef } from "react";
+import { useActionState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 import { createGoal } from "@/src/actions/goals";
@@ -40,6 +40,8 @@ function FieldError({ message }: { message?: string }) {
 export function GoalForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const didHandleSuccessRef = useRef(false);
+  const refresh = useCallback(() => router.refresh(), [router]);
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
       return createGoal(formData);
@@ -49,12 +51,19 @@ export function GoalForm() {
 
   useEffect(() => {
     if (!state.success) {
+      didHandleSuccessRef.current = false;
       return;
     }
 
+    if (didHandleSuccessRef.current) {
+      return;
+    }
+
+    didHandleSuccessRef.current = true;
+
     formRef.current?.reset();
-    router.refresh();
-  }, [router, state.success]);
+    refresh();
+  }, [refresh, state.success]);
 
   return (
     <Card className="border-border shadow-sm">
