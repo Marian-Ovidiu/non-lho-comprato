@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
@@ -22,11 +22,16 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
 
   if (!entry) {
     return (
-      <main className="space-y-6 sm:space-y-8">
+      <main className="space-y-5 sm:space-y-6">
         <PageHeader
           eyebrow="Movimenti"
-          title="Modifica movimento"
-          description="Non riesco a trovare il movimento richiesto."
+          title="Movimento non trovato"
+          context="Non riesco a trovare il movimento richiesto."
+          action={
+            <Button asChild className="h-10 rounded-2xl px-4">
+              <Link href="/entries">Torna ai movimenti</Link>
+            </Button>
+          }
         />
 
         <Card className="border-border shadow-sm">
@@ -60,15 +65,19 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
         })) as CategoryOption[]);
 
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Movimenti"
         title="Modifica movimento"
-        description="Aggiorna i dettagli senza perdere il collegamento ai dati storici."
+        context="Aggiorna i dettagli senza perdere il collegamento ai dati storici."
+        action={
+          <Button asChild variant="outline" className="h-10 rounded-2xl px-4">
+            <Link href="/entries">Torna ai movimenti</Link>
+          </Button>
+        }
       />
 
       <EntryEditForm entry={entry} categories={resolvedCategories} />
     </main>
   );
 }
-

@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { BarChart3, Download, Layers3, MoonStar, Repeat2 } from "lucide-react";
 
 import { PwaInstallContent } from "@/src/components/pwa/install-button";
@@ -44,14 +44,14 @@ function ToolCard({
 
       <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
         {href ? (
-          <Button asChild className="h-12 w-full rounded-2xl">
+          <Button asChild className="h-10 w-full rounded-2xl px-4">
             <Link href={href}>{actionLabel}</Link>
           </Button>
         ) : (
           <Button
             type="button"
             variant="outline"
-            className="h-12 w-full rounded-2xl"
+            className="h-10 w-full rounded-2xl"
             disabled={disabled}
           >
             {actionLabel}
@@ -64,11 +64,15 @@ function ToolCard({
 
 export default function MorePage() {
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Menu"
-        title="Altro"
-        description="Strumenti e impostazioni"
+        title="Profilo"
+        context="Tema, installazione e strumenti rapidi."
+        chips={[
+          { label: "Tema", tone: "premium" },
+          { label: "App", tone: "default" },
+        ]}
       />
 
       <section className="space-y-4">
@@ -179,4 +183,3 @@ export default function MorePage() {
     </main>
   );
 }
-

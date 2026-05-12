@@ -1,7 +1,11 @@
-﻿import { getGoalsWithProgress } from "@/src/actions/goals";
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
+import { getGoalsWithProgress } from "@/src/actions/goals";
 import { GoalCard } from "@/src/components/goals/goal-card";
 import { GoalForm } from "@/src/components/goals/goal-form";
 import { PageHeader } from "@/src/components/layout/page-header";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
 
@@ -44,14 +48,28 @@ export default async function GoalsPage() {
   const inactiveGoals = goals.filter((goal) => !goal.isActive);
 
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Obiettivi"
         title="Obiettivi"
-        description="Dai un motivo ai soldi che state evitando di buttare."
+        context={`${activeGoals.length} attivi • ${inactiveGoals.length} in pausa`}
+        action={
+          <Button asChild className="h-10 rounded-2xl px-4">
+            <Link href="#nuovo-obiettivo">
+              <Plus className="size-4" aria-hidden="true" />
+              Nuovo obiettivo
+            </Link>
+          </Button>
+        }
+        chips={[
+          { label: `${activeGoals.length} attivi`, tone: "success" },
+          { label: `${inactiveGoals.length} in pausa`, tone: "default" },
+        ]}
       />
 
-      <GoalForm />
+      <section id="nuovo-obiettivo">
+        <GoalForm />
+      </section>
 
       {goals.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-6 text-sm leading-6 text-muted-text">
@@ -76,4 +94,3 @@ export default async function GoalsPage() {
     </main>
   );
 }
-

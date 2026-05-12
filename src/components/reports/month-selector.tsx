@@ -9,13 +9,45 @@ type MonthOption = {
 type MonthSelectorProps = {
   months: MonthOption[];
   selectedMonth: string;
+  compact?: boolean;
 };
 
-export function MonthSelector({ months, selectedMonth }: MonthSelectorProps) {
+export function MonthSelector({
+  months,
+  selectedMonth,
+  compact = false,
+}: MonthSelectorProps) {
   const options =
     months.length > 0
       ? months
       : [{ value: selectedMonth, label: selectedMonth || "Seleziona un mese" }];
+
+  if (compact) {
+    return (
+      <form
+        action="/reports/monthly"
+        method="get"
+        className="flex items-center gap-2"
+      >
+        <select
+          id="month"
+          name="month"
+          defaultValue={selectedMonth}
+          className="h-10 w-full min-w-[10.5rem] rounded-xl border border-border bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-ring/40"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        <Button type="submit" className="h-10 rounded-xl px-4">
+          Mostra
+        </Button>
+      </form>
+    );
+  }
 
   return (
     <form

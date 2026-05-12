@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import { getCategories } from "@/src/actions/entries";
 import { getPresets } from "@/src/actions/presets";
@@ -10,11 +10,15 @@ export default async function PresetsPage() {
   const [categories, presets] = await Promise.all([getCategories(), getPresets()]);
 
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Strumenti"
         title="Azioni rapide"
-        description="Salva modelli ricorrenti per creare movimenti in un tocco."
+        context="Salva modelli ricorrenti per creare movimenti in un tocco."
+        chips={[
+          { label: `${presets.length} salvati`, tone: "success" },
+          { label: `${categories.length} categorie`, tone: "default" },
+        ]}
       />
 
       <PresetForm categories={categories} />
@@ -32,4 +36,3 @@ export default async function PresetsPage() {
     </main>
   );
 }
-

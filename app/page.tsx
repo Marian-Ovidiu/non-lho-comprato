@@ -32,6 +32,34 @@ type HomeProps = {
   }>;
 };
 
+function formatEuro(value: number) {
+  return new Intl.NumberFormat("it-IT", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function getGreeting() {
+  const hour = Number(
+    new Intl.DateTimeFormat("it-IT", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: "Europe/Rome",
+    }).format(new Date()),
+  );
+
+  if (hour < 12) {
+    return "Buongiorno, Marian 👋";
+  }
+
+  if (hour < 18) {
+    return "Buon pomeriggio, Marian 👋";
+  }
+
+  return "Buonasera, Marian 👋";
+}
+
 export default async function Home({ searchParams }: HomeProps) {
   const authenticatedUser = await getAuthenticatedUser();
 
@@ -107,13 +135,26 @@ export default async function Home({ searchParams }: HomeProps) {
 
       <PageHeader
         eyebrow="Home"
-        title="Portafoglio"
-        description="Qui trovi subito lo stato del giorno, le azioni rapide e ciò che richiede attenzione."
+        title={getGreeting()}
+        context={`Hai tenuto ${formatEuro(todaySummary.totalSavedToday)} oggi`}
         action={
-          <Button asChild className="h-11 rounded-2xl px-4">
+          <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Nuovo movimento</Link>
           </Button>
         }
+        chips={[
+          {
+            label: `🔥 ${currentStreak.currentStreak} giorni`,
+            tone: "premium",
+          },
+          {
+            label: `☕ ${todaySummary.entriesTodayCount} movimenti`,
+          },
+          {
+            label: `💰 ${formatEuro(monthSaved)} mese`,
+            tone: "success",
+          },
+        ]}
       />
 
       <PersonFilter person={person} basePath="/" compact />

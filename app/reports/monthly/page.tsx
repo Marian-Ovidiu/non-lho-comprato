@@ -1,4 +1,4 @@
-﻿export const dynamic = "force-dynamic";
+export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
@@ -33,19 +33,17 @@ export default async function MonthlyReportPage({
   const [{ report }] = await Promise.all([getMonthlyReport(selectedMonth)]);
 
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Report"
-        title="Report mensile"
-        description="Uno sguardo a come avete trattato il portafoglio."
-        action={
-          <Button asChild className="w-full sm:w-auto">
-            <Link href="/entries/new">Aggiungi movimento</Link>
-          </Button>
-        }
+        title="Report"
+        context="Riepilogo del mese selezionato."
+        action={<MonthSelector months={months} selectedMonth={selectedMonth} compact />}
+        chips={[
+          { label: `${report.overview.entriesCount} movimenti`, tone: "default" },
+          { label: `${report.overview.totalSaved} risparmiati`, tone: "success" },
+        ]}
       />
-
-      <MonthSelector months={months} selectedMonth={selectedMonth} />
 
       {report.hasData ? (
         <div className="space-y-6">
@@ -183,4 +181,3 @@ export default async function MonthlyReportPage({
     </main>
   );
 }
-

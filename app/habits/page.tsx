@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Flame } from "lucide-react";
 
 import {
   ensureTodayHabitOccurrences,
@@ -36,16 +37,23 @@ export default async function HabitsPage() {
         }));
 
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Ricorrenti"
         title="Abitudini"
-        description="Le piccole spese automatiche che ti fregano senza fare rumore."
+        context={`${todayOccurrences.length} attive oggi`}
         action={
-          <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="#nuova-abitudine">Nuova abitudine</Link>
+          <Button asChild className="h-10 rounded-2xl px-4">
+            <Link href="#nuova-abitudine">
+              <Flame className="size-4" aria-hidden="true" />
+              Nuova abitudine
+            </Link>
           </Button>
         }
+        chips={[
+          { label: `${todayOccurrences.length} oggi`, tone: "success" },
+          { label: `${habits.length} totali`, tone: "default" },
+        ]}
       />
 
       <section id="oggi" className="space-y-4">

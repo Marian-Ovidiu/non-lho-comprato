@@ -16,16 +16,20 @@ export default async function EntriesPage() {
   }
 
   return (
-    <main className="space-y-6 sm:space-y-8">
+    <main className="space-y-5 sm:space-y-6">
       <PageHeader
         eyebrow="Movimenti"
-        title="Cronologia completa"
-        description="Qui trovi tutto quello che hai speso davvero e quello che hai evitato."
+        title="Movimenti"
+        context="Cronologia completa di ciò che hai speso e di ciò che hai evitato."
         action={
-          <Button asChild className="w-full sm:w-auto">
+          <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Aggiungi movimento</Link>
           </Button>
         }
+        chips={[
+          { label: `${entries.length} totali`, tone: "default" },
+          { label: "Ultimi movimenti", tone: "premium" },
+        ]}
       />
 
       <EntryList entries={entries} />

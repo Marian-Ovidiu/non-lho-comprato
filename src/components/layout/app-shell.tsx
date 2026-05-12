@@ -125,49 +125,41 @@ export function AppShell({
     <div className="min-h-screen bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/86 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
         <div className="mx-auto w-full max-w-5xl px-4 py-2.5 sm:px-6 lg:px-8 lg:py-3">
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-0.5">
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
-                  Non l&apos;ho comprato
-                </p>
-                <h1 className="max-w-[14rem] text-base font-semibold tracking-tight text-foreground sm:max-w-none sm:text-lg">
-                  Schiva spese inutili, un movimento alla volta.
-                </h1>
-              </div>
-
-              <div className="shrink-0">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <AuthControls
-                    isAuthenticated={auth.isAuthenticated}
-                    userLabel={auth.userLabel}
-                  />
-                  <InstallButton compact />
-                </div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
+                Non l&apos;ho comprato
+              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text">
+                <span className="rounded-full border border-border bg-background/60 px-3 py-1 font-medium text-foreground">
+                  {workspace.name}
+                </span>
+                <span className="hidden sm:inline">
+                  {workspace.isShared ? "Workspace condiviso" : "Workspace privato"}
+                </span>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text">
-              <span className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-foreground">
-                {workspace.name}
-              </span>
-              <span className="hidden sm:inline">
-                {workspace.isShared ? "Workspace condiviso" : "Workspace privato"}
-              </span>
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+              <AuthControls
+                isAuthenticated={auth.isAuthenticated}
+                userLabel={auth.userLabel}
+              />
+              <InstallButton compact />
             </div>
-
-            <nav aria-label="Navigazione desktop" className="hidden gap-2 md:flex">
-              {desktopNavItems.map((item) => (
-                <NavButton
-                  key={item.href}
-                  href={item.href}
-                  label={item.label}
-                  icon={item.icon}
-                  active={isActivePath(pathname, item.href)}
-                />
-              ))}
-            </nav>
           </div>
+
+          <nav aria-label="Navigazione desktop" className="hidden gap-2 md:flex">
+            {desktopNavItems.map((item) => (
+              <NavButton
+                key={item.href}
+                href={item.href}
+                label={item.label}
+                icon={item.icon}
+                active={isActivePath(pathname, item.href)}
+              />
+            ))}
+          </nav>
         </div>
       </header>
 

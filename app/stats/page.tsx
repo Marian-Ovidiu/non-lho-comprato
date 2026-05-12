@@ -46,15 +46,19 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         <PageHeader
           eyebrow="Statistiche"
           title="Statistiche"
-          description="Qui vedi dove stai vincendo e dove i soldi provano ancora a fregarti."
+          context="Panoramica di risparmi, movimenti e abitudini."
           action={
-            <Button asChild className="w-full sm:w-auto">
+            <Button asChild className="h-10 rounded-2xl px-4">
               <Link href="/entries/new">Aggiungi movimento</Link>
             </Button>
           }
+          chips={[
+            { label: `${overview.entriesCount} movimenti`, tone: "default" },
+            { label: `${overview.totalSaved} risparmiati`, tone: "success" },
+          ]}
         />
 
-        <PersonFilter person={person} basePath="/stats" />
+        <PersonFilter person={person} basePath="/stats" compact />
 
         <StatsEmptyState />
       </main>
@@ -78,15 +82,19 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       <PageHeader
         eyebrow="Statistiche"
         title="Statistiche"
-        description="Qui vedi dove stai vincendo e dove i soldi provano ancora a fregarti."
+        context="Panoramica di risparmi, movimenti e abitudini."
         action={
-          <Button asChild className="w-full sm:w-auto">
+          <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Aggiungi movimento</Link>
           </Button>
         }
+        chips={[
+          { label: `${overview.entriesCount} movimenti`, tone: "default" },
+          { label: `${overview.totalSaved} risparmiati`, tone: "success" },
+        ]}
       />
 
-      <PersonFilter person={person} basePath="/stats" />
+      <PersonFilter person={person} basePath="/stats" compact />
 
       <StatsHeroCard
         totalSaved={overview.totalSaved}
