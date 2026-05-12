@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { createSupabaseBrowserClient } from "@/src/lib/supabase/browser";
 import {
@@ -68,7 +74,8 @@ export function LoginPanel({
     return (
       <div
         className={cn(
-          "grid gap-2",
+          "rounded-3xl border border-border/80 bg-surface/80 p-4 shadow-sm sm:p-5",
+          "grid gap-2.5",
           visibleProviders.length > 1 ? "sm:grid-cols-2" : undefined,
           className,
         )}
@@ -81,7 +88,7 @@ export function LoginPanel({
               key={provider.value}
               type="button"
               variant="outline"
-              className="h-12 w-full justify-center rounded-full border-border bg-surface/80 text-foreground hover:bg-surface-muted hover:text-foreground"
+              className="h-12 w-full justify-center rounded-2xl border-border bg-background text-foreground hover:bg-surface-muted hover:text-foreground"
               onClick={() => handleLogin(provider.value)}
               disabled={Boolean(pendingProvider)}
             >
@@ -103,15 +110,14 @@ export function LoginPanel({
     <Card
       className={cn("border-border/80 bg-surface/80 shadow-sm", className)}
     >
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
-        <CardTitle>{title}</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3 p-5 sm:p-6">
-        <p className="text-sm leading-6 text-muted-text">
+      <CardHeader className="space-y-1.5 p-5 pb-0 sm:p-6">
+        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardDescription className="max-w-md leading-6">
           {description}
-        </p>
-
-        <div className="grid gap-2 sm:grid-cols-2">
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4 p-5 pt-4 sm:p-6 sm:pt-5">
+        <div className="grid gap-2.5 sm:grid-cols-2">
           {visibleProviders.map((provider) => {
             const isPending = pendingProvider === provider.value;
 
@@ -120,7 +126,7 @@ export function LoginPanel({
                 key={provider.value}
                 type="button"
                 variant="outline"
-                className="h-11 justify-center rounded-2xl border-border bg-background text-foreground hover:bg-surface-muted hover:text-foreground"
+                className="h-12 justify-center rounded-2xl border-border bg-background text-foreground hover:bg-surface-muted hover:text-foreground"
                 onClick={() => handleLogin(provider.value)}
                 disabled={Boolean(pendingProvider)}
               >
