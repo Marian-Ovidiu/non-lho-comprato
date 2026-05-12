@@ -2,30 +2,16 @@
 
 import { useSyncExternalStore } from "react";
 
-type DisplayModeSnapshot = {
-  isStandalone: boolean;
-  isBrowser: boolean;
-};
-
-const DEFAULT_SNAPSHOT: DisplayModeSnapshot = {
-  isStandalone: false,
-  isBrowser: true,
-};
-
-function readSnapshot(): DisplayModeSnapshot {
+function readStandaloneMode() {
   if (typeof window === "undefined") {
-    return DEFAULT_SNAPSHOT;
+    return false;
   }
 
-  const isStandalone =
+  return (
     window.matchMedia("(display-mode: standalone)").matches ||
     (window.navigator as Navigator & { standalone?: boolean }).standalone ===
-      true;
-
-  return {
-    isStandalone,
-    isBrowser: !isStandalone,
-  };
+      true
+  );
 }
 
 function subscribe(listener: () => void) {
@@ -44,6 +30,15 @@ function subscribe(listener: () => void) {
   };
 }
 
-export function useDisplayMode(): DisplayModeSnapshot {
-  return useSyncExternalStore(subscribe, readSnapshot, () => DEFAULT_SNAPSHOT);
+export function useDisplayMode() {
+  const isStandalone = useSyncExternalStore(
+    subscribe,
+    readStandaloneMode,
+    () => false,
+  );
+
+  return {
+    isStandalone,
+    isBrowser: !isStandalone,
+  };
 }
