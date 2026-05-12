@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Compass, Flame, Target, TrendingUp } from "lucide-react";
 
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { PublicAccessGate } from "@/src/components/public/public-access-gate";
@@ -7,6 +8,7 @@ import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-
 import { DashboardHabitsPreview } from "@/src/components/dashboard/dashboard-habits-preview";
 import { DashboardHudCards } from "@/src/components/dashboard/dashboard-hud-cards";
 import { GoalsPreview } from "@/src/components/dashboard/goals-preview";
+import { MomentumCard } from "@/src/components/dashboard/momentum-card";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -19,7 +21,7 @@ import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
-import { getMomentumEmoji } from "@/src/lib/visual-cues";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat("it-IT", {
@@ -47,6 +49,141 @@ function getGreeting() {
   }
 
   return "Buonasera, Marian 👋";
+}
+
+type MomentumView =
+  | {
+      label: string;
+      title: string;
+      detail: string;
+      badge: string;
+      tone: "goal";
+      icon: typeof Target;
+      progressPercent: number;
+    }
+  | {
+      label: string;
+      title: string;
+      detail: string;
+      badge: string;
+      tone: "habit";
+      icon: typeof Flame;
+    }
+  | {
+      label: string;
+      title: string;
+      detail: string;
+      badge: string;
+      tone: "savings";
+      icon: typeof TrendingUp;
+    }
+  | {
+      label: string;
+      title: string;
+      detail: string;
+      badge: string;
+      tone: "fallback";
+      icon: typeof Compass;
+    };
+
+function pickMomentumView({
+  activeGoals,
+  todayHabits,
+  savedToday,
+  currentStreak,
+  monthSaved,
+  pendingHabitsCount,
+}: {
+  activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>>;
+  todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>>;
+  savedToday: number;
+  currentStreak: number;
+  monthSaved: number;
+  pendingHabitsCount: number;
+}): MomentumView {
+  const strongestGoal = activeGoals
+    .filter((goal) => goal.progressAmount > 0)
+    .sort(
+      (a, b) =>
+        b.progressPercent - a.progressPercent ||
+        b.progressAmount - a.progressAmount,
+    )[0];
+
+  if (strongestGoal) {
+    return {
+      label: "Obiettivo attivo",
+      title: `${strongestGoal.isCompleted ? "🎉" : "🎯"} ${Math.round(
+        strongestGoal.progressPercent,
+      )}% di ${strongestGoal.title}`,
+      detail: strongestGoal.isCompleted
+        ? `Hai già messo da parte ${formatEuro(strongestGoal.progressAmount)}.`
+        : `Ti mancano ${formatEuro(strongestGoal.remainingAmount)} per arrivare a ${formatEuro(strongestGoal.targetAmount)}.`,
+      badge: strongestGoal.isCompleted ? "Completato" : "Goal",
+      tone: "goal",
+      icon: Target,
+      progressPercent: strongestGoal.progressPercent,
+    };
+  }
+
+  const strongestAvoidedHabit = [...todayHabits]
+    .filter((occurrence) => occurrence.status === "avoided")
+    .sort((a, b) => Number(b.habit.amount) - Number(a.habit.amount))[0];
+
+  if (strongestAvoidedHabit) {
+    return {
+      label: "Scelta di oggi",
+      title: `${getCategoryEmoji(strongestAvoidedHabit.habit.category)} ${strongestAvoidedHabit.habit.name} evitata`,
+      detail: `Hai tenuto ${formatEuro(Number(strongestAvoidedHabit.habit.amount))} nel portafoglio.`,
+      badge: "Oggi",
+      tone: "habit",
+      icon: Flame,
+    };
+  }
+
+  if (savedToday > 0) {
+    return {
+      label: "Trend positivo",
+      title: `Hai tenuto ${formatEuro(savedToday)} oggi`,
+      detail:
+        currentStreak > 1
+          ? `${currentStreak} giorni consecutivi di risparmio.`
+          : "Hai già iniziato bene oggi.",
+      badge: "Oggi",
+      tone: "savings",
+      icon: TrendingUp,
+    };
+  }
+
+  if (currentStreak > 1) {
+    return {
+      label: "Momentum",
+      title: `${currentStreak} giorni di risparmio consecutivi`,
+      detail: `Hai già tenuto ${formatEuro(monthSaved)} questo mese.`,
+      badge: "Stabile",
+      tone: "savings",
+      icon: TrendingUp,
+    };
+  }
+
+  if (pendingHabitsCount > 0) {
+    return {
+      label: "Da chiudere",
+      title: `${pendingHabitsCount} abitudini da controllare`,
+      detail: "Chiuderle oggi mantiene il ritmo del portafoglio.",
+      badge: "Oggi",
+      tone: "fallback",
+      icon: Compass,
+    };
+  }
+
+  return {
+    label: "Pronto",
+    title: "Oggi puoi partire leggero",
+    detail: "Aggiungi un movimento e il primo segnale apparirà qui.",
+    badge: "Start",
+    tone: "fallback",
+    icon: Compass,
+  };
 }
 
 export default async function Home() {
@@ -108,6 +245,14 @@ export default async function Home() {
   }
 
   const hasUtilityPanels = todayHabits.length > 0 || activeGoals.length > 0;
+  const momentumView = pickMomentumView({
+    activeGoals,
+    todayHabits,
+    savedToday: todaySummary.totalSavedToday,
+    currentStreak: currentStreak.currentStreak,
+    monthSaved,
+    pendingHabitsCount,
+  });
 
   return (
     <main className="space-y-3 sm:space-y-4">
@@ -127,14 +272,14 @@ export default async function Home() {
         }
         chips={[
           {
-            label: `${getMomentumEmoji(currentStreak.currentStreak)} ${currentStreak.currentStreak} giorni`,
-            tone: "premium",
+            label: `💰 ${formatEuro(todaySummary.totalSavedToday)} oggi`,
+            tone: "success",
           },
           {
             label: `⏳ ${pendingHabitsCount} in attesa`,
           },
           {
-            label: `💰 ${formatEuro(monthSaved)} mese`,
+            label: `📈 ${formatEuro(monthSaved)} mese`,
             tone: "success",
           },
         ]}
@@ -143,8 +288,19 @@ export default async function Home() {
       <DashboardHudCards
         totalSavedToday={todaySummary.totalSavedToday}
         totalSavedMonth={monthSaved}
-        currentStreak={currentStreak.currentStreak}
         entriesTodayCount={todaySummary.entriesTodayCount}
+      />
+
+      <MomentumCard
+        label={momentumView.label}
+        title={momentumView.title}
+        detail={momentumView.detail}
+        badge={momentumView.badge}
+        tone={momentumView.tone}
+        icon={momentumView.icon}
+        progressPercent={
+          momentumView.tone === "goal" ? momentumView.progressPercent : undefined
+        }
       />
 
       <section

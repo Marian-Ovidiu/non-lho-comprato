@@ -4,7 +4,6 @@ import { formatMoney } from "@/src/lib/formatters";
 type DashboardHudCardsProps = {
   totalSavedToday: number;
   totalSavedMonth: number;
-  currentStreak: number;
   entriesTodayCount: number;
 };
 
@@ -52,11 +51,10 @@ function HudCard({
 export function DashboardHudCards({
   totalSavedToday,
   totalSavedMonth,
-  currentStreak,
   entriesTodayCount,
 }: DashboardHudCardsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
       <HudCard
         label="Risparmiato oggi"
         value={formatMoney(totalSavedToday)}
@@ -66,11 +64,6 @@ export function DashboardHudCards({
       <HudCard
         label="Risparmiato mese"
         value={formatMoney(totalSavedMonth)}
-      />
-
-      <HudCard
-        label="Serie attuale"
-        value={String(currentStreak)}
       />
 
       <HudCard
