@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState } from "@/src/components/shared/empty-state";
 import { formatMoney } from "@/src/lib/formatters";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type HabitListProps = {
   habits: Array<{
@@ -57,8 +58,8 @@ export function HabitList({ habits }: HabitListProps) {
     return (
       <EmptyState
         title="Nessuna abitudine ancora"
-        description="Crea la prima abitudine ricorrente e il suo costo comparirà qui. Ti basta un minuto."
-        note="Un caffè al bar è il caso perfetto per iniziare."
+        description="🧭 Crea la prima abitudine ricorrente e il suo costo comparirà qui. Ti basta un minuto."
+        note="☕ Un caffè al bar è il caso perfetto per iniziare."
         icon={<Repeat2 className="size-5" aria-hidden="true" />}
         action={
           <Button asChild className="w-full sm:w-auto">
@@ -89,7 +90,10 @@ export function HabitList({ habits }: HabitListProps) {
                   <p className="truncate text-lg font-semibold text-foreground">
                     {habit.name}
                   </p>
-                  <p className="text-sm text-muted-text">{habit.category.name}</p>
+                  <p className="text-sm text-muted-text">
+                    <span aria-hidden="true">{getCategoryEmoji(habit.category)}</span>{" "}
+                    {habit.category.name}
+                  </p>
                 </div>
 
                 <div className="text-left sm:text-right">

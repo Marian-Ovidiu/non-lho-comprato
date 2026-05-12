@@ -15,6 +15,7 @@ import {
   getPersonOwnershipOptions,
   getPresetPersonLabel,
 } from "@/src/lib/ui-person";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type PresetCardData = {
   id: string;
@@ -120,7 +121,10 @@ export function PresetCard({
             <h3 className="truncate text-base font-semibold text-foreground">
               {preset.title}
             </h3>
-            <p className="text-sm text-muted-text">{preset.category.name}</p>
+            <p className="text-sm text-muted-text">
+              <span aria-hidden="true">{getCategoryEmoji({ name: preset.category.name })}</span>{" "}
+              {preset.category.name}
+            </p>
           </div>
 
           <Badge variant="secondary" className="shrink-0 gap-1">

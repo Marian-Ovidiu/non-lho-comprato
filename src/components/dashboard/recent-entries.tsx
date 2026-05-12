@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type RecentEntriesProps = {
   entries: Array<{
@@ -11,6 +12,7 @@ type RecentEntriesProps = {
     title: string;
     category: {
       name: string;
+      slug?: string | null;
     };
     realCost: unknown;
     alternativeCost: unknown;
@@ -59,6 +61,7 @@ export function RecentEntries({ entries }: RecentEntriesProps) {
                   {entry.title}
                 </p>
                 <p className="truncate text-xs text-muted-text">
+                  <span aria-hidden="true">{getCategoryEmoji(entry.category)}</span>{" "}
                   {entry.category.name} <span aria-hidden="true">•</span>{" "}
                   {formatDate(entry.date)}
                 </p>

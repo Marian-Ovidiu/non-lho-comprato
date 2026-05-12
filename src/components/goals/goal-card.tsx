@@ -18,6 +18,7 @@ import {
   getGoalScopeLabel,
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
+import { getGoalEmoji } from "@/src/lib/visual-cues";
 
 type GoalCardProps = {
   goal: {
@@ -99,7 +100,7 @@ export function GoalCard({ goal }: GoalCardProps) {
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-lg sm:text-xl">
-                {goal.emoji ? `${goal.emoji} ` : ""}
+                {getGoalEmoji(goal.emoji)}{" "}
                 {goal.title}
               </CardTitle>
               {goal.isCompleted ? (

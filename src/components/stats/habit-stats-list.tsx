@@ -1,6 +1,7 @@
-﻿import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type HabitStatsListProps = {
   habits: Array<{
@@ -48,7 +49,12 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
                     <p className="font-semibold text-foreground">{habit.habitName}</p>
-                    <p className="text-sm text-muted-text">{habit.categoryName}</p>
+                    <p className="text-sm text-muted-text">
+                      <span aria-hidden="true">
+                        {getCategoryEmoji({ name: habit.categoryName })}
+                      </span>{" "}
+                      {habit.categoryName}
+                    </p>
                   </div>
 
                   <div className="text-left sm:text-right">
@@ -85,4 +91,3 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
     </Card>
   );
 }
-

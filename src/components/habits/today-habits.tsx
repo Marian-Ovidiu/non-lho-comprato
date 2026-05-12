@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/src/components/shared/empty-state";
 import { formatMoney } from "@/src/lib/formatters";
 import { HabitOccurrenceActions } from "@/src/components/habits/habit-occurrence-actions";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type TodayHabitsProps = {
   occurrences: Array<{
@@ -70,7 +71,7 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
     return (
       <EmptyState
         title="Nessuna abitudine per oggi"
-        description="Se hai già creato abitudini ma oggi non sono previste, va tutto bene. Se invece vuoi iniziare, aggiungine una qui sotto."
+        description="🧩 Se hai già creato abitudini ma oggi non sono previste, va tutto bene. Se invece vuoi iniziare, aggiungine una qui sotto."
         note="Le occorrenze di oggi si creano automaticamente quando la pagina si apre."
         icon={<SunMedium className="size-5" aria-hidden="true" />}
         action={
@@ -114,6 +115,9 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                       {occurrence.habit.name}
                     </p>
                     <div className="flex flex-wrap items-center gap-2 text-sm text-muted-text">
+                      <span aria-hidden="true">
+                        {getCategoryEmoji(occurrence.habit.category)}
+                      </span>
                       <span>{occurrence.habit.category.name}</span>
                       <span aria-hidden="true">â€¢</span>
                       <span>{formatMoney(occurrence.habit.amount)}</span>
@@ -139,6 +143,9 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                       Categoria
                     </p>
                     <p className="mt-1 font-semibold text-foreground">
+                      <span aria-hidden="true">
+                        {getCategoryEmoji(occurrence.habit.category)}
+                      </span>{" "}
                       {occurrence.habit.category.name}
                     </p>
                   </div>

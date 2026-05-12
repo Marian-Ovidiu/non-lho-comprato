@@ -15,6 +15,7 @@ import {
   getEntryOwnershipLabel,
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type EntryCardProps = {
   entry: {
@@ -22,6 +23,7 @@ type EntryCardProps = {
     title: string;
     category: {
       name: string;
+      slug?: string | null;
     };
     date: Date;
     realCost: unknown;
@@ -183,7 +185,7 @@ export function EntryCard({ entry }: EntryCardProps) {
 
         <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-text sm:text-sm">
           <span className="inline-flex items-center gap-1.5">
-            <span className="inline-flex size-1.5 rounded-full bg-muted-text/60" aria-hidden="true" />
+            <span aria-hidden="true">{getCategoryEmoji(entry.category)}</span>
             <span>{entry.category.name}</span>
           </span>
           <span aria-hidden="true">•</span>

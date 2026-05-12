@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
+import { getGoalEmoji } from "@/src/lib/visual-cues";
 
 type GoalsPreviewProps = {
   goals: Array<{
@@ -44,7 +45,7 @@ export function GoalsPreview({ goals }: GoalsPreviewProps) {
       <CardContent className="space-y-2.5 p-3.5 sm:p-5">
         {visibleGoals.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-3.5 py-3.5 text-sm leading-5 text-muted-text">
-            Nessun obiettivo attivo al momento. Dai una direzione ai risparmi.
+            🎯 Nessun obiettivo attivo al momento. Dai una direzione ai risparmi.
           </p>
         ) : (
           visibleGoals.map((goal) => {
@@ -55,7 +56,7 @@ export function GoalsPreview({ goals }: GoalsPreviewProps) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <p className="truncate text-sm font-medium text-foreground">
-                      {goal.emoji ? `${goal.emoji} ` : ""}
+                      {getGoalEmoji(goal.emoji)}{" "}
                       {goal.title}
                     </p>
                     <p className="text-xs text-muted-text">

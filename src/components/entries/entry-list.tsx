@@ -29,7 +29,7 @@ export function EntryList({ entries }: EntryListProps) {
     return (
       <EmptyState
         title="Nessun movimento ancora"
-        description="Quando aggiungi il primo movimento, lo troverai qui con data, categoria e risparmio."
+        description="🧾 Quando aggiungi il primo movimento, lo troverai qui con data, categoria e risparmio."
         note="È il posto giusto per tenere tutto ordinato, senza complicazioni."
         icon={<Inbox className="size-5" aria-hidden="true" />}
         action={

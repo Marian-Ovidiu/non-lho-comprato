@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { getPersonFilterLabel, type LegacyPersonValue } from "@/src/lib/ui-person";
+import { getMomentumEmoji } from "@/src/lib/visual-cues";
 
 export type StreakCardProps = {
   title: string;
@@ -20,18 +21,18 @@ function getPersonLabel(person?: StreakCardProps["person"]) {
 
 function getMicrocopy(currentStreak: number): string {
   if (currentStreak <= 0) {
-    return "Nessuna serie attiva";
+    return `${getMomentumEmoji(currentStreak)} Nessuna serie attiva`;
   }
 
   if (currentStreak <= 3) {
-    return "Si parte.";
+    return `${getMomentumEmoji(currentStreak)} Si parte.`;
   }
 
   if (currentStreak <= 7) {
-    return "Stai entrando nel flow.";
+    return `${getMomentumEmoji(currentStreak)} Stai entrando nel flow.`;
   }
 
-  return "Macchina da risparmio.";
+  return `${getMomentumEmoji(currentStreak)} Macchina da risparmio.`;
 }
 
 function getAccentClass(currentStreak: number) {

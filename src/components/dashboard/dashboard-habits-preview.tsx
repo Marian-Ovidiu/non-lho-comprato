@@ -5,18 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type DashboardHabitsPreviewProps = {
   occurrences: Array<{
     id: string;
     status: "pending" | "spent" | "avoided" | "skipped";
-    habit: {
-      name: string;
-      amount: unknown;
-      category: {
+      habit: {
         name: string;
+        amount: unknown;
+        category: {
+          name: string;
+          slug?: string | null;
+        };
       };
-    };
   }>;
 };
 
@@ -73,6 +75,9 @@ export function DashboardHabitsPreview({
                       {occurrence.habit.name}
                     </p>
                     <p className="text-xs text-muted-text">
+                      <span aria-hidden="true">
+                        {getCategoryEmoji(occurrence.habit.category)}
+                      </span>{" "}
                       {occurrence.habit.category.name}
                     </p>
                   </div>

@@ -8,7 +8,7 @@ export function DashboardEmptyState() {
   return (
     <EmptyState
       title="Ancora nessun movimento"
-      description="Segna qui il primo risparmio e inizia a vedere il totale crescere."
+      description="💰 Segna qui il primo risparmio e inizia a vedere il totale crescere."
       note="Bastano pochi secondi per partire."
       icon={<Sparkles className="size-5" aria-hidden="true" />}
       action={

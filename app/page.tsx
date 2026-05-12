@@ -19,6 +19,7 @@ import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
+import { getMomentumEmoji } from "@/src/lib/visual-cues";
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat("it-IT", {
@@ -126,11 +127,11 @@ export default async function Home() {
         }
         chips={[
           {
-            label: `🔥 ${currentStreak.currentStreak} giorni`,
+            label: `${getMomentumEmoji(currentStreak.currentStreak)} ${currentStreak.currentStreak} giorni`,
             tone: "premium",
           },
           {
-            label: `☕ ${pendingHabitsCount} in attesa`,
+            label: `⏳ ${pendingHabitsCount} in attesa`,
           },
           {
             label: `💰 ${formatEuro(monthSaved)} mese`,
