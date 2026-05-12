@@ -23,6 +23,21 @@ enum Person {
   TUTTI
 }
 
+enum WorkspaceKind {
+  private
+  shared
+}
+
+enum WorkspaceMemberRole {
+  owner
+  member
+}
+
+enum EntryVisibility {
+  private
+  workspace
+}
+
 enum HabitOccurrenceStatus {
   pending
   spent
@@ -31,20 +46,26 @@ enum HabitOccurrenceStatus {
 }
 
 model Category {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  color     String?
-  icon      String?
-  entries   Entry[]
-  habits    Habit[]
+  id           String        @id @default(cuid())
+  workspaceId  String?
+  workspace    Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  name         String        @unique
+  slug         String        @unique
+  color        String?
+  icon         String?
+  entries      Entry[]
+  habits       Habit[]
   quickPresets QuickPreset[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([workspaceId])
 }
 
 model Entry {
   id                String           @id @default(cuid())
+  workspaceId       String?
+  workspace         Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   title             String
   categoryId        String
   category          Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -55,14 +76,25 @@ model Entry {
   note              String?
   source            EntrySource      @default(manual)
   person            Person           @default(MARIAN)
+  visibility        EntryVisibility  @default(workspace)
+  createdByUserId   String?
+  createdBy         User?            @relation("EntryCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  paidByUserId      String?
+  paidBy            User?            @relation("EntryPaidBy", fields: [paidByUserId], references: [id], onDelete: SetNull)
   habitOccurrenceId String?          @unique
   habitOccurrence   HabitOccurrence? @relation(fields: [habitOccurrenceId], references: [id], onDelete: SetNull)
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
+
+  @@index([workspaceId])
+  @@index([createdByUserId])
+  @@index([paidByUserId])
 }
 
 model Habit {
   id              String            @id @default(cuid())
+  workspaceId     String?
+  workspace       Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   name            String
   categoryId      String
   category        Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -73,6 +105,8 @@ model Habit {
   occurrences     HabitOccurrence[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
+
+  @@index([workspaceId])
 }
 
 model HabitOccurrence {
@@ -89,25 +123,78 @@ model HabitOccurrence {
 }
 
 model Goal {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
+  workspaceId  String?
+  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   title        String
-  targetAmount Decimal  @db.Decimal(10, 2)
+  targetAmount Decimal    @db.Decimal(10, 2)
   emoji        String?
   person       Person?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([workspaceId])
 }
 
 model QuickPreset {
-  id              String   @id @default(cuid())
+  id              String     @id @default(cuid())
+  workspaceId     String?
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
   title           String
   categoryId      String
-  category        Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  realCost        Decimal  @db.Decimal(10, 2)
-  alternativeCost Decimal  @db.Decimal(10, 2)
+  category        Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  realCost        Decimal    @db.Decimal(10, 2)
+  alternativeCost Decimal    @db.Decimal(10, 2)
   note            String?
   person          Person?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([workspaceId])
+}
+
+model User {
+  id                   String            @id
+  email                String?           @unique
+  name                 String?
+  image                String?
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  ownedWorkspaces      Workspace[]
+  workspaceMemberships WorkspaceMember[]
+  createdEntries       Entry[]           @relation("EntryCreatedBy")
+  paidEntries          Entry[]           @relation("EntryPaidBy")
+}
+
+model Workspace {
+  id           String            @id @default(cuid())
+  name         String
+  kind         WorkspaceKind     @default(private)
+  ownerUserId  String
+  owner        User              @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
+  members      WorkspaceMember[]
+  categories   Category[]
+  entries      Entry[]
+  habits       Habit[]
+  goals        Goal[]
+  quickPresets QuickPreset[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([ownerUserId])
+}
+
+model WorkspaceMember {
+  id          String              @id @default(cuid())
+  workspaceId String
+  userId      String
+  role        WorkspaceMemberRole @default(member)
+  workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime            @default(now())
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
 }

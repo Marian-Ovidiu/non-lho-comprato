@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "backfill:multi-account": "tsx prisma/backfill-multi-account.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

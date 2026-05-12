@@ -36,6 +36,7 @@ export type HabitSumAggregateOutputType = {
 
 export type HabitMinAggregateOutputType = {
   id: string | null
+  workspaceId: string | null
   name: string | null
   categoryId: string | null
   amount: runtime.Decimal | null
@@ -47,6 +48,7 @@ export type HabitMinAggregateOutputType = {
 
 export type HabitMaxAggregateOutputType = {
   id: string | null
+  workspaceId: string | null
   name: string | null
   categoryId: string | null
   amount: runtime.Decimal | null
@@ -58,6 +60,7 @@ export type HabitMaxAggregateOutputType = {
 
 export type HabitCountAggregateOutputType = {
   id: number
+  workspaceId: number
   name: number
   categoryId: number
   amount: number
@@ -80,6 +83,7 @@ export type HabitSumAggregateInputType = {
 
 export type HabitMinAggregateInputType = {
   id?: true
+  workspaceId?: true
   name?: true
   categoryId?: true
   amount?: true
@@ -91,6 +95,7 @@ export type HabitMinAggregateInputType = {
 
 export type HabitMaxAggregateInputType = {
   id?: true
+  workspaceId?: true
   name?: true
   categoryId?: true
   amount?: true
@@ -102,6 +107,7 @@ export type HabitMaxAggregateInputType = {
 
 export type HabitCountAggregateInputType = {
   id?: true
+  workspaceId?: true
   name?: true
   categoryId?: true
   amount?: true
@@ -201,6 +207,7 @@ export type HabitGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 
 export type HabitGroupByOutputType = {
   id: string
+  workspaceId: string | null
   name: string
   categoryId: string
   amount: runtime.Decimal
@@ -236,6 +243,7 @@ export type HabitWhereInput = {
   OR?: Prisma.HabitWhereInput[]
   NOT?: Prisma.HabitWhereInput | Prisma.HabitWhereInput[]
   id?: Prisma.StringFilter<"Habit"> | string
+  workspaceId?: Prisma.StringNullableFilter<"Habit"> | string | null
   name?: Prisma.StringFilter<"Habit"> | string
   categoryId?: Prisma.StringFilter<"Habit"> | string
   amount?: Prisma.DecimalFilter<"Habit"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -244,12 +252,14 @@ export type HabitWhereInput = {
   defaultBehavior?: Prisma.StringFilter<"Habit"> | string
   createdAt?: Prisma.DateTimeFilter<"Habit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Habit"> | Date | string
+  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
   occurrences?: Prisma.HabitOccurrenceListRelationFilter
 }
 
 export type HabitOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -258,6 +268,7 @@ export type HabitOrderByWithRelationInput = {
   defaultBehavior?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  workspace?: Prisma.WorkspaceOrderByWithRelationInput
   category?: Prisma.CategoryOrderByWithRelationInput
   occurrences?: Prisma.HabitOccurrenceOrderByRelationAggregateInput
 }
@@ -267,6 +278,7 @@ export type HabitWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.HabitWhereInput | Prisma.HabitWhereInput[]
   OR?: Prisma.HabitWhereInput[]
   NOT?: Prisma.HabitWhereInput | Prisma.HabitWhereInput[]
+  workspaceId?: Prisma.StringNullableFilter<"Habit"> | string | null
   name?: Prisma.StringFilter<"Habit"> | string
   categoryId?: Prisma.StringFilter<"Habit"> | string
   amount?: Prisma.DecimalFilter<"Habit"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -275,12 +287,14 @@ export type HabitWhereUniqueInput = Prisma.AtLeast<{
   defaultBehavior?: Prisma.StringFilter<"Habit"> | string
   createdAt?: Prisma.DateTimeFilter<"Habit"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Habit"> | Date | string
+  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
   occurrences?: Prisma.HabitOccurrenceListRelationFilter
 }, "id">
 
 export type HabitOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   name?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -301,6 +315,7 @@ export type HabitScalarWhereWithAggregatesInput = {
   OR?: Prisma.HabitScalarWhereWithAggregatesInput[]
   NOT?: Prisma.HabitScalarWhereWithAggregatesInput | Prisma.HabitScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Habit"> | string
+  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"Habit"> | string | null
   name?: Prisma.StringWithAggregatesFilter<"Habit"> | string
   categoryId?: Prisma.StringWithAggregatesFilter<"Habit"> | string
   amount?: Prisma.DecimalWithAggregatesFilter<"Habit"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -320,12 +335,14 @@ export type HabitCreateInput = {
   defaultBehavior?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutHabitsInput
   category: Prisma.CategoryCreateNestedOneWithoutHabitsInput
   occurrences?: Prisma.HabitOccurrenceCreateNestedManyWithoutHabitInput
 }
 
 export type HabitUncheckedCreateInput = {
   id?: string
+  workspaceId?: string | null
   name: string
   categoryId: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -346,12 +363,14 @@ export type HabitUpdateInput = {
   defaultBehavior?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutHabitsNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutHabitsNestedInput
   occurrences?: Prisma.HabitOccurrenceUpdateManyWithoutHabitNestedInput
 }
 
 export type HabitUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -365,6 +384,7 @@ export type HabitUncheckedUpdateInput = {
 
 export type HabitCreateManyInput = {
   id?: string
+  workspaceId?: string | null
   name: string
   categoryId: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -388,6 +408,7 @@ export type HabitUpdateManyMutationInput = {
 
 export type HabitUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -410,6 +431,7 @@ export type HabitOrderByRelationAggregateInput = {
 
 export type HabitCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -426,6 +448,7 @@ export type HabitAvgOrderByAggregateInput = {
 
 export type HabitMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -437,6 +460,7 @@ export type HabitMaxOrderByAggregateInput = {
 
 export type HabitMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   name?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   amount?: Prisma.SortOrder
@@ -515,6 +539,48 @@ export type HabitUpdateOneRequiredWithoutOccurrencesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.HabitUpdateToOneWithWhereWithoutOccurrencesInput, Prisma.HabitUpdateWithoutOccurrencesInput>, Prisma.HabitUncheckedUpdateWithoutOccurrencesInput>
 }
 
+export type HabitCreateNestedManyWithoutWorkspaceInput = {
+  create?: Prisma.XOR<Prisma.HabitCreateWithoutWorkspaceInput, Prisma.HabitUncheckedCreateWithoutWorkspaceInput> | Prisma.HabitCreateWithoutWorkspaceInput[] | Prisma.HabitUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.HabitCreateOrConnectWithoutWorkspaceInput | Prisma.HabitCreateOrConnectWithoutWorkspaceInput[]
+  createMany?: Prisma.HabitCreateManyWorkspaceInputEnvelope
+  connect?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+}
+
+export type HabitUncheckedCreateNestedManyWithoutWorkspaceInput = {
+  create?: Prisma.XOR<Prisma.HabitCreateWithoutWorkspaceInput, Prisma.HabitUncheckedCreateWithoutWorkspaceInput> | Prisma.HabitCreateWithoutWorkspaceInput[] | Prisma.HabitUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.HabitCreateOrConnectWithoutWorkspaceInput | Prisma.HabitCreateOrConnectWithoutWorkspaceInput[]
+  createMany?: Prisma.HabitCreateManyWorkspaceInputEnvelope
+  connect?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+}
+
+export type HabitUpdateManyWithoutWorkspaceNestedInput = {
+  create?: Prisma.XOR<Prisma.HabitCreateWithoutWorkspaceInput, Prisma.HabitUncheckedCreateWithoutWorkspaceInput> | Prisma.HabitCreateWithoutWorkspaceInput[] | Prisma.HabitUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.HabitCreateOrConnectWithoutWorkspaceInput | Prisma.HabitCreateOrConnectWithoutWorkspaceInput[]
+  upsert?: Prisma.HabitUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.HabitUpsertWithWhereUniqueWithoutWorkspaceInput[]
+  createMany?: Prisma.HabitCreateManyWorkspaceInputEnvelope
+  set?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  disconnect?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  delete?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  connect?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  update?: Prisma.HabitUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.HabitUpdateWithWhereUniqueWithoutWorkspaceInput[]
+  updateMany?: Prisma.HabitUpdateManyWithWhereWithoutWorkspaceInput | Prisma.HabitUpdateManyWithWhereWithoutWorkspaceInput[]
+  deleteMany?: Prisma.HabitScalarWhereInput | Prisma.HabitScalarWhereInput[]
+}
+
+export type HabitUncheckedUpdateManyWithoutWorkspaceNestedInput = {
+  create?: Prisma.XOR<Prisma.HabitCreateWithoutWorkspaceInput, Prisma.HabitUncheckedCreateWithoutWorkspaceInput> | Prisma.HabitCreateWithoutWorkspaceInput[] | Prisma.HabitUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.HabitCreateOrConnectWithoutWorkspaceInput | Prisma.HabitCreateOrConnectWithoutWorkspaceInput[]
+  upsert?: Prisma.HabitUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.HabitUpsertWithWhereUniqueWithoutWorkspaceInput[]
+  createMany?: Prisma.HabitCreateManyWorkspaceInputEnvelope
+  set?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  disconnect?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  delete?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  connect?: Prisma.HabitWhereUniqueInput | Prisma.HabitWhereUniqueInput[]
+  update?: Prisma.HabitUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.HabitUpdateWithWhereUniqueWithoutWorkspaceInput[]
+  updateMany?: Prisma.HabitUpdateManyWithWhereWithoutWorkspaceInput | Prisma.HabitUpdateManyWithWhereWithoutWorkspaceInput[]
+  deleteMany?: Prisma.HabitScalarWhereInput | Prisma.HabitScalarWhereInput[]
+}
+
 export type HabitCreateWithoutCategoryInput = {
   id?: string
   name: string
@@ -524,11 +590,13 @@ export type HabitCreateWithoutCategoryInput = {
   defaultBehavior?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutHabitsInput
   occurrences?: Prisma.HabitOccurrenceCreateNestedManyWithoutHabitInput
 }
 
 export type HabitUncheckedCreateWithoutCategoryInput = {
   id?: string
+  workspaceId?: string | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   activeDays: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -570,6 +638,7 @@ export type HabitScalarWhereInput = {
   OR?: Prisma.HabitScalarWhereInput[]
   NOT?: Prisma.HabitScalarWhereInput | Prisma.HabitScalarWhereInput[]
   id?: Prisma.StringFilter<"Habit"> | string
+  workspaceId?: Prisma.StringNullableFilter<"Habit"> | string | null
   name?: Prisma.StringFilter<"Habit"> | string
   categoryId?: Prisma.StringFilter<"Habit"> | string
   amount?: Prisma.DecimalFilter<"Habit"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -589,11 +658,13 @@ export type HabitCreateWithoutOccurrencesInput = {
   defaultBehavior?: string
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutHabitsInput
   category: Prisma.CategoryCreateNestedOneWithoutHabitsInput
 }
 
 export type HabitUncheckedCreateWithoutOccurrencesInput = {
   id?: string
+  workspaceId?: string | null
   name: string
   categoryId: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -629,11 +700,13 @@ export type HabitUpdateWithoutOccurrencesInput = {
   defaultBehavior?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutHabitsNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutHabitsNestedInput
 }
 
 export type HabitUncheckedUpdateWithoutOccurrencesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -644,8 +717,61 @@ export type HabitUncheckedUpdateWithoutOccurrencesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type HabitCreateWithoutWorkspaceInput = {
+  id?: string
+  name: string
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  activeDays: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isActive?: boolean
+  defaultBehavior?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutHabitsInput
+  occurrences?: Prisma.HabitOccurrenceCreateNestedManyWithoutHabitInput
+}
+
+export type HabitUncheckedCreateWithoutWorkspaceInput = {
+  id?: string
+  name: string
+  categoryId: string
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  activeDays: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isActive?: boolean
+  defaultBehavior?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  occurrences?: Prisma.HabitOccurrenceUncheckedCreateNestedManyWithoutHabitInput
+}
+
+export type HabitCreateOrConnectWithoutWorkspaceInput = {
+  where: Prisma.HabitWhereUniqueInput
+  create: Prisma.XOR<Prisma.HabitCreateWithoutWorkspaceInput, Prisma.HabitUncheckedCreateWithoutWorkspaceInput>
+}
+
+export type HabitCreateManyWorkspaceInputEnvelope = {
+  data: Prisma.HabitCreateManyWorkspaceInput | Prisma.HabitCreateManyWorkspaceInput[]
+  skipDuplicates?: boolean
+}
+
+export type HabitUpsertWithWhereUniqueWithoutWorkspaceInput = {
+  where: Prisma.HabitWhereUniqueInput
+  update: Prisma.XOR<Prisma.HabitUpdateWithoutWorkspaceInput, Prisma.HabitUncheckedUpdateWithoutWorkspaceInput>
+  create: Prisma.XOR<Prisma.HabitCreateWithoutWorkspaceInput, Prisma.HabitUncheckedCreateWithoutWorkspaceInput>
+}
+
+export type HabitUpdateWithWhereUniqueWithoutWorkspaceInput = {
+  where: Prisma.HabitWhereUniqueInput
+  data: Prisma.XOR<Prisma.HabitUpdateWithoutWorkspaceInput, Prisma.HabitUncheckedUpdateWithoutWorkspaceInput>
+}
+
+export type HabitUpdateManyWithWhereWithoutWorkspaceInput = {
+  where: Prisma.HabitScalarWhereInput
+  data: Prisma.XOR<Prisma.HabitUpdateManyMutationInput, Prisma.HabitUncheckedUpdateManyWithoutWorkspaceInput>
+}
+
 export type HabitCreateManyCategoryInput = {
   id?: string
+  workspaceId?: string | null
   name: string
   amount: runtime.Decimal | runtime.DecimalJsLike | number | string
   activeDays: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -664,11 +790,13 @@ export type HabitUpdateWithoutCategoryInput = {
   defaultBehavior?: Prisma.StringFieldUpdateOperationsInput | string
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutHabitsNestedInput
   occurrences?: Prisma.HabitOccurrenceUpdateManyWithoutHabitNestedInput
 }
 
 export type HabitUncheckedUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   activeDays?: Prisma.JsonNullValueInput | runtime.InputJsonValue
@@ -681,7 +809,58 @@ export type HabitUncheckedUpdateWithoutCategoryInput = {
 
 export type HabitUncheckedUpdateManyWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   name?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  activeDays?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultBehavior?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type HabitCreateManyWorkspaceInput = {
+  id?: string
+  name: string
+  categoryId: string
+  amount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  activeDays: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isActive?: boolean
+  defaultBehavior?: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type HabitUpdateWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  activeDays?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultBehavior?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutHabitsNestedInput
+  occurrences?: Prisma.HabitOccurrenceUpdateManyWithoutHabitNestedInput
+}
+
+export type HabitUncheckedUpdateWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  activeDays?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  defaultBehavior?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurrences?: Prisma.HabitOccurrenceUncheckedUpdateManyWithoutHabitNestedInput
+}
+
+export type HabitUncheckedUpdateManyWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   amount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   activeDays?: Prisma.JsonNullValueInput | runtime.InputJsonValue
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -723,6 +902,7 @@ export type HabitCountOutputTypeCountOccurrencesArgs<ExtArgs extends runtime.Typ
 
 export type HabitSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   name?: boolean
   categoryId?: boolean
   amount?: boolean
@@ -731,6 +911,7 @@ export type HabitSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   defaultBehavior?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.Habit$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   occurrences?: boolean | Prisma.Habit$occurrencesArgs<ExtArgs>
   _count?: boolean | Prisma.HabitCountOutputTypeDefaultArgs<ExtArgs>
@@ -738,6 +919,7 @@ export type HabitSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
 
 export type HabitSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   name?: boolean
   categoryId?: boolean
   amount?: boolean
@@ -746,11 +928,13 @@ export type HabitSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   defaultBehavior?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.Habit$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["habit"]>
 
 export type HabitSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   name?: boolean
   categoryId?: boolean
   amount?: boolean
@@ -759,11 +943,13 @@ export type HabitSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   defaultBehavior?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.Habit$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["habit"]>
 
 export type HabitSelectScalar = {
   id?: boolean
+  workspaceId?: boolean
   name?: boolean
   categoryId?: boolean
   amount?: boolean
@@ -774,27 +960,32 @@ export type HabitSelectScalar = {
   updatedAt?: boolean
 }
 
-export type HabitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "categoryId" | "amount" | "activeDays" | "isActive" | "defaultBehavior" | "createdAt" | "updatedAt", ExtArgs["result"]["habit"]>
+export type HabitOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "name" | "categoryId" | "amount" | "activeDays" | "isActive" | "defaultBehavior" | "createdAt" | "updatedAt", ExtArgs["result"]["habit"]>
 export type HabitInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.Habit$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
   occurrences?: boolean | Prisma.Habit$occurrencesArgs<ExtArgs>
   _count?: boolean | Prisma.HabitCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type HabitIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.Habit$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }
 export type HabitIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.Habit$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }
 
 export type $HabitPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Habit"
   objects: {
+    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
     category: Prisma.$CategoryPayload<ExtArgs>
     occurrences: Prisma.$HabitOccurrencePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    workspaceId: string | null
     name: string
     categoryId: string
     amount: runtime.Decimal
@@ -1197,6 +1388,7 @@ readonly fields: HabitFieldRefs;
  */
 export interface Prisma__HabitClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  workspace<T extends Prisma.Habit$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Habit$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   occurrences<T extends Prisma.Habit$occurrencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Habit$occurrencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$HabitOccurrencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1229,6 +1421,7 @@ export interface Prisma__HabitClient<T, Null = never, ExtArgs extends runtime.Ty
  */
 export interface HabitFieldRefs {
   readonly id: Prisma.FieldRef<"Habit", 'String'>
+  readonly workspaceId: Prisma.FieldRef<"Habit", 'String'>
   readonly name: Prisma.FieldRef<"Habit", 'String'>
   readonly categoryId: Prisma.FieldRef<"Habit", 'String'>
   readonly amount: Prisma.FieldRef<"Habit", 'Decimal'>
@@ -1635,6 +1828,25 @@ export type HabitDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Habits to delete.
    */
   limit?: number
+}
+
+/**
+ * Habit.workspace
+ */
+export type Habit$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Workspace
+   */
+  select?: Prisma.WorkspaceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Workspace
+   */
+  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WorkspaceInclude<ExtArgs> | null
+  where?: Prisma.WorkspaceWhereInput
 }
 
 /**

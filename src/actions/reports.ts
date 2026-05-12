@@ -1,10 +1,10 @@
 "use server";
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { formatMoney } from "@/src/lib/formatters";
 import { prisma } from "@/src/lib/prisma";
 import { getPersonFilterLabel } from "@/src/lib/person-labels";
+import { getWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 
 type DecimalLike = {
   toString?: () => string;
@@ -280,12 +280,12 @@ function ensureSelectedMonthOption(
 function buildEntryWhere(monthKey: string): Prisma.EntryWhereInput {
   const { start, end } = getMonthRangeUtc(monthKey);
 
-  return {
+  return getWorkspaceScopedWhere({
     date: {
       gte: start,
       lt: end,
     },
-  };
+  });
 }
 
 function buildHabitOccurrenceWhere(monthKey: string): Prisma.HabitOccurrenceWhereInput {
@@ -295,6 +295,9 @@ function buildHabitOccurrenceWhere(monthKey: string): Prisma.HabitOccurrenceWher
     date: {
       gte: start,
       lt: end,
+    },
+    habit: {
+      is: getWorkspaceScopedWhere(),
     },
   };
 }
@@ -485,6 +488,7 @@ function buildEmptyReport(monthKey: string): MonthlyReportData {
 export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOption[]> {
   try {
     const dates = await prisma.entry.findMany({
+      where: getWorkspaceScopedWhere(),
       select: {
         date: true,
       },

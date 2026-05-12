@@ -1,0 +1,1194 @@
+(node:10304) Warning: SECURITY WARNING: The SSL modes 'prefer', 'require', and 'verify-ca' are treated as aliases for 'verify-full'.
+In the next major version (pg-connection-string v3.0.0 and pg v9.0.0), these modes will adopt standard libpq semantics, which have weaker security guarantees.
+
+To prepare for this change:
+- If you want the current behavior, explicitly use 'sslmode=verify-full'
+- If you want libpq compatibility now, use 'uselibpqcompat=true&sslmode=require'
+
+See https://www.postgresql.org/docs/current/libpq-ssl.html for libpq SSL mode definitions.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Failed to ensure today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habit.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async v (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15218)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15199) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Habit',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to finalize old habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async A (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:16310)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15241) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load streak data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:33331)
+    at async m (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:35085)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load dashboard data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:4520)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today dashboard summary: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:36127) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load goals: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.goal.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__06hia7g._.js:1:2192) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Goal',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15882) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly report: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27736) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Falling back to static categories: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.category.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:5144)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0e3c55h._.js:1:4250) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Category',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load presets: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.quickPreset.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0-kk_ax._.js:1:12771)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0e3c55h._.js:1:4250) {
+  code: 'P1011',
+  meta: {
+    modelName: 'QuickPreset',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load goals: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.goal.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__06hia7g._.js:1:2192)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0500znr._.js:1:4328) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Goal',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load stats overview: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async o (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:1024)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async p (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:1495)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load category stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:2657)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load top savings: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:3776)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load habit stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async s (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:4315)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load available report months: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27311)
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0ko.vr8._.js:1:9125) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly report: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27736)
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0ko.vr8._.js:1:9198) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to ensure today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habit.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async v (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15218)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15199) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Habit',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to finalize old habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async A (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:16310)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15241) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load streak data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:33331)
+    at async m (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:35085)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load dashboard data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:4520)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today dashboard summary: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:36127) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load goals: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.goal.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__06hia7g._.js:1:2192) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Goal',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15882) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly report: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27736) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to ensure today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habit.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async v (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15218)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15199) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Habit',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to finalize old habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async A (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:16310)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15241) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load streak data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:33331)
+    at async m (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:35085)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load dashboard data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:4520)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today dashboard summary: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:36127) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load goals: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.goal.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__06hia7g._.js:1:2192) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Goal',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15882) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly report: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27736) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load stats overview: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async o (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:1024)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async p (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:1495)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load category stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:2657)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load top savings: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:3776)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load habit stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async s (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:4315)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load available report months: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27311)
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0ko.vr8._.js:1:9125) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly report: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27736)
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0ko.vr8._.js:1:9198) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Falling back to static categories: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.category.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:5144)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0e3c55h._.js:1:4250) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Category',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load presets: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.quickPreset.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0-kk_ax._.js:1:12771)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0e3c55h._.js:1:4250) {
+  code: 'P1011',
+  meta: {
+    modelName: 'QuickPreset',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load goals: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.goal.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__06hia7g._.js:1:2192)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0500znr._.js:1:4328) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Goal',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to ensure today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habit.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async v (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15218)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15199) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Habit',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to finalize old habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async A (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:16310)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15241) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load streak data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:33331)
+    at async m (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:35085)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load dashboard data: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:4520)
+    at async z (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0c9x34e._.js:1:15508) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today dashboard summary: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async l (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:36127) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load goals: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.goal.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__06hia7g._.js:1:2192) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Goal',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load today habit occurrences: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0c.y_qk._.js:1:15882) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly report: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27736) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load stats overview: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async o (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:1024)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async p (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:1495)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load category stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:2657)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load top savings: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:3776)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load habit stats: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.habitOccurrence.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async s (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0jubjo_._.js:1:4315)
+    at async t (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_01jrqs_._.js:1:14838) {
+  code: 'P1011',
+  meta: {
+    modelName: 'HabitOccurrence',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load available report months: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async w (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27311)
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0ko.vr8._.js:1:9125) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load monthly report: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.entry.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__05x-3kj._.js:1:27736)
+    at async q (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\_0ko.vr8._.js:1:9198) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Entry',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Falling back to static categories: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.category.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async x (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:5144)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0e3c55h._.js:1:4250) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Category',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load presets: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.quickPreset.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0-kk_ax._.js:1:12771)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0e3c55h._.js:1:4250) {
+  code: 'P1011',
+  meta: {
+    modelName: 'QuickPreset',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to load goals: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.goal.findMany()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async r (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__06hia7g._.js:1:2192)
+    at async k (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0500znr._.js:1:4328) {
+  code: 'P1011',
+  meta: {
+    modelName: 'Goal',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}
+Failed to create entry: Error [PrismaClientKnownRequestError]: 
+Invalid `prisma.user.findUnique()` invocation:
+
+
+Error opening a TLS connection: self-signed certificate in certificate chain
+    at async f (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:85098)
+    at async y (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__0tc0nwr._.js:1:6049) {
+  code: 'P1011',
+  meta: {
+    modelName: 'User',
+    driverAdapterError: Error [DriverAdapterError]: TlsConnectionError
+        at F.onError (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11951)
+        at F.performIO (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:11892)
+        at async F.queryRaw (C:\projects\privati\non-lho-comprato\.next\server\chunks\ssr\[root-of-the-server]__02gm4c7._.js:1:8478) {
+      [cause]: [Object]
+    }
+  },
+  clientVersion: '7.8.0'
+}

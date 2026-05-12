@@ -38,6 +38,7 @@ export type QuickPresetSumAggregateOutputType = {
 
 export type QuickPresetMinAggregateOutputType = {
   id: string | null
+  workspaceId: string | null
   title: string | null
   categoryId: string | null
   realCost: runtime.Decimal | null
@@ -50,6 +51,7 @@ export type QuickPresetMinAggregateOutputType = {
 
 export type QuickPresetMaxAggregateOutputType = {
   id: string | null
+  workspaceId: string | null
   title: string | null
   categoryId: string | null
   realCost: runtime.Decimal | null
@@ -62,6 +64,7 @@ export type QuickPresetMaxAggregateOutputType = {
 
 export type QuickPresetCountAggregateOutputType = {
   id: number
+  workspaceId: number
   title: number
   categoryId: number
   realCost: number
@@ -86,6 +89,7 @@ export type QuickPresetSumAggregateInputType = {
 
 export type QuickPresetMinAggregateInputType = {
   id?: true
+  workspaceId?: true
   title?: true
   categoryId?: true
   realCost?: true
@@ -98,6 +102,7 @@ export type QuickPresetMinAggregateInputType = {
 
 export type QuickPresetMaxAggregateInputType = {
   id?: true
+  workspaceId?: true
   title?: true
   categoryId?: true
   realCost?: true
@@ -110,6 +115,7 @@ export type QuickPresetMaxAggregateInputType = {
 
 export type QuickPresetCountAggregateInputType = {
   id?: true
+  workspaceId?: true
   title?: true
   categoryId?: true
   realCost?: true
@@ -209,6 +215,7 @@ export type QuickPresetGroupByArgs<ExtArgs extends runtime.Types.Extensions.Inte
 
 export type QuickPresetGroupByOutputType = {
   id: string
+  workspaceId: string | null
   title: string
   categoryId: string
   realCost: runtime.Decimal
@@ -244,6 +251,7 @@ export type QuickPresetWhereInput = {
   OR?: Prisma.QuickPresetWhereInput[]
   NOT?: Prisma.QuickPresetWhereInput | Prisma.QuickPresetWhereInput[]
   id?: Prisma.StringFilter<"QuickPreset"> | string
+  workspaceId?: Prisma.StringNullableFilter<"QuickPreset"> | string | null
   title?: Prisma.StringFilter<"QuickPreset"> | string
   categoryId?: Prisma.StringFilter<"QuickPreset"> | string
   realCost?: Prisma.DecimalFilter<"QuickPreset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -252,11 +260,13 @@ export type QuickPresetWhereInput = {
   person?: Prisma.EnumPersonNullableFilter<"QuickPreset"> | $Enums.Person | null
   createdAt?: Prisma.DateTimeFilter<"QuickPreset"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"QuickPreset"> | Date | string
+  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
 }
 
 export type QuickPresetOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -265,6 +275,7 @@ export type QuickPresetOrderByWithRelationInput = {
   person?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  workspace?: Prisma.WorkspaceOrderByWithRelationInput
   category?: Prisma.CategoryOrderByWithRelationInput
 }
 
@@ -273,6 +284,7 @@ export type QuickPresetWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.QuickPresetWhereInput | Prisma.QuickPresetWhereInput[]
   OR?: Prisma.QuickPresetWhereInput[]
   NOT?: Prisma.QuickPresetWhereInput | Prisma.QuickPresetWhereInput[]
+  workspaceId?: Prisma.StringNullableFilter<"QuickPreset"> | string | null
   title?: Prisma.StringFilter<"QuickPreset"> | string
   categoryId?: Prisma.StringFilter<"QuickPreset"> | string
   realCost?: Prisma.DecimalFilter<"QuickPreset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -281,11 +293,13 @@ export type QuickPresetWhereUniqueInput = Prisma.AtLeast<{
   person?: Prisma.EnumPersonNullableFilter<"QuickPreset"> | $Enums.Person | null
   createdAt?: Prisma.DateTimeFilter<"QuickPreset"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"QuickPreset"> | Date | string
+  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
 }, "id">
 
 export type QuickPresetOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -306,6 +320,7 @@ export type QuickPresetScalarWhereWithAggregatesInput = {
   OR?: Prisma.QuickPresetScalarWhereWithAggregatesInput[]
   NOT?: Prisma.QuickPresetScalarWhereWithAggregatesInput | Prisma.QuickPresetScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"QuickPreset"> | string
+  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"QuickPreset"> | string | null
   title?: Prisma.StringWithAggregatesFilter<"QuickPreset"> | string
   categoryId?: Prisma.StringWithAggregatesFilter<"QuickPreset"> | string
   realCost?: Prisma.DecimalWithAggregatesFilter<"QuickPreset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -325,11 +340,13 @@ export type QuickPresetCreateInput = {
   person?: $Enums.Person | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutQuickPresetsInput
   category: Prisma.CategoryCreateNestedOneWithoutQuickPresetsInput
 }
 
 export type QuickPresetUncheckedCreateInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   categoryId: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -349,11 +366,13 @@ export type QuickPresetUpdateInput = {
   person?: Prisma.NullableEnumPersonFieldUpdateOperationsInput | $Enums.Person | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutQuickPresetsNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutQuickPresetsNestedInput
 }
 
 export type QuickPresetUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -366,6 +385,7 @@ export type QuickPresetUncheckedUpdateInput = {
 
 export type QuickPresetCreateManyInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   categoryId: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -389,6 +409,7 @@ export type QuickPresetUpdateManyMutationInput = {
 
 export type QuickPresetUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -411,6 +432,7 @@ export type QuickPresetOrderByRelationAggregateInput = {
 
 export type QuickPresetCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -428,6 +450,7 @@ export type QuickPresetAvgOrderByAggregateInput = {
 
 export type QuickPresetMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -440,6 +463,7 @@ export type QuickPresetMaxOrderByAggregateInput = {
 
 export type QuickPresetMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -497,6 +521,48 @@ export type QuickPresetUncheckedUpdateManyWithoutCategoryNestedInput = {
   deleteMany?: Prisma.QuickPresetScalarWhereInput | Prisma.QuickPresetScalarWhereInput[]
 }
 
+export type QuickPresetCreateNestedManyWithoutWorkspaceInput = {
+  create?: Prisma.XOR<Prisma.QuickPresetCreateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput> | Prisma.QuickPresetCreateWithoutWorkspaceInput[] | Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput | Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput[]
+  createMany?: Prisma.QuickPresetCreateManyWorkspaceInputEnvelope
+  connect?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+}
+
+export type QuickPresetUncheckedCreateNestedManyWithoutWorkspaceInput = {
+  create?: Prisma.XOR<Prisma.QuickPresetCreateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput> | Prisma.QuickPresetCreateWithoutWorkspaceInput[] | Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput | Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput[]
+  createMany?: Prisma.QuickPresetCreateManyWorkspaceInputEnvelope
+  connect?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+}
+
+export type QuickPresetUpdateManyWithoutWorkspaceNestedInput = {
+  create?: Prisma.XOR<Prisma.QuickPresetCreateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput> | Prisma.QuickPresetCreateWithoutWorkspaceInput[] | Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput | Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput[]
+  upsert?: Prisma.QuickPresetUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.QuickPresetUpsertWithWhereUniqueWithoutWorkspaceInput[]
+  createMany?: Prisma.QuickPresetCreateManyWorkspaceInputEnvelope
+  set?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  disconnect?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  delete?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  connect?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  update?: Prisma.QuickPresetUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.QuickPresetUpdateWithWhereUniqueWithoutWorkspaceInput[]
+  updateMany?: Prisma.QuickPresetUpdateManyWithWhereWithoutWorkspaceInput | Prisma.QuickPresetUpdateManyWithWhereWithoutWorkspaceInput[]
+  deleteMany?: Prisma.QuickPresetScalarWhereInput | Prisma.QuickPresetScalarWhereInput[]
+}
+
+export type QuickPresetUncheckedUpdateManyWithoutWorkspaceNestedInput = {
+  create?: Prisma.XOR<Prisma.QuickPresetCreateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput> | Prisma.QuickPresetCreateWithoutWorkspaceInput[] | Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput | Prisma.QuickPresetCreateOrConnectWithoutWorkspaceInput[]
+  upsert?: Prisma.QuickPresetUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.QuickPresetUpsertWithWhereUniqueWithoutWorkspaceInput[]
+  createMany?: Prisma.QuickPresetCreateManyWorkspaceInputEnvelope
+  set?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  disconnect?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  delete?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  connect?: Prisma.QuickPresetWhereUniqueInput | Prisma.QuickPresetWhereUniqueInput[]
+  update?: Prisma.QuickPresetUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.QuickPresetUpdateWithWhereUniqueWithoutWorkspaceInput[]
+  updateMany?: Prisma.QuickPresetUpdateManyWithWhereWithoutWorkspaceInput | Prisma.QuickPresetUpdateManyWithWhereWithoutWorkspaceInput[]
+  deleteMany?: Prisma.QuickPresetScalarWhereInput | Prisma.QuickPresetScalarWhereInput[]
+}
+
 export type QuickPresetCreateWithoutCategoryInput = {
   id?: string
   title: string
@@ -506,10 +572,12 @@ export type QuickPresetCreateWithoutCategoryInput = {
   person?: $Enums.Person | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutQuickPresetsInput
 }
 
 export type QuickPresetUncheckedCreateWithoutCategoryInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -550,6 +618,7 @@ export type QuickPresetScalarWhereInput = {
   OR?: Prisma.QuickPresetScalarWhereInput[]
   NOT?: Prisma.QuickPresetScalarWhereInput | Prisma.QuickPresetScalarWhereInput[]
   id?: Prisma.StringFilter<"QuickPreset"> | string
+  workspaceId?: Prisma.StringNullableFilter<"QuickPreset"> | string | null
   title?: Prisma.StringFilter<"QuickPreset"> | string
   categoryId?: Prisma.StringFilter<"QuickPreset"> | string
   realCost?: Prisma.DecimalFilter<"QuickPreset"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -560,8 +629,59 @@ export type QuickPresetScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"QuickPreset"> | Date | string
 }
 
+export type QuickPresetCreateWithoutWorkspaceInput = {
+  id?: string
+  title: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  note?: string | null
+  person?: $Enums.Person | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutQuickPresetsInput
+}
+
+export type QuickPresetUncheckedCreateWithoutWorkspaceInput = {
+  id?: string
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  note?: string | null
+  person?: $Enums.Person | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type QuickPresetCreateOrConnectWithoutWorkspaceInput = {
+  where: Prisma.QuickPresetWhereUniqueInput
+  create: Prisma.XOR<Prisma.QuickPresetCreateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput>
+}
+
+export type QuickPresetCreateManyWorkspaceInputEnvelope = {
+  data: Prisma.QuickPresetCreateManyWorkspaceInput | Prisma.QuickPresetCreateManyWorkspaceInput[]
+  skipDuplicates?: boolean
+}
+
+export type QuickPresetUpsertWithWhereUniqueWithoutWorkspaceInput = {
+  where: Prisma.QuickPresetWhereUniqueInput
+  update: Prisma.XOR<Prisma.QuickPresetUpdateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedUpdateWithoutWorkspaceInput>
+  create: Prisma.XOR<Prisma.QuickPresetCreateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedCreateWithoutWorkspaceInput>
+}
+
+export type QuickPresetUpdateWithWhereUniqueWithoutWorkspaceInput = {
+  where: Prisma.QuickPresetWhereUniqueInput
+  data: Prisma.XOR<Prisma.QuickPresetUpdateWithoutWorkspaceInput, Prisma.QuickPresetUncheckedUpdateWithoutWorkspaceInput>
+}
+
+export type QuickPresetUpdateManyWithWhereWithoutWorkspaceInput = {
+  where: Prisma.QuickPresetScalarWhereInput
+  data: Prisma.XOR<Prisma.QuickPresetUpdateManyMutationInput, Prisma.QuickPresetUncheckedUpdateManyWithoutWorkspaceInput>
+}
+
 export type QuickPresetCreateManyCategoryInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -580,10 +700,12 @@ export type QuickPresetUpdateWithoutCategoryInput = {
   person?: Prisma.NullableEnumPersonFieldUpdateOperationsInput | $Enums.Person | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutQuickPresetsNestedInput
 }
 
 export type QuickPresetUncheckedUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -595,7 +717,56 @@ export type QuickPresetUncheckedUpdateWithoutCategoryInput = {
 
 export type QuickPresetUncheckedUpdateManyWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  person?: Prisma.NullableEnumPersonFieldUpdateOperationsInput | $Enums.Person | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type QuickPresetCreateManyWorkspaceInput = {
+  id?: string
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  note?: string | null
+  person?: $Enums.Person | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type QuickPresetUpdateWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  person?: Prisma.NullableEnumPersonFieldUpdateOperationsInput | $Enums.Person | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutQuickPresetsNestedInput
+}
+
+export type QuickPresetUncheckedUpdateWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  person?: Prisma.NullableEnumPersonFieldUpdateOperationsInput | $Enums.Person | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type QuickPresetUncheckedUpdateManyWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -608,6 +779,7 @@ export type QuickPresetUncheckedUpdateManyWithoutCategoryInput = {
 
 export type QuickPresetSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -616,11 +788,13 @@ export type QuickPresetSelect<ExtArgs extends runtime.Types.Extensions.InternalA
   person?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.QuickPreset$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["quickPreset"]>
 
 export type QuickPresetSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -629,11 +803,13 @@ export type QuickPresetSelectCreateManyAndReturn<ExtArgs extends runtime.Types.E
   person?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.QuickPreset$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["quickPreset"]>
 
 export type QuickPresetSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -642,11 +818,13 @@ export type QuickPresetSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.E
   person?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.QuickPreset$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["quickPreset"]>
 
 export type QuickPresetSelectScalar = {
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -657,24 +835,29 @@ export type QuickPresetSelectScalar = {
   updatedAt?: boolean
 }
 
-export type QuickPresetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "categoryId" | "realCost" | "alternativeCost" | "note" | "person" | "createdAt" | "updatedAt", ExtArgs["result"]["quickPreset"]>
+export type QuickPresetOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "title" | "categoryId" | "realCost" | "alternativeCost" | "note" | "person" | "createdAt" | "updatedAt", ExtArgs["result"]["quickPreset"]>
 export type QuickPresetInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.QuickPreset$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }
 export type QuickPresetIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.QuickPreset$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }
 export type QuickPresetIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.QuickPreset$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
 }
 
 export type $QuickPresetPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "QuickPreset"
   objects: {
+    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
     category: Prisma.$CategoryPayload<ExtArgs>
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    workspaceId: string | null
     title: string
     categoryId: string
     realCost: runtime.Decimal
@@ -1077,6 +1260,7 @@ readonly fields: QuickPresetFieldRefs;
  */
 export interface Prisma__QuickPresetClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  workspace<T extends Prisma.QuickPreset$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.QuickPreset$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1108,6 +1292,7 @@ export interface Prisma__QuickPresetClient<T, Null = never, ExtArgs extends runt
  */
 export interface QuickPresetFieldRefs {
   readonly id: Prisma.FieldRef<"QuickPreset", 'String'>
+  readonly workspaceId: Prisma.FieldRef<"QuickPreset", 'String'>
   readonly title: Prisma.FieldRef<"QuickPreset", 'String'>
   readonly categoryId: Prisma.FieldRef<"QuickPreset", 'String'>
   readonly realCost: Prisma.FieldRef<"QuickPreset", 'Decimal'>
@@ -1514,6 +1699,25 @@ export type QuickPresetDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.I
    * Limit how many QuickPresets to delete.
    */
   limit?: number
+}
+
+/**
+ * QuickPreset.workspace
+ */
+export type QuickPreset$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Workspace
+   */
+  select?: Prisma.WorkspaceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Workspace
+   */
+  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WorkspaceInclude<ExtArgs> | null
+  where?: Prisma.WorkspaceWhereInput
 }
 
 /**

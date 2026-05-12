@@ -26,6 +26,30 @@ export const Person = {
 export type Person = (typeof Person)[keyof typeof Person]
 
 
+export const WorkspaceKind = {
+  private: 'private',
+  shared: 'shared'
+} as const
+
+export type WorkspaceKind = (typeof WorkspaceKind)[keyof typeof WorkspaceKind]
+
+
+export const WorkspaceMemberRole = {
+  owner: 'owner',
+  member: 'member'
+} as const
+
+export type WorkspaceMemberRole = (typeof WorkspaceMemberRole)[keyof typeof WorkspaceMemberRole]
+
+
+export const EntryVisibility = {
+  private: 'private',
+  workspace: 'workspace'
+} as const
+
+export type EntryVisibility = (typeof EntryVisibility)[keyof typeof EntryVisibility]
+
+
 export const HabitOccurrenceStatus = {
   pending: 'pending',
   spent: 'spent',

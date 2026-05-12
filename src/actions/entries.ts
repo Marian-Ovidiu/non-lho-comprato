@@ -4,9 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
-import { Person } from "@/src/lib/generated/prisma/enums";
+import { EntryVisibility, Person } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
+import {
+  getCurrentUser,
+  getCurrentWorkspaceId,
+  getWorkspaceScopedWhere,
+  mapLegacyPersonToUserId,
+  requireWorkspaceAccessForRecord,
+} from "@/src/lib/workspace-context";
 
 type CreateEntryResult = {
   success: boolean;
@@ -106,7 +113,7 @@ function getPerson(formData: FormData): {
     return { value: Person.MARIAN };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA) {
+  if (raw === Person.MARIAN || raw === Person.MARTINA || raw === Person.TUTTI) {
     return { value: raw };
   }
 
@@ -136,18 +143,18 @@ function tryRevalidatePath(path: string) {
   }
 }
 
-function buildEntryPersonWhere(person?: PersonFilterValue) {
-  return buildPersonWhere(person);
-}
-
-async function resolveCategory(categoryId: string) {
-  let category = await prisma.category.findUnique({
-    where: { id: categoryId },
+async function resolveCategory(categoryId: string, workspaceId: string) {
+  let category = await prisma.category.findFirst({
+    where: getWorkspaceScopedWhere({
+      id: categoryId,
+    }),
   });
 
   if (!category) {
-    category = await prisma.category.findUnique({
-      where: { slug: categoryId },
+    category = await prisma.category.findFirst({
+      where: getWorkspaceScopedWhere({
+        slug: categoryId,
+      }),
     });
   }
 
@@ -163,12 +170,14 @@ async function resolveCategory(categoryId: string) {
           name: fallbackCategory.name,
           icon: fallbackCategory.icon,
           color: fallbackCategory.color,
+          workspaceId,
         },
         create: {
           name: fallbackCategory.name,
           slug: fallbackCategory.slug,
           icon: fallbackCategory.icon,
           color: fallbackCategory.color,
+          workspaceId,
         },
       });
     }
@@ -228,7 +237,7 @@ export async function getEntries(
   person?: PersonFilterValue,
 ): Promise<EntryWithCategory[]> {
   return prisma.entry.findMany({
-    where: buildEntryPersonWhere(person),
+    where: getWorkspaceScopedWhere(buildPersonWhere(person)),
     orderBy: {
       date: "desc",
     },
@@ -250,14 +259,38 @@ export async function getEntryById(
   try {
     const entry = await prisma.entry.findUnique({
       where: { id },
-      include: {
-        category: true,
+      select: {
+        id: true,
+        title: true,
+        categoryId: true,
+        realCost: true,
+        alternativeCost: true,
+        savedAmount: true,
+        date: true,
+        note: true,
+        source: true,
+        person: true,
+        habitOccurrenceId: true,
+        createdAt: true,
+        updatedAt: true,
+        workspaceId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            color: true,
+            icon: true,
+          },
+        },
       },
     });
 
     if (!entry) {
       return null;
     }
+
+    await requireWorkspaceAccessForRecord(entry, "Movimento");
 
     return serializeEntry(entry);
   } catch (error) {
@@ -274,13 +307,13 @@ export async function getDashboardSummary(
   const nextMonthStart = startOfNextMonth(now);
 
   const entries = await prisma.entry.findMany({
-    where: {
-      ...buildEntryPersonWhere(person),
+    where: getWorkspaceScopedWhere({
+      ...buildPersonWhere(person),
       date: {
         gte: monthStart,
         lt: nextMonthStart,
       },
-    },
+    }),
     select: {
       realCost: true,
       alternativeCost: true,
@@ -313,6 +346,7 @@ export async function getDashboardSummary(
 export async function getCategories() {
   try {
     const categories = await prisma.category.findMany({
+      where: getWorkspaceScopedWhere(),
       orderBy: {
         name: "asc",
       },
@@ -388,7 +422,9 @@ export async function createEntry(
   );
 
   try {
-    const category = await resolveCategory(categoryId);
+    const currentUser = await getCurrentUser();
+    const workspaceId = await getCurrentWorkspaceId();
+    const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
       return {
@@ -402,6 +438,7 @@ export async function createEntry(
 
     await prisma.entry.create({
       data: {
+        workspaceId,
         title,
         categoryId: category.id,
         realCost: toDecimalString(realCost.value),
@@ -411,6 +448,9 @@ export async function createEntry(
         note: note || null,
         source: "manual",
         person: person.value,
+        createdByUserId: currentUser.id,
+        paidByUserId: mapLegacyPersonToUserId(person.value),
+        visibility: EntryVisibility.workspace,
       },
     });
 
@@ -498,6 +538,9 @@ export async function updateEntry(
         id: true,
         source: true,
         habitOccurrenceId: true,
+        workspaceId: true,
+        createdByUserId: true,
+        paidByUserId: true,
       },
     });
 
@@ -508,7 +551,11 @@ export async function updateEntry(
       };
     }
 
-    const category = await resolveCategory(categoryId);
+    await requireWorkspaceAccessForRecord(existingEntry, "Movimento");
+
+    const currentUser = await getCurrentUser();
+    const workspaceId = await getCurrentWorkspaceId();
+    const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
       return {
@@ -523,6 +570,7 @@ export async function updateEntry(
     await prisma.entry.update({
       where: { id },
       data: {
+        workspaceId,
         title,
         categoryId: category.id,
         realCost: toDecimalString(realCost.value),
@@ -533,6 +581,9 @@ export async function updateEntry(
         person: person.value,
         source: existingEntry.source,
         habitOccurrenceId: existingEntry.habitOccurrenceId,
+        createdByUserId: existingEntry.createdByUserId ?? currentUser.id,
+        paidByUserId: mapLegacyPersonToUserId(person.value),
+        visibility: EntryVisibility.workspace,
       },
     });
 
@@ -579,6 +630,7 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
         id: true,
         source: true,
         habitOccurrenceId: true,
+        workspaceId: true,
       },
     });
 
@@ -589,7 +641,22 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
       };
     }
 
+    await requireWorkspaceAccessForRecord(entry, "Movimento");
+
     if (entry.habitOccurrenceId) {
+      const habitOccurrence = await prisma.habitOccurrence.findUnique({
+        where: { id: entry.habitOccurrenceId },
+        include: {
+          habit: {
+            select: {
+              workspaceId: true,
+            },
+          },
+        },
+      });
+
+      await requireWorkspaceAccessForRecord(habitOccurrence, "Occorrenza abitudine");
+
       await prisma.$transaction([
         prisma.entry.delete({
           where: { id },

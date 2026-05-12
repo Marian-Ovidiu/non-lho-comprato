@@ -7,6 +7,11 @@ import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { Person } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
+import {
+  getCurrentWorkspaceId,
+  getWorkspaceScopedWhere,
+  requireWorkspaceAccessForRecord,
+} from "@/src/lib/workspace-context";
 
 type PresetActionResult = {
   success: boolean;
@@ -87,11 +92,19 @@ function revalidatePresetPaths() {
   }
 }
 
-async function resolveCategory(categoryId: string) {
-  let category = await prisma.category.findUnique({ where: { id: categoryId } });
+async function resolveCategory(categoryId: string, workspaceId: string) {
+  let category = await prisma.category.findFirst({
+    where: getWorkspaceScopedWhere({
+      id: categoryId,
+    }),
+  });
 
   if (!category) {
-    category = await prisma.category.findUnique({ where: { slug: categoryId } });
+    category = await prisma.category.findFirst({
+      where: getWorkspaceScopedWhere({
+        slug: categoryId,
+      }),
+    });
   }
 
   if (!category) {
@@ -106,12 +119,14 @@ async function resolveCategory(categoryId: string) {
           name: fallbackCategory.name,
           icon: fallbackCategory.icon,
           color: fallbackCategory.color,
+          workspaceId,
         },
         create: {
           name: fallbackCategory.name,
           slug: fallbackCategory.slug,
           icon: fallbackCategory.icon,
           color: fallbackCategory.color,
+          workspaceId,
         },
       });
     }
@@ -189,7 +204,8 @@ export async function createPreset(
   }
 
   try {
-    const category = await resolveCategory(categoryId);
+    const workspaceId = await getCurrentWorkspaceId();
+    const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
       return {
@@ -200,6 +216,7 @@ export async function createPreset(
 
     await prisma.quickPreset.create({
       data: {
+        workspaceId,
         title,
         categoryId: category.id,
         realCost: realCost.value.toFixed(2),
@@ -228,6 +245,7 @@ export async function createPreset(
 export async function getPresets() {
   try {
     return await prisma.quickPreset.findMany({
+      where: getWorkspaceScopedWhere(),
       orderBy: {
         createdAt: "desc",
       },
@@ -264,6 +282,7 @@ export async function createEntryFromPreset(
         alternativeCost: true,
         note: true,
         person: true,
+        workspaceId: true,
       },
     });
 
@@ -273,6 +292,8 @@ export async function createEntryFromPreset(
         message: "Preset non trovato",
       };
     }
+
+    await requireWorkspaceAccessForRecord(preset, "Preset");
 
     const effectivePerson =
       preset.person ?? (person && person !== "TUTTI" ? person : undefined);
@@ -331,7 +352,10 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
   try {
     const preset = await prisma.quickPreset.findUnique({
       where: { id: presetId },
-      select: { id: true },
+      select: {
+        id: true,
+        workspaceId: true,
+      },
     });
 
     if (!preset) {
@@ -340,6 +364,8 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
         message: "Preset non trovato",
       };
     }
+
+    await requireWorkspaceAccessForRecord(preset, "Preset");
 
     await prisma.quickPreset.delete({
       where: { id: presetId },

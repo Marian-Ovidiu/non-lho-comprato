@@ -3,6 +3,7 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
+import { getWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 
 type StreakResult = {
   currentStreak: number;
@@ -56,6 +57,7 @@ function buildEntryWhere(scope: StreakScope = {}): Prisma.EntryWhereInput {
   const where: Prisma.EntryWhereInput = {};
 
   Object.assign(where, buildPersonWhere(scope.person));
+  Object.assign(where, getWorkspaceScopedWhere());
 
   if (scope.categoryId) {
     where.categoryId = scope.categoryId;

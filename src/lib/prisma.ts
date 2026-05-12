@@ -13,10 +13,22 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
+function getConnectionString(value: string): string {
+  const hasQuery = value.includes("?");
+  const suffix = hasQuery ? "&" : "?";
+  const requiredParams = "uselibpqcompat=true&sslmode=require";
+
+  if (value.includes("uselibpqcompat=true") && value.includes("sslmode=require")) {
+    return value;
+  }
+
+  return `${value}${suffix}${requiredParams}`;
+}
+
 const pool =
   globalThis.prismaPool ??
   new Pool({
-    connectionString,
+    connectionString: getConnectionString(connectionString),
     ssl: {
       rejectUnauthorized: false,
     },

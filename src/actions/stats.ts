@@ -3,6 +3,7 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
+import { getWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 
 type StatsOverview = {
   totalRealSpent: number;
@@ -100,6 +101,7 @@ function buildEntryWhere(
   return {
     ...where,
     ...buildPersonWhere(person),
+    workspaceId: getWorkspaceScopedWhere().workspaceId,
   };
 }
 
@@ -109,12 +111,19 @@ function buildHabitOccurrenceWhere(
   const personWhere = buildPersonWhere(person);
 
   if (Object.keys(personWhere).length === 0) {
-    return {};
+    return {
+      habit: {
+        is: getWorkspaceScopedWhere(),
+      },
+    };
   }
 
   return {
+    habit: {
+      is: getWorkspaceScopedWhere(),
+    },
     entry: {
-      is: personWhere,
+      is: getWorkspaceScopedWhere(personWhere),
     },
   };
 }

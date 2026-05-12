@@ -5,6 +5,11 @@ import { revalidatePath } from "next/cache";
 import { Person } from "@/src/lib/generated/prisma/enums";
 import { buildPersonWhere } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
+import {
+  getCurrentWorkspaceId,
+  getWorkspaceScopedWhere,
+  requireWorkspaceAccessForRecord,
+} from "@/src/lib/workspace-context";
 
 type GoalActionResult = {
   success: boolean;
@@ -183,8 +188,11 @@ export async function createGoal(
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
+
     await prisma.goal.create({
       data: {
+        workspaceId,
         title,
         targetAmount: toDecimalString(targetAmount.value),
         emoji: emoji || null,
@@ -212,6 +220,7 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
   try {
     const [goals, allSaved, marianSaved, martinaSaved] = await Promise.all([
       prisma.goal.findMany({
+        where: getWorkspaceScopedWhere(),
         orderBy: [
           {
             isActive: "desc",
@@ -222,18 +231,19 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
         ],
       }),
       prisma.entry.aggregate({
+        where: getWorkspaceScopedWhere(),
         _sum: {
           savedAmount: true,
         },
       }),
       prisma.entry.aggregate({
-        where: buildPersonWhere("MARIAN"),
+        where: getWorkspaceScopedWhere(buildPersonWhere("MARIAN")),
         _sum: {
           savedAmount: true,
         },
       }),
       prisma.entry.aggregate({
-        where: buildPersonWhere("MARTINA"),
+        where: getWorkspaceScopedWhere(buildPersonWhere("MARTINA")),
         _sum: {
           savedAmount: true,
         },
@@ -285,7 +295,10 @@ export async function deleteGoal(goalId: string): Promise<GoalActionResult> {
   try {
     const goal = await prisma.goal.findUnique({
       where: { id },
-      select: { id: true },
+      select: {
+        id: true,
+        workspaceId: true,
+      },
     });
 
     if (!goal) {
@@ -294,6 +307,8 @@ export async function deleteGoal(goalId: string): Promise<GoalActionResult> {
         message: "Obiettivo non trovato",
       };
     }
+
+    await requireWorkspaceAccessForRecord(goal, "Obiettivo");
 
     await prisma.goal.delete({
       where: { id },
@@ -332,6 +347,7 @@ export async function toggleGoalActive(
       select: {
         id: true,
         isActive: true,
+        workspaceId: true,
       },
     });
 
@@ -341,6 +357,8 @@ export async function toggleGoalActive(
         message: "Obiettivo non trovato",
       };
     }
+
+    await requireWorkspaceAccessForRecord(goal, "Obiettivo");
 
     await prisma.goal.update({
       where: { id },

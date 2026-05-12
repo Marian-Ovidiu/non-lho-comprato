@@ -56,7 +56,10 @@ export const ModelName = {
   Habit: 'Habit',
   HabitOccurrence: 'HabitOccurrence',
   Goal: 'Goal',
-  QuickPreset: 'QuickPreset'
+  QuickPreset: 'QuickPreset',
+  User: 'User',
+  Workspace: 'Workspace',
+  WorkspaceMember: 'WorkspaceMember'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -77,6 +80,7 @@ export type TransactionIsolationLevel = (typeof TransactionIsolationLevel)[keyof
 
 export const CategoryScalarFieldEnum = {
   id: 'id',
+  workspaceId: 'workspaceId',
   name: 'name',
   slug: 'slug',
   color: 'color',
@@ -90,6 +94,7 @@ export type CategoryScalarFieldEnum = (typeof CategoryScalarFieldEnum)[keyof typ
 
 export const EntryScalarFieldEnum = {
   id: 'id',
+  workspaceId: 'workspaceId',
   title: 'title',
   categoryId: 'categoryId',
   realCost: 'realCost',
@@ -99,6 +104,9 @@ export const EntryScalarFieldEnum = {
   note: 'note',
   source: 'source',
   person: 'person',
+  visibility: 'visibility',
+  createdByUserId: 'createdByUserId',
+  paidByUserId: 'paidByUserId',
   habitOccurrenceId: 'habitOccurrenceId',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -109,6 +117,7 @@ export type EntryScalarFieldEnum = (typeof EntryScalarFieldEnum)[keyof typeof En
 
 export const HabitScalarFieldEnum = {
   id: 'id',
+  workspaceId: 'workspaceId',
   name: 'name',
   categoryId: 'categoryId',
   amount: 'amount',
@@ -136,6 +145,7 @@ export type HabitOccurrenceScalarFieldEnum = (typeof HabitOccurrenceScalarFieldE
 
 export const GoalScalarFieldEnum = {
   id: 'id',
+  workspaceId: 'workspaceId',
   title: 'title',
   targetAmount: 'targetAmount',
   emoji: 'emoji',
@@ -150,6 +160,7 @@ export type GoalScalarFieldEnum = (typeof GoalScalarFieldEnum)[keyof typeof Goal
 
 export const QuickPresetScalarFieldEnum = {
   id: 'id',
+  workspaceId: 'workspaceId',
   title: 'title',
   categoryId: 'categoryId',
   realCost: 'realCost',
@@ -161,6 +172,41 @@ export const QuickPresetScalarFieldEnum = {
 } as const
 
 export type QuickPresetScalarFieldEnum = (typeof QuickPresetScalarFieldEnum)[keyof typeof QuickPresetScalarFieldEnum]
+
+
+export const UserScalarFieldEnum = {
+  id: 'id',
+  email: 'email',
+  name: 'name',
+  image: 'image',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UserScalarFieldEnum = (typeof UserScalarFieldEnum)[keyof typeof UserScalarFieldEnum]
+
+
+export const WorkspaceScalarFieldEnum = {
+  id: 'id',
+  name: 'name',
+  kind: 'kind',
+  ownerUserId: 'ownerUserId',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type WorkspaceScalarFieldEnum = (typeof WorkspaceScalarFieldEnum)[keyof typeof WorkspaceScalarFieldEnum]
+
+
+export const WorkspaceMemberScalarFieldEnum = {
+  id: 'id',
+  workspaceId: 'workspaceId',
+  userId: 'userId',
+  role: 'role',
+  createdAt: 'createdAt'
+} as const
+
+export type WorkspaceMemberScalarFieldEnum = (typeof WorkspaceMemberScalarFieldEnum)[keyof typeof WorkspaceMemberScalarFieldEnum]
 
 
 export const SortOrder = {

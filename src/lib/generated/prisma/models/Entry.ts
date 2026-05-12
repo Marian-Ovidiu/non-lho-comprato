@@ -40,6 +40,7 @@ export type EntrySumAggregateOutputType = {
 
 export type EntryMinAggregateOutputType = {
   id: string | null
+  workspaceId: string | null
   title: string | null
   categoryId: string | null
   realCost: runtime.Decimal | null
@@ -49,6 +50,9 @@ export type EntryMinAggregateOutputType = {
   note: string | null
   source: $Enums.EntrySource | null
   person: $Enums.Person | null
+  visibility: $Enums.EntryVisibility | null
+  createdByUserId: string | null
+  paidByUserId: string | null
   habitOccurrenceId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -56,6 +60,7 @@ export type EntryMinAggregateOutputType = {
 
 export type EntryMaxAggregateOutputType = {
   id: string | null
+  workspaceId: string | null
   title: string | null
   categoryId: string | null
   realCost: runtime.Decimal | null
@@ -65,6 +70,9 @@ export type EntryMaxAggregateOutputType = {
   note: string | null
   source: $Enums.EntrySource | null
   person: $Enums.Person | null
+  visibility: $Enums.EntryVisibility | null
+  createdByUserId: string | null
+  paidByUserId: string | null
   habitOccurrenceId: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -72,6 +80,7 @@ export type EntryMaxAggregateOutputType = {
 
 export type EntryCountAggregateOutputType = {
   id: number
+  workspaceId: number
   title: number
   categoryId: number
   realCost: number
@@ -81,6 +90,9 @@ export type EntryCountAggregateOutputType = {
   note: number
   source: number
   person: number
+  visibility: number
+  createdByUserId: number
+  paidByUserId: number
   habitOccurrenceId: number
   createdAt: number
   updatedAt: number
@@ -102,6 +114,7 @@ export type EntrySumAggregateInputType = {
 
 export type EntryMinAggregateInputType = {
   id?: true
+  workspaceId?: true
   title?: true
   categoryId?: true
   realCost?: true
@@ -111,6 +124,9 @@ export type EntryMinAggregateInputType = {
   note?: true
   source?: true
   person?: true
+  visibility?: true
+  createdByUserId?: true
+  paidByUserId?: true
   habitOccurrenceId?: true
   createdAt?: true
   updatedAt?: true
@@ -118,6 +134,7 @@ export type EntryMinAggregateInputType = {
 
 export type EntryMaxAggregateInputType = {
   id?: true
+  workspaceId?: true
   title?: true
   categoryId?: true
   realCost?: true
@@ -127,6 +144,9 @@ export type EntryMaxAggregateInputType = {
   note?: true
   source?: true
   person?: true
+  visibility?: true
+  createdByUserId?: true
+  paidByUserId?: true
   habitOccurrenceId?: true
   createdAt?: true
   updatedAt?: true
@@ -134,6 +154,7 @@ export type EntryMaxAggregateInputType = {
 
 export type EntryCountAggregateInputType = {
   id?: true
+  workspaceId?: true
   title?: true
   categoryId?: true
   realCost?: true
@@ -143,6 +164,9 @@ export type EntryCountAggregateInputType = {
   note?: true
   source?: true
   person?: true
+  visibility?: true
+  createdByUserId?: true
+  paidByUserId?: true
   habitOccurrenceId?: true
   createdAt?: true
   updatedAt?: true
@@ -237,6 +261,7 @@ export type EntryGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalAr
 
 export type EntryGroupByOutputType = {
   id: string
+  workspaceId: string | null
   title: string
   categoryId: string
   realCost: runtime.Decimal
@@ -246,6 +271,9 @@ export type EntryGroupByOutputType = {
   note: string | null
   source: $Enums.EntrySource
   person: $Enums.Person
+  visibility: $Enums.EntryVisibility
+  createdByUserId: string | null
+  paidByUserId: string | null
   habitOccurrenceId: string | null
   createdAt: Date
   updatedAt: Date
@@ -276,6 +304,7 @@ export type EntryWhereInput = {
   OR?: Prisma.EntryWhereInput[]
   NOT?: Prisma.EntryWhereInput | Prisma.EntryWhereInput[]
   id?: Prisma.StringFilter<"Entry"> | string
+  workspaceId?: Prisma.StringNullableFilter<"Entry"> | string | null
   title?: Prisma.StringFilter<"Entry"> | string
   categoryId?: Prisma.StringFilter<"Entry"> | string
   realCost?: Prisma.DecimalFilter<"Entry"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -285,15 +314,22 @@ export type EntryWhereInput = {
   note?: Prisma.StringNullableFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceFilter<"Entry"> | $Enums.EntrySource
   person?: Prisma.EnumPersonFilter<"Entry"> | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFilter<"Entry"> | $Enums.EntryVisibility
+  createdByUserId?: Prisma.StringNullableFilter<"Entry"> | string | null
+  paidByUserId?: Prisma.StringNullableFilter<"Entry"> | string | null
   habitOccurrenceId?: Prisma.StringNullableFilter<"Entry"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
+  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  paidBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   habitOccurrence?: Prisma.XOR<Prisma.HabitOccurrenceNullableScalarRelationFilter, Prisma.HabitOccurrenceWhereInput> | null
 }
 
 export type EntryOrderByWithRelationInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -303,10 +339,16 @@ export type EntryOrderByWithRelationInput = {
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrder
   person?: Prisma.SortOrder
+  visibility?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  paidByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  workspace?: Prisma.WorkspaceOrderByWithRelationInput
   category?: Prisma.CategoryOrderByWithRelationInput
+  createdBy?: Prisma.UserOrderByWithRelationInput
+  paidBy?: Prisma.UserOrderByWithRelationInput
   habitOccurrence?: Prisma.HabitOccurrenceOrderByWithRelationInput
 }
 
@@ -316,6 +358,7 @@ export type EntryWhereUniqueInput = Prisma.AtLeast<{
   AND?: Prisma.EntryWhereInput | Prisma.EntryWhereInput[]
   OR?: Prisma.EntryWhereInput[]
   NOT?: Prisma.EntryWhereInput | Prisma.EntryWhereInput[]
+  workspaceId?: Prisma.StringNullableFilter<"Entry"> | string | null
   title?: Prisma.StringFilter<"Entry"> | string
   categoryId?: Prisma.StringFilter<"Entry"> | string
   realCost?: Prisma.DecimalFilter<"Entry"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -325,14 +368,21 @@ export type EntryWhereUniqueInput = Prisma.AtLeast<{
   note?: Prisma.StringNullableFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceFilter<"Entry"> | $Enums.EntrySource
   person?: Prisma.EnumPersonFilter<"Entry"> | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFilter<"Entry"> | $Enums.EntryVisibility
+  createdByUserId?: Prisma.StringNullableFilter<"Entry"> | string | null
+  paidByUserId?: Prisma.StringNullableFilter<"Entry"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
+  workspace?: Prisma.XOR<Prisma.WorkspaceNullableScalarRelationFilter, Prisma.WorkspaceWhereInput> | null
   category?: Prisma.XOR<Prisma.CategoryScalarRelationFilter, Prisma.CategoryWhereInput>
+  createdBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
+  paidBy?: Prisma.XOR<Prisma.UserNullableScalarRelationFilter, Prisma.UserWhereInput> | null
   habitOccurrence?: Prisma.XOR<Prisma.HabitOccurrenceNullableScalarRelationFilter, Prisma.HabitOccurrenceWhereInput> | null
 }, "id" | "habitOccurrenceId">
 
 export type EntryOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -342,6 +392,9 @@ export type EntryOrderByWithAggregationInput = {
   note?: Prisma.SortOrderInput | Prisma.SortOrder
   source?: Prisma.SortOrder
   person?: Prisma.SortOrder
+  visibility?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
+  paidByUserId?: Prisma.SortOrderInput | Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -357,6 +410,7 @@ export type EntryScalarWhereWithAggregatesInput = {
   OR?: Prisma.EntryScalarWhereWithAggregatesInput[]
   NOT?: Prisma.EntryScalarWhereWithAggregatesInput | Prisma.EntryScalarWhereWithAggregatesInput[]
   id?: Prisma.StringWithAggregatesFilter<"Entry"> | string
+  workspaceId?: Prisma.StringNullableWithAggregatesFilter<"Entry"> | string | null
   title?: Prisma.StringWithAggregatesFilter<"Entry"> | string
   categoryId?: Prisma.StringWithAggregatesFilter<"Entry"> | string
   realCost?: Prisma.DecimalWithAggregatesFilter<"Entry"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -366,6 +420,9 @@ export type EntryScalarWhereWithAggregatesInput = {
   note?: Prisma.StringNullableWithAggregatesFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceWithAggregatesFilter<"Entry"> | $Enums.EntrySource
   person?: Prisma.EnumPersonWithAggregatesFilter<"Entry"> | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityWithAggregatesFilter<"Entry"> | $Enums.EntryVisibility
+  createdByUserId?: Prisma.StringNullableWithAggregatesFilter<"Entry"> | string | null
+  paidByUserId?: Prisma.StringNullableWithAggregatesFilter<"Entry"> | string | null
   habitOccurrenceId?: Prisma.StringNullableWithAggregatesFilter<"Entry"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Entry"> | Date | string
@@ -381,14 +438,19 @@ export type EntryCreateInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutEntriesInput
   category: Prisma.CategoryCreateNestedOneWithoutEntriesInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedEntriesInput
+  paidBy?: Prisma.UserCreateNestedOneWithoutPaidEntriesInput
   habitOccurrence?: Prisma.HabitOccurrenceCreateNestedOneWithoutEntryInput
 }
 
 export type EntryUncheckedCreateInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   categoryId: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -398,6 +460,9 @@ export type EntryUncheckedCreateInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  paidByUserId?: string | null
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -413,14 +478,19 @@ export type EntryUpdateInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutEntriesNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutEntriesNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedEntriesNestedInput
+  paidBy?: Prisma.UserUpdateOneWithoutPaidEntriesNestedInput
   habitOccurrence?: Prisma.HabitOccurrenceUpdateOneWithoutEntryNestedInput
 }
 
 export type EntryUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -430,6 +500,9 @@ export type EntryUncheckedUpdateInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -437,6 +510,7 @@ export type EntryUncheckedUpdateInput = {
 
 export type EntryCreateManyInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   categoryId: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -446,6 +520,9 @@ export type EntryCreateManyInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  paidByUserId?: string | null
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -461,12 +538,14 @@ export type EntryUpdateManyMutationInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type EntryUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -476,6 +555,9 @@ export type EntryUncheckedUpdateManyInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -493,6 +575,7 @@ export type EntryOrderByRelationAggregateInput = {
 
 export type EntryCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -502,6 +585,9 @@ export type EntryCountOrderByAggregateInput = {
   note?: Prisma.SortOrder
   source?: Prisma.SortOrder
   person?: Prisma.SortOrder
+  visibility?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrder
+  paidByUserId?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -515,6 +601,7 @@ export type EntryAvgOrderByAggregateInput = {
 
 export type EntryMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -524,6 +611,9 @@ export type EntryMaxOrderByAggregateInput = {
   note?: Prisma.SortOrder
   source?: Prisma.SortOrder
   person?: Prisma.SortOrder
+  visibility?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrder
+  paidByUserId?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -531,6 +621,7 @@ export type EntryMaxOrderByAggregateInput = {
 
 export type EntryMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
+  workspaceId?: Prisma.SortOrder
   title?: Prisma.SortOrder
   categoryId?: Prisma.SortOrder
   realCost?: Prisma.SortOrder
@@ -540,6 +631,9 @@ export type EntryMinOrderByAggregateInput = {
   note?: Prisma.SortOrder
   source?: Prisma.SortOrder
   person?: Prisma.SortOrder
+  visibility?: Prisma.SortOrder
+  createdByUserId?: Prisma.SortOrder
+  paidByUserId?: Prisma.SortOrder
   habitOccurrenceId?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -614,6 +708,10 @@ export type EnumPersonFieldUpdateOperationsInput = {
   set?: $Enums.Person
 }
 
+export type EnumEntryVisibilityFieldUpdateOperationsInput = {
+  set?: $Enums.EntryVisibility
+}
+
 export type EntryCreateNestedOneWithoutHabitOccurrenceInput = {
   create?: Prisma.XOR<Prisma.EntryCreateWithoutHabitOccurrenceInput, Prisma.EntryUncheckedCreateWithoutHabitOccurrenceInput>
   connectOrCreate?: Prisma.EntryCreateOrConnectWithoutHabitOccurrenceInput
@@ -646,6 +744,132 @@ export type EntryUncheckedUpdateOneWithoutHabitOccurrenceNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EntryUpdateToOneWithWhereWithoutHabitOccurrenceInput, Prisma.EntryUpdateWithoutHabitOccurrenceInput>, Prisma.EntryUncheckedUpdateWithoutHabitOccurrenceInput>
 }
 
+export type EntryCreateNestedManyWithoutCreatedByInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutCreatedByInput, Prisma.EntryUncheckedCreateWithoutCreatedByInput> | Prisma.EntryCreateWithoutCreatedByInput[] | Prisma.EntryUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutCreatedByInput | Prisma.EntryCreateOrConnectWithoutCreatedByInput[]
+  createMany?: Prisma.EntryCreateManyCreatedByInputEnvelope
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+}
+
+export type EntryCreateNestedManyWithoutPaidByInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutPaidByInput, Prisma.EntryUncheckedCreateWithoutPaidByInput> | Prisma.EntryCreateWithoutPaidByInput[] | Prisma.EntryUncheckedCreateWithoutPaidByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutPaidByInput | Prisma.EntryCreateOrConnectWithoutPaidByInput[]
+  createMany?: Prisma.EntryCreateManyPaidByInputEnvelope
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+}
+
+export type EntryUncheckedCreateNestedManyWithoutCreatedByInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutCreatedByInput, Prisma.EntryUncheckedCreateWithoutCreatedByInput> | Prisma.EntryCreateWithoutCreatedByInput[] | Prisma.EntryUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutCreatedByInput | Prisma.EntryCreateOrConnectWithoutCreatedByInput[]
+  createMany?: Prisma.EntryCreateManyCreatedByInputEnvelope
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+}
+
+export type EntryUncheckedCreateNestedManyWithoutPaidByInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutPaidByInput, Prisma.EntryUncheckedCreateWithoutPaidByInput> | Prisma.EntryCreateWithoutPaidByInput[] | Prisma.EntryUncheckedCreateWithoutPaidByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutPaidByInput | Prisma.EntryCreateOrConnectWithoutPaidByInput[]
+  createMany?: Prisma.EntryCreateManyPaidByInputEnvelope
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+}
+
+export type EntryUpdateManyWithoutCreatedByNestedInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutCreatedByInput, Prisma.EntryUncheckedCreateWithoutCreatedByInput> | Prisma.EntryCreateWithoutCreatedByInput[] | Prisma.EntryUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutCreatedByInput | Prisma.EntryCreateOrConnectWithoutCreatedByInput[]
+  upsert?: Prisma.EntryUpsertWithWhereUniqueWithoutCreatedByInput | Prisma.EntryUpsertWithWhereUniqueWithoutCreatedByInput[]
+  createMany?: Prisma.EntryCreateManyCreatedByInputEnvelope
+  set?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  disconnect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  delete?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  update?: Prisma.EntryUpdateWithWhereUniqueWithoutCreatedByInput | Prisma.EntryUpdateWithWhereUniqueWithoutCreatedByInput[]
+  updateMany?: Prisma.EntryUpdateManyWithWhereWithoutCreatedByInput | Prisma.EntryUpdateManyWithWhereWithoutCreatedByInput[]
+  deleteMany?: Prisma.EntryScalarWhereInput | Prisma.EntryScalarWhereInput[]
+}
+
+export type EntryUpdateManyWithoutPaidByNestedInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutPaidByInput, Prisma.EntryUncheckedCreateWithoutPaidByInput> | Prisma.EntryCreateWithoutPaidByInput[] | Prisma.EntryUncheckedCreateWithoutPaidByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutPaidByInput | Prisma.EntryCreateOrConnectWithoutPaidByInput[]
+  upsert?: Prisma.EntryUpsertWithWhereUniqueWithoutPaidByInput | Prisma.EntryUpsertWithWhereUniqueWithoutPaidByInput[]
+  createMany?: Prisma.EntryCreateManyPaidByInputEnvelope
+  set?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  disconnect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  delete?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  update?: Prisma.EntryUpdateWithWhereUniqueWithoutPaidByInput | Prisma.EntryUpdateWithWhereUniqueWithoutPaidByInput[]
+  updateMany?: Prisma.EntryUpdateManyWithWhereWithoutPaidByInput | Prisma.EntryUpdateManyWithWhereWithoutPaidByInput[]
+  deleteMany?: Prisma.EntryScalarWhereInput | Prisma.EntryScalarWhereInput[]
+}
+
+export type EntryUncheckedUpdateManyWithoutCreatedByNestedInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutCreatedByInput, Prisma.EntryUncheckedCreateWithoutCreatedByInput> | Prisma.EntryCreateWithoutCreatedByInput[] | Prisma.EntryUncheckedCreateWithoutCreatedByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutCreatedByInput | Prisma.EntryCreateOrConnectWithoutCreatedByInput[]
+  upsert?: Prisma.EntryUpsertWithWhereUniqueWithoutCreatedByInput | Prisma.EntryUpsertWithWhereUniqueWithoutCreatedByInput[]
+  createMany?: Prisma.EntryCreateManyCreatedByInputEnvelope
+  set?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  disconnect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  delete?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  update?: Prisma.EntryUpdateWithWhereUniqueWithoutCreatedByInput | Prisma.EntryUpdateWithWhereUniqueWithoutCreatedByInput[]
+  updateMany?: Prisma.EntryUpdateManyWithWhereWithoutCreatedByInput | Prisma.EntryUpdateManyWithWhereWithoutCreatedByInput[]
+  deleteMany?: Prisma.EntryScalarWhereInput | Prisma.EntryScalarWhereInput[]
+}
+
+export type EntryUncheckedUpdateManyWithoutPaidByNestedInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutPaidByInput, Prisma.EntryUncheckedCreateWithoutPaidByInput> | Prisma.EntryCreateWithoutPaidByInput[] | Prisma.EntryUncheckedCreateWithoutPaidByInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutPaidByInput | Prisma.EntryCreateOrConnectWithoutPaidByInput[]
+  upsert?: Prisma.EntryUpsertWithWhereUniqueWithoutPaidByInput | Prisma.EntryUpsertWithWhereUniqueWithoutPaidByInput[]
+  createMany?: Prisma.EntryCreateManyPaidByInputEnvelope
+  set?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  disconnect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  delete?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  update?: Prisma.EntryUpdateWithWhereUniqueWithoutPaidByInput | Prisma.EntryUpdateWithWhereUniqueWithoutPaidByInput[]
+  updateMany?: Prisma.EntryUpdateManyWithWhereWithoutPaidByInput | Prisma.EntryUpdateManyWithWhereWithoutPaidByInput[]
+  deleteMany?: Prisma.EntryScalarWhereInput | Prisma.EntryScalarWhereInput[]
+}
+
+export type EntryCreateNestedManyWithoutWorkspaceInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutWorkspaceInput, Prisma.EntryUncheckedCreateWithoutWorkspaceInput> | Prisma.EntryCreateWithoutWorkspaceInput[] | Prisma.EntryUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutWorkspaceInput | Prisma.EntryCreateOrConnectWithoutWorkspaceInput[]
+  createMany?: Prisma.EntryCreateManyWorkspaceInputEnvelope
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+}
+
+export type EntryUncheckedCreateNestedManyWithoutWorkspaceInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutWorkspaceInput, Prisma.EntryUncheckedCreateWithoutWorkspaceInput> | Prisma.EntryCreateWithoutWorkspaceInput[] | Prisma.EntryUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutWorkspaceInput | Prisma.EntryCreateOrConnectWithoutWorkspaceInput[]
+  createMany?: Prisma.EntryCreateManyWorkspaceInputEnvelope
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+}
+
+export type EntryUpdateManyWithoutWorkspaceNestedInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutWorkspaceInput, Prisma.EntryUncheckedCreateWithoutWorkspaceInput> | Prisma.EntryCreateWithoutWorkspaceInput[] | Prisma.EntryUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutWorkspaceInput | Prisma.EntryCreateOrConnectWithoutWorkspaceInput[]
+  upsert?: Prisma.EntryUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.EntryUpsertWithWhereUniqueWithoutWorkspaceInput[]
+  createMany?: Prisma.EntryCreateManyWorkspaceInputEnvelope
+  set?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  disconnect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  delete?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  update?: Prisma.EntryUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.EntryUpdateWithWhereUniqueWithoutWorkspaceInput[]
+  updateMany?: Prisma.EntryUpdateManyWithWhereWithoutWorkspaceInput | Prisma.EntryUpdateManyWithWhereWithoutWorkspaceInput[]
+  deleteMany?: Prisma.EntryScalarWhereInput | Prisma.EntryScalarWhereInput[]
+}
+
+export type EntryUncheckedUpdateManyWithoutWorkspaceNestedInput = {
+  create?: Prisma.XOR<Prisma.EntryCreateWithoutWorkspaceInput, Prisma.EntryUncheckedCreateWithoutWorkspaceInput> | Prisma.EntryCreateWithoutWorkspaceInput[] | Prisma.EntryUncheckedCreateWithoutWorkspaceInput[]
+  connectOrCreate?: Prisma.EntryCreateOrConnectWithoutWorkspaceInput | Prisma.EntryCreateOrConnectWithoutWorkspaceInput[]
+  upsert?: Prisma.EntryUpsertWithWhereUniqueWithoutWorkspaceInput | Prisma.EntryUpsertWithWhereUniqueWithoutWorkspaceInput[]
+  createMany?: Prisma.EntryCreateManyWorkspaceInputEnvelope
+  set?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  disconnect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  delete?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  connect?: Prisma.EntryWhereUniqueInput | Prisma.EntryWhereUniqueInput[]
+  update?: Prisma.EntryUpdateWithWhereUniqueWithoutWorkspaceInput | Prisma.EntryUpdateWithWhereUniqueWithoutWorkspaceInput[]
+  updateMany?: Prisma.EntryUpdateManyWithWhereWithoutWorkspaceInput | Prisma.EntryUpdateManyWithWhereWithoutWorkspaceInput[]
+  deleteMany?: Prisma.EntryScalarWhereInput | Prisma.EntryScalarWhereInput[]
+}
+
 export type EntryCreateWithoutCategoryInput = {
   id?: string
   title: string
@@ -656,13 +880,18 @@ export type EntryCreateWithoutCategoryInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutEntriesInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedEntriesInput
+  paidBy?: Prisma.UserCreateNestedOneWithoutPaidEntriesInput
   habitOccurrence?: Prisma.HabitOccurrenceCreateNestedOneWithoutEntryInput
 }
 
 export type EntryUncheckedCreateWithoutCategoryInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
   alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -671,6 +900,9 @@ export type EntryUncheckedCreateWithoutCategoryInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  paidByUserId?: string | null
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -707,6 +939,7 @@ export type EntryScalarWhereInput = {
   OR?: Prisma.EntryScalarWhereInput[]
   NOT?: Prisma.EntryScalarWhereInput | Prisma.EntryScalarWhereInput[]
   id?: Prisma.StringFilter<"Entry"> | string
+  workspaceId?: Prisma.StringNullableFilter<"Entry"> | string | null
   title?: Prisma.StringFilter<"Entry"> | string
   categoryId?: Prisma.StringFilter<"Entry"> | string
   realCost?: Prisma.DecimalFilter<"Entry"> | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -716,6 +949,9 @@ export type EntryScalarWhereInput = {
   note?: Prisma.StringNullableFilter<"Entry"> | string | null
   source?: Prisma.EnumEntrySourceFilter<"Entry"> | $Enums.EntrySource
   person?: Prisma.EnumPersonFilter<"Entry"> | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFilter<"Entry"> | $Enums.EntryVisibility
+  createdByUserId?: Prisma.StringNullableFilter<"Entry"> | string | null
+  paidByUserId?: Prisma.StringNullableFilter<"Entry"> | string | null
   habitOccurrenceId?: Prisma.StringNullableFilter<"Entry"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Entry"> | Date | string
@@ -731,13 +967,18 @@ export type EntryCreateWithoutHabitOccurrenceInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
   createdAt?: Date | string
   updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutEntriesInput
   category: Prisma.CategoryCreateNestedOneWithoutEntriesInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedEntriesInput
+  paidBy?: Prisma.UserCreateNestedOneWithoutPaidEntriesInput
 }
 
 export type EntryUncheckedCreateWithoutHabitOccurrenceInput = {
   id?: string
+  workspaceId?: string | null
   title: string
   categoryId: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -747,6 +988,9 @@ export type EntryUncheckedCreateWithoutHabitOccurrenceInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  paidByUserId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -777,13 +1021,18 @@ export type EntryUpdateWithoutHabitOccurrenceInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutEntriesNestedInput
   category?: Prisma.CategoryUpdateOneRequiredWithoutEntriesNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedEntriesNestedInput
+  paidBy?: Prisma.UserUpdateOneWithoutPaidEntriesNestedInput
 }
 
 export type EntryUncheckedUpdateWithoutHabitOccurrenceInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   categoryId?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -793,11 +1042,14 @@ export type EntryUncheckedUpdateWithoutHabitOccurrenceInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
-export type EntryCreateManyCategoryInput = {
+export type EntryCreateWithoutCreatedByInput = {
   id?: string
   title: string
   realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -807,6 +1059,202 @@ export type EntryCreateManyCategoryInput = {
   note?: string | null
   source?: $Enums.EntrySource
   person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutEntriesInput
+  category: Prisma.CategoryCreateNestedOneWithoutEntriesInput
+  paidBy?: Prisma.UserCreateNestedOneWithoutPaidEntriesInput
+  habitOccurrence?: Prisma.HabitOccurrenceCreateNestedOneWithoutEntryInput
+}
+
+export type EntryUncheckedCreateWithoutCreatedByInput = {
+  id?: string
+  workspaceId?: string | null
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  paidByUserId?: string | null
+  habitOccurrenceId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type EntryCreateOrConnectWithoutCreatedByInput = {
+  where: Prisma.EntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.EntryCreateWithoutCreatedByInput, Prisma.EntryUncheckedCreateWithoutCreatedByInput>
+}
+
+export type EntryCreateManyCreatedByInputEnvelope = {
+  data: Prisma.EntryCreateManyCreatedByInput | Prisma.EntryCreateManyCreatedByInput[]
+  skipDuplicates?: boolean
+}
+
+export type EntryCreateWithoutPaidByInput = {
+  id?: string
+  title: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  workspace?: Prisma.WorkspaceCreateNestedOneWithoutEntriesInput
+  category: Prisma.CategoryCreateNestedOneWithoutEntriesInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedEntriesInput
+  habitOccurrence?: Prisma.HabitOccurrenceCreateNestedOneWithoutEntryInput
+}
+
+export type EntryUncheckedCreateWithoutPaidByInput = {
+  id?: string
+  workspaceId?: string | null
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  habitOccurrenceId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type EntryCreateOrConnectWithoutPaidByInput = {
+  where: Prisma.EntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.EntryCreateWithoutPaidByInput, Prisma.EntryUncheckedCreateWithoutPaidByInput>
+}
+
+export type EntryCreateManyPaidByInputEnvelope = {
+  data: Prisma.EntryCreateManyPaidByInput | Prisma.EntryCreateManyPaidByInput[]
+  skipDuplicates?: boolean
+}
+
+export type EntryUpsertWithWhereUniqueWithoutCreatedByInput = {
+  where: Prisma.EntryWhereUniqueInput
+  update: Prisma.XOR<Prisma.EntryUpdateWithoutCreatedByInput, Prisma.EntryUncheckedUpdateWithoutCreatedByInput>
+  create: Prisma.XOR<Prisma.EntryCreateWithoutCreatedByInput, Prisma.EntryUncheckedCreateWithoutCreatedByInput>
+}
+
+export type EntryUpdateWithWhereUniqueWithoutCreatedByInput = {
+  where: Prisma.EntryWhereUniqueInput
+  data: Prisma.XOR<Prisma.EntryUpdateWithoutCreatedByInput, Prisma.EntryUncheckedUpdateWithoutCreatedByInput>
+}
+
+export type EntryUpdateManyWithWhereWithoutCreatedByInput = {
+  where: Prisma.EntryScalarWhereInput
+  data: Prisma.XOR<Prisma.EntryUpdateManyMutationInput, Prisma.EntryUncheckedUpdateManyWithoutCreatedByInput>
+}
+
+export type EntryUpsertWithWhereUniqueWithoutPaidByInput = {
+  where: Prisma.EntryWhereUniqueInput
+  update: Prisma.XOR<Prisma.EntryUpdateWithoutPaidByInput, Prisma.EntryUncheckedUpdateWithoutPaidByInput>
+  create: Prisma.XOR<Prisma.EntryCreateWithoutPaidByInput, Prisma.EntryUncheckedCreateWithoutPaidByInput>
+}
+
+export type EntryUpdateWithWhereUniqueWithoutPaidByInput = {
+  where: Prisma.EntryWhereUniqueInput
+  data: Prisma.XOR<Prisma.EntryUpdateWithoutPaidByInput, Prisma.EntryUncheckedUpdateWithoutPaidByInput>
+}
+
+export type EntryUpdateManyWithWhereWithoutPaidByInput = {
+  where: Prisma.EntryScalarWhereInput
+  data: Prisma.XOR<Prisma.EntryUpdateManyMutationInput, Prisma.EntryUncheckedUpdateManyWithoutPaidByInput>
+}
+
+export type EntryCreateWithoutWorkspaceInput = {
+  id?: string
+  title: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  category: Prisma.CategoryCreateNestedOneWithoutEntriesInput
+  createdBy?: Prisma.UserCreateNestedOneWithoutCreatedEntriesInput
+  paidBy?: Prisma.UserCreateNestedOneWithoutPaidEntriesInput
+  habitOccurrence?: Prisma.HabitOccurrenceCreateNestedOneWithoutEntryInput
+}
+
+export type EntryUncheckedCreateWithoutWorkspaceInput = {
+  id?: string
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  paidByUserId?: string | null
+  habitOccurrenceId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type EntryCreateOrConnectWithoutWorkspaceInput = {
+  where: Prisma.EntryWhereUniqueInput
+  create: Prisma.XOR<Prisma.EntryCreateWithoutWorkspaceInput, Prisma.EntryUncheckedCreateWithoutWorkspaceInput>
+}
+
+export type EntryCreateManyWorkspaceInputEnvelope = {
+  data: Prisma.EntryCreateManyWorkspaceInput | Prisma.EntryCreateManyWorkspaceInput[]
+  skipDuplicates?: boolean
+}
+
+export type EntryUpsertWithWhereUniqueWithoutWorkspaceInput = {
+  where: Prisma.EntryWhereUniqueInput
+  update: Prisma.XOR<Prisma.EntryUpdateWithoutWorkspaceInput, Prisma.EntryUncheckedUpdateWithoutWorkspaceInput>
+  create: Prisma.XOR<Prisma.EntryCreateWithoutWorkspaceInput, Prisma.EntryUncheckedCreateWithoutWorkspaceInput>
+}
+
+export type EntryUpdateWithWhereUniqueWithoutWorkspaceInput = {
+  where: Prisma.EntryWhereUniqueInput
+  data: Prisma.XOR<Prisma.EntryUpdateWithoutWorkspaceInput, Prisma.EntryUncheckedUpdateWithoutWorkspaceInput>
+}
+
+export type EntryUpdateManyWithWhereWithoutWorkspaceInput = {
+  where: Prisma.EntryScalarWhereInput
+  data: Prisma.XOR<Prisma.EntryUpdateManyMutationInput, Prisma.EntryUncheckedUpdateManyWithoutWorkspaceInput>
+}
+
+export type EntryCreateManyCategoryInput = {
+  id?: string
+  workspaceId?: string | null
+  title: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  paidByUserId?: string | null
   habitOccurrenceId?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -822,13 +1270,18 @@ export type EntryUpdateWithoutCategoryInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutEntriesNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedEntriesNestedInput
+  paidBy?: Prisma.UserUpdateOneWithoutPaidEntriesNestedInput
   habitOccurrence?: Prisma.HabitOccurrenceUpdateOneWithoutEntryNestedInput
 }
 
 export type EntryUncheckedUpdateWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -837,6 +1290,9 @@ export type EntryUncheckedUpdateWithoutCategoryInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -844,6 +1300,7 @@ export type EntryUncheckedUpdateWithoutCategoryInput = {
 
 export type EntryUncheckedUpdateManyWithoutCategoryInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.StringFieldUpdateOperationsInput | string
   realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
   alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
@@ -852,6 +1309,237 @@ export type EntryUncheckedUpdateManyWithoutCategoryInput = {
   note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
   person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type EntryCreateManyCreatedByInput = {
+  id?: string
+  workspaceId?: string | null
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  paidByUserId?: string | null
+  habitOccurrenceId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type EntryCreateManyPaidByInput = {
+  id?: string
+  workspaceId?: string | null
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  habitOccurrenceId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type EntryUpdateWithoutCreatedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutEntriesNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutEntriesNestedInput
+  paidBy?: Prisma.UserUpdateOneWithoutPaidEntriesNestedInput
+  habitOccurrence?: Prisma.HabitOccurrenceUpdateOneWithoutEntryNestedInput
+}
+
+export type EntryUncheckedUpdateWithoutCreatedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type EntryUncheckedUpdateManyWithoutCreatedByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type EntryUpdateWithoutPaidByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  workspace?: Prisma.WorkspaceUpdateOneWithoutEntriesNestedInput
+  category?: Prisma.CategoryUpdateOneRequiredWithoutEntriesNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedEntriesNestedInput
+  habitOccurrence?: Prisma.HabitOccurrenceUpdateOneWithoutEntryNestedInput
+}
+
+export type EntryUncheckedUpdateWithoutPaidByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type EntryUncheckedUpdateManyWithoutPaidByInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  workspaceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type EntryCreateManyWorkspaceInput = {
+  id?: string
+  title: string
+  categoryId: string
+  realCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost: runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount: runtime.Decimal | runtime.DecimalJsLike | number | string
+  date: Date | string
+  note?: string | null
+  source?: $Enums.EntrySource
+  person?: $Enums.Person
+  visibility?: $Enums.EntryVisibility
+  createdByUserId?: string | null
+  paidByUserId?: string | null
+  habitOccurrenceId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type EntryUpdateWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  category?: Prisma.CategoryUpdateOneRequiredWithoutEntriesNestedInput
+  createdBy?: Prisma.UserUpdateOneWithoutCreatedEntriesNestedInput
+  paidBy?: Prisma.UserUpdateOneWithoutPaidEntriesNestedInput
+  habitOccurrence?: Prisma.HabitOccurrenceUpdateOneWithoutEntryNestedInput
+}
+
+export type EntryUncheckedUpdateWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
+export type EntryUncheckedUpdateManyWithoutWorkspaceInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  categoryId?: Prisma.StringFieldUpdateOperationsInput | string
+  realCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  alternativeCost?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  savedAmount?: Prisma.DecimalFieldUpdateOperationsInput | runtime.Decimal | runtime.DecimalJsLike | number | string
+  date?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  note?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  source?: Prisma.EnumEntrySourceFieldUpdateOperationsInput | $Enums.EntrySource
+  person?: Prisma.EnumPersonFieldUpdateOperationsInput | $Enums.Person
+  visibility?: Prisma.EnumEntryVisibilityFieldUpdateOperationsInput | $Enums.EntryVisibility
+  createdByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  paidByUserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   habitOccurrenceId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -861,6 +1549,7 @@ export type EntryUncheckedUpdateManyWithoutCategoryInput = {
 
 export type EntrySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -870,15 +1559,22 @@ export type EntrySelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   note?: boolean
   source?: boolean
   person?: boolean
+  visibility?: boolean
+  createdByUserId?: boolean
+  paidByUserId?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.Entry$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Entry$createdByArgs<ExtArgs>
+  paidBy?: boolean | Prisma.Entry$paidByArgs<ExtArgs>
   habitOccurrence?: boolean | Prisma.Entry$habitOccurrenceArgs<ExtArgs>
 }, ExtArgs["result"]["entry"]>
 
 export type EntrySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -888,15 +1584,22 @@ export type EntrySelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   note?: boolean
   source?: boolean
   person?: boolean
+  visibility?: boolean
+  createdByUserId?: boolean
+  paidByUserId?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.Entry$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Entry$createdByArgs<ExtArgs>
+  paidBy?: boolean | Prisma.Entry$paidByArgs<ExtArgs>
   habitOccurrence?: boolean | Prisma.Entry$habitOccurrenceArgs<ExtArgs>
 }, ExtArgs["result"]["entry"]>
 
 export type EntrySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -906,15 +1609,22 @@ export type EntrySelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   note?: boolean
   source?: boolean
   person?: boolean
+  visibility?: boolean
+  createdByUserId?: boolean
+  paidByUserId?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  workspace?: boolean | Prisma.Entry$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Entry$createdByArgs<ExtArgs>
+  paidBy?: boolean | Prisma.Entry$paidByArgs<ExtArgs>
   habitOccurrence?: boolean | Prisma.Entry$habitOccurrenceArgs<ExtArgs>
 }, ExtArgs["result"]["entry"]>
 
 export type EntrySelectScalar = {
   id?: boolean
+  workspaceId?: boolean
   title?: boolean
   categoryId?: boolean
   realCost?: boolean
@@ -924,33 +1634,49 @@ export type EntrySelectScalar = {
   note?: boolean
   source?: boolean
   person?: boolean
+  visibility?: boolean
+  createdByUserId?: boolean
+  paidByUserId?: boolean
   habitOccurrenceId?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type EntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "categoryId" | "realCost" | "alternativeCost" | "savedAmount" | "date" | "note" | "source" | "person" | "habitOccurrenceId" | "createdAt" | "updatedAt", ExtArgs["result"]["entry"]>
+export type EntryOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "workspaceId" | "title" | "categoryId" | "realCost" | "alternativeCost" | "savedAmount" | "date" | "note" | "source" | "person" | "visibility" | "createdByUserId" | "paidByUserId" | "habitOccurrenceId" | "createdAt" | "updatedAt", ExtArgs["result"]["entry"]>
 export type EntryInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.Entry$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Entry$createdByArgs<ExtArgs>
+  paidBy?: boolean | Prisma.Entry$paidByArgs<ExtArgs>
   habitOccurrence?: boolean | Prisma.Entry$habitOccurrenceArgs<ExtArgs>
 }
 export type EntryIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.Entry$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Entry$createdByArgs<ExtArgs>
+  paidBy?: boolean | Prisma.Entry$paidByArgs<ExtArgs>
   habitOccurrence?: boolean | Prisma.Entry$habitOccurrenceArgs<ExtArgs>
 }
 export type EntryIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  workspace?: boolean | Prisma.Entry$workspaceArgs<ExtArgs>
   category?: boolean | Prisma.CategoryDefaultArgs<ExtArgs>
+  createdBy?: boolean | Prisma.Entry$createdByArgs<ExtArgs>
+  paidBy?: boolean | Prisma.Entry$paidByArgs<ExtArgs>
   habitOccurrence?: boolean | Prisma.Entry$habitOccurrenceArgs<ExtArgs>
 }
 
 export type $EntryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Entry"
   objects: {
+    workspace: Prisma.$WorkspacePayload<ExtArgs> | null
     category: Prisma.$CategoryPayload<ExtArgs>
+    createdBy: Prisma.$UserPayload<ExtArgs> | null
+    paidBy: Prisma.$UserPayload<ExtArgs> | null
     habitOccurrence: Prisma.$HabitOccurrencePayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
+    workspaceId: string | null
     title: string
     categoryId: string
     realCost: runtime.Decimal
@@ -960,6 +1686,9 @@ export type $EntryPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     note: string | null
     source: $Enums.EntrySource
     person: $Enums.Person
+    visibility: $Enums.EntryVisibility
+    createdByUserId: string | null
+    paidByUserId: string | null
     habitOccurrenceId: string | null
     createdAt: Date
     updatedAt: Date
@@ -1357,7 +2086,10 @@ readonly fields: EntryFieldRefs;
  */
 export interface Prisma__EntryClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  workspace<T extends Prisma.Entry$workspaceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Entry$workspaceArgs<ExtArgs>>): Prisma.Prisma__WorkspaceClient<runtime.Types.Result.GetResult<Prisma.$WorkspacePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   category<T extends Prisma.CategoryDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.CategoryDefaultArgs<ExtArgs>>): Prisma.Prisma__CategoryClient<runtime.Types.Result.GetResult<Prisma.$CategoryPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  createdBy<T extends Prisma.Entry$createdByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Entry$createdByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  paidBy<T extends Prisma.Entry$paidByArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Entry$paidByArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   habitOccurrence<T extends Prisma.Entry$habitOccurrenceArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Entry$habitOccurrenceArgs<ExtArgs>>): Prisma.Prisma__HabitOccurrenceClient<runtime.Types.Result.GetResult<Prisma.$HabitOccurrencePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1389,6 +2121,7 @@ export interface Prisma__EntryClient<T, Null = never, ExtArgs extends runtime.Ty
  */
 export interface EntryFieldRefs {
   readonly id: Prisma.FieldRef<"Entry", 'String'>
+  readonly workspaceId: Prisma.FieldRef<"Entry", 'String'>
   readonly title: Prisma.FieldRef<"Entry", 'String'>
   readonly categoryId: Prisma.FieldRef<"Entry", 'String'>
   readonly realCost: Prisma.FieldRef<"Entry", 'Decimal'>
@@ -1398,6 +2131,9 @@ export interface EntryFieldRefs {
   readonly note: Prisma.FieldRef<"Entry", 'String'>
   readonly source: Prisma.FieldRef<"Entry", 'EntrySource'>
   readonly person: Prisma.FieldRef<"Entry", 'Person'>
+  readonly visibility: Prisma.FieldRef<"Entry", 'EntryVisibility'>
+  readonly createdByUserId: Prisma.FieldRef<"Entry", 'String'>
+  readonly paidByUserId: Prisma.FieldRef<"Entry", 'String'>
   readonly habitOccurrenceId: Prisma.FieldRef<"Entry", 'String'>
   readonly createdAt: Prisma.FieldRef<"Entry", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Entry", 'DateTime'>
@@ -1799,6 +2535,63 @@ export type EntryDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    * Limit how many Entries to delete.
    */
   limit?: number
+}
+
+/**
+ * Entry.workspace
+ */
+export type Entry$workspaceArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Workspace
+   */
+  select?: Prisma.WorkspaceSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Workspace
+   */
+  omit?: Prisma.WorkspaceOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.WorkspaceInclude<ExtArgs> | null
+  where?: Prisma.WorkspaceWhereInput
+}
+
+/**
+ * Entry.createdBy
+ */
+export type Entry$createdByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
+}
+
+/**
+ * Entry.paidBy
+ */
+export type Entry$paidByArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the User
+   */
+  select?: Prisma.UserSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the User
+   */
+  omit?: Prisma.UserOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.UserInclude<ExtArgs> | null
+  where?: Prisma.UserWhereInput
 }
 
 /**

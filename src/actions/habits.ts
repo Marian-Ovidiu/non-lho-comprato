@@ -3,7 +3,14 @@
 import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { EntryVisibility, Person } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
+import {
+  getCurrentUser,
+  getCurrentWorkspaceId,
+  getWorkspaceScopedWhere,
+  requireWorkspaceAccessForRecord,
+} from "@/src/lib/workspace-context";
 
 type HabitActionResult = {
   success: boolean;
@@ -220,11 +227,19 @@ function parseBoolean(value: string): boolean {
   return value === "1" || value === "true" || value === "on";
 }
 
-async function resolveCategory(categoryId: string) {
-  let category = await prisma.category.findUnique({ where: { id: categoryId } });
+async function resolveCategory(categoryId: string, workspaceId: string) {
+  let category = await prisma.category.findFirst({
+    where: getWorkspaceScopedWhere({
+      id: categoryId,
+    }),
+  });
 
   if (!category) {
-    category = await prisma.category.findUnique({ where: { slug: categoryId } });
+    category = await prisma.category.findFirst({
+      where: getWorkspaceScopedWhere({
+        slug: categoryId,
+      }),
+    });
   }
 
   if (!category) {
@@ -239,12 +254,14 @@ async function resolveCategory(categoryId: string) {
           name: fallbackCategory.name,
           icon: fallbackCategory.icon,
           color: fallbackCategory.color,
+          workspaceId,
         },
         create: {
           name: fallbackCategory.name,
           slug: fallbackCategory.slug,
           icon: fallbackCategory.icon,
           color: fallbackCategory.color,
+          workspaceId,
         },
       });
     }
@@ -256,11 +273,23 @@ async function resolveCategory(categoryId: string) {
 function buildEntryDataForOccurrence(
   occurrence: OccurrenceWithHabit,
   status: Exclude<HabitStatus, "pending">,
+  context: {
+    workspaceId: string;
+    currentUserId: string;
+  },
 ) {
   const amount = Number(occurrence.habit.amount);
+  const sharedFields = {
+    workspaceId: context.workspaceId,
+    createdByUserId: context.currentUserId,
+    paidByUserId: context.currentUserId,
+    visibility: EntryVisibility.workspace,
+    person: Person.MARIAN,
+  };
 
   if (status === "spent") {
     return {
+      ...sharedFields,
       title: occurrence.habit.name,
       categoryId: occurrence.habit.categoryId,
       realCost: toDecimalString(amount),
@@ -275,6 +304,7 @@ function buildEntryDataForOccurrence(
 
   if (status === "avoided") {
     return {
+      ...sharedFields,
       title: occurrence.habit.name,
       categoryId: occurrence.habit.categoryId,
       realCost: toDecimalString(0),
@@ -288,6 +318,7 @@ function buildEntryDataForOccurrence(
   }
 
   return {
+    ...sharedFields,
     title: occurrence.habit.name,
     categoryId: occurrence.habit.categoryId,
     realCost: toDecimalString(0),
@@ -328,6 +359,11 @@ async function syncOccurrenceStatus(
       };
     }
 
+    await requireWorkspaceAccessForRecord(occurrence, "Occorrenza abitudine");
+
+    const currentUser = await getCurrentUser();
+    const workspaceId = await getCurrentWorkspaceId();
+
     await prisma.$transaction(async (tx) => {
       await tx.habitOccurrence.update({
         where: { id },
@@ -339,7 +375,10 @@ async function syncOccurrenceStatus(
         return;
       }
 
-      const entryData = buildEntryDataForOccurrence(occurrence, status);
+      const entryData = buildEntryDataForOccurrence(occurrence, status, {
+        workspaceId,
+        currentUserId: currentUser.id,
+      });
 
       await tx.entry.upsert({
         where: { habitOccurrenceId: id },
@@ -404,7 +443,8 @@ export async function createHabit(
   }
 
   try {
-    const category = await resolveCategory(categoryId);
+    const workspaceId = await getCurrentWorkspaceId();
+    const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
       return {
@@ -418,6 +458,7 @@ export async function createHabit(
 
     await prisma.habit.create({
       data: {
+        workspaceId,
         name,
         categoryId: category.id,
         amount: toDecimalString(amount.value),
@@ -446,6 +487,7 @@ export async function createHabit(
 export async function getHabits(): Promise<HabitListItem[]> {
   try {
     return await prisma.habit.findMany({
+      where: getWorkspaceScopedWhere(),
       orderBy: {
         name: "asc",
       },
@@ -469,9 +511,9 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
 
   try {
     const habits = await prisma.habit.findMany({
-      where: {
+      where: getWorkspaceScopedWhere({
         isActive: true,
-      },
+      }),
       select: {
         id: true,
         activeDays: true,
@@ -526,6 +568,9 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
           gte: todayStart,
           lt: tomorrowStart,
         },
+        habit: {
+          is: getWorkspaceScopedWhere(),
+        },
       },
       orderBy: {
         createdAt: "asc",
@@ -573,6 +618,9 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
         date: {
           lt: todayStart,
         },
+        habit: {
+          is: getWorkspaceScopedWhere(),
+        },
       },
       include: {
         habit: {
@@ -594,6 +642,8 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
     }
 
     let finalizedCount = 0;
+    const currentUser = await getCurrentUser();
+    const workspaceId = await getCurrentWorkspaceId();
 
     await prisma.$transaction(async (tx) => {
       for (const occurrence of pendingOccurrences) {
@@ -612,6 +662,10 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
             },
           },
           "spent",
+          {
+            workspaceId,
+            currentUserId: currentUser.id,
+          },
         );
 
         await tx.habitOccurrence.update({
