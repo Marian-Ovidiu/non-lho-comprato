@@ -87,8 +87,8 @@ export function LoginPanel({
             <Button
               key={provider.value}
               type="button"
-              variant="outline"
-              className="h-12 w-full justify-center rounded-2xl border-border bg-background text-foreground hover:bg-surface-muted hover:text-foreground"
+              variant="default"
+              className="h-12 w-full justify-center rounded-2xl px-4"
               onClick={() => handleLogin(provider.value)}
               disabled={Boolean(pendingProvider)}
             >
