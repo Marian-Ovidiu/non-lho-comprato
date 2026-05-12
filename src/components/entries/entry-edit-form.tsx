@@ -23,11 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  getPersonOwnershipOptions,
-  normalizeLegacyPerson,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
+import { normalizeLegacyPerson, type LegacyPersonValue } from "@/src/lib/ui-person";
+import { PersonSegmentedSelector } from "@/src/components/entries/person-segmented-selector";
 
 type CategoryOption = {
   id: string;
@@ -195,31 +192,13 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
               <FieldError message={state.errors?.categoryId} />
             </div>
 
-            <fieldset className="space-y-3">
+            <fieldset className="space-y-2.5">
               <legend className="text-sm font-medium text-foreground">
                 Chi ha fatto la spesa?
               </legend>
-              <div className="grid gap-3 sm:grid-cols-3">
-                {getPersonOwnershipOptions().map((choice) => (
-                  <Label
-                    key={choice.value}
-                    htmlFor={`person-${choice.value.toLowerCase()}`}
-                    className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
-                  >
-                    <input
-                      id={`person-${choice.value.toLowerCase()}`}
-                      name="person"
-                      type="radio"
-                      value={choice.value}
-                      defaultChecked={
-                        normalizeLegacyPerson(entry.person) === choice.value
-                      }
-                      className="h-4 w-4 accent-accent"
-                    />
-                    <span>{choice.label}</span>
-                  </Label>
-                ))}
-              </div>
+              <PersonSegmentedSelector
+                value={normalizeLegacyPerson(entry.person)}
+              />
               <FieldError message={state.errors?.person} />
             </fieldset>
           </div>
