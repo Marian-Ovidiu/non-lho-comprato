@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
-import { getPersonFilter } from "@/src/lib/person-filter";
 import { PublicAccessGate } from "@/src/components/public/public-access-gate";
 import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
@@ -12,7 +11,6 @@ import { GoalsPreview } from "@/src/components/dashboard/goals-preview";
 import { MonthlyReportPreview } from "@/src/components/dashboard/monthly-report-preview";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { StreakHeroCard } from "@/src/components/dashboard/streak-hero-card";
-import { PersonFilter } from "@/src/components/shared/person-filter";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,14 +21,8 @@ import {
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getMonthlyReport } from "@/src/actions/reports";
-import { getGlobalStreak, getPersonStreak } from "@/src/actions/streaks";
+import { getGlobalStreak } from "@/src/actions/streaks";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
-
-type HomeProps = {
-  searchParams: Promise<{
-    person?: string | string[];
-  }>;
-};
 
 function formatEuro(value: number) {
   return new Intl.NumberFormat("it-IT", {
@@ -60,14 +52,12 @@ function getGreeting() {
   return "Buonasera, Marian 👋";
 }
 
-export default async function Home({ searchParams }: HomeProps) {
+export default async function Home() {
   const authenticatedUser = await getAuthenticatedUser();
 
   if (!authenticatedUser) {
     return <PublicAccessGate />;
   }
-
-  const person = getPersonFilter((await searchParams).person);
 
   await ensureTodayHabitOccurrences();
   await finalizeOldPendingOccurrences();
@@ -91,7 +81,7 @@ export default async function Home({ searchParams }: HomeProps) {
   };
 
   try {
-    const streakPromise = person ? getPersonStreak(person) : getGlobalStreak();
+    const streakPromise = getGlobalStreak();
 
     const [
       loadedSummary,
@@ -102,9 +92,9 @@ export default async function Home({ searchParams }: HomeProps) {
       loadedTodayHabits,
       loadedMonthlyReport,
     ] = await Promise.all([
-      getDashboardSummary(person),
-      getTodayDashboardSummary(person),
-      getEntries(person),
+      getDashboardSummary(),
+      getTodayDashboardSummary(),
+      getEntries(),
       getGoalsWithProgress(),
       streakPromise,
       getTodayHabitOccurrences(),
@@ -156,8 +146,6 @@ export default async function Home({ searchParams }: HomeProps) {
           },
         ]}
       />
-
-      <PersonFilter person={person} basePath="/" compact />
 
       <DashboardHudCards
         totalSavedToday={todaySummary.totalSavedToday}

@@ -1,13 +1,15 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
-import { useTransition } from "react";
+import { MoreHorizontal } from "lucide-react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { deleteEntry } from "@/src/actions/entries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import {
   getEntryOwnershipLabel,
@@ -31,37 +33,51 @@ type EntryCardProps = {
   };
 };
 
-function getSavedLabel(savedAmount: unknown) {
-  const amount = Number(savedAmount);
+function getSourceLabel(source: string) {
+  return source === "habit" ? "Abitudine" : "Manuale";
+}
+
+function formatSignedMoney(value: unknown) {
+  const amount = Number(value);
+  const formatted = formatMoney(Math.abs(amount));
 
   if (amount > 0) {
-    return "Risparmiati";
+    return `+${formatted}`;
   }
 
   if (amount < 0) {
-    return "Extra speso";
+    return `-${formatted}`;
   }
 
-  return "Nessun risparmio";
-}
-
-function getSourceLabel(source: string) {
-  if (source === "habit") {
-    return "Abitudine";
-  }
-
-  return "Manuale";
-}
-
-function getPersonLabel(person: LegacyPersonValue | null) {
-  return getEntryOwnershipLabel(person);
+  return formatted;
 }
 
 export function EntryCard({ entry }: EntryCardProps) {
   const router = useRouter();
   const [isDeleting, startTransition] = useTransition();
-  const savedLabel = getSavedLabel(entry.savedAmount);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const savedAmount = Number(entry.savedAmount);
+
+  useEffect(() => {
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      if (!menuRef.current) {
+        return;
+      }
+
+      if (!menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
+    };
+  }, []);
 
   function handleDelete() {
     const confirmed = window.confirm(
@@ -71,6 +87,8 @@ export function EntryCard({ entry }: EntryCardProps) {
     if (!confirmed) {
       return;
     }
+
+    setMenuOpen(false);
 
     startTransition(async () => {
       const result = await deleteEntry(entry.id);
@@ -84,117 +102,130 @@ export function EntryCard({ entry }: EntryCardProps) {
     });
   }
 
+  const savedTone =
+    savedAmount > 0
+      ? "text-success"
+      : savedAmount < 0
+        ? "text-destructive"
+        : "text-foreground";
+
+  const savedSurface =
+    savedAmount > 0
+      ? "bg-success/8 border-success/15"
+      : savedAmount < 0
+        ? "bg-destructive/8 border-destructive/15"
+        : "bg-surface-muted/80 border-border/70";
+
   return (
-    <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-4 p-5 pb-0">
-        <div className="flex items-start justify-between gap-4">
+    <Card className="overflow-hidden border-border/80 shadow-sm">
+      <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
+        <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
-            <CardTitle className="truncate text-lg sm:text-xl">
+            <h2 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-lg">
               {entry.title}
-            </CardTitle>
-            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-text">
+            </h2>
+            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs leading-5 text-muted-text sm:text-sm">
               <span>{entry.category.name}</span>
-              <span aria-hidden="true">â€¢</span>
+              <span aria-hidden="true">•</span>
               <span>{formatDate(entry.date)}</span>
-            </div>
+              <span aria-hidden="true">•</span>
+              <span>{getEntryOwnershipLabel(entry.person)}</span>
+            </p>
           </div>
 
-          <div
-            className={
-              savedAmount > 0
-                ? "rounded-2xl bg-success/10 px-3 py-2 text-right"
-                : savedAmount < 0
-                  ? "rounded-2xl bg-destructive/10 px-3 py-2 text-right"
-                  : "rounded-2xl bg-surface-muted px-3 py-2 text-right"
-            }
-          >
-            <p
-              className={
-                savedAmount > 0
-                  ? "text-[11px] font-medium uppercase tracking-[0.18em] text-success"
-                  : savedAmount < 0
-                    ? "text-[11px] font-medium uppercase tracking-[0.18em] text-destructive"
-                    : "text-[11px] font-medium uppercase tracking-[0.18em] text-muted-text"
-              }
-            >
-              {savedLabel}
-            </p>
-            <p
-              className={
-                savedAmount > 0
-                  ? "text-lg font-semibold text-success"
-                  : savedAmount < 0
-                    ? "text-lg font-semibold text-destructive"
-                    : "text-lg font-semibold text-foreground"
-              }
-            >
-              {formatMoney(entry.savedAmount)}
-            </p>
+          <div className="flex shrink-0 items-start gap-2">
+            <div className="text-right">
+              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-text">
+                Risparmio
+              </p>
+              <p className={cn("text-lg font-semibold tracking-tight sm:text-xl", savedTone)}>
+                {formatSignedMoney(entry.savedAmount)}
+              </p>
+            </div>
+
+            <div ref={menuRef} className="relative">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="rounded-full border border-border/70 bg-background/70 text-muted-text hover:text-foreground"
+                aria-label="Azioni movimento"
+                aria-expanded={menuOpen}
+                aria-haspopup="menu"
+                onClick={() => setMenuOpen((value) => !value)}
+              >
+                <MoreHorizontal className="size-4" aria-hidden="true" />
+              </Button>
+
+              {menuOpen ? (
+                <div
+                  role="menu"
+                  aria-label="Azioni movimento"
+                  className="absolute right-0 top-10 z-20 w-36 rounded-2xl border border-border/80 bg-surface/95 p-1.5 shadow-lg backdrop-blur"
+                >
+                  <Button
+                    asChild
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-full justify-start rounded-xl px-3 text-sm"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    <Link href={`/entries/${entry.id}/edit`}>Modifica</Link>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-9 w-full justify-start rounded-xl px-3 text-sm text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                  >
+                    Elimina
+                  </Button>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 p-5 pt-4">
-        <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-          <div className="rounded-2xl bg-surface-muted px-3 py-2">
-            <p className="text-muted-text">Speso</p>
-            <p className="font-medium text-foreground">
+      <CardContent className="space-y-3 p-4 pt-3 sm:p-5 sm:pt-3">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className={cn("rounded-2xl border px-3 py-2.5", savedSurface)}>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
+              Speso
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
               {formatMoney(entry.realCost)}
             </p>
           </div>
-          <div className="rounded-2xl bg-surface-muted px-3 py-2">
-            <p className="text-muted-text">Avresti speso</p>
-            <p className="font-medium text-foreground">
+
+          <div className={cn("rounded-2xl border px-3 py-2.5", savedSurface)}>
+            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
+              Avresti speso
+            </p>
+            <p className="mt-1 text-sm font-semibold text-foreground">
               {formatMoney(entry.alternativeCost)}
             </p>
           </div>
-          <div className="col-span-2 rounded-2xl bg-success/10 px-3 py-2 sm:col-span-1">
-            <p className="text-success">{savedLabel}</p>
-            <p
-              className={
-                savedAmount > 0
-                  ? "font-semibold text-success"
-                  : savedAmount < 0
-                    ? "font-semibold text-destructive"
-                    : "font-semibold text-foreground"
-              }
-            >
-              {formatMoney(entry.savedAmount)}
-            </p>
-          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text">
-          <Badge variant="outline">{getSourceLabel(entry.source)}</Badge>
-          <Badge variant="secondary">{getPersonLabel(entry.person)}</Badge>
-          <Button
-            asChild
-            type="button"
+        <div className="flex items-center justify-between gap-3">
+          <Badge
             variant="outline"
-            size="sm"
-            className="h-8 px-3"
+            className="h-5 rounded-full px-2 text-[11px] uppercase tracking-[0.14em]"
           >
-            <Link href={`/entries/${entry.id}/edit`}>Modifica</Link>
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            size="sm"
-            className="h-8 px-3"
-            onClick={handleDelete}
-            disabled={isDeleting}
-          >
-            Elimina
-          </Button>
+            {getSourceLabel(entry.source)}
+          </Badge>
+          {entry.note ? (
+            <p className="min-w-0 flex-1 truncate text-xs leading-5 text-muted-text">
+              {entry.note}
+            </p>
+          ) : (
+            <div className="flex-1" />
+          )}
         </div>
-
-        {entry.note ? (
-          <p className="rounded-2xl bg-surface-muted px-3 py-3 text-sm leading-6 text-muted-text">
-            {entry.note}
-          </p>
-        ) : null}
       </CardContent>
     </Card>
   );
 }
-

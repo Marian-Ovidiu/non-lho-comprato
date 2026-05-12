@@ -42,7 +42,7 @@ export function EntryList({ entries }: EntryListProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {entries.map((entry) => (
         <EntryCard key={entry.id} entry={entry} />
       ))}
