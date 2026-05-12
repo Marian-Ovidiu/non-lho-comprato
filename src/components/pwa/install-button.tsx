@@ -24,6 +24,12 @@ type PwaInstallSnapshot = {
 let deferredPrompt: BeforeInstallPromptEvent | null = null;
 let installationAcknowledged = false;
 let initialized = false;
+let lastSnapshotKey = "";
+let lastSnapshot: PwaInstallSnapshot = {
+  canPrompt: false,
+  installed: false,
+  ios: false,
+};
 const listeners = new Set<() => void>();
 
 function isStandaloneDisplay() {
@@ -54,12 +60,21 @@ function isIosDevice() {
 function readSnapshot(): PwaInstallSnapshot {
   const installed = isStandaloneDisplay() || installationAcknowledged;
   const ios = isIosDevice();
+  const canPrompt = deferredPrompt !== null && !installed && !ios;
+  const snapshotKey = `${canPrompt ? 1 : 0}|${installed ? 1 : 0}|${ios ? 1 : 0}`;
 
-  return {
-    canPrompt: deferredPrompt !== null && !installed && !ios,
+  if (snapshotKey === lastSnapshotKey) {
+    return lastSnapshot;
+  }
+
+  lastSnapshotKey = snapshotKey;
+  lastSnapshot = {
+    canPrompt,
     installed,
     ios,
   };
+
+  return lastSnapshot;
 }
 
 function emit() {
