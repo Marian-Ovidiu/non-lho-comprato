@@ -1,7 +1,7 @@
 "use server";
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
+import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 
 type StatsOverview = {
@@ -93,46 +93,28 @@ function sum(values: Array<unknown>): number {
   );
 }
 
-function normalizePerson(
-  person?: PersonFilterValue,
-): PersonFilterValue | undefined {
-  if (person === "MARIAN" || person === "MARTINA" || person === "TUTTI") {
-    return person;
-  }
-
-  return undefined;
-}
-
 function buildEntryWhere(
   person?: PersonFilterValue,
   where: Prisma.EntryWhereInput = {},
 ): Prisma.EntryWhereInput {
-  const normalizedPerson = normalizePerson(person);
-
-  if (!normalizedPerson) {
-    return where;
-  }
-
   return {
     ...where,
-    person: normalizedPerson,
+    ...buildPersonWhere(person),
   };
 }
 
 function buildHabitOccurrenceWhere(
   person?: PersonFilterValue,
 ): Prisma.HabitOccurrenceWhereInput {
-  const normalizedPerson = normalizePerson(person);
+  const personWhere = buildPersonWhere(person);
 
-  if (!normalizedPerson) {
+  if (Object.keys(personWhere).length === 0) {
     return {};
   }
 
   return {
     entry: {
-      is: {
-        person: normalizedPerson,
-      },
+      is: personWhere,
     },
   };
 }
@@ -371,7 +353,7 @@ export async function getTopSavings(
   limit = 10,
 ): Promise<TopSavingsItem[]> {
   const person =
-    typeof personOrLimit === "string" ? normalizePerson(personOrLimit) : undefined;
+    typeof personOrLimit === "string" ? personOrLimit : undefined;
   const requestedLimit =
     typeof personOrLimit === "number" ? personOrLimit : limit;
   const safeLimit = Number.isFinite(requestedLimit)

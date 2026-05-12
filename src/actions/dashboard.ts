@@ -2,6 +2,7 @@
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
+import { buildPersonWhere } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 
 type TodayDashboardSummary = {
@@ -64,7 +65,7 @@ function buildEntryWhere(person?: PersonFilterValue): Prisma.EntryWhereInput {
   const { start, end } = getRomeTodayRange();
 
   return {
-    ...(person ? { person } : {}),
+    ...buildPersonWhere(person),
     date: {
       gte: start,
       lt: end,

@@ -6,7 +6,7 @@ import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
 import { Person } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
+import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 
 type CreateEntryResult = {
   success: boolean;
@@ -106,7 +106,7 @@ function getPerson(formData: FormData): {
     return { value: Person.MARIAN };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA || raw === Person.TUTTI) {
+  if (raw === Person.MARIAN || raw === Person.MARTINA) {
     return { value: raw };
   }
 
@@ -137,11 +137,7 @@ function tryRevalidatePath(path: string) {
 }
 
 function buildEntryPersonWhere(person?: PersonFilterValue) {
-  if (!person) {
-    return {};
-  }
-
-  return { person };
+  return buildPersonWhere(person);
 }
 
 async function resolveCategory(categoryId: string) {

@@ -59,8 +59,12 @@ function getOptionalPerson(formData: FormData): {
     return { value: null };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA || raw === Person.TUTTI) {
+  if (raw === Person.MARIAN || raw === Person.MARTINA) {
     return { value: raw };
+  }
+
+  if (raw === Person.TUTTI) {
+    return { value: null };
   }
 
   return {
@@ -270,7 +274,8 @@ export async function createEntryFromPreset(
       };
     }
 
-    const effectivePerson = preset.person ?? person;
+    const effectivePerson =
+      preset.person ?? (person && person !== "TUTTI" ? person : undefined);
 
     if (!effectivePerson) {
       return {

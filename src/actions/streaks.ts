@@ -1,7 +1,7 @@
 "use server";
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
+import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 
 type StreakResult = {
@@ -55,9 +55,7 @@ function round2(value: number): number {
 function buildEntryWhere(scope: StreakScope = {}): Prisma.EntryWhereInput {
   const where: Prisma.EntryWhereInput = {};
 
-  if (scope.person) {
-    where.person = scope.person;
-  }
+  Object.assign(where, buildPersonWhere(scope.person));
 
   if (scope.categoryId) {
     where.categoryId = scope.categoryId;

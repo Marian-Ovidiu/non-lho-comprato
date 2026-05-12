@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { Person } from "@/src/lib/generated/prisma/enums";
+import { buildPersonWhere } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 
 type GoalActionResult = {
@@ -98,8 +99,12 @@ function getGoalPerson(formData: FormData): {
     return { value: null };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA || raw === Person.TUTTI) {
+  if (raw === Person.MARIAN || raw === Person.MARTINA) {
     return { value: raw };
+  }
+
+  if (raw === Person.TUTTI) {
+    return { value: null };
   }
 
   return {
@@ -132,9 +137,9 @@ function getProgressPercent(progressAmount: number, targetAmount: number): numbe
 
 function getProgressAmount(
   person: GoalPerson | null,
-  totals: Record<"all" | GoalPerson, number>,
+  totals: Record<"all" | "MARIAN" | "MARTINA", number>,
 ): number {
-  if (person === "MARIAN" || person === "MARTINA" || person === "TUTTI") {
+  if (person === "MARIAN" || person === "MARTINA") {
     return totals[person];
   }
 
@@ -205,7 +210,7 @@ export async function createGoal(
 
 export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
   try {
-    const [goals, allSaved, marianSaved, martinaSaved, sharedSaved] = await Promise.all([
+    const [goals, allSaved, marianSaved, martinaSaved] = await Promise.all([
       prisma.goal.findMany({
         orderBy: [
           {
@@ -222,25 +227,13 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
         },
       }),
       prisma.entry.aggregate({
-        where: {
-          person: Person.MARIAN,
-        },
+        where: buildPersonWhere("MARIAN"),
         _sum: {
           savedAmount: true,
         },
       }),
       prisma.entry.aggregate({
-        where: {
-          person: Person.MARTINA,
-        },
-        _sum: {
-          savedAmount: true,
-        },
-      }),
-      prisma.entry.aggregate({
-        where: {
-          person: Person.TUTTI,
-        },
+        where: buildPersonWhere("MARTINA"),
         _sum: {
           savedAmount: true,
         },
@@ -251,7 +244,6 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
       all: round2(toNumber(allSaved._sum.savedAmount)),
       MARIAN: round2(toNumber(marianSaved._sum.savedAmount)),
       MARTINA: round2(toNumber(martinaSaved._sum.savedAmount)),
-      TUTTI: round2(toNumber(sharedSaved._sum.savedAmount)),
     };
 
     return goals.map((goal) => {
