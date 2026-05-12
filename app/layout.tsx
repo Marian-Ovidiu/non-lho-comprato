@@ -61,8 +61,8 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const workspace = await getCurrentWorkspaceUiContext();
   const authenticatedUser = await getAuthenticatedUser();
+  const workspace = authenticatedUser ? await getCurrentWorkspaceUiContext() : null;
 
   return (
     <html
@@ -74,16 +74,19 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
-        <AppShell
-          workspace={workspace}
-          auth={{
-            isAuthenticated: Boolean(authenticatedUser),
-            userLabel:
-              authenticatedUser?.name ?? authenticatedUser?.email ?? null,
-          }}
-        >
-          {children}
-        </AppShell>
+        {authenticatedUser && workspace ? (
+          <AppShell
+            workspace={workspace}
+            auth={{
+              isAuthenticated: true,
+              userLabel: authenticatedUser.name ?? authenticatedUser.email ?? null,
+            }}
+          >
+            {children}
+          </AppShell>
+        ) : (
+          children
+        )}
         <RegisterSW />
       </body>
     </html>

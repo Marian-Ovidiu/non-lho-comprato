@@ -12,10 +12,19 @@ import {
   type SupabaseOAuthProvider,
 } from "@/src/lib/auth/providers";
 
-export function LoginPanel() {
+type LoginPanelProps = {
+  providers?: SupabaseOAuthProvider[];
+};
+
+export function LoginPanel({ providers }: LoginPanelProps = {}) {
   const router = useRouter();
   const [pendingProvider, setPendingProvider] =
     useState<SupabaseOAuthProvider | null>(null);
+  const visibleProviders = providers
+    ? SUPABASE_OAUTH_PROVIDERS.filter((provider) =>
+        providers.includes(provider.value),
+      )
+    : SUPABASE_OAUTH_PROVIDERS;
 
   async function handleLogin(provider: SupabaseOAuthProvider) {
     const supabase = createSupabaseBrowserClient();
@@ -55,7 +64,7 @@ export function LoginPanel() {
         </p>
 
         <div className="grid gap-2 sm:grid-cols-2">
-          {SUPABASE_OAUTH_PROVIDERS.map((provider) => {
+          {visibleProviders.map((provider) => {
             const isPending = pendingProvider === provider.value;
 
             return (

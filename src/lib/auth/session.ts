@@ -57,6 +57,13 @@ async function getSupabaseUser() {
   } satisfies AuthenticatedUser;
 }
 
+export function isLegacyFallbackEnabled() {
+  return (
+    process.env.NODE_ENV !== "production" &&
+    process.env.ENABLE_LEGACY_FALLBACK?.trim().toLowerCase() === "true"
+  );
+}
+
 async function ensureAuthenticatedUser(authenticatedUser: AuthenticatedUser) {
   return ensureAppUserForAuthUser(authenticatedUser);
 }
@@ -82,6 +89,10 @@ export async function getCurrentUser() {
     return ensureAuthenticatedUser(authenticatedUser);
   }
 
+  if (!isLegacyFallbackEnabled()) {
+    throw new Error("Unauthorized: legacy fallback is disabled");
+  }
+
   const legacyUser = await prisma.user.findUnique({
     where: { id: LEGACY_CURRENT_USER_ID },
   });
@@ -105,6 +116,10 @@ export async function getCurrentWorkspace() {
     }
 
     return ensureDefaultWorkspaceForUser(user);
+  }
+
+  if (!isLegacyFallbackEnabled()) {
+    throw new Error("Unauthorized: legacy fallback is disabled");
   }
 
   const workspace = await prisma.workspace.findUnique({

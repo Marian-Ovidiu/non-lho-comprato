@@ -1,4 +1,9 @@
-﻿import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
+import Link from "next/link";
+
+import { getAuthenticatedUser } from "@/src/lib/auth/session";
+import { getPersonFilter } from "@/src/lib/person-filter";
+import { PublicAccessGate } from "@/src/components/public/public-access-gate";
+import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
 import { DashboardHabitsPreview } from "@/src/components/dashboard/dashboard-habits-preview";
 import { DashboardHudCards } from "@/src/components/dashboard/dashboard-hud-cards";
@@ -10,14 +15,16 @@ import { StreakHeroCard } from "@/src/components/dashboard/streak-hero-card";
 import { PersonFilter } from "@/src/components/shared/person-filter";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { ensureTodayHabitOccurrences, finalizeOldPendingOccurrences, getTodayHabitOccurrences } from "@/src/actions/habits";
+import {
+  ensureTodayHabitOccurrences,
+  finalizeOldPendingOccurrences,
+  getTodayHabitOccurrences,
+} from "@/src/actions/habits";
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getMonthlyReport } from "@/src/actions/reports";
 import { getGlobalStreak, getPersonStreak } from "@/src/actions/streaks";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
-import { getPersonFilter } from "@/src/lib/person-filter";
 
 type HomeProps = {
   searchParams: Promise<{
@@ -26,6 +33,12 @@ type HomeProps = {
 };
 
 export default async function Home({ searchParams }: HomeProps) {
+  const authenticatedUser = await getAuthenticatedUser();
+
+  if (!authenticatedUser) {
+    return <PublicAccessGate />;
+  }
+
   const person = getPersonFilter((await searchParams).person);
 
   await ensureTodayHabitOccurrences();
@@ -132,5 +145,3 @@ export default async function Home({ searchParams }: HomeProps) {
     </main>
   );
 }
-
-
