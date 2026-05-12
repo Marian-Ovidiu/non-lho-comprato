@@ -24,7 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { PERSON_OWNERSHIP_LABELS } from "@/src/lib/person-labels";
+import {
+  DEFAULT_LEGACY_PERSON,
+  getPersonOwnershipOptions,
+} from "@/src/lib/ui-person";
 
 type CategoryOption = {
   id: string;
@@ -174,48 +177,23 @@ export function EntryForm({ categories }: EntryFormProps) {
                 Chi ha fatto la spesa?
               </legend>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Label
-                  htmlFor="person-marian"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
-                >
-                  <input
-                    id="person-marian"
-                    name="person"
-                    type="radio"
-                    value="MARIAN"
-                    defaultChecked
-                    className="h-4 w-4 accent-accent"
-                  />
-                  <span>{PERSON_OWNERSHIP_LABELS.MARIAN}</span>
-                </Label>
-
-                <Label
-                  htmlFor="person-martina"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
-                >
-                  <input
-                    id="person-martina"
-                    name="person"
-                    type="radio"
-                    value="MARTINA"
-                    className="h-4 w-4 accent-accent"
-                  />
-                  <span>{PERSON_OWNERSHIP_LABELS.MARTINA}</span>
-                </Label>
-
-                <Label
-                  htmlFor="person-tutti"
-                  className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
-                >
-                  <input
-                    id="person-tutti"
-                    name="person"
-                    type="radio"
-                    value="TUTTI"
-                    className="h-4 w-4 accent-accent"
-                  />
-                  <span>{PERSON_OWNERSHIP_LABELS.TUTTI}</span>
-                </Label>
+                {getPersonOwnershipOptions().map((choice) => (
+                  <Label
+                    key={choice.value}
+                    htmlFor={`person-${choice.value.toLowerCase()}`}
+                    className="flex min-h-12 cursor-pointer items-center gap-3 rounded-lg border border-border bg-surface px-4 py-3 text-sm font-normal shadow-sm transition-colors hover:bg-surface-muted"
+                  >
+                    <input
+                      id={`person-${choice.value.toLowerCase()}`}
+                      name="person"
+                      type="radio"
+                      value={choice.value}
+                      defaultChecked={choice.value === DEFAULT_LEGACY_PERSON}
+                      className="h-4 w-4 accent-accent"
+                    />
+                    <span>{choice.label}</span>
+                  </Label>
+                ))}
               </div>
               <FieldError message={state.errors?.person} />
             </fieldset>

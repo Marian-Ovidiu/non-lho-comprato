@@ -1,4 +1,5 @@
-﻿import { PresetCard } from "@/src/components/presets/preset-card";
+import { PresetCard } from "@/src/components/presets/preset-card";
+import type { LegacyPersonValue } from "@/src/lib/ui-person";
 
 type PresetGridProps = {
   presets: Array<{
@@ -10,7 +11,7 @@ type PresetGridProps = {
     realCost: unknown;
     alternativeCost: unknown;
     note: string | null;
-    person: "MARIAN" | "MARTINA" | "TUTTI" | null;
+    person: LegacyPersonValue | null;
     createdAt: Date;
   }>;
 };
@@ -32,4 +33,3 @@ export function PresetGrid({ presets }: PresetGridProps) {
     </div>
   );
 }
-

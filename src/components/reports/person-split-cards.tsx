@@ -1,7 +1,7 @@
-﻿import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
-import { getPersonFilterLabel } from "@/src/lib/person-labels";
+import { buildPersonBuckets } from "@/src/lib/ui-person";
 
 type PersonSummary = {
   totalSaved: number;
@@ -60,6 +60,12 @@ export function PersonSplitCards({
   martina,
   condivise,
 }: PersonSplitCardsProps) {
+  const buckets = buildPersonBuckets({
+    MARIAN: marian,
+    MARTINA: martina,
+    TUTTI: condivise,
+  });
+
   return (
     <section className="space-y-4">
       <div className="space-y-1">
@@ -72,23 +78,15 @@ export function PersonSplitCards({
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <PersonCard
-          label={getPersonFilterLabel("MARIAN")}
-          summary={marian}
-          toneIndex={0}
-        />
-        <PersonCard
-          label={getPersonFilterLabel("MARTINA")}
-          summary={martina}
-          toneIndex={1}
-        />
-        <PersonCard
-          label={getPersonFilterLabel("TUTTI")}
-          summary={condivise}
-          toneIndex={2}
-        />
+        {buckets.map((bucket, index) => (
+          <PersonCard
+            key={bucket.key}
+            label={bucket.label}
+            summary={bucket.summary}
+            toneIndex={index}
+          />
+        ))}
       </div>
     </section>
   );
 }
-

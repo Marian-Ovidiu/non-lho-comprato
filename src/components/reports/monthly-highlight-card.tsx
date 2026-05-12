@@ -1,7 +1,10 @@
-﻿import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
-import { getEntryOwnershipLabel } from "@/src/lib/person-labels";
+import {
+  getEntryOwnershipLabel,
+  type LegacyPersonValue,
+} from "@/src/lib/ui-person";
 
 type CategoryHighlight = {
   name: string;
@@ -14,7 +17,7 @@ type BiggestSaving = {
   title: string;
   savedAmount: number;
   date: string | Date;
-  person: "MARIAN" | "MARTINA" | "TUTTI";
+  person: LegacyPersonValue;
   categoryName: string;
 } | null;
 
@@ -109,7 +112,7 @@ export function MonthlyHighlightCard({
 
             {biggestSaving ? (
               <p className="mt-1 text-sm text-muted-text dark:text-muted-text">
-                {biggestSaving.categoryName} â€¢ {formatDate(biggestSaving.date)}
+                {biggestSaving.categoryName} • {formatDate(biggestSaving.date)}
               </p>
             ) : null}
           </div>
@@ -118,5 +121,3 @@ export function MonthlyHighlightCard({
     </Card>
   );
 }
-
-

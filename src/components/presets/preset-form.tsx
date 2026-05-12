@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PRESET_PERSON_LABELS } from "@/src/lib/person-labels";
+import { getPresetPersonOptions } from "@/src/lib/ui-person";
 
 type CategoryOption = {
   id: string;
@@ -176,10 +176,14 @@ export function PresetForm({ categories }: PresetFormProps) {
                 className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40"
                 aria-invalid={Boolean(state.errors?.person)}
               >
-                <option value="">{PRESET_PERSON_LABELS.DEFAULT}</option>
-                <option value="MARIAN">{PRESET_PERSON_LABELS.MARIAN}</option>
-                <option value="MARTINA">{PRESET_PERSON_LABELS.MARTINA}</option>
-                <option value="TUTTI">{PRESET_PERSON_LABELS.TUTTI}</option>
+                {getPresetPersonOptions().map((option) => (
+                  <option
+                    key={option.value || "DEFAULT"}
+                    value={option.value}
+                  >
+                    {option.label}
+                  </option>
+                ))}
               </select>
               <FieldError message={state.errors?.person} />
             </div>

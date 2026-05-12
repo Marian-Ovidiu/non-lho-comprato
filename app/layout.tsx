@@ -4,6 +4,8 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/src/components/layout/app-shell";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
+import { getAuthenticatedUser } from "@/src/lib/auth/session";
+import { getCurrentWorkspaceUiContext } from "@/src/lib/workspace-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -54,11 +56,14 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const workspace = await getCurrentWorkspaceUiContext();
+  const authenticatedUser = await getAuthenticatedUser();
+
   return (
     <html
       lang="it"
@@ -69,7 +74,16 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
-        <AppShell>{children}</AppShell>
+        <AppShell
+          workspace={workspace}
+          auth={{
+            isAuthenticated: Boolean(authenticatedUser),
+            userLabel:
+              authenticatedUser?.name ?? authenticatedUser?.email ?? null,
+          }}
+        >
+          {children}
+        </AppShell>
         <RegisterSW />
       </body>
     </html>

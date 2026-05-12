@@ -126,7 +126,7 @@ export default function MorePage() {
             App
           </h2>
           <p className="text-sm text-muted-text dark:text-muted-text">
-            Preferenze e installazione dell'app.
+            Preferenze e installazione dell&apos;app.
           </p>
         </div>
 

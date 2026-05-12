@@ -23,7 +23,10 @@ export function StreakSummary({
       {items.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-3">
           {items.map((item) => (
-            <StreakCard key={`${item.title}-${item.person ?? "all"}`} {...item} />
+            <StreakCard
+              key={`${item.title}-${item.person ?? "all"}`}
+              {...item}
+            />
           ))}
         </div>
       ) : (

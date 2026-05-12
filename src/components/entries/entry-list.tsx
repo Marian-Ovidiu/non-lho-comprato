@@ -4,6 +4,7 @@ import { Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntryCard } from "@/src/components/entries/entry-card";
 import { EmptyState } from "@/src/components/shared/empty-state";
+import type { LegacyPersonValue } from "@/src/lib/ui-person";
 
 type EntryListProps = {
   entries: Array<{
@@ -19,7 +20,7 @@ type EntryListProps = {
     savedAmount: unknown;
     note: string | null;
     source: string;
-    person: string | null;
+    person: LegacyPersonValue | null;
   }>;
 };
 

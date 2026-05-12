@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { BarChart3, Layers3, PlusCircle, Repeat2 } from "lucide-react";
 
-import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 const actions = [

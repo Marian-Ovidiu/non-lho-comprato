@@ -10,8 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import { cn } from "@/lib/utils";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
-import { PERSON_OWNERSHIP_LABELS, getPresetPersonLabel } from "@/src/lib/person-labels";
+import type { LegacyPersonValue } from "@/src/lib/ui-person";
+import {
+  getPersonOwnershipOptions,
+  getPresetPersonLabel,
+} from "@/src/lib/ui-person";
 
 type PresetCardData = {
   id: string;
@@ -22,7 +25,7 @@ type PresetCardData = {
   realCost: unknown;
   alternativeCost: unknown;
   note: string | null;
-  person: PersonFilterValue | null;
+  person: LegacyPersonValue | null;
   createdAt: Date;
 };
 
@@ -53,7 +56,7 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function getPersonLabel(person: PersonFilterValue | null) {
+function getPersonLabel(person: LegacyPersonValue | null) {
   return getPresetPersonLabel(person);
 }
 
@@ -79,7 +82,7 @@ export function PresetCard({
     setMessageTone(tone);
   }
 
-  function handleCreate(person?: PersonFilterValue) {
+  function handleCreate(person?: LegacyPersonValue) {
     startTransition(async () => {
       const result = await createEntryFromPreset(preset.id, person);
 
@@ -187,33 +190,18 @@ export function PresetCard({
           </Button>
         ) : (
           <div className="grid w-full grid-cols-3 gap-2">
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-11 w-full"
-              onClick={() => handleCreate("MARIAN")}
-              disabled={isPending}
-            >
-              {PERSON_OWNERSHIP_LABELS.MARIAN}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-11 w-full"
-              onClick={() => handleCreate("MARTINA")}
-              disabled={isPending}
-            >
-              {PERSON_OWNERSHIP_LABELS.MARTINA}
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              className="h-11 w-full"
-              onClick={() => handleCreate("TUTTI")}
-              disabled={isPending}
-            >
-              {PERSON_OWNERSHIP_LABELS.TUTTI}
-            </Button>
+            {getPersonOwnershipOptions().map((choice) => (
+              <Button
+                key={choice.value}
+                type="button"
+                variant="secondary"
+                className="h-11 w-full"
+                onClick={() => handleCreate(choice.value)}
+                disabled={isPending}
+              >
+                {choice.label}
+              </Button>
+            ))}
           </div>
         )}
 

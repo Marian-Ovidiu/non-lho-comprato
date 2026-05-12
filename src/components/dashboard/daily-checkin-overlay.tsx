@@ -32,28 +32,29 @@ export function DailyCheckinOverlay({
   pendingHabitsCount,
 }: DailyCheckinOverlayProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   const title = useMemo(() => "Situazione portafoglio", []);
 
   useEffect(() => {
-    setMounted(true);
+    const frame = window.requestAnimationFrame(() => {
+      try {
+        const storageKey = getStorageKey();
+        const seen = window.localStorage.getItem(storageKey);
 
-    try {
-      const storageKey = getStorageKey();
-      const seen = window.localStorage.getItem(storageKey);
-
-      if (!seen) {
-        setIsOpen(true);
-        window.localStorage.setItem(storageKey, "1");
+        if (!seen) {
+          setIsOpen(true);
+          window.localStorage.setItem(storageKey, "1");
+        }
+      } catch (error) {
+        console.error("Failed to read daily overlay state:", error);
+        setIsOpen(false);
       }
-    } catch (error) {
-      console.error("Failed to read daily overlay state:", error);
-      setIsOpen(false);
-    }
+    });
+
+    return () => window.cancelAnimationFrame(frame);
   }, []);
 
-  if (!mounted || !isOpen) {
+  if (!isOpen) {
     return null;
   }
 

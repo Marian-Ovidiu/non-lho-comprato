@@ -3,8 +3,11 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { formatMoney } from "@/src/lib/formatters";
 import { prisma } from "@/src/lib/prisma";
-import { getPersonFilterLabel } from "@/src/lib/person-labels";
-import { getWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import {
+  buildPersonBuckets,
+  type LegacyPersonValue,
+} from "@/src/lib/ui-person";
 
 type DecimalLike = {
   toString?: () => string;
@@ -29,7 +32,7 @@ export type MonthlyReportPersonSummary = {
 };
 
 export type MonthlyReportPersonSplitItem = {
-  key: "MARIAN" | "MARTINA" | "TUTTI" | "TOTAL";
+  key: LegacyPersonValue | "TOTAL";
   label: string;
   totalSaved: number;
   entriesCount: number;
@@ -66,7 +69,7 @@ export type MonthlyReportBiggestSaving = {
   title: string;
   savedAmount: number;
   date: string;
-  person: "MARIAN" | "MARTINA" | "TUTTI";
+  person: LegacyPersonValue;
   categoryName: string;
   realCost: number;
   alternativeCost: number;
@@ -277,10 +280,10 @@ function ensureSelectedMonthOption(
   ];
 }
 
-function buildEntryWhere(monthKey: string): Prisma.EntryWhereInput {
+async function buildEntryWhere(monthKey: string): Promise<Prisma.EntryWhereInput> {
   const { start, end } = getMonthRangeUtc(monthKey);
 
-  return getWorkspaceScopedWhere({
+  return getCurrentWorkspaceScopedWhere({
     date: {
       gte: start,
       lt: end,
@@ -288,8 +291,9 @@ function buildEntryWhere(monthKey: string): Prisma.EntryWhereInput {
   });
 }
 
-function buildHabitOccurrenceWhere(monthKey: string): Prisma.HabitOccurrenceWhereInput {
+async function buildHabitOccurrenceWhere(monthKey: string): Promise<Prisma.HabitOccurrenceWhereInput> {
   const { start, end } = getMonthRangeUtc(monthKey);
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
   return {
     date: {
@@ -297,7 +301,7 @@ function buildHabitOccurrenceWhere(monthKey: string): Prisma.HabitOccurrenceWher
       lt: end,
     },
     habit: {
-      is: getWorkspaceScopedWhere(),
+      is: workspaceWhere,
     },
   };
 }
@@ -318,37 +322,22 @@ function buildPersonSplit(
   totalSaved: number,
   entriesCount: number,
 ): MonthlyReportPersonSplit {
-  const split = [
-    {
-      key: "MARIAN" as const,
-      label: getPersonFilterLabel("MARIAN"),
-      totalSaved: totals.MARIAN.totalSaved,
-      entriesCount: totals.MARIAN.entriesCount,
-      sharePercent:
-        totalSaved === 0
-          ? 0
-          : round2((totals.MARIAN.totalSaved / totalSaved) * 100),
-    },
-    {
-      key: "MARTINA" as const,
-      label: getPersonFilterLabel("MARTINA"),
-      totalSaved: totals.MARTINA.totalSaved,
-      entriesCount: totals.MARTINA.entriesCount,
-      sharePercent:
-        totalSaved === 0
-          ? 0
-          : round2((totals.MARTINA.totalSaved / totalSaved) * 100),
-    },
-    {
-      key: "TUTTI" as const,
-      label: getPersonFilterLabel("TUTTI"),
-      totalSaved: totals.TUTTI.totalSaved,
-      entriesCount: totals.TUTTI.entriesCount,
-      sharePercent:
-        totalSaved === 0
-          ? 0
-          : round2((totals.TUTTI.totalSaved / totalSaved) * 100),
-    },
+  const split = buildPersonBuckets({
+    MARIAN: totals.MARIAN,
+    MARTINA: totals.MARTINA,
+    TUTTI: totals.TUTTI,
+  }).map((bucket) => ({
+    key: bucket.key,
+    label: bucket.label,
+    totalSaved: bucket.summary.totalSaved,
+    entriesCount: bucket.summary.entriesCount,
+    sharePercent:
+      totalSaved === 0
+        ? 0
+        : round2((bucket.summary.totalSaved / totalSaved) * 100),
+  })) as MonthlyReportPersonSplitItem[];
+
+  const splitWithTotal = [
     {
       key: "TOTAL" as const,
       label: "Totale",
@@ -358,7 +347,7 @@ function buildPersonSplit(
     },
   ] as MonthlyReportPersonSplitItem[];
 
-  return Object.assign(split, {
+  return Object.assign([...split, ...splitWithTotal], {
     marian: getMonthPersonSummary(
       totals.MARIAN.entriesCount,
       totals.MARIAN.totalSaved,
@@ -487,8 +476,10 @@ function buildEmptyReport(monthKey: string): MonthlyReportData {
 
 export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOption[]> {
   try {
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+
     const dates = await prisma.entry.findMany({
-      where: getWorkspaceScopedWhere(),
+      where: workspaceWhere,
       select: {
         date: true,
       },
@@ -510,9 +501,12 @@ export async function getMonthlyReport(
   const selectedMonth = normalizeMonthKey(requestedMonth);
 
   try {
+    const entryWhere = await buildEntryWhere(selectedMonth);
+    const habitOccurrenceWhere = await buildHabitOccurrenceWhere(selectedMonth);
+
     const [monthEntries] = await Promise.all([
       prisma.entry.findMany({
-        where: buildEntryWhere(selectedMonth),
+        where: entryWhere,
         select: {
           id: true,
           title: true,
@@ -539,7 +533,7 @@ export async function getMonthlyReport(
     const monthOptions = ensureSelectedMonthOption(availableMonths, selectedMonth);
 
     const monthOccurrences = await prisma.habitOccurrence.findMany({
-      where: buildHabitOccurrenceWhere(selectedMonth),
+      where: habitOccurrenceWhere,
       select: {
         status: true,
         habitId: true,
@@ -762,7 +756,7 @@ export async function getMonthlyReport(
 
     const recapParts = [
       `A ${monthLower} avete risparmiato ${formatMoney(totalSaved)}.`,
-      `${getPersonFilterLabel("MARIAN")} ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, ${getPersonFilterLabel("MARTINA")} ${formatMoney(personTotals.MARTINA.totalSaved)}, ${getPersonFilterLabel("TUTTI")} ${formatMoney(personTotals.TUTTI.totalSaved)}.`,
+      `Marian ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, Martina ${formatMoney(personTotals.MARTINA.totalSaved)}, Condivise ${formatMoney(personTotals.TUTTI.totalSaved)}.`,
       bestCategory
         ? `La categoria migliore e stata ${bestCategory.categoryName}.`
         : "Nessuna categoria si e distinta questo mese.",

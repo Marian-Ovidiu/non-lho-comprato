@@ -1,8 +1,11 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
-import { getPersonFilterLabel } from "@/src/lib/person-labels";
+import {
+  getPersonFilterOptions,
+  normalizeLegacyPerson,
+} from "@/src/lib/ui-person";
 
 type PersonFilterProps = {
   person?: PersonFilterValue;
@@ -15,16 +18,17 @@ export function PersonFilter({
   basePath,
   compact = false,
 }: PersonFilterProps) {
-  const options = [
-    { href: basePath, label: getPersonFilterLabel(), value: undefined },
-    { href: `${basePath}?person=MARIAN`, label: getPersonFilterLabel("MARIAN"), value: "MARIAN" },
-    { href: `${basePath}?person=MARTINA`, label: getPersonFilterLabel("MARTINA"), value: "MARTINA" },
-    { href: `${basePath}?person=TUTTI`, label: getPersonFilterLabel("TUTTI"), value: "TUTTI" },
-  ] satisfies Array<{
-    href: string;
-    label: string;
-    value?: PersonFilterValue;
-  }>;
+  const options = getPersonFilterOptions().map((option) => ({
+    href:
+      option.value === ""
+        ? basePath
+        : `${basePath}?person=${encodeURIComponent(option.value)}`,
+    label: option.label,
+    value:
+      option.value === ""
+        ? undefined
+        : (option.value as PersonFilterValue),
+  }));
 
   return (
     <section
@@ -48,7 +52,7 @@ export function PersonFilter({
         </p>
         <div className="flex flex-wrap gap-2">
           {options.map((option) => {
-            const isActive = option.value === person;
+            const isActive = normalizeLegacyPerson(person) === option.value;
 
             return (
               <Button
@@ -76,4 +80,3 @@ export function PersonFilter({
     </section>
   );
 }
-

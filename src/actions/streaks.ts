@@ -3,7 +3,7 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
-import { getWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 
 type StreakResult = {
   currentStreak: number;
@@ -53,11 +53,12 @@ function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function buildEntryWhere(scope: StreakScope = {}): Prisma.EntryWhereInput {
+async function buildEntryWhere(scope: StreakScope = {}): Promise<Prisma.EntryWhereInput> {
   const where: Prisma.EntryWhereInput = {};
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
   Object.assign(where, buildPersonWhere(scope.person));
-  Object.assign(where, getWorkspaceScopedWhere());
+  Object.assign(where, workspaceWhere);
 
   if (scope.categoryId) {
     where.categoryId = scope.categoryId;
@@ -183,7 +184,7 @@ async function loadStreakData(scope: StreakScope = {}): Promise<{
 }> {
   try {
     const entries = await prisma.entry.findMany({
-      where: buildEntryWhere(scope),
+      where: await buildEntryWhere(scope),
       select: {
         date: true,
         savedAmount: true,

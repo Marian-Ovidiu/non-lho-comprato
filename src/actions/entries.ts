@@ -4,13 +4,18 @@ import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
-import { EntryVisibility, Person } from "@/src/lib/generated/prisma/enums";
+import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import {
+  DEFAULT_LEGACY_PERSON,
+  normalizeLegacyPerson,
+  type LegacyPersonValue,
+} from "@/src/lib/ui-person";
+import {
   getCurrentUser,
   getCurrentWorkspaceId,
-  getWorkspaceScopedWhere,
+  getCurrentWorkspaceScopedWhere,
   mapLegacyPersonToUserId,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
@@ -31,7 +36,7 @@ type EntryWithCategory = {
   date: Date;
   note: string | null;
   source: string;
-  person: Person;
+  person: LegacyPersonValue;
   habitOccurrenceId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -54,7 +59,7 @@ type SerializableEntry = {
   date: string;
   note: string | null;
   source: string;
-  person: Person;
+  person: LegacyPersonValue;
   habitOccurrenceId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -104,21 +109,23 @@ function getMoney(formData: FormData, name: string): {
 }
 
 function getPerson(formData: FormData): {
-  value: Person;
+  value: LegacyPersonValue;
   error?: string;
 } {
   const raw = getText(formData, "person");
 
   if (!raw) {
-    return { value: Person.MARIAN };
+    return { value: DEFAULT_LEGACY_PERSON };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA || raw === Person.TUTTI) {
-    return { value: raw };
+  const normalized = normalizeLegacyPerson(raw);
+
+  if (normalized) {
+    return { value: normalized };
   }
 
   return {
-    value: Person.MARIAN,
+    value: DEFAULT_LEGACY_PERSON,
     error: "Seleziona una persona valida",
   };
 }
@@ -145,14 +152,14 @@ function tryRevalidatePath(path: string) {
 
 async function resolveCategory(categoryId: string, workspaceId: string) {
   let category = await prisma.category.findFirst({
-    where: getWorkspaceScopedWhere({
+    where: await getCurrentWorkspaceScopedWhere({
       id: categoryId,
     }),
   });
 
   if (!category) {
     category = await prisma.category.findFirst({
-      where: getWorkspaceScopedWhere({
+      where: await getCurrentWorkspaceScopedWhere({
         slug: categoryId,
       }),
     });
@@ -236,8 +243,10 @@ function serializeEntry(entry: EntryWithCategory): SerializableEntry {
 export async function getEntries(
   person?: PersonFilterValue,
 ): Promise<EntryWithCategory[]> {
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere(buildPersonWhere(person));
+
   return prisma.entry.findMany({
-    where: getWorkspaceScopedWhere(buildPersonWhere(person)),
+    where: workspaceWhere,
     orderBy: {
       date: "desc",
     },
@@ -305,15 +314,16 @@ export async function getDashboardSummary(
   const now = new Date();
   const monthStart = startOfMonth(now);
   const nextMonthStart = startOfNextMonth(now);
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere({
+    ...buildPersonWhere(person),
+    date: {
+      gte: monthStart,
+      lt: nextMonthStart,
+    },
+  });
 
   const entries = await prisma.entry.findMany({
-    where: getWorkspaceScopedWhere({
-      ...buildPersonWhere(person),
-      date: {
-        gte: monthStart,
-        lt: nextMonthStart,
-      },
-    }),
+    where: workspaceWhere,
     select: {
       realCost: true,
       alternativeCost: true,
@@ -346,7 +356,7 @@ export async function getDashboardSummary(
 export async function getCategories() {
   try {
     const categories = await prisma.category.findMany({
-      where: getWorkspaceScopedWhere(),
+      where: await getCurrentWorkspaceScopedWhere(),
       orderBy: {
         name: "asc",
       },

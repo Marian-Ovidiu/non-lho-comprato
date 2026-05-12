@@ -3,12 +3,13 @@
 import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
-import { EntryVisibility, Person } from "@/src/lib/generated/prisma/enums";
+import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
+import { DEFAULT_LEGACY_PERSON } from "@/src/lib/ui-person";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
-  getWorkspaceScopedWhere,
+  getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 
@@ -229,14 +230,14 @@ function parseBoolean(value: string): boolean {
 
 async function resolveCategory(categoryId: string, workspaceId: string) {
   let category = await prisma.category.findFirst({
-    where: getWorkspaceScopedWhere({
+    where: await getCurrentWorkspaceScopedWhere({
       id: categoryId,
     }),
   });
 
   if (!category) {
     category = await prisma.category.findFirst({
-      where: getWorkspaceScopedWhere({
+      where: await getCurrentWorkspaceScopedWhere({
         slug: categoryId,
       }),
     });
@@ -284,7 +285,7 @@ function buildEntryDataForOccurrence(
     createdByUserId: context.currentUserId,
     paidByUserId: context.currentUserId,
     visibility: EntryVisibility.workspace,
-    person: Person.MARIAN,
+    person: DEFAULT_LEGACY_PERSON,
   };
 
   if (status === "spent") {
@@ -486,8 +487,10 @@ export async function createHabit(
 
 export async function getHabits(): Promise<HabitListItem[]> {
   try {
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+
     return await prisma.habit.findMany({
-      where: getWorkspaceScopedWhere(),
+      where: workspaceWhere,
       orderBy: {
         name: "asc",
       },
@@ -510,10 +513,11 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
   const todayStart = getTodayStart();
 
   try {
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere({
+      isActive: true,
+    });
     const habits = await prisma.habit.findMany({
-      where: getWorkspaceScopedWhere({
-        isActive: true,
-      }),
+      where: workspaceWhere,
       select: {
         id: true,
         activeDays: true,
@@ -562,6 +566,8 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
   const tomorrowStart = getTomorrowStart();
 
   try {
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+
     return await prisma.habitOccurrence.findMany({
       where: {
         date: {
@@ -569,7 +575,7 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
           lt: tomorrowStart,
         },
         habit: {
-          is: getWorkspaceScopedWhere(),
+          is: workspaceWhere,
         },
       },
       orderBy: {
@@ -612,6 +618,7 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
   const todayStart = getTodayStart();
 
   try {
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
     const pendingOccurrences = await prisma.habitOccurrence.findMany({
       where: {
         status: "pending",
@@ -619,7 +626,7 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
           lt: todayStart,
         },
         habit: {
-          is: getWorkspaceScopedWhere(),
+          is: workspaceWhere,
         },
       },
       include: {

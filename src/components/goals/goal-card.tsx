@@ -14,7 +14,10 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
-import { getGoalScopeLabel } from "@/src/lib/person-labels";
+import {
+  getGoalScopeLabel,
+  type LegacyPersonValue,
+} from "@/src/lib/ui-person";
 
 type GoalCardProps = {
   goal: {
@@ -22,7 +25,7 @@ type GoalCardProps = {
     title: string;
     targetAmount: number;
     emoji: string | null;
-    person: "MARIAN" | "MARTINA" | "TUTTI" | null;
+    person: LegacyPersonValue | null;
     isActive: boolean;
     createdAt: string;
     progressAmount: number;

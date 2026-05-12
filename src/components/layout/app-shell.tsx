@@ -13,7 +13,20 @@ import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AuthControls } from "@/src/components/auth/auth-controls";
 import { InstallButton } from "@/src/components/pwa/install-button";
+
+export type AppShellWorkspace = {
+  id: string;
+  name: string;
+  kind: "private" | "shared";
+  isShared: boolean;
+};
+
+export type AppShellAuth = {
+  isAuthenticated: boolean;
+  userLabel?: string | null;
+};
 
 const primaryNavItems = [
   { href: "/", label: "Home", icon: Home },
@@ -70,7 +83,15 @@ function NavButton({
   );
 }
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  workspace,
+  auth,
+}: {
+  children: React.ReactNode;
+  workspace: AppShellWorkspace;
+  auth: AppShellAuth;
+}) {
   const pathname = usePathname();
 
   return (
@@ -89,8 +110,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </div>
 
               <div className="shrink-0">
-                <InstallButton compact />
+                <div className="flex items-center gap-2">
+                  <AuthControls
+                    isAuthenticated={auth.isAuthenticated}
+                    userLabel={auth.userLabel}
+                  />
+                  <InstallButton compact />
+                </div>
               </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text">
+              <span className="rounded-full border border-border bg-surface px-3 py-1 font-medium text-foreground">
+                {workspace.name}
+              </span>
+              <span className="hidden sm:inline">
+                {workspace.isShared ? "Workspace condiviso" : "Workspace privato"}
+              </span>
             </div>
 
             <nav aria-label="Navigazione desktop" className="hidden gap-2 md:flex">

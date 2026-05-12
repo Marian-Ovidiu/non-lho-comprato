@@ -5,13 +5,13 @@ import { Flame } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { getPersonFilterLabel } from "@/src/lib/person-labels";
+import { getPersonFilterLabel, type LegacyPersonValue } from "@/src/lib/ui-person";
 
 export type StreakCardProps = {
   title: string;
   currentStreak: number;
   bestStreak: number;
-  person?: "MARIAN" | "MARTINA" | "TUTTI";
+  person?: LegacyPersonValue;
 };
 
 function getPersonLabel(person?: StreakCardProps["person"]) {

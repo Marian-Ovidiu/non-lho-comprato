@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "backfill:multi-account": "tsx prisma/backfill-multi-account.ts"
+    "backfill:multi-account": "tsx prisma/backfill-multi-account.ts",
+    "verify:auth-provisioning": "tsx scripts/verify-auth-provisioning.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -15,6 +16,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

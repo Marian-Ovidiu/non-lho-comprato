@@ -9,7 +9,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
-import { getEntryOwnershipLabel } from "@/src/lib/person-labels";
+import {
+  getEntryOwnershipLabel,
+  type LegacyPersonValue,
+} from "@/src/lib/ui-person";
 
 type EntryCardProps = {
   entry: {
@@ -24,7 +27,7 @@ type EntryCardProps = {
     savedAmount: unknown;
     note: string | null;
     source: string;
-    person: string | null;
+    person: LegacyPersonValue | null;
   };
 };
 
@@ -50,8 +53,8 @@ function getSourceLabel(source: string) {
   return "Manuale";
 }
 
-function getPersonLabel(person: string | null) {
-  return getEntryOwnershipLabel(person as "MARIAN" | "MARTINA" | "TUTTI" | null);
+function getPersonLabel(person: LegacyPersonValue | null) {
+  return getEntryOwnershipLabel(person);
 }
 
 export function EntryCard({ entry }: EntryCardProps) {

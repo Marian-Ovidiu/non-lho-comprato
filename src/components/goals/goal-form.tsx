@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GOAL_SCOPE_LABELS } from "@/src/lib/person-labels";
+import { getGoalScopeOptions } from "@/src/lib/ui-person";
 
 type FormState = {
   success: boolean;
@@ -138,10 +138,11 @@ export function GoalForm() {
                 className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40"
                 aria-invalid={Boolean(state.errors?.person)}
               >
-                <option value="">{GOAL_SCOPE_LABELS.GLOBAL}</option>
-                <option value="MARIAN">{GOAL_SCOPE_LABELS.MARIAN}</option>
-                <option value="MARTINA">{GOAL_SCOPE_LABELS.MARTINA}</option>
-                <option value="TUTTI">{GOAL_SCOPE_LABELS.TUTTI}</option>
+                {getGoalScopeOptions().map((option) => (
+                  <option key={option.value || "GLOBAL"} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
               </select>
               <FieldError message={state.errors?.person} />
             </div>

@@ -3,7 +3,7 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
-import { getWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 
 type StatsOverview = {
   totalRealSpent: number;
@@ -94,36 +94,37 @@ function sum(values: Array<unknown>): number {
   );
 }
 
-function buildEntryWhere(
+async function buildEntryWhere(
   person?: PersonFilterValue,
   where: Prisma.EntryWhereInput = {},
-): Prisma.EntryWhereInput {
+): Promise<Prisma.EntryWhereInput> {
   return {
     ...where,
     ...buildPersonWhere(person),
-    workspaceId: getWorkspaceScopedWhere().workspaceId,
+    ...(await getCurrentWorkspaceScopedWhere()),
   };
 }
 
-function buildHabitOccurrenceWhere(
+async function buildHabitOccurrenceWhere(
   person?: PersonFilterValue,
-): Prisma.HabitOccurrenceWhereInput {
+): Promise<Prisma.HabitOccurrenceWhereInput> {
   const personWhere = buildPersonWhere(person);
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
   if (Object.keys(personWhere).length === 0) {
     return {
       habit: {
-        is: getWorkspaceScopedWhere(),
+        is: workspaceWhere,
       },
     };
   }
 
   return {
     habit: {
-      is: getWorkspaceScopedWhere(),
+      is: workspaceWhere,
     },
     entry: {
-      is: getWorkspaceScopedWhere(personWhere),
+      is: await getCurrentWorkspaceScopedWhere(personWhere),
     },
   };
 }
@@ -172,7 +173,7 @@ export async function getStatsOverview(
 ): Promise<StatsOverview> {
   try {
     const entries = await prisma.entry.findMany({
-      where: buildEntryWhere(person),
+      where: await buildEntryWhere(person),
       select: {
         realCost: true,
         alternativeCost: true,
@@ -213,7 +214,7 @@ export async function getMonthlyStats(
 ): Promise<MonthlyStatsItem[]> {
   try {
     const entries = await prisma.entry.findMany({
-      where: buildEntryWhere(person),
+      where: await buildEntryWhere(person),
       select: {
         date: true,
         realCost: true,
@@ -281,7 +282,7 @@ export async function getCategoryStats(
 ): Promise<CategoryStatsItem[]> {
   try {
     const entries = await prisma.entry.findMany({
-      where: buildEntryWhere(person),
+      where: await buildEntryWhere(person),
       select: {
         categoryId: true,
         realCost: true,
@@ -375,7 +376,7 @@ export async function getTopSavings(
 
   try {
     const entries = await prisma.entry.findMany({
-      where: buildEntryWhere(person, {
+      where: await buildEntryWhere(person, {
         savedAmount: {
           gt: 0,
         },
@@ -426,7 +427,7 @@ export async function getHabitStats(
 ): Promise<HabitStatsItem[]> {
   try {
     const occurrences = await prisma.habitOccurrence.findMany({
-      where: buildHabitOccurrenceWhere(person),
+      where: await buildHabitOccurrenceWhere(person),
       select: {
         status: true,
         habit: {

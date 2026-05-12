@@ -2,12 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 
-import { Person } from "@/src/lib/generated/prisma/enums";
 import { buildPersonWhere } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 import {
+  LEGACY_PERSON_VALUES,
+  isSharedPerson,
+  normalizeLegacyPerson,
+  type LegacyPersonValue,
+} from "@/src/lib/ui-person";
+import {
   getCurrentWorkspaceId,
-  getWorkspaceScopedWhere,
+  getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 
@@ -17,7 +22,7 @@ type GoalActionResult = {
   errors?: Record<string, string>;
 };
 
-type GoalPerson = "MARIAN" | "MARTINA" | "TUTTI";
+type GoalPerson = LegacyPersonValue | null;
 
 type GoalWithProgress = {
   id: string;
@@ -104,12 +109,10 @@ function getGoalPerson(formData: FormData): {
     return { value: null };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA) {
-    return { value: raw };
-  }
+  const normalized = normalizeLegacyPerson(raw);
 
-  if (raw === Person.TUTTI) {
-    return { value: null };
+  if (normalized) {
+    return { value: normalized };
   }
 
   return {
@@ -142,9 +145,9 @@ function getProgressPercent(progressAmount: number, targetAmount: number): numbe
 
 function getProgressAmount(
   person: GoalPerson | null,
-  totals: Record<"all" | "MARIAN" | "MARTINA", number>,
+  totals: Record<LegacyPersonValue, number> & { all: number },
 ): number {
-  if (person === "MARIAN" || person === "MARTINA") {
+  if (person && !isSharedPerson(person)) {
     return totals[person];
   }
 
@@ -218,9 +221,11 @@ export async function createGoal(
 
 export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
   try {
-    const [goals, allSaved, marianSaved, martinaSaved] = await Promise.all([
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+
+    const [goals, allSaved] = await Promise.all([
       prisma.goal.findMany({
-        where: getWorkspaceScopedWhere(),
+        where: workspaceWhere,
         orderBy: [
           {
             isActive: "desc",
@@ -231,30 +236,35 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
         ],
       }),
       prisma.entry.aggregate({
-        where: getWorkspaceScopedWhere(),
-        _sum: {
-          savedAmount: true,
-        },
-      }),
-      prisma.entry.aggregate({
-        where: getWorkspaceScopedWhere(buildPersonWhere("MARIAN")),
-        _sum: {
-          savedAmount: true,
-        },
-      }),
-      prisma.entry.aggregate({
-        where: getWorkspaceScopedWhere(buildPersonWhere("MARTINA")),
+        where: workspaceWhere,
         _sum: {
           savedAmount: true,
         },
       }),
     ]);
 
-    const totals = {
+    const personTotals = await Promise.all(
+      LEGACY_PERSON_VALUES.map(async (person) => ({
+        person,
+        total: await prisma.entry.aggregate({
+          where: await getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
+          _sum: {
+            savedAmount: true,
+          },
+        }),
+      })),
+    );
+
+    const totals: Record<LegacyPersonValue, number> & { all: number } = {
       all: round2(toNumber(allSaved._sum.savedAmount)),
-      MARIAN: round2(toNumber(marianSaved._sum.savedAmount)),
-      MARTINA: round2(toNumber(martinaSaved._sum.savedAmount)),
+      MARIAN: 0,
+      MARTINA: 0,
+      TUTTI: 0,
     };
+
+    for (const { person, total } of personTotals) {
+      totals[person] = round2(toNumber(total._sum.savedAmount));
+    }
 
     return goals.map((goal) => {
       const targetAmount = round2(toNumber(goal.targetAmount));

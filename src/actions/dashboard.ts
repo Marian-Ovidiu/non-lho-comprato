@@ -4,7 +4,7 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { buildPersonWhere } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
-import { getWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 
 type TodayDashboardSummary = {
   totalSavedToday: number;
@@ -62,10 +62,12 @@ function getRomeTodayRange(): { start: Date; end: Date } {
   return { start, end };
 }
 
-function buildEntryWhere(person?: PersonFilterValue): Prisma.EntryWhereInput {
+async function buildEntryWhere(
+  person?: PersonFilterValue,
+): Promise<Prisma.EntryWhereInput> {
   const { start, end } = getRomeTodayRange();
 
-  return getWorkspaceScopedWhere({
+  return getCurrentWorkspaceScopedWhere({
     ...buildPersonWhere(person),
     date: {
       gte: start,
@@ -79,7 +81,7 @@ export async function getTodayDashboardSummary(
 ): Promise<TodayDashboardSummary> {
   try {
     const entries = await prisma.entry.findMany({
-      where: buildEntryWhere(person),
+      where: await buildEntryWhere(person),
       select: {
         realCost: true,
         savedAmount: true,

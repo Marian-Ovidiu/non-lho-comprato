@@ -4,12 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { createEntry } from "@/src/actions/entries";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
-import { Person } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import {
+  normalizeLegacyPerson,
+  type LegacyPersonValue,
+} from "@/src/lib/ui-person";
+import {
   getCurrentWorkspaceId,
-  getWorkspaceScopedWhere,
+  getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 
@@ -55,7 +58,7 @@ function getMoney(formData: FormData, name: string): {
 }
 
 function getOptionalPerson(formData: FormData): {
-  value: PersonFilterValue | null;
+  value: LegacyPersonValue | null;
   error?: string;
 } {
   const raw = getText(formData, "person");
@@ -64,12 +67,9 @@ function getOptionalPerson(formData: FormData): {
     return { value: null };
   }
 
-  if (raw === Person.MARIAN || raw === Person.MARTINA) {
-    return { value: raw };
-  }
-
-  if (raw === Person.TUTTI) {
-    return { value: null };
+  const normalized = normalizeLegacyPerson(raw);
+  if (normalized) {
+    return { value: normalized };
   }
 
   return {
@@ -94,14 +94,14 @@ function revalidatePresetPaths() {
 
 async function resolveCategory(categoryId: string, workspaceId: string) {
   let category = await prisma.category.findFirst({
-    where: getWorkspaceScopedWhere({
+    where: await getCurrentWorkspaceScopedWhere({
       id: categoryId,
     }),
   });
 
   if (!category) {
     category = await prisma.category.findFirst({
-      where: getWorkspaceScopedWhere({
+      where: await getCurrentWorkspaceScopedWhere({
         slug: categoryId,
       }),
     });
@@ -141,7 +141,7 @@ function buildPresetEntryFormData(params: {
   realCost: number;
   alternativeCost: number;
   note: string | null;
-  person: PersonFilterValue;
+  person: LegacyPersonValue;
 }): FormData {
   const formData = new FormData();
   formData.append("title", params.title);
@@ -244,8 +244,10 @@ export async function createPreset(
 
 export async function getPresets() {
   try {
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+
     return await prisma.quickPreset.findMany({
-      where: getWorkspaceScopedWhere(),
+      where: workspaceWhere,
       orderBy: {
         createdAt: "desc",
       },
@@ -295,8 +297,7 @@ export async function createEntryFromPreset(
 
     await requireWorkspaceAccessForRecord(preset, "Preset");
 
-    const effectivePerson =
-      preset.person ?? (person && person !== "TUTTI" ? person : undefined);
+    const effectivePerson = preset.person ?? normalizeLegacyPerson(person);
 
     if (!effectivePerson) {
       return {

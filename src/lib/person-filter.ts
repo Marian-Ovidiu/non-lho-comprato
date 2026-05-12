@@ -1,23 +1,23 @@
 import type { Person } from "@/src/lib/generated/prisma/enums";
+import {
+  isSharedPerson,
+  normalizeLegacyPerson,
+  type PersonFilterValue,
+} from "@/src/lib/ui-person";
 
-export type PersonFilterValue = "MARIAN" | "MARTINA" | "TUTTI";
+export type { PersonFilterValue } from "@/src/lib/ui-person";
 
 export function getPersonFilter(
   value?: string | string[],
 ): PersonFilterValue | undefined {
   const person = Array.isArray(value) ? value[0] : value;
-
-  if (person === "MARIAN" || person === "MARTINA" || person === "TUTTI") {
-    return person;
-  }
-
-  return undefined;
+  return normalizeLegacyPerson(person) ?? undefined;
 }
 
 export function buildPersonWhere(
   person?: PersonFilterValue,
 ): { person?: Person } {
-  if (!person || person === "TUTTI") {
+  if (!person || isSharedPerson(person)) {
     return {};
   }
 
