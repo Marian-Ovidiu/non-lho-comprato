@@ -23,10 +23,10 @@ export function PageHeader({
   chips,
 }: PageHeaderProps) {
   return (
-    <section className="rounded-3xl border border-border/70 bg-surface/70 p-4 shadow-sm sm:p-5">
-      <div className="flex flex-col gap-2.5">
-        <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0 space-y-1">
+    <section className="rounded-3xl border border-border/70 bg-surface/70 p-3.5 shadow-sm sm:p-4">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0 space-y-0.5">
             {eyebrow ? (
               <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
                 {eyebrow}
@@ -35,18 +35,18 @@ export function PageHeader({
             {backHref ? (
               <Link
                 href={backHref}
-                className="inline-flex items-center gap-1.5 text-[1.3rem] font-semibold tracking-tight text-foreground transition-colors hover:text-foreground/90 sm:text-[1.5rem]"
+                className="inline-flex items-center gap-1.5 text-[1.2rem] font-semibold tracking-tight text-foreground transition-colors hover:text-foreground/90 sm:text-[1.35rem]"
               >
                 <ChevronLeft className="size-4 shrink-0" aria-hidden="true" />
                 <span>{title}</span>
               </Link>
             ) : (
-              <h1 className="text-[1.3rem] font-semibold tracking-tight text-foreground sm:text-[1.5rem]">
+              <h1 className="text-[1.2rem] font-semibold tracking-tight text-foreground sm:text-[1.35rem]">
                 {title}
               </h1>
             )}
             {context ? (
-              <p className="max-w-2xl text-sm leading-6 text-muted-text">
+              <p className="max-w-2xl text-sm leading-5 text-muted-text">
                 {context}
               </p>
             ) : null}

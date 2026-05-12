@@ -25,7 +25,7 @@ function HudCard({
           : "overflow-hidden border-border bg-surface shadow-sm"
       }
     >
-      <div className="flex h-full min-h-[5.5rem] flex-col justify-between gap-2 p-3 sm:p-4">
+      <div className="flex h-full min-h-[4.75rem] flex-col justify-between gap-1.5 p-2.5 sm:p-3.5">
         <p
           className={
             tone === "success"
@@ -38,8 +38,8 @@ function HudCard({
         <p
           className={
             tone === "success"
-              ? "text-2xl font-semibold tracking-tight text-success sm:text-[1.75rem]"
-              : "text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]"
+              ? "text-[1.6rem] font-semibold tracking-tight text-success sm:text-[1.75rem]"
+              : "text-[1.6rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]"
           }
         >
           {value}

@@ -45,7 +45,7 @@ export default async function MonthlyReportPage({
       />
 
       {report.hasData ? (
-        <div className="space-y-6">
+        <div className="space-y-4">
           <MonthlyOverviewCards overview={report.overview} />
 
           <PersonSplitCards

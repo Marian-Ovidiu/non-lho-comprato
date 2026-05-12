@@ -25,19 +25,19 @@ export function EmptyState({
 }: EmptyStateProps) {
   return (
     <Card className="border-dashed bg-surface/80 shadow-sm">
-      <CardContent className="flex flex-col gap-4 p-5 sm:p-5.5">
-        <div className="flex items-start gap-3.5">
+      <CardContent className="flex flex-col gap-3.5 p-4 sm:p-5">
+        <div className="flex items-start gap-3">
           {icon ? (
             <div className="rounded-2xl bg-surface-muted p-2 text-foreground">
               {icon}
             </div>
           ) : null}
 
-          <div className="space-y-1.5">
-            <h3 className="text-base font-semibold tracking-tight text-foreground sm:text-lg">
+          <div className="space-y-1">
+            <h3 className="text-sm font-semibold tracking-tight text-foreground sm:text-base">
               {title}
             </h3>
-            <p className="max-w-lg text-sm leading-6 text-muted-text">
+            <p className="max-w-lg text-sm leading-5 text-muted-text">
               {description}
             </p>
             {note ? <p className="text-xs text-muted-text">{note}</p> : null}

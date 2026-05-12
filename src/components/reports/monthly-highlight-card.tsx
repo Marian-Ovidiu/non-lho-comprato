@@ -37,14 +37,14 @@ function HighlightItem({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-surface-muted p-4 dark:border-border dark:bg-surface-muted">
+    <div className="rounded-2xl border border-border bg-surface-muted p-3.5 dark:border-border dark:bg-surface-muted">
       <p className="text-xs uppercase tracking-[0.16em] text-muted-text dark:text-muted-text">
         {title}
       </p>
-      <p className="mt-1 text-lg font-semibold text-foreground dark:text-foreground">
+      <p className="mt-1 text-base font-semibold text-foreground dark:text-foreground sm:text-lg">
         {value}
       </p>
-      <p className="mt-1 text-sm text-muted-text dark:text-muted-text">
+      <p className="mt-1 text-sm leading-5 text-muted-text dark:text-muted-text">
         {description}
       </p>
     </div>
@@ -58,7 +58,7 @@ export function MonthlyHighlightCard({
 }: MonthlyHighlightCardProps) {
   return (
     <Card className="border-border shadow-sm dark:border-border">
-      <CardHeader className="space-y-1 p-5 pb-3">
+      <CardHeader className="space-y-1 p-4 pb-2.5 sm:p-5">
         <CardTitle className="text-base text-foreground dark:text-foreground">
           Evidenze del mese
         </CardTitle>
@@ -66,7 +66,7 @@ export function MonthlyHighlightCard({
           I punti che hanno fatto la differenza.
         </p>
       </CardHeader>
-      <CardContent className="space-y-4 p-5 pt-0">
+      <CardContent className="space-y-3.5 p-4 pt-0 sm:p-5">
         <div className="grid gap-3">
           <HighlightItem
             title="Categoria migliore"
@@ -88,7 +88,7 @@ export function MonthlyHighlightCard({
             }
           />
 
-          <div className="rounded-2xl border border-success/20 bg-success/10 p-4 dark:border-success/30 dark:bg-success/15">
+          <div className="rounded-2xl border border-success/20 bg-success/10 p-3.5 dark:border-success/30 dark:bg-success/15">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs uppercase tracking-[0.16em] text-success dark:text-success/90">
                 Schivata più forte
@@ -100,11 +100,11 @@ export function MonthlyHighlightCard({
               ) : null}
             </div>
 
-            <p className="mt-2 text-lg font-semibold text-foreground dark:text-foreground">
+            <p className="mt-2 text-base font-semibold text-foreground dark:text-foreground sm:text-lg">
               {biggestSaving?.title ?? "Nessuna schivata da mostrare"}
             </p>
 
-            <p className="mt-1 text-sm text-success dark:text-success/90">
+            <p className="mt-1 text-sm leading-5 text-success dark:text-success/90">
               {biggestSaving
                 ? `${formatMoney(biggestSaving.savedAmount)} risparmiati`
                 : "Nessun risparmio rilevante registrato."}

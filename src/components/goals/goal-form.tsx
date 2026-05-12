@@ -67,15 +67,15 @@ export function GoalForm() {
 
   return (
     <Card className="border-border shadow-sm">
-      <CardHeader className="p-5 pb-0 sm:p-6">
+      <CardHeader className="p-4 pb-0 sm:p-5">
         <CardTitle>Nuovo obiettivo</CardTitle>
-        <CardDescription>
+        <CardDescription className="text-sm leading-5">
           Scegli una meta e un importo da raggiungere con i risparmi.
         </CardDescription>
       </CardHeader>
 
       <form ref={formRef} action={formAction}>
-        <CardContent className="space-y-5 p-5 sm:p-6">
+        <CardContent className="space-y-4 p-4 sm:p-5">
           {state.message ? (
             <div
               className={
@@ -149,7 +149,7 @@ export function GoalForm() {
           </div>
         </CardContent>
 
-        <CardFooter className="justify-end border-t border-border bg-surface-muted/50 p-5 sm:p-6">
+        <CardFooter className="justify-end border-t border-border bg-surface-muted/50 p-4 sm:p-5">
           <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
             {pending ? "Creazione..." : "Crea obiettivo"}
           </Button>

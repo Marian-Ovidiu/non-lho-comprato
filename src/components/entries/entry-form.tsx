@@ -108,15 +108,15 @@ export function EntryForm({ categories }: EntryFormProps) {
 
   return (
     <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
+      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
         <CardTitle>Nuovo movimento</CardTitle>
-        <CardDescription className="max-w-xl leading-6">
+        <CardDescription className="max-w-xl text-sm leading-5">
           {helperText}
         </CardDescription>
       </CardHeader>
 
       <form ref={formRef} action={formAction}>
-        <CardContent className="space-y-6 p-5 sm:p-6">
+        <CardContent className="space-y-5 p-4 sm:p-5">
           {state.message ? (
             <div
               className={
@@ -139,9 +139,6 @@ export function EntryForm({ categories }: EntryFormProps) {
                 autoComplete="off"
                 aria-invalid={Boolean(state.errors?.title)}
               />
-              <p className="text-xs text-muted-text">
-                Un nome veloce e chiaro ti aiuta a ritrovare il movimento in un attimo.
-              </p>
               <FieldError message={state.errors?.title} />
             </div>
 
@@ -166,9 +163,6 @@ export function EntryForm({ categories }: EntryFormProps) {
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-text">
-                Le categorie servono per capire dove stai schivando più spese.
-              </p>
               <FieldError message={state.errors?.categoryId} />
             </div>
 
@@ -213,9 +207,6 @@ export function EntryForm({ categories }: EntryFormProps) {
                   placeholder="2.00"
                   aria-invalid={Boolean(state.errors?.realCost)}
                 />
-                <p className="text-xs text-muted-text">
-                  Inserisci la spesa reale in euro.
-                </p>
                 <FieldError message={state.errors?.realCost} />
               </div>
 
@@ -231,15 +222,12 @@ export function EntryForm({ categories }: EntryFormProps) {
                   placeholder="18.00"
                   aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
-                <p className="text-xs text-muted-text">
-                  Il valore alternativo che stai evitando.
-                </p>
                 <FieldError message={state.errors?.alternativeCost} />
               </div>
             </div>
 
-            <p className="mt-3 text-xs leading-5 text-muted-text">
-              Il risparmio finale viene calcolato dal server, così non devi fare conti a mano.
+            <p className="mt-2 text-xs leading-5 text-muted-text">
+              Il risparmio finale viene calcolato dal server.
             </p>
           </div>
 
@@ -252,9 +240,6 @@ export function EntryForm({ categories }: EntryFormProps) {
               defaultValue={getTodayLocal()}
               aria-invalid={Boolean(state.errors?.date)}
             />
-            <p className="text-xs text-muted-text">
-              Di solito basta la data di oggi, ma puoi correggerla in un secondo.
-            </p>
             <FieldError message={state.errors?.date} />
           </div>
 
@@ -266,13 +251,10 @@ export function EntryForm({ categories }: EntryFormProps) {
               placeholder="Pasta al tonno invece di delivery"
               className="min-h-28"
             />
-            <p className="text-xs text-muted-text">
-              Facoltativa: utile quando vuoi ricordarti il contesto.
-            </p>
           </div>
         </CardContent>
 
-        <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-5 sm:flex-row sm:justify-end sm:p-6">
+        <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-4 sm:flex-row sm:justify-end sm:p-5">
           <Button
             type="submit"
             className="h-11 w-full px-5 sm:w-auto"

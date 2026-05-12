@@ -40,7 +40,7 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {[
           {
             label: "Risparmiato",
@@ -76,7 +76,7 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
                 : "border-border shadow-sm dark:border-border"
             }
           >
-            <CardHeader className="space-y-1 p-5 pb-3">
+            <CardHeader className="space-y-1 p-4 pb-2.5 sm:p-5">
               <CardTitle className="text-sm font-medium text-muted-text dark:text-muted-text">
                 {card.label}
               </CardTitle>
@@ -84,8 +84,8 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
                 {card.description}
               </p>
             </CardHeader>
-            <CardContent className="p-5 pt-0">
-              <p className="text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">
+            <CardContent className="p-4 pt-0 sm:p-5">
+              <p className="text-2xl font-semibold tracking-tight text-foreground dark:text-foreground sm:text-[1.85rem]">
                 {card.value}
               </p>
             </CardContent>

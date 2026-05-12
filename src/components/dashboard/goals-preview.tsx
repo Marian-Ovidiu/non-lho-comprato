@@ -27,7 +27,7 @@ export function GoalsPreview({ goals }: GoalsPreviewProps) {
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-4 pb-0 sm:p-5">
+      <CardHeader className="space-y-2 p-3.5 pb-0 sm:p-5">
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="text-base">Obiettivi attivi</CardTitle>
@@ -41,9 +41,9 @@ export function GoalsPreview({ goals }: GoalsPreviewProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3 p-4 sm:p-5">
+      <CardContent className="space-y-2.5 p-3.5 sm:p-5">
         {visibleGoals.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-4 text-sm leading-6 text-muted-text">
+          <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-3.5 py-3.5 text-sm leading-5 text-muted-text">
             Nessun obiettivo attivo al momento. Dai una direzione ai risparmi.
           </p>
         ) : (
@@ -51,7 +51,7 @@ export function GoalsPreview({ goals }: GoalsPreviewProps) {
             const progressWidth = getProgressWidth(goal.progressPercent);
 
             return (
-              <div key={goal.id} className="rounded-2xl bg-surface-muted px-4 py-4">
+              <div key={goal.id} className="rounded-2xl bg-surface-muted px-3.5 py-3.5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 space-y-1">
                     <p className="truncate text-sm font-medium text-foreground">

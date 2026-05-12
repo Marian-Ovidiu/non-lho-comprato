@@ -8,7 +8,7 @@ import { useRouter } from "next/navigation";
 import { deleteEntry } from "@/src/actions/entries";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import {
@@ -33,10 +33,6 @@ type EntryCardProps = {
   };
 };
 
-function getSourceLabel(source: string) {
-  return source === "habit" ? "Abitudine" : "Manuale";
-}
-
 function formatSignedMoney(value: unknown) {
   const amount = Number(value);
   const formatted = formatMoney(Math.abs(amount));
@@ -50,6 +46,10 @@ function formatSignedMoney(value: unknown) {
   }
 
   return formatted;
+}
+
+function getSourceLabel(source: string) {
+  return source === "habit" ? "Abitudine" : "Manuale";
 }
 
 export function EntryCard({ entry }: EntryCardProps) {
@@ -109,39 +109,32 @@ export function EntryCard({ entry }: EntryCardProps) {
         ? "text-destructive"
         : "text-foreground";
 
-  const savedSurface =
+  const spentSurface =
     savedAmount > 0
-      ? "bg-success/8 border-success/15"
+      ? "border-success/15 bg-success/8"
       : savedAmount < 0
-        ? "bg-destructive/8 border-destructive/15"
-        : "bg-surface-muted/80 border-border/70";
+        ? "border-destructive/15 bg-destructive/8"
+        : "border-border/70 bg-surface-muted/80";
 
   return (
     <Card className="overflow-hidden border-border/80 shadow-sm">
-      <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
+      <CardContent className="space-y-3 p-4 sm:p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <h2 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-lg">
+          <div className="min-w-0 space-y-0.5">
+            <h2 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-[1.05rem]">
               {entry.title}
             </h2>
-            <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs leading-5 text-muted-text sm:text-sm">
-              <span>{entry.category.name}</span>
-              <span aria-hidden="true">•</span>
-              <span>{formatDate(entry.date)}</span>
-              <span aria-hidden="true">•</span>
-              <span>{getEntryOwnershipLabel(entry.person)}</span>
+            <p className="truncate text-xs leading-5 text-muted-text sm:text-sm">
+              {entry.category.name} <span aria-hidden="true">•</span>{" "}
+              {formatDate(entry.date)} <span aria-hidden="true">•</span>{" "}
+              {getEntryOwnershipLabel(entry.person)}
             </p>
           </div>
 
-          <div className="flex shrink-0 items-start gap-2">
-            <div className="text-right">
-              <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-text">
-                Risparmio
-              </p>
-              <p className={cn("text-lg font-semibold tracking-tight sm:text-xl", savedTone)}>
-                {formatSignedMoney(entry.savedAmount)}
-              </p>
-            </div>
+          <div className="flex shrink-0 items-start gap-1.5">
+            <p className={cn("text-lg font-semibold tracking-tight sm:text-xl", savedTone)}>
+              {formatSignedMoney(entry.savedAmount)}
+            </p>
 
             <div ref={menuRef} className="relative">
               <Button
@@ -161,7 +154,7 @@ export function EntryCard({ entry }: EntryCardProps) {
                 <div
                   role="menu"
                   aria-label="Azioni movimento"
-                  className="absolute right-0 top-10 z-20 w-36 rounded-2xl border border-border/80 bg-surface/95 p-1.5 shadow-lg backdrop-blur"
+                  className="absolute right-0 top-10 z-20 w-36 rounded-2xl border border-border/80 bg-surface/96 p-1.5 shadow-lg backdrop-blur"
                 >
                   <Button
                     asChild
@@ -187,11 +180,20 @@ export function EntryCard({ entry }: EntryCardProps) {
             </div>
           </div>
         </div>
-      </CardHeader>
 
-      <CardContent className="space-y-3 p-4 pt-3 sm:p-5 sm:pt-3">
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className={cn("rounded-2xl border px-3 py-2.5", savedSurface)}>
+        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-text sm:text-sm">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="inline-flex size-1.5 rounded-full bg-muted-text/60" aria-hidden="true" />
+            <span>{entry.category.name}</span>
+          </span>
+          <span aria-hidden="true">•</span>
+          <span>{formatDate(entry.date)}</span>
+          <span aria-hidden="true">•</span>
+          <span>{getEntryOwnershipLabel(entry.person)}</span>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
+          <div className={cn("rounded-2xl border px-3 py-2.5", spentSurface)}>
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
               Speso
             </p>
@@ -200,7 +202,7 @@ export function EntryCard({ entry }: EntryCardProps) {
             </p>
           </div>
 
-          <div className={cn("rounded-2xl border px-3 py-2.5", savedSurface)}>
+          <div className={cn("rounded-2xl border px-3 py-2.5", spentSurface)}>
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
               Avresti speso
             </p>
@@ -210,10 +212,10 @@ export function EntryCard({ entry }: EntryCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
           <Badge
             variant="outline"
-            className="h-5 rounded-full px-2 text-[11px] uppercase tracking-[0.14em]"
+            className="h-5 rounded-full px-2 text-[11px] uppercase tracking-[0.12em]"
           >
             {getSourceLabel(entry.source)}
           </Badge>
@@ -221,9 +223,7 @@ export function EntryCard({ entry }: EntryCardProps) {
             <p className="min-w-0 flex-1 truncate text-xs leading-5 text-muted-text">
               {entry.note}
             </p>
-          ) : (
-            <div className="flex-1" />
-          )}
+          ) : null}
         </div>
       </CardContent>
     </Card>

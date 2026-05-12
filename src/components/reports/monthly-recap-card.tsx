@@ -7,7 +7,7 @@ type MonthlyRecapCardProps = {
 export function MonthlyRecapCard({ recapText }: MonthlyRecapCardProps) {
   return (
     <Card className="border-border shadow-sm dark:border-border">
-      <CardHeader className="space-y-1 p-5 pb-3">
+      <CardHeader className="space-y-1 p-4 pb-2.5 sm:p-5">
         <CardTitle className="text-base text-foreground dark:text-foreground">
           Recap mensile
         </CardTitle>
@@ -15,8 +15,8 @@ export function MonthlyRecapCard({ recapText }: MonthlyRecapCardProps) {
           Un testo pronto da leggere o condividere.
         </p>
       </CardHeader>
-      <CardContent className="p-5 pt-0">
-        <p className="text-sm leading-7 text-foreground dark:text-muted-text">
+      <CardContent className="p-4 pt-0 sm:p-5">
+        <p className="text-sm leading-6 text-foreground dark:text-muted-text">
           {recapText?.trim()
             ? recapText
             : "Nessun recap disponibile per questo mese."}

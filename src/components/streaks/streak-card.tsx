@@ -67,10 +67,10 @@ export function StreakCard({
         accentClass,
       )}
     >
-      <CardHeader className="space-y-3 p-5 pb-0 sm:p-6">
+      <CardHeader className="space-y-2.5 p-4 pb-0 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <CardTitle className="flex items-center gap-2 text-base sm:text-[1.05rem]">
               <Flame className="size-4 text-success" aria-hidden="true" />
               {title}
             </CardTitle>
@@ -85,22 +85,22 @@ export function StreakCard({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 p-5 pt-4 sm:p-6 sm:pt-4">
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl bg-surface/70 px-3 py-3 ring-1 ring-border backdrop-blur dark:bg-accent/70 dark:ring-border">
+      <CardContent className="space-y-3.5 p-4 pt-3 sm:p-5 sm:pt-3">
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-2xl bg-surface/70 px-3 py-2.5 ring-1 ring-border backdrop-blur dark:bg-accent/70 dark:ring-border">
             <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
               Serie attuale
             </p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">
+            <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground dark:text-foreground sm:text-3xl">
               {currentStreak}
             </p>
           </div>
 
-          <div className="rounded-2xl bg-surface/70 px-3 py-3 ring-1 ring-border backdrop-blur dark:bg-accent/70 dark:ring-border">
+          <div className="rounded-2xl bg-surface/70 px-3 py-2.5 ring-1 ring-border backdrop-blur dark:bg-accent/70 dark:ring-border">
             <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
               Migliore
             </p>
-            <p className="mt-1 text-3xl font-semibold tracking-tight text-foreground dark:text-foreground">
+            <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground dark:text-foreground sm:text-3xl">
               {bestStreak}
             </p>
           </div>

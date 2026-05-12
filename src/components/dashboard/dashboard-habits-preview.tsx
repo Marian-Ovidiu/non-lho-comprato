@@ -31,7 +31,7 @@ export function DashboardHabitsPreview({
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-4 pb-0 sm:p-5">
+      <CardHeader className="space-y-2 p-3.5 pb-0 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Abitudini di oggi</CardTitle>
@@ -43,12 +43,12 @@ export function DashboardHabitsPreview({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 p-4 sm:p-5">
+      <CardContent className="space-y-3.5 p-3.5 sm:p-5">
         {pendingOccurrences.length === 0 ? (
           <>
-            <div className="flex items-center gap-3 rounded-2xl bg-surface-muted px-4 py-3">
+            <div className="flex items-center gap-3 rounded-2xl bg-surface-muted px-3.5 py-3">
               <SunMedium className="size-5 shrink-0 text-success" aria-hidden="true" />
-              <p className="text-sm text-muted-text">
+              <p className="text-sm leading-5 text-muted-text">
                 Nessun controllo urgente da fare adesso.
               </p>
             </div>
@@ -62,7 +62,7 @@ export function DashboardHabitsPreview({
           </>
         ) : (
           <>
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {visibleOccurrences.map((occurrence) => (
                 <div
                   key={occurrence.id}

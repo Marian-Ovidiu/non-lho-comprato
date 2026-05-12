@@ -109,16 +109,16 @@ export function HabitForm({ categories }: HabitFormProps) {
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
+      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
         <CardTitle>Nuova abitudine</CardTitle>
-        <CardDescription className="max-w-2xl leading-6">
+        <CardDescription className="max-w-2xl text-sm leading-5">
           Imposta una spesa che torna spesso. Se non la segni, la consideriamo
           già fatta.
         </CardDescription>
       </CardHeader>
 
       <form ref={formRef} action={formAction}>
-        <CardContent className="space-y-6 p-5 sm:p-6">
+        <CardContent className="space-y-5 p-4 sm:p-5">
           {state.message ? (
             <div
               className={
@@ -135,9 +135,6 @@ export function HabitForm({ categories }: HabitFormProps) {
           <div className="space-y-2">
             <Label htmlFor="name">Nome</Label>
             <Input id="name" name="name" placeholder="Caffè al bar" />
-            <p className="text-xs text-muted-text">
-              Semplice e riconoscibile, così lo ritrovi subito in lista.
-            </p>
             <FieldError message={state.errors?.name} />
           </div>
 
@@ -159,9 +156,6 @@ export function HabitForm({ categories }: HabitFormProps) {
                 ))}
               </SelectContent>
             </Select>
-            <p className="text-xs text-muted-text">
-              Ti aiuta a capire dove ti stai lasciando scappare più soldi.
-            </p>
             <FieldError message={state.errors?.categoryId} />
           </div>
 
@@ -177,7 +171,6 @@ export function HabitForm({ categories }: HabitFormProps) {
                 step="0.01"
                 placeholder="1.20"
               />
-              <p className="text-xs text-muted-text">Il costo normale in euro.</p>
               <FieldError message={state.errors?.amount} />
             </div>
 
@@ -187,10 +180,6 @@ export function HabitForm({ categories }: HabitFormProps) {
                 <p className="text-sm font-medium text-foreground">
                   Conta come spesa fatta
                 </p>
-                <p className="mt-1 text-xs leading-5 text-muted-text">
-                  L&apos;abitudine verrà conteggiata come spesa se la lasci in
-                  sospeso.
-                </p>
               </div>
               <input type="hidden" name="defaultBehavior" value="spent" />
             </div>
@@ -199,9 +188,6 @@ export function HabitForm({ categories }: HabitFormProps) {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Giorni</Label>
-              <p className="text-xs text-muted-text">
-                Seleziona i giorni in cui questa abitudine si ripete.
-              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
@@ -255,7 +241,7 @@ export function HabitForm({ categories }: HabitFormProps) {
           </div>
         </CardContent>
 
-        <div className="border-t border-border bg-surface-muted p-5 sm:p-6">
+        <div className="border-t border-border bg-surface-muted p-4 sm:p-5">
           <Button
             type="submit"
             className="w-full sm:w-auto"
