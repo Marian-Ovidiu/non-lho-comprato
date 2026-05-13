@@ -56,10 +56,10 @@ export function PersonSegmentedSelector({
             <Label
               htmlFor={id}
               className={cn(
-                "flex min-h-11 w-full cursor-pointer items-center justify-center rounded-2xl border border-border bg-surface px-2.5 py-2 text-center text-sm font-medium text-muted-text shadow-sm transition-all duration-150 ease-out",
-                "hover:bg-surface-muted hover:text-foreground",
+                "flex min-h-11 w-full cursor-pointer items-center justify-center rounded-2xl border border-border bg-surface px-2.5 py-2 text-center text-sm font-medium text-muted-text shadow-sm transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
+                "hover:-translate-y-px hover:bg-surface-muted hover:text-foreground active:translate-y-px active:opacity-95",
                 "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50",
-                "peer-checked:border-foreground/15 peer-checked:bg-foreground peer-checked:text-background",
+                "peer-checked:border-foreground/15 peer-checked:bg-foreground peer-checked:text-background peer-checked:shadow-[0_8px_18px_-14px_rgba(0,0,0,0.6)]",
               )}
             >
               <span className="truncate">{choice.label}</span>

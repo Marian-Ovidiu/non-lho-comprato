@@ -71,8 +71,8 @@ function NavButton({
       size="sm"
       className={cn(
         mobile
-          ? "h-12 flex-col gap-1 rounded-2xl px-1 text-[10px] font-medium transition-all duration-150 ease-out"
-          : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4",
+          ? "h-12 flex-col gap-1 rounded-2xl px-1 text-[10px] font-medium transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:translate-y-0 active:scale-[0.99]"
+          : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4 transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:translate-y-0 active:scale-[0.99]",
         active
           ? "bg-primary/12 text-primary ring-1 ring-primary/20 shadow-sm hover:bg-primary/12"
           : "text-muted-text hover:bg-surface-muted/60 hover:text-foreground",
@@ -85,9 +85,9 @@ function NavButton({
       >
         <Icon
           className={cn(
-            "size-4 transition-transform duration-150 ease-out",
+            "size-4 transition-transform duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
             mobile && "size-5",
-            active && "scale-110",
+            active && "scale-[1.06]",
           )}
           aria-hidden="true"
         />
@@ -124,7 +124,7 @@ function AccountButton({
       asChild
       variant="ghost"
       size="sm"
-      className="h-9 gap-2 rounded-full border border-border/70 bg-background/60 px-3 text-foreground hover:bg-surface-muted/70"
+      className="h-9 gap-2 rounded-full border border-border/70 bg-background/60 px-3 text-foreground transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] hover:bg-surface-muted/70"
     >
       <Link href="/more" aria-label="Apri profilo">
         <span className="inline-flex size-6 items-center justify-center rounded-full border border-border bg-surface text-[10px] font-semibold text-foreground">

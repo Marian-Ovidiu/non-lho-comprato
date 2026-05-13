@@ -303,7 +303,7 @@ export function QuickAddSheet({
         <Button
           variant="default"
           size="icon"
-          className="size-12 -mt-4 rounded-full border border-premium-accent/30 bg-primary text-primary-foreground shadow-lg transition-all duration-150 ease-out hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:scale-[0.98]"
+          className="size-12 -mt-4 rounded-full border border-premium-accent/30 bg-primary text-primary-foreground shadow-lg transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:scale-[0.975] active:opacity-95"
         >
           <Plus className="size-5" aria-hidden="true" />
           <span className="sr-only">Nuovo movimento</span>
@@ -313,7 +313,7 @@ export function QuickAddSheet({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "left-1/2 top-auto bottom-0 w-[calc(100%-0.75rem)] max-w-none -translate-x-1/2 translate-y-0 rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl",
+          "left-1/2 top-auto bottom-0 w-[calc(100%-0.75rem)] max-w-none -translate-x-1/2 translate-y-0 rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
         )}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
@@ -380,8 +380,8 @@ export function QuickAddSheet({
                   type="button"
                   onClick={() => applyPreset(preset.id)}
                   className={cn(
-                    "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150 ease-out",
-                    "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px",
+                    "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
+                    "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
                     presetIdentity.subtleSurfaceClassName,
                     isActive &&
                       "border-primary/25 bg-primary/8 ring-1 ring-primary/20",
@@ -412,8 +412,8 @@ export function QuickAddSheet({
               type="button"
               onClick={personalize}
               className={cn(
-                "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150 ease-out sm:col-span-2",
-                "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px",
+                "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] sm:col-span-2",
+                "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
                 activePreset === "custom"
                   ? "border-primary/25 bg-primary/8 ring-1 ring-primary/20"
                   : "border-border bg-background",

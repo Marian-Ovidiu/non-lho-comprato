@@ -104,7 +104,7 @@ export function ThemeSelector() {
               variant={active ? "default" : "ghost"}
               size="sm"
               className={cn(
-                "h-10 rounded-xl px-2 text-xs font-medium",
+                "h-10 rounded-xl px-2 text-xs font-medium transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
                 active
                   ? "bg-accent text-background hover:bg-accent/90"
                   : "text-muted-text hover:text-foreground",

@@ -58,8 +58,9 @@ function WorkspaceChip({
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-left shadow-sm",
-        interactive && "transition-colors duration-150 ease-out hover:bg-surface-muted/70",
+        "inline-flex min-w-0 items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-left shadow-sm transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.99]",
+        interactive &&
+          "hover:-translate-y-px hover:bg-surface-muted/70 hover:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.55)]",
       )}
     >
       <WorkspaceMark isShared={workspace.isShared} />
@@ -121,7 +122,7 @@ export function WorkspaceSwitcher({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "left-1/2 top-auto bottom-0 w-[calc(100%-0.75rem)] max-w-none -translate-x-1/2 translate-y-0 rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl",
+          "left-1/2 top-auto bottom-0 w-[calc(100%-0.75rem)] max-w-none -translate-x-1/2 translate-y-0 rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
         )}
       >
         <div className="max-h-[88vh] overflow-y-auto overscroll-contain">
@@ -165,9 +166,9 @@ export function WorkspaceSwitcher({
 
                     <button
                       type="submit"
-                      className={cn(
-                        "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150 ease-out",
-                        "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px",
+                    className={cn(
+                        "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
+                        "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
                         isCurrent
                           ? "border-primary/25 bg-primary/8 ring-1 ring-primary/20"
                           : "border-border bg-background",

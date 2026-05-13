@@ -1,16 +1,21 @@
-import { Loader2 } from "lucide-react";
-
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function PageLoader() {
   return (
     <div className="flex min-h-[55vh] items-center justify-center px-4 py-10">
-      <div className="flex w-full max-w-xs flex-col items-center gap-3 rounded-3xl border border-border bg-surface px-5 py-4 text-center shadow-sm">
-        <div className="flex items-center gap-2.5">
-          <Loader2 className="size-6 animate-spin text-foreground" aria-hidden="true" />
-          <Skeleton className="h-4 w-24" />
+      <div className="w-full max-w-sm space-y-4 rounded-[1.75rem] border border-border/70 bg-surface/85 p-4 shadow-sm backdrop-blur">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-3 w-24 rounded-full" />
+            <Skeleton className="h-5 w-36 rounded-lg" />
+          </div>
+          <Skeleton className="size-10 rounded-2xl" />
         </div>
-        <Skeleton className="h-3 w-40" />
+
+        <div className="space-y-2.5">
+          <Skeleton className="h-16 w-full rounded-[1.25rem]" />
+          <Skeleton className="h-16 w-full rounded-[1.25rem]" />
+        </div>
       </div>
     </div>
   );

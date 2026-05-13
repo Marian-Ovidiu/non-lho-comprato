@@ -12,7 +12,7 @@ function Card({
         data-slot="card"
         data-size={size}
         className={cn(
-        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-border transition-[transform,box-shadow,border-color,background-color,opacity] duration-150 ease-out motion-reduce:transition-none hover:-translate-y-px hover:shadow-md active:translate-y-px active:scale-[0.995] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
+        "group/card flex flex-col gap-4 overflow-hidden rounded-xl bg-card py-4 text-sm text-card-foreground ring-1 ring-border transition-[transform,box-shadow,border-color,background-color,opacity,filter] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] motion-reduce:transition-none hover:-translate-y-px hover:shadow-[0_14px_30px_-26px_rgba(0,0,0,0.5)] hover:brightness-[1.01] active:translate-y-px active:scale-[0.996] active:opacity-95 has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-3 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl",
         className,
       )}
       {...props}

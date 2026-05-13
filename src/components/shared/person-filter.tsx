@@ -34,7 +34,7 @@ export function PersonFilter({
     <section
       aria-labelledby="person-filter-title"
       className={
-        compact
+          compact
           ? "rounded-xl border border-border bg-surface p-3 shadow-sm dark:border-border dark:bg-accent"
           : "rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-border dark:bg-accent"
       }
