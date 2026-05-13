@@ -1,4 +1,4 @@
-import { Flame } from "lucide-react";
+import { Compass } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
@@ -9,18 +9,18 @@ type StreakHeroCardProps = {
 
 function getStreakCopy(currentStreak: number) {
   if (currentStreak <= 0) {
-    return "Nessuna serie attiva";
+    return "Nessun ritmo ancora";
   }
 
   if (currentStreak <= 3) {
-    return "Si parte.";
+    return "Il ritmo comincia a farsi vedere.";
   }
 
   if (currentStreak <= 7) {
-    return "Stai entrando nel flow.";
+    return "Il quadro della settimana è più chiaro.";
   }
 
-  return "Macchina da risparmio.";
+  return "Il ritmo è stabile.";
 }
 
 function getAccentClass(currentStreak: number) {
@@ -29,14 +29,14 @@ function getAccentClass(currentStreak: number) {
   }
 
   if (currentStreak <= 3) {
-    return "from-success/15 via-surface to-success/5";
+    return "from-premium-accent/12 via-surface to-premium-accent/5";
   }
 
   if (currentStreak <= 7) {
-    return "from-success/20 via-surface to-success/10";
+    return "from-premium-accent/16 via-surface to-premium-accent/8";
   }
 
-  return "from-success/25 via-surface to-success/10";
+  return "from-premium-accent/20 via-surface to-premium-accent/10";
 }
 
 export function StreakHeroCard({ currentStreak }: StreakHeroCardProps) {
@@ -52,14 +52,14 @@ export function StreakHeroCard({ currentStreak }: StreakHeroCardProps) {
       )}
     >
       <div className="relative flex min-h-[13rem] flex-col items-center justify-center gap-3 px-5 py-8 text-center sm:min-h-[15rem] sm:px-6">
-        <div className="flex size-12 items-center justify-center rounded-full border border-border/70 bg-surface/80 text-success shadow-sm backdrop-blur dark:bg-surface/70">
-          <Flame className="size-6" aria-hidden="true" />
+        <div className="flex size-12 items-center justify-center rounded-full border border-border/70 bg-surface/80 text-premium-accent shadow-sm backdrop-blur dark:bg-surface/70">
+          <Compass className="size-6" aria-hidden="true" />
         </div>
 
         <p className="text-5xl font-semibold tracking-tight text-foreground sm:text-6xl">
           {currentStreak}{" "}
           <span className="text-2xl font-medium tracking-tight text-muted-text sm:text-3xl">
-            giorni
+            giorni di ritmo
           </span>
         </p>
 

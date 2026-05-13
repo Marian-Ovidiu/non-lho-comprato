@@ -20,10 +20,12 @@ type DashboardHabitsPreviewProps = {
         };
       };
   }>;
+  description?: string;
 };
 
 export function DashboardHabitsPreview({
   occurrences,
+  description = "Le abitudini ancora da controllare oggi.",
 }: DashboardHabitsPreviewProps) {
   const pendingOccurrences = occurrences.filter(
     (occurrence) => occurrence.status === "pending",
@@ -37,9 +39,7 @@ export function DashboardHabitsPreview({
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Abitudini di oggi</CardTitle>
-            <p className="text-sm text-muted-text">
-              Le abitudini ancora da controllare oggi.
-            </p>
+            <p className="text-sm text-muted-text">{description}</p>
           </div>
           <Badge variant="secondary">{pendingOccurrences.length} in attesa</Badge>
         </div>

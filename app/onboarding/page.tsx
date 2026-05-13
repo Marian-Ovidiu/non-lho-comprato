@@ -14,5 +14,5 @@ export default async function OnboardingPage() {
   await getCurrentWorkspace();
 
   // Workspace provisioning is complete here; the app continues on the home route.
-  redirect("/");
+  redirect("/?welcome=1");
 }

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, X } from "lucide-react";
+import { Compass, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +10,8 @@ import { formatMoney } from "@/src/lib/formatters";
 
 type DailyCheckinOverlayProps = {
   savedToday: number;
-  currentStreak: number;
   pendingHabitsCount?: number;
+  isVisible?: boolean;
 };
 
 function getLocalDateKey(date = new Date()) {
@@ -28,14 +28,18 @@ function getStorageKey() {
 
 export function DailyCheckinOverlay({
   savedToday,
-  currentStreak,
   pendingHabitsCount,
+  isVisible = true,
 }: DailyCheckinOverlayProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  const title = useMemo(() => "Situazione portafoglio", []);
+  const title = useMemo(() => "Riepilogo di oggi", []);
 
   useEffect(() => {
+    if (!isVisible) {
+      return;
+    }
+
     const frame = window.requestAnimationFrame(() => {
       try {
         const storageKey = getStorageKey();
@@ -52,9 +56,9 @@ export function DailyCheckinOverlay({
     });
 
     return () => window.cancelAnimationFrame(frame);
-  }, []);
+  }, [isVisible]);
 
-  if (!isOpen) {
+  if (!isVisible || !isOpen) {
     return null;
   }
 
@@ -75,11 +79,11 @@ export function DailyCheckinOverlay({
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
-                <Sparkles className="size-5" aria-hidden="true" />
+                <Compass className="size-5" aria-hidden="true" />
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
-                  Check veloce del giorno
+                  Quadro del giorno
                 </p>
                 <CardTitle
                   id="daily-checkin-title"
@@ -107,7 +111,7 @@ export function DailyCheckinOverlay({
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Risparmiato oggi
+                Tenuto oggi
               </p>
               <p className="mt-1 text-lg font-semibold text-foreground">
                 {formatMoney(savedToday)}
@@ -116,16 +120,18 @@ export function DailyCheckinOverlay({
 
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Serie attuale
+                Segnali di oggi
               </p>
               <p className="mt-1 text-lg font-semibold text-foreground">
-                {currentStreak} giorni
+                {savedToday > 0
+                  ? "Quadro attivo"
+                  : "In attesa"}
               </p>
             </div>
 
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Abitudini in attesa
+                Abitudini aperte
               </p>
               <p className="mt-1 text-lg font-semibold text-foreground">
                 {typeof pendingHabitsCount === "number"
@@ -137,8 +143,8 @@ export function DailyCheckinOverlay({
 
           <p className="text-sm leading-6 text-muted-text">
             {savedToday > 0
-              ? `Oggi avete già schivato ${formatMoney(savedToday)}.`
-              : "Oggi ancora niente. C'è tempo per muovere il portafoglio nella direzione giusta."}
+              ? `Oggi hai già tenuto ${formatMoney(savedToday)} nel portafoglio.`
+              : "Oggi è ancora aperto. Quando aggiungi un segnale, il quadro si aggiorna con calma."}
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row">

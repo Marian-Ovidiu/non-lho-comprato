@@ -13,6 +13,7 @@ type GoalsPreviewProps = {
     emoji: string | null;
     progressPercent: number;
   }>;
+  description?: string;
 };
 
 function getProgressWidth(progressPercent: number) {
@@ -23,7 +24,10 @@ function getProgressWidth(progressPercent: number) {
   return Math.min(Math.max(progressPercent, 0), 100);
 }
 
-export function GoalsPreview({ goals }: GoalsPreviewProps) {
+export function GoalsPreview({
+  goals,
+  description = "Le mete che stanno ricevendo risparmio adesso.",
+}: GoalsPreviewProps) {
   const visibleGoals = goals.slice(0, 3);
 
   return (
@@ -32,9 +36,7 @@ export function GoalsPreview({ goals }: GoalsPreviewProps) {
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <CardTitle className="text-base">Obiettivi attivi</CardTitle>
-            <p className="text-sm text-muted-text">
-              Le mete che stanno ricevendo risparmio adesso.
-            </p>
+            <p className="text-sm text-muted-text">{description}</p>
           </div>
           <Button asChild variant="ghost" size="sm" className="w-fit px-0 text-muted-text">
             <Link href="/goals">Vai agli obiettivi</Link>

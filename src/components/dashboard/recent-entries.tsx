@@ -20,6 +20,7 @@ type RecentEntriesProps = {
     date: Date;
     note: string | null;
   }>;
+  description?: string;
 };
 
 function formatSignedMoney(value: unknown) {
@@ -37,14 +38,14 @@ function formatSignedMoney(value: unknown) {
   return formatted;
 }
 
-export function RecentEntries({ entries }: RecentEntriesProps) {
+export function RecentEntries({ entries, description = "Gli ultimi 3 movimenti inseriti." }: RecentEntriesProps) {
   return (
     <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-2 p-4 pb-0 sm:p-5">
         <div className="flex items-center justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Movimenti recenti</CardTitle>
-            <p className="text-sm text-muted-text">Gli ultimi 3 movimenti inseriti.</p>
+            <p className="text-sm text-muted-text">{description}</p>
           </div>
           <Button asChild variant="ghost" size="sm" className="w-fit px-0 text-muted-text">
             <Link href="/entries">Vedi tutti</Link>
