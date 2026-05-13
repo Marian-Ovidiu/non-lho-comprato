@@ -4,8 +4,8 @@ import { ArrowRight, SunMedium } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
-import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type DashboardHabitsPreviewProps = {
   occurrences: Array<{
@@ -74,12 +74,10 @@ export function DashboardHabitsPreview({
                     <p className="truncate text-sm font-medium text-foreground">
                       {occurrence.habit.name}
                     </p>
-                    <p className="text-xs text-muted-text">
-                      <span aria-hidden="true">
-                        {getCategoryEmoji(occurrence.habit.category)}
-                      </span>{" "}
-                      {occurrence.habit.category.name}
-                    </p>
+                    <CategoryPill
+                      category={occurrence.habit.category}
+                      className="mt-1 px-2 py-0.5 text-[11px]"
+                    />
                   </div>
 
                   <p className="shrink-0 text-sm font-semibold text-foreground">

@@ -6,8 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState } from "@/src/components/shared/empty-state";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
-import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type HabitListProps = {
   habits: Array<{
@@ -90,10 +90,10 @@ export function HabitList({ habits }: HabitListProps) {
                   <p className="truncate text-lg font-semibold text-foreground">
                     {habit.name}
                   </p>
-                  <p className="text-sm text-muted-text">
-                    <span aria-hidden="true">{getCategoryEmoji(habit.category)}</span>{" "}
-                    {habit.category.name}
-                  </p>
+                  <CategoryPill
+                    category={habit.category}
+                    className="px-2.5 py-0.5 text-[11px]"
+                  />
                 </div>
 
                 <div className="text-left sm:text-right">

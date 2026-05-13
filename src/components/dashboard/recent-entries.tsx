@@ -3,8 +3,8 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
-import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type RecentEntriesProps = {
   entries: Array<{
@@ -60,11 +60,15 @@ export function RecentEntries({ entries }: RecentEntriesProps) {
                 <p className="truncate text-sm font-medium text-foreground">
                   {entry.title}
                 </p>
-                <p className="truncate text-xs text-muted-text">
-                  <span aria-hidden="true">{getCategoryEmoji(entry.category)}</span>{" "}
-                  {entry.category.name} <span aria-hidden="true">•</span>{" "}
-                  {formatDate(entry.date)}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <CategoryPill
+                    category={entry.category}
+                    className="px-2.5 py-0.5 text-[11px]"
+                  />
+                  <span className="truncate text-xs text-muted-text">
+                    {formatDate(entry.date)}
+                  </span>
+                </div>
               </div>
               <p className="shrink-0 text-sm font-semibold text-success">
                 {formatSignedMoney(entry.savedAmount)}

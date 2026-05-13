@@ -5,9 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/src/components/shared/empty-state";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
 import { HabitOccurrenceActions } from "@/src/components/habits/habit-occurrence-actions";
-import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type TodayHabitsProps = {
   occurrences: Array<{
@@ -114,13 +114,14 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                     <p className="truncate text-lg font-semibold text-foreground">
                       {occurrence.habit.name}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-text">
-                      <span aria-hidden="true">
-                        {getCategoryEmoji(occurrence.habit.category)}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CategoryPill
+                        category={occurrence.habit.category}
+                        className="px-2.5 py-0.5 text-[11px]"
+                      />
+                      <span className="text-sm text-muted-text">
+                        {formatMoney(occurrence.habit.amount)}
                       </span>
-                      <span>{occurrence.habit.category.name}</span>
-                      <span aria-hidden="true">â€¢</span>
-                      <span>{formatMoney(occurrence.habit.amount)}</span>
                     </div>
                   </div>
 
@@ -142,11 +143,11 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                     <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                       Categoria
                     </p>
-                    <p className="mt-1 font-semibold text-foreground">
-                      <span aria-hidden="true">
-                        {getCategoryEmoji(occurrence.habit.category)}
-                      </span>{" "}
-                      {occurrence.habit.category.name}
+                    <p className="mt-1">
+                      <CategoryPill
+                        category={occurrence.habit.category}
+                        className="px-2.5 py-0.5 text-[11px]"
+                      />
                     </p>
                   </div>
                   <div className="rounded-2xl bg-surface px-3 py-2">

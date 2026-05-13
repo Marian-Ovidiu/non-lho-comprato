@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { getCategoryIdentity } from "@/src/lib/category-identity";
 import {
   DEFAULT_LEGACY_PERSON,
   type LegacyPersonValue,
@@ -367,6 +368,10 @@ export function QuickAddSheet({
           <div className="grid gap-2.5 px-4 py-4 sm:grid-cols-2 sm:px-5">
             {presets.map((preset, index) => {
               const isActive = activePreset === preset.id;
+              const presetIdentity = getCategoryIdentity({
+                name: preset.title,
+                slug: preset.categorySlug,
+              });
 
               return (
                 <button
@@ -377,12 +382,17 @@ export function QuickAddSheet({
                   className={cn(
                     "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150 ease-out",
                     "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px",
-                    isActive
-                      ? "border-primary/25 bg-primary/8 ring-1 ring-primary/20"
-                      : "border-border bg-background",
+                    presetIdentity.subtleSurfaceClassName,
+                    isActive &&
+                      "border-primary/25 bg-primary/8 ring-1 ring-primary/20",
                   )}
                 >
-                  <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-surface-muted text-lg">
+                  <span
+                    className={cn(
+                      "flex size-10 shrink-0 items-center justify-center rounded-2xl text-lg",
+                      presetIdentity.markerClassName,
+                    )}
+                  >
                     {preset.emoji}
                   </span>
 

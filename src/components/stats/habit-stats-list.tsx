@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
-import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type HabitStatsListProps = {
   habits: Array<{
@@ -53,12 +53,10 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
                     <p className="font-semibold tracking-tight text-foreground">
                       {habit.habitName}
                     </p>
-                    <p className="text-sm text-muted-text">
-                      <span aria-hidden="true">
-                        {getCategoryEmoji({ name: habit.categoryName })}
-                      </span>{" "}
-                      {habit.categoryName}
-                    </p>
+                    <CategoryPill
+                      category={{ name: habit.categoryName }}
+                      className="px-2.5 py-0.5 text-[11px]"
+                    />
                   </div>
 
                   <div className="text-left sm:text-right">

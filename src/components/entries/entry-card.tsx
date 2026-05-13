@@ -15,7 +15,7 @@ import {
   getEntryOwnershipLabel,
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
-import { getCategoryEmoji } from "@/src/lib/visual-cues";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 
 type EntryCardProps = {
   entry: {
@@ -122,15 +122,20 @@ export function EntryCard({ entry }: EntryCardProps) {
     <Card className="overflow-hidden border-border/80 shadow-sm">
       <CardContent className="space-y-3 p-4 sm:p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 space-y-0.5">
+          <div className="min-w-0 space-y-2">
             <h2 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-[1.05rem]">
               {entry.title}
             </h2>
-            <p className="truncate text-xs leading-5 text-muted-text sm:text-sm">
-              {entry.category.name} <span aria-hidden="true">•</span>{" "}
-              {formatDate(entry.date)} <span aria-hidden="true">•</span>{" "}
-              {getEntryOwnershipLabel(entry.person)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <CategoryPill
+                category={entry.category}
+                className="px-2.5 py-0.5 text-[11px]"
+              />
+              <p className="text-xs leading-5 text-muted-text sm:text-sm">
+                {formatDate(entry.date)} <span aria-hidden="true">•</span>{" "}
+                {getEntryOwnershipLabel(entry.person)}
+              </p>
+            </div>
           </div>
 
           <div className="flex shrink-0 items-start gap-1.5">
@@ -183,12 +188,7 @@ export function EntryCard({ entry }: EntryCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-muted-text sm:text-sm">
-          <span className="inline-flex items-center gap-1.5">
-            <span aria-hidden="true">{getCategoryEmoji(entry.category)}</span>
-            <span>{entry.category.name}</span>
-          </span>
-          <span aria-hidden="true">•</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text sm:text-sm">
           <span>{formatDate(entry.date)}</span>
           <span aria-hidden="true">•</span>
           <span>{getEntryOwnershipLabel(entry.person)}</span>

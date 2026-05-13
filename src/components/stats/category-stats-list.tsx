@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
-import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type CategoryStatsListProps = {
   categories: Array<{
@@ -48,15 +48,13 @@ export function CategoryStatsList({ categories }: CategoryStatsListProps) {
                 className="grid gap-3 rounded-3xl border border-border/60 bg-surface-muted/70 p-4 md:grid-cols-5 md:items-center"
               >
                 <div className="space-y-1">
-                  <p className="font-semibold tracking-tight text-foreground">
-                    <span aria-hidden="true">
-                      {getCategoryEmoji({
-                        name: category.categoryName,
-                        slug: category.categorySlug,
-                      })}
-                    </span>{" "}
-                    {category.categoryName}
-                  </p>
+                  <CategoryPill
+                    category={{
+                      name: category.categoryName,
+                      slug: category.categorySlug,
+                    }}
+                    className="px-2.5 py-0.5 text-[11px]"
+                  />
                 </div>
 
                 <div className="space-y-1">

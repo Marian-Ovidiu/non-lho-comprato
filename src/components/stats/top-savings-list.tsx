@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 
 type TopSavingsListProps = {
@@ -51,10 +52,14 @@ export function TopSavingsList({ entries }: TopSavingsListProps) {
                     <p className="truncate font-semibold tracking-tight text-foreground">
                       {item.title}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2 text-sm text-muted-text">
-                      <span>{item.categoryName}</span>
-                      <span aria-hidden="true">•</span>
-                      <span>{formatDate(toDate(item.date))}</span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <CategoryPill
+                        category={{ name: item.categoryName }}
+                        className="px-2.5 py-0.5 text-[11px]"
+                      />
+                      <span className="text-sm text-muted-text">
+                        {formatDate(toDate(item.date))}
+                      </span>
                       <Badge variant="outline" className="rounded-full">
                         {item.source === "habit" ? "Abitudine" : "Manuale"}
                       </Badge>
