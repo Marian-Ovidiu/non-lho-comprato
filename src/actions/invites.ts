@@ -8,6 +8,7 @@ import {
   getCurrentWorkspace,
 } from "@/src/lib/workspace-context";
 import {
+  buildAbsoluteAppUrl,
   generateInviteToken,
   getInviteExpiresAt,
   getWorkspaceInviteByTokenHash,
@@ -33,6 +34,7 @@ type CreateWorkspaceInviteResult = {
   message: string;
   errors?: Record<string, string>;
   invitePath?: string;
+  inviteUrl?: string;
   workspace?: InviteWorkspace;
   createdSharedWorkspace?: boolean;
 };
@@ -104,6 +106,16 @@ export async function createWorkspaceInviteAction(
 
     const token = generateInviteToken();
     const tokenHash = hashInviteToken(token);
+    const invitePath = getWorkspaceInvitePath(token);
+    const inviteUrl = await buildAbsoluteAppUrl(invitePath);
+
+    if (!inviteUrl) {
+      return {
+        success: false,
+        message:
+          "Non riesco a costruire il link invito adesso. Controlla NEXT_PUBLIC_APP_URL o prova dal browser.",
+      };
+    }
 
     const targetWorkspace = await prisma.$transaction(async (tx) => {
       if (currentWorkspace.kind === "shared") {
@@ -165,7 +177,8 @@ export async function createWorkspaceInviteAction(
     return {
       success: true,
       message: "Link invito pronto",
-      invitePath: getWorkspaceInvitePath(token),
+      invitePath,
+      inviteUrl,
       workspace: {
         id: targetWorkspace.id,
         name: targetWorkspace.name,

@@ -1,5 +1,7 @@
 import crypto from "node:crypto";
 
+import { headers } from "next/headers";
+
 import { prisma } from "@/src/lib/prisma";
 
 export const WORKSPACE_INVITE_TTL_DAYS = 30;
@@ -26,6 +28,34 @@ export function hashInviteToken(token: string) {
 
 export function getWorkspaceInvitePath(token: string) {
   return `/invite/${token}`;
+}
+
+export async function getAppBaseUrl() {
+  const headerStore = await headers();
+  const origin =
+    headerStore.get("origin")?.trim() ||
+    headerStore.get("x-forwarded-origin")?.trim();
+
+  if (origin) {
+    return origin;
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim();
+  if (appUrl) {
+    return appUrl.replace(/\/+$/u, "");
+  }
+
+  return null;
+}
+
+export async function buildAbsoluteAppUrl(pathname: string) {
+  const baseUrl = await getAppBaseUrl();
+
+  if (!baseUrl) {
+    return null;
+  }
+
+  return new URL(pathname, baseUrl).toString();
 }
 
 export function getInviteExpiresAt(now = new Date()) {

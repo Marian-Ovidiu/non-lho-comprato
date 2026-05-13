@@ -1,8 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Check, Copy, Link2, Users2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { Check, Copy, Loader2, Link2, Users2 } from "lucide-react";
 
 import { createWorkspaceInviteAction } from "@/src/actions/invites";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ type InviteCreationState = {
   message: string;
   errors?: Record<string, string>;
   invitePath?: string;
+  inviteUrl?: string;
   workspace?: {
     id: string;
     name: string;
@@ -43,17 +43,14 @@ const initialState: InviteCreationState = {
 export function InviteCreationForm({
   currentWorkspace,
 }: InviteCreationFormProps) {
-  const router = useRouter();
   const inviteMethod = "link";
   const [state, formAction, pending] = useActionState(
     async (_previousState: InviteCreationState, formData: FormData) =>
       createWorkspaceInviteAction(formData),
     initialState,
   );
-  const [origin] = useState<string | null>(() =>
-    typeof window === "undefined" ? null : window.location.origin,
-  );
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const didTrackSuccessRef = useRef(false);
 
   useEffect(() => {
@@ -68,25 +65,33 @@ export function InviteCreationForm({
 
     didTrackSuccessRef.current = true;
     trackPostHogEvent("invite_created");
-    router.refresh();
-  }, [router, state.success]);
+  }, [state.success]);
 
   const fullInviteLink =
-    origin && state.success && state.invitePath
-      ? `${origin}${state.invitePath}`
-      : null;
+    state.success && state.inviteUrl ? state.inviteUrl : null;
 
   async function copyInviteLink() {
     if (!fullInviteLink) {
+      setCopyError("Il link non è ancora disponibile.");
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(fullInviteLink);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(fullInviteLink);
+      } else {
+        throw new Error("Clipboard API not available");
+      }
+      setCopyError(null);
       setCopied(true);
       window.setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Intentionally ignored.
+    } catch (error) {
+      setCopied(false);
+      setCopyError(
+        error instanceof Error
+          ? error.message
+          : "Non riesco a copiare il link in questo momento.",
+      );
     }
   }
 
@@ -191,16 +196,26 @@ export function InviteCreationForm({
                   Invito pronto da condividere
                 </p>
                 <p className="text-sm leading-6 text-muted-text">
-                  Copia il link e mandalo alla persona che vuoi aggiungere.
+                  Copia il link e invialo alla persona. Solo l&apos;email indicata potrà accettarlo.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface px-3 py-2">
-                <Link2 className="size-4 shrink-0 text-muted-text" aria-hidden="true" />
-                <span className="min-w-0 flex-1 truncate text-sm text-foreground">
-                  {fullInviteLink}
-                </span>
+              <div className="space-y-2">
+                <Label htmlFor="invite-url">Link invito</Label>
+                <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface px-3 py-2">
+                  <Link2 className="size-4 shrink-0 text-muted-text" aria-hidden="true" />
+                  <input
+                    id="invite-url"
+                    readOnly
+                    value={fullInviteLink}
+                    className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-foreground outline-none ring-0"
+                  />
+                </div>
               </div>
+
+              {copyError ? (
+                <p className="text-sm leading-5 text-destructive">{copyError}</p>
+              ) : null}
 
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button
@@ -224,8 +239,16 @@ export function InviteCreationForm({
             type="submit"
             className="h-11 w-full rounded-2xl px-5"
             disabled={pending}
+            aria-busy={pending}
           >
-            {pending ? "Creo invito..." : "Invita una persona"}
+            {pending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                Creo invito...
+              </>
+            ) : (
+              "Invita una persona"
+            )}
           </Button>
         </form>
       </CardContent>
