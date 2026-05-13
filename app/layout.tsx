@@ -5,7 +5,7 @@ import { AppShell } from "@/src/components/layout/app-shell";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
-import { getCurrentWorkspaceUiContext } from "@/src/lib/workspace-context";
+import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -41,7 +41,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const authenticatedUser = await getAuthenticatedUser();
-  const workspace = authenticatedUser ? await getCurrentWorkspaceUiContext() : null;
+  const workspaceShell = authenticatedUser ? await getWorkspaceShellContext() : null;
 
   return (
     <html
@@ -53,9 +53,10 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
-        {authenticatedUser && workspace ? (
+        {authenticatedUser && workspaceShell ? (
           <AppShell
-            workspace={workspace}
+            workspace={workspaceShell.currentWorkspace}
+            availableWorkspaces={workspaceShell.availableWorkspaces}
             auth={{
               isAuthenticated: true,
               userLabel: authenticatedUser.name ?? authenticatedUser.email ?? null,

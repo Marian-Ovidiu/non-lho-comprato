@@ -1,0 +1,211 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import {
+  Check,
+  ChevronDown,
+  LockKeyhole,
+  Users2,
+} from "lucide-react";
+
+import { switchWorkspaceAction } from "@/src/actions/workspace";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
+
+type WorkspaceOption = {
+  id: string;
+  name: string;
+  kind: "private" | "shared";
+  isShared: boolean;
+};
+
+function WorkspaceMark({ isShared }: { isShared: boolean }) {
+  return (
+    <span className="inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted-text">
+      {isShared ? (
+        <Users2 className="size-3.5" aria-hidden="true" />
+      ) : (
+        <LockKeyhole className="size-3.5" aria-hidden="true" />
+      )}
+    </span>
+  );
+}
+
+function getWorkspaceLabel(workspace: WorkspaceOption) {
+  return workspace.isShared ? "Condiviso" : "Privato";
+}
+
+function getWorkspaceSubtitle(workspace: WorkspaceOption) {
+  return workspace.isShared ? "Visibile alle persone del workspace" : "Solo tuo";
+}
+
+function WorkspaceChip({
+  workspace,
+  interactive,
+}: {
+  workspace: WorkspaceOption;
+  interactive: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex min-w-0 items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-left shadow-sm",
+        interactive && "transition-colors duration-150 ease-out hover:bg-surface-muted/70",
+      )}
+    >
+      <WorkspaceMark isShared={workspace.isShared} />
+
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-sm font-medium text-foreground">
+          {workspace.name}
+        </span>
+      </span>
+
+      <span className="hidden shrink-0 items-center rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-text sm:inline-flex">
+        {getWorkspaceLabel(workspace)}
+      </span>
+
+      {interactive ? (
+        <ChevronDown className="size-3.5 shrink-0 text-muted-text" aria-hidden="true" />
+      ) : null}
+    </span>
+  );
+}
+
+export function WorkspaceSwitcher({
+  currentWorkspace,
+  availableWorkspaces,
+}: {
+  currentWorkspace: WorkspaceOption;
+  availableWorkspaces: WorkspaceOption[];
+}) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [open, setOpen] = useState(false);
+  const hasMultipleWorkspaces = availableWorkspaces.length > 1;
+
+  const returnTo = useMemo(() => {
+    const query = searchParams.toString();
+    return query ? `${pathname}?${query}` : pathname;
+  }, [pathname, searchParams]);
+
+  if (!hasMultipleWorkspaces) {
+    return (
+      <div className="inline-flex w-full min-w-0 items-center gap-2">
+        <WorkspaceChip workspace={currentWorkspace} interactive={false} />
+      </div>
+    );
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          className="h-auto w-full min-w-0 justify-start rounded-full p-0 hover:bg-transparent"
+        >
+          <WorkspaceChip workspace={currentWorkspace} interactive />
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent
+        showCloseButton={false}
+        className={cn(
+          "left-1/2 top-auto bottom-0 w-[calc(100%-0.75rem)] max-w-none -translate-x-1/2 translate-y-0 rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl",
+        )}
+      >
+        <div className="max-h-[88vh] overflow-y-auto overscroll-contain">
+          <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
+            <div className="space-y-1">
+              <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
+                Spazio attivo
+              </p>
+              <DialogTitle className="text-lg tracking-tight">
+                Cambia workspace
+              </DialogTitle>
+              <DialogDescription className="max-w-md text-sm leading-5 text-muted-text">
+                Privato significa solo tuo. Condiviso significa che lo vedono anche le persone del workspace.
+              </DialogDescription>
+            </div>
+          </div>
+
+          <div className="space-y-3 px-4 py-4 sm:px-5">
+            <div className="rounded-3xl border border-border/70 bg-background/70 p-3.5">
+              <div className="flex items-start gap-3">
+                <WorkspaceMark isShared={currentWorkspace.isShared} />
+                <div className="min-w-0 space-y-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {currentWorkspace.name}
+                  </p>
+                  <p className="text-sm leading-5 text-muted-text">
+                    {getWorkspaceLabel(currentWorkspace)} · {getWorkspaceSubtitle(currentWorkspace)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {availableWorkspaces.map((workspace) => {
+                const isCurrent = workspace.id === currentWorkspace.id;
+
+                return (
+                  <form key={workspace.id} action={switchWorkspaceAction}>
+                    <input type="hidden" name="workspaceId" value={workspace.id} />
+                    <input type="hidden" name="returnTo" value={returnTo} />
+
+                    <button
+                      type="submit"
+                      className={cn(
+                        "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150 ease-out",
+                        "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px",
+                        isCurrent
+                          ? "border-primary/25 bg-primary/8 ring-1 ring-primary/20"
+                          : "border-border bg-background",
+                      )}
+                      aria-current={isCurrent ? "true" : undefined}
+                    >
+                      <WorkspaceMark isShared={workspace.isShared} />
+
+                      <span className="min-w-0 flex-1 space-y-0.5">
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {workspace.name}
+                        </span>
+                        <span className="block text-xs leading-4 text-muted-text">
+                          {getWorkspaceLabel(workspace)} · {getWorkspaceSubtitle(workspace)}
+                        </span>
+                      </span>
+
+                      <span className="flex shrink-0 items-center gap-1.5 pt-0.5">
+                        {isCurrent ? (
+                          <Badge
+                            variant="outline"
+                            className="rounded-full border-primary/20 bg-primary/8 text-[10px] uppercase tracking-[0.18em] text-primary"
+                          >
+                            Attivo
+                          </Badge>
+                        ) : null}
+                        {isCurrent ? (
+                          <Check className="size-4 text-primary" aria-hidden="true" />
+                        ) : null}
+                      </span>
+                    </button>
+                  </form>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

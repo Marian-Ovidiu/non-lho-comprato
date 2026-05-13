@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
 import { InstallButton } from "@/src/components/pwa/install-button";
+import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
 
 export type AppShellWorkspace = {
   id: string;
@@ -138,10 +139,12 @@ function AccountButton({
 export function AppShell({
   children,
   workspace,
+  availableWorkspaces,
   auth,
 }: {
   children: React.ReactNode;
   workspace: AppShellWorkspace;
+  availableWorkspaces: AppShellWorkspace[];
   auth: AppShellAuth;
 }) {
   const pathname = usePathname();
@@ -151,15 +154,11 @@ export function AppShell({
       <header className="sticky top-0 z-30 border-b border-border bg-surface/84 backdrop-blur supports-[backdrop-filter]:bg-surface/78">
         <div className="mx-auto w-full max-w-5xl px-4 py-2 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text">
-                <span className="rounded-full border border-border bg-background/60 px-3 py-1 font-medium text-foreground">
-                  {workspace.name}
-                </span>
-                <span className="hidden sm:inline">
-                  {workspace.isShared ? "Condiviso" : "Privato"}
-                </span>
-              </div>
+            <div className="min-w-0 flex-1">
+              <WorkspaceSwitcher
+                currentWorkspace={workspace}
+                availableWorkspaces={availableWorkspaces}
+              />
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
@@ -210,7 +209,7 @@ export function AppShell({
               mobile
             />
             <div className="flex justify-center">
-              <QuickAddSheet />
+              <QuickAddSheet workspace={workspace} />
             </div>
             <NavButton
               href={primaryNavItems[3].href}

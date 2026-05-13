@@ -4,22 +4,37 @@ import {
   normalizeLegacyPerson,
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
+import { cache } from "react";
 import {
   getCurrentUser as getAuthCurrentUser,
   getCurrentWorkspace as getAuthCurrentWorkspace,
   getCurrentWorkspaceId as getAuthCurrentWorkspaceId,
+  getAccessibleWorkspacesForCurrentUser,
 } from "@/src/lib/auth/session";
 
 const LEGACY_CURRENT_USER_ID = "legacy-marian";
 const LEGACY_CURRENT_WORKSPACE_ID = "legacy-marian-martina";
 
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
-type CurrentWorkspace = NonNullable<Awaited<ReturnType<typeof prisma.workspace.findUnique>>>;
+type CurrentWorkspace = NonNullable<Awaited<ReturnType<typeof getAuthCurrentWorkspace>>>;
 type CurrentWorkspaceUiContext = {
   id: string;
   name: string;
   kind: "private" | "shared";
   isShared: boolean;
+};
+
+export type WorkspaceShellOption = {
+  id: string;
+  name: string;
+  kind: "private" | "shared";
+  isShared: boolean;
+};
+
+export type WorkspaceShellContext = {
+  currentWorkspace: CurrentWorkspaceUiContext;
+  availableWorkspaces: WorkspaceShellOption[];
+  hasMultipleWorkspaces: boolean;
 };
 
 type WorkspaceScopedRecord = {
@@ -77,6 +92,46 @@ export async function getCurrentWorkspaceUiContext(): Promise<CurrentWorkspaceUi
     name: workspace.name,
     kind: workspace.kind,
     isShared: workspace.kind === "shared",
+  };
+}
+
+const getWorkspaceShellOptions = cache(async (): Promise<WorkspaceShellOption[]> => {
+  const workspaces = await getAccessibleWorkspacesForCurrentUser();
+
+  return workspaces.map((workspace) => ({
+    id: workspace.id,
+    name: workspace.name,
+    kind: workspace.kind,
+    isShared: workspace.kind === "shared",
+  }));
+});
+
+export async function getWorkspaceShellContext(): Promise<WorkspaceShellContext> {
+  const [currentWorkspace, availableWorkspaces] = await Promise.all([
+    getCurrentWorkspaceUiContext(),
+    getWorkspaceShellOptions(),
+  ]);
+
+  const sortedWorkspaces = [...availableWorkspaces].sort((a, b) => {
+    if (a.id === currentWorkspace.id) {
+      return -1;
+    }
+
+    if (b.id === currentWorkspace.id) {
+      return 1;
+    }
+
+    if (a.kind !== b.kind) {
+      return a.kind === "private" ? -1 : 1;
+    }
+
+    return a.name.localeCompare(b.name, "it");
+  });
+
+  return {
+    currentWorkspace,
+    availableWorkspaces: sortedWorkspaces,
+    hasMultipleWorkspaces: sortedWorkspaces.length > 1,
   };
 }
 

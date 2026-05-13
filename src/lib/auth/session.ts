@@ -10,7 +10,9 @@ import {
   getLegacyAuthMapping,
 } from "@/src/lib/auth/provisioning";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
+import { cookies } from "next/headers";
 import { cache } from "react";
+import { WORKSPACE_SELECTION_COOKIE } from "@/src/lib/workspace-selection";
 
 const LEGACY_CURRENT_USER_ID = "legacy-marian";
 const LEGACY_CURRENT_WORKSPACE_ID = "legacy-marian-martina";
@@ -85,6 +87,36 @@ const ensureAuthenticatedUser = cache(async (authenticatedUser: AuthenticatedUse
   return ensureAppUserForAuthUser(authenticatedUser);
 });
 
+const getAccessibleWorkspacesForUser = cache(async (userId: string) => {
+  return prisma.workspace.findMany({
+    where: {
+      OR: [
+        {
+          ownerUserId: userId,
+        },
+        {
+          members: {
+            some: {
+              userId,
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      kind: true,
+      ownerUserId: true,
+    },
+  });
+});
+
+async function getSelectedWorkspaceId() {
+  const cookieStore = await cookies();
+  return cookieStore.get(WORKSPACE_SELECTION_COOKIE)?.value ?? null;
+}
+
 export const getAuthenticatedUser = cache(async (): Promise<AuthenticatedUser | null> => {
   return getSupabaseUser();
 });
@@ -131,6 +163,20 @@ export const getCurrentWorkspace = cache(async () => {
 
   if (authenticatedUser) {
     const user = await ensureAuthenticatedUser(authenticatedUser);
+    const selectedWorkspaceId = await getSelectedWorkspaceId();
+
+    if (selectedWorkspaceId) {
+      const accessibleWorkspaces = await getAccessibleWorkspacesForUser(user.id);
+      const selectedWorkspace = accessibleWorkspaces.find(
+        (workspace) => workspace.id === selectedWorkspaceId,
+      );
+
+      if (selectedWorkspace) {
+        logPerformance("auth/current-workspace-selected", startedAt);
+        return selectedWorkspace;
+      }
+    }
+
     const legacyMapping = getLegacyAuthMapping(authenticatedUser.email);
 
     if (legacyMapping) {
@@ -179,6 +225,19 @@ export const requireWorkspace = cache(async () => {
 export const getCurrentWorkspaceId = cache(async (): Promise<string> => {
   const workspace = await getCurrentWorkspace();
   return workspace.id;
+});
+
+export const getAccessibleWorkspacesForCurrentUser = cache(async () => {
+  const authenticatedUser = await getAuthenticatedUser();
+
+  if (!authenticatedUser) {
+    return [];
+  }
+
+  const user = await ensureAuthenticatedUser(authenticatedUser);
+  const workspaces = await getAccessibleWorkspacesForUser(user.id);
+
+  return workspaces;
 });
 
 export function getLegacyFallbackPerson(): typeof DEFAULT_LEGACY_PERSON {

@@ -4,7 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
-import { ArrowRight, Plus, SlidersHorizontal, Sparkles, X } from "lucide-react";
+import {
+  ArrowRight,
+  LockKeyhole,
+  Plus,
+  SlidersHorizontal,
+  Sparkles,
+  Users2,
+  X,
+} from "lucide-react";
 
 import { createEntry } from "@/src/actions/entries";
 import { Button } from "@/components/ui/button";
@@ -168,8 +176,14 @@ function getSearchHref(draft: QuickAddDraft) {
 
 export function QuickAddSheet({
   categories,
+  workspace,
 }: {
   categories?: CategoryOption[];
+  workspace: {
+    name: string;
+    kind: "private" | "shared";
+    isShared: boolean;
+  };
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -319,6 +333,22 @@ export function QuickAddSheet({
                 <DialogDescription className="max-w-md text-sm leading-5 text-muted-text">
                   Scorciatoie pronte e salvataggio immediato.
                 </DialogDescription>
+
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                  <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted-text">
+                    {workspace.isShared ? (
+                      <Users2 className="size-3.5" aria-hidden="true" />
+                    ) : (
+                      <LockKeyhole className="size-3.5" aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="min-w-0 truncate text-sm font-medium text-foreground">
+                    {workspace.name}
+                  </span>
+                  <span className="shrink-0 rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-text">
+                    {workspace.isShared ? "Condiviso" : "Privato"}
+                  </span>
+                </div>
               </div>
 
               <Button
