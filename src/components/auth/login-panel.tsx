@@ -47,27 +47,41 @@ export function LoginPanel({
     const supabase = createSupabaseBrowserClient();
 
     if (!supabase) {
-      window.alert("Supabase Auth non è configurato.");
+      window.alert("Supabase Auth is not configured.");
       return;
     }
 
     setPendingProvider(provider);
 
     const redirectTo = `${window.location.origin}/auth/callback`;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: {
-        redirectTo,
-      },
-    });
+    console.info("[auth] provider clicked", provider);
+    console.info("[auth] redirectTo", redirectTo);
 
-    if (error) {
-      window.alert(error.message);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo,
+        },
+      });
+
+      if (error) {
+        console.error("[auth] signInWithOAuth error", error);
+        window.alert(error.message);
+        setPendingProvider(null);
+        return;
+      }
+
+      router.refresh();
+    } catch (thrownError) {
+      console.error("[auth] signInWithOAuth threw", thrownError);
+      window.alert(
+        thrownError instanceof Error
+          ? thrownError.message
+          : "Unable to start OAuth login.",
+      );
       setPendingProvider(null);
-      return;
     }
-
-    router.refresh();
   }
 
   if (compact) {
@@ -128,7 +142,10 @@ export function LoginPanel({
                 disabled={Boolean(pendingProvider)}
               >
                 {isPending ? (
-                  <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                  <Loader2
+                    className="mr-2 size-4 animate-spin"
+                    aria-hidden="true"
+                  />
                 ) : null}
                 {provider.label}
               </Button>

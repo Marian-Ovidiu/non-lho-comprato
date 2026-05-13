@@ -4,10 +4,18 @@ import { createSupabaseRouteClient } from "@/src/lib/supabase/route";
 
 export async function updateSupabaseSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  if (pathname === "/auth/callback") {
+    return NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
+  }
+
   const isPublicRoute =
     pathname === "/" ||
-    pathname === "/login" ||
-    pathname === "/auth/callback";
+    pathname === "/login";
 
   const response = NextResponse.next({
     request: {
