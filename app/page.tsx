@@ -195,8 +195,10 @@ export default async function Home() {
     return <PublicAccessGate />;
   }
 
-  await ensureTodayHabitOccurrences();
-  await finalizeOldPendingOccurrences();
+  await Promise.all([
+    ensureTodayHabitOccurrences(),
+    finalizeOldPendingOccurrences(),
+  ]);
 
   let monthSaved = 0;
   let todaySummary = {

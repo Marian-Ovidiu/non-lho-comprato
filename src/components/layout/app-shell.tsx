@@ -77,7 +77,11 @@ function NavButton({
           : "text-muted-text hover:bg-surface-muted/60 hover:text-foreground",
       )}
     >
-      <Link href={href} aria-current={active ? "page" : undefined}>
+      <Link
+        href={href}
+        prefetch
+        aria-current={active ? "page" : undefined}
+      >
         <Icon
           className={cn(
             "size-4 transition-transform duration-150 ease-out",
