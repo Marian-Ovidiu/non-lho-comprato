@@ -1,11 +1,10 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
-import { Check, Copy, Loader2, Link2, Users2 } from "lucide-react";
+import { Check, Copy, Loader2, Link2, Share2, Users2 } from "lucide-react";
 
 import { createWorkspaceInviteAction } from "@/src/actions/invites";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -40,21 +39,29 @@ const initialState: InviteCreationState = {
   errors: {},
 };
 
+const INVITE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+
 export function InviteCreationForm({
   currentWorkspace,
 }: InviteCreationFormProps) {
-  const inviteMethod = "link";
+  const formRef = useRef<HTMLFormElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const didTrackSuccessRef = useRef(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+
   const [state, formAction, pending] = useActionState(
     async (_previousState: InviteCreationState, formData: FormData) =>
       createWorkspaceInviteAction(formData),
     initialState,
   );
-  const [copied, setCopied] = useState(false);
-  const [copyError, setCopyError] = useState<string | null>(null);
-  const didTrackSuccessRef = useRef(false);
+
+  const showSuccess = state.success && Boolean(state.inviteUrl) && !pending;
 
   useEffect(() => {
-    if (!state.success) {
+    if (!showSuccess || !state.inviteUrl) {
       didTrackSuccessRef.current = false;
       return;
     }
@@ -65,25 +72,83 @@ export function InviteCreationForm({
 
     didTrackSuccessRef.current = true;
     trackPostHogEvent("invite_created");
-  }, [state.success]);
+  }, [showSuccess, state.inviteUrl]);
 
-  const fullInviteLink =
-    state.success && state.inviteUrl ? state.inviteUrl : null;
+  useEffect(() => {
+    const inviteUrl = state.inviteUrl;
+
+    if (!showSuccess || !inviteUrl) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const deliverInviteLink = async () => {
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: "Invito condiviso",
+            text: "Copia il link e invialo alla persona.",
+            url: inviteUrl,
+          });
+          if (!cancelled) {
+            setCopied(false);
+            setCopyError(null);
+            setShareError(null);
+          }
+          return;
+        }
+
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(inviteUrl);
+          if (!cancelled) {
+            setCopied(true);
+            setCopyError(null);
+            setShareError(null);
+            window.setTimeout(() => setCopied(false), 1500);
+          }
+          return;
+        }
+
+        throw new Error("Condivisione non disponibile su questo dispositivo.");
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setCopied(false);
+        setShareError(
+          error instanceof Error
+            ? error.message
+            : "Non riesco a condividere il link in questo momento.",
+        );
+      }
+    };
+
+    void deliverInviteLink();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [showSuccess, state.inviteUrl]);
 
   async function copyInviteLink() {
-    if (!fullInviteLink) {
+    const inviteUrl = state.inviteUrl;
+
+    if (!inviteUrl) {
       setCopyError("Il link non è ancora disponibile.");
       return;
     }
 
     try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(fullInviteLink);
-      } else {
-        throw new Error("Clipboard API not available");
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard API non disponibile.");
       }
-      setCopyError(null);
+
+      await navigator.clipboard.writeText(inviteUrl);
       setCopied(true);
+      setCopyError(null);
+      setShareError(null);
       window.setTimeout(() => setCopied(false), 1500);
     } catch (error) {
       setCopied(false);
@@ -95,163 +160,214 @@ export function InviteCreationForm({
     }
   }
 
+  async function shareInviteLink() {
+    const inviteUrl = state.inviteUrl;
+
+    if (!inviteUrl) {
+      setShareError("Il link non è ancora disponibile.");
+      return;
+    }
+
+    try {
+      if (!navigator.share) {
+        throw new Error("Condivisione non disponibile su questo dispositivo.");
+      }
+
+      await navigator.share({
+        title: "Invito condiviso",
+        text: "Copia il link e invialo alla persona.",
+        url: inviteUrl,
+      });
+      setShareError(null);
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") {
+        return;
+      }
+
+      setShareError(
+        error instanceof Error
+          ? error.message
+          : "Non riesco ad aprire la condivisione in questo momento.",
+      );
+    }
+  }
+
+  function createInviteFromCard() {
+    if (pending) {
+      return;
+    }
+
+    setLocalError(null);
+    setCopyError(null);
+    setShareError(null);
+    setCopied(false);
+
+    const email = window.prompt("Inserisci l'email della persona");
+    if (email == null) {
+      return;
+    }
+
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setLocalError("Inserisci un indirizzo email valido.");
+      return;
+    }
+
+    if (!INVITE_EMAIL_PATTERN.test(normalizedEmail)) {
+      setLocalError("Inserisci un indirizzo email valido.");
+      return;
+    }
+
+    const form = formRef.current;
+    const emailInput = emailInputRef.current;
+    if (!form || !emailInput) {
+      setLocalError("Non riesco ad avviare l'invito adesso.");
+      return;
+    }
+
+    emailInput.value = normalizedEmail;
+    form.requestSubmit();
+  }
+
+  const inviteUrl = state.inviteUrl ?? null;
+
   return (
-    <Card className="overflow-hidden border-border/80 bg-surface/80 shadow-sm">
-      <CardContent className="space-y-5 p-4 sm:p-5">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-medium text-muted-text">
-            <Users2 className="size-3.5" aria-hidden="true" />
-            {currentWorkspace.isShared ? "Spazio condiviso attivo" : "Stiamo creando uno spazio condiviso"}
-          </div>
-
-          <p className="text-sm leading-6 text-muted-text">
-            {currentWorkspace.isShared
-              ? "Invia un invito a una persona. Quando accetta, vedrete gli stessi movimenti condivisi."
-              : "Inserisci un'email e, se vuoi, il nome del nuovo spazio condiviso. Solo l'email indicata potrà accettare l'invito."}
-          </p>
+    <div className="space-y-5">
+      <div className="space-y-2">
+        <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/60 px-3 py-1.5 text-xs font-medium text-muted-text">
+          <Users2 className="size-3.5" aria-hidden="true" />
+          {currentWorkspace.isShared
+            ? "Spazio condiviso attivo"
+            : "Stiamo creando uno spazio condiviso"}
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div
-            className={cn(
-              "rounded-3xl border p-4 shadow-sm transition-[transform,border-color,background-color,box-shadow,opacity] duration-200",
-              inviteMethod === "link"
-                ? "border-primary/25 bg-primary/8 ring-1 ring-primary/15"
-                : "border-border/70 bg-background/70",
-            )}
-          >
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-text">
+        <p className="text-sm leading-6 text-muted-text">
+          {currentWorkspace.isShared
+            ? "Clicca il link per creare un invito. Quando accetta, vedrete gli stessi movimenti condivisi."
+            : "Solo l'email indicata potrà accettare l'invito."}
+        </p>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={createInviteFromCard}
+          disabled={pending}
+          className={cn(
+            "rounded-3xl border p-4 text-left shadow-sm transition-[transform,border-color,background-color,box-shadow,opacity] duration-200",
+            "border-primary/25 bg-primary/8 ring-1 ring-primary/15 hover:-translate-y-px hover:bg-primary/10",
+            pending && "cursor-not-allowed opacity-70 hover:translate-y-0",
+          )}
+        >
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-text">
+              {pending ? (
+                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              ) : (
                 <Link2 className="size-3.5" aria-hidden="true" />
-                Link invito
-              </div>
-              <p className="text-sm leading-6 text-foreground">
-                Crea un link da copiare e inviare alla persona.
-              </p>
+              )}
+              Link invito
             </div>
+            <p className="text-sm leading-6 text-foreground">
+              Crea un link da copiare e inviare alla persona.
+            </p>
           </div>
+        </button>
 
-          <div className="rounded-3xl border border-dashed border-border/70 bg-background/50 p-4 opacity-70">
-            <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs font-medium text-muted-text">
-                <Users2 className="size-3.5" aria-hidden="true" />
-                Invio via email
-              </div>
-              <p className="text-sm leading-6 text-muted-text">
-                Presto disponibile.
-              </p>
-              <Button type="button" variant="outline" className="h-10 w-full rounded-2xl" disabled>
-                Presto disponibile
-              </Button>
+        <div className="rounded-3xl border border-dashed border-border/70 bg-background/50 p-4 opacity-70">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs font-medium text-muted-text">
+              <Users2 className="size-3.5" aria-hidden="true" />
+              Invio via email
             </div>
+            <p className="text-sm leading-6 text-muted-text">
+              Presto disponibile.
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 w-full rounded-2xl"
+              disabled
+            >
+              Presto disponibile
+            </Button>
           </div>
         </div>
+      </div>
 
-        <form action={formAction} className="space-y-4">
-          {currentWorkspace.kind === "private" ? (
-            <div className="space-y-2">
-              <Label htmlFor="workspaceName">Nome spazio condiviso</Label>
-              <Input
-                id="workspaceName"
-                name="workspaceName"
-                placeholder={`${currentWorkspace.name} condiviso`}
-                autoComplete="off"
-              />
-            </div>
-          ) : null}
+      <form ref={formRef} action={formAction} className="hidden">
+        <Input ref={emailInputRef} name="email" type="email" tabIndex={-1} />
+      </form>
+
+      {localError || state.message ? (
+        <div
+          className={cn(
+            "rounded-2xl border px-4 py-3 text-sm leading-6",
+            state.success
+              ? "border-success/20 bg-success/10 text-success"
+              : "border-destructive/20 bg-destructive/10 text-destructive",
+          )}
+        >
+          {localError ?? state.message}
+        </div>
+      ) : null}
+
+      {showSuccess && inviteUrl ? (
+        <div className="space-y-3 rounded-3xl border border-border/70 bg-background/70 p-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-foreground">Link pronto</p>
+            <p className="text-sm leading-6 text-muted-text">
+              Copia il link e invialo alla persona. Solo l&apos;email indicata potrà accettarlo.
+            </p>
+          </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email della persona</Label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              inputMode="email"
-              autoComplete="email"
-              placeholder="nome@esempio.com"
-              aria-invalid={Boolean(state.errors?.email)}
-            />
-            {state.errors?.email ? (
-              <p className="text-sm text-destructive">{state.errors.email}</p>
-            ) : null}
+            <Label htmlFor="invite-url">Link invito</Label>
+            <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface px-3 py-2">
+              <Link2 className="size-4 shrink-0 text-muted-text" aria-hidden="true" />
+              <input
+                id="invite-url"
+                readOnly
+                value={inviteUrl}
+                className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-foreground outline-none ring-0"
+              />
+            </div>
           </div>
 
-          {state.message ? (
-            <div
-              className={cn(
-                "rounded-2xl border px-4 py-3 text-sm leading-6",
-                state.success
-                  ? "border-success/20 bg-success/10 text-success"
-                  : "border-destructive/20 bg-destructive/10 text-destructive",
-              )}
+          {copyError ? (
+            <p className="text-sm leading-5 text-destructive">{copyError}</p>
+          ) : null}
+          {shareError ? (
+            <p className="text-sm leading-5 text-destructive">{shareError}</p>
+          ) : null}
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full rounded-2xl px-4 sm:w-auto"
+              onClick={copyInviteLink}
             >
-              {state.message}
-            </div>
-          ) : null}
+              {copied ? (
+                <Check className="mr-2 size-4" aria-hidden="true" />
+              ) : (
+                <Copy className="mr-2 size-4" aria-hidden="true" />
+              )}
+              {copied ? "Copiato" : "Copia link"}
+            </Button>
 
-          {state.success && fullInviteLink ? (
-            <div className="space-y-3 rounded-3xl border border-border/70 bg-background/70 p-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-foreground">
-                  Invito pronto da condividere
-                </p>
-                <p className="text-sm leading-6 text-muted-text">
-                  Copia il link e invialo alla persona. Solo l&apos;email indicata potrà accettarlo.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="invite-url">Link invito</Label>
-                <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-surface px-3 py-2">
-                  <Link2 className="size-4 shrink-0 text-muted-text" aria-hidden="true" />
-                  <input
-                    id="invite-url"
-                    readOnly
-                    value={fullInviteLink}
-                    className="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm text-foreground outline-none ring-0"
-                  />
-                </div>
-              </div>
-
-              {copyError ? (
-                <p className="text-sm leading-5 text-destructive">{copyError}</p>
-              ) : null}
-
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-11 w-full rounded-2xl px-4 sm:w-auto"
-                  onClick={copyInviteLink}
-                >
-                  {copied ? (
-                    <Check className="mr-2 size-4" aria-hidden="true" />
-                  ) : (
-                    <Copy className="mr-2 size-4" aria-hidden="true" />
-                  )}
-                  {copied ? "Copiato" : "Copia link"}
-                </Button>
-              </div>
-            </div>
-          ) : null}
-
-          <Button
-            type="submit"
-            className="h-11 w-full rounded-2xl px-5"
-            disabled={pending}
-            aria-busy={pending}
-          >
-            {pending ? (
-              <>
-                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-                Creo invito...
-              </>
-            ) : (
-              "Invita una persona"
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 w-full rounded-2xl px-4 sm:w-auto"
+              onClick={shareInviteLink}
+            >
+              <Share2 className="mr-2 size-4" aria-hidden="true" />
+              Condividi
+            </Button>
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
