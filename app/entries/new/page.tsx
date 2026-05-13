@@ -2,10 +2,33 @@ import { getCategories } from "@/src/actions/entries";
 import { EntryForm } from "@/src/components/entries/entry-form";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { normalizeLegacyPerson } from "@/src/lib/ui-person";
 
-export default async function NewEntryPage() {
+function getSearchValue(
+  value: string | string[] | undefined,
+): string | undefined {
+  if (Array.isArray(value)) {
+    return value[0];
+  }
+
+  return value;
+}
+
+export default async function NewEntryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   type CategoryOption = Awaited<ReturnType<typeof getCategories>>[number];
   let categories: CategoryOption[] = await getCategories();
+  const query = await searchParams;
+  const title = getSearchValue(query.title)?.trim();
+  const categoryId =
+    getSearchValue(query.categoryId) ?? getSearchValue(query.category) ?? "";
+  const realCost = getSearchValue(query.realCost)?.trim();
+  const alternativeCost = getSearchValue(query.alternativeCost)?.trim();
+  const date = getSearchValue(query.date)?.trim();
+  const person = normalizeLegacyPerson(getSearchValue(query.person));
 
   if (categories.length === 0) {
     categories = DEFAULT_CATEGORIES.map((category) => ({
@@ -24,7 +47,17 @@ export default async function NewEntryPage() {
         title="Nuovo movimento"
       />
 
-      <EntryForm categories={categories} />
+      <EntryForm
+        categories={categories}
+        initialValues={{
+          title,
+          categoryId,
+          realCost,
+          alternativeCost,
+          person: person ?? undefined,
+          date,
+        }}
+      />
     </main>
   );
 }

@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_LEGACY_PERSON } from "@/src/lib/ui-person";
+import type { LegacyPersonValue } from "@/src/lib/ui-person";
 import { PersonSegmentedSelector } from "@/src/components/entries/person-segmented-selector";
 
 type CategoryOption = {
@@ -43,6 +44,14 @@ type FormState = {
 
 type EntryFormProps = {
   categories: CategoryOption[];
+  initialValues?: {
+    title?: string;
+    categoryId?: string;
+    realCost?: string;
+    alternativeCost?: string;
+    person?: LegacyPersonValue;
+    date?: string;
+  };
 };
 
 const initialState: FormState = {
@@ -63,7 +72,7 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-sm text-destructive">{message}</p>;
 }
 
-export function EntryForm({ categories }: EntryFormProps) {
+export function EntryForm({ categories, initialValues }: EntryFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -76,6 +85,7 @@ export function EntryForm({ categories }: EntryFormProps) {
   );
 
   const hasCategories = categories.length > 0;
+  const initialPerson = initialValues?.person ?? DEFAULT_LEGACY_PERSON;
 
   useEffect(() => {
     if (!state.success) {
@@ -135,6 +145,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                 name="title"
                 placeholder="Pranzo a casa"
                 autoComplete="off"
+                defaultValue={initialValues?.title ?? ""}
                 aria-invalid={Boolean(state.errors?.title)}
               />
               <FieldError message={state.errors?.title} />
@@ -142,7 +153,7 @@ export function EntryForm({ categories }: EntryFormProps) {
 
             <div className="space-y-2">
               <Label htmlFor="categoryId">Categoria</Label>
-              <Select name="categoryId" defaultValue="">
+              <Select name="categoryId" defaultValue={initialValues?.categoryId ?? ""}>
                 <SelectTrigger
                   id="categoryId"
                   aria-invalid={Boolean(state.errors?.categoryId)}
@@ -168,7 +179,7 @@ export function EntryForm({ categories }: EntryFormProps) {
               <legend className="text-sm font-medium text-foreground">
                 Chi ha fatto la spesa?
               </legend>
-              <PersonSegmentedSelector defaultValue={DEFAULT_LEGACY_PERSON} />
+              <PersonSegmentedSelector defaultValue={initialPerson} />
               <FieldError message={state.errors?.person} />
             </fieldset>
           </div>
@@ -185,6 +196,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                   min="0"
                   step="0.01"
                   placeholder="2.00"
+                  defaultValue={initialValues?.realCost ?? ""}
                   aria-invalid={Boolean(state.errors?.realCost)}
                 />
                 <FieldError message={state.errors?.realCost} />
@@ -200,6 +212,7 @@ export function EntryForm({ categories }: EntryFormProps) {
                   min="0"
                   step="0.01"
                   placeholder="18.00"
+                  defaultValue={initialValues?.alternativeCost ?? ""}
                   aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
                 <FieldError message={state.errors?.alternativeCost} />
@@ -217,7 +230,7 @@ export function EntryForm({ categories }: EntryFormProps) {
               id="date"
               name="date"
               type="date"
-              defaultValue={getTodayLocal()}
+              defaultValue={initialValues?.date ?? getTodayLocal()}
               aria-invalid={Boolean(state.errors?.date)}
             />
             <FieldError message={state.errors?.date} />

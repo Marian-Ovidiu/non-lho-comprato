@@ -7,13 +7,13 @@ import {
   Home,
   List,
   MoreHorizontal,
-  Plus,
   Target,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
 import { InstallButton } from "@/src/components/pwa/install-button";
 
 export type AppShellWorkspace = {
@@ -56,30 +56,13 @@ function NavButton({
   icon: Icon,
   active,
   mobile = false,
-  center = false,
 }: {
   href: string;
   label: string;
   icon: LucideIcon;
   active: boolean;
   mobile?: boolean;
-  center?: boolean;
 }) {
-  if (center) {
-    return (
-      <Button
-        asChild
-        variant="default"
-        size="icon"
-        className="size-12 -mt-4 rounded-full border border-premium-accent/30 bg-primary text-primary-foreground shadow-lg transition-all duration-150 ease-out hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:scale-[0.98]"
-      >
-        <Link href={href} aria-label={label}>
-          <Plus className="size-5" aria-hidden="true" />
-        </Link>
-      </Button>
-    );
-  }
-
   return (
     <Button
       asChild
@@ -223,13 +206,7 @@ export function AppShell({
               mobile
             />
             <div className="flex justify-center">
-              <NavButton
-                href="/entries/new"
-                label="Nuovo movimento"
-                icon={Plus}
-                active={false}
-                center
-              />
+              <QuickAddSheet />
             </div>
             <NavButton
               href={primaryNavItems[3].href}

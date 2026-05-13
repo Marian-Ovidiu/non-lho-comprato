@@ -13,6 +13,7 @@ type PersonSegmentedSelectorProps = {
   name?: string;
   value?: LegacyPersonValue | null;
   defaultValue?: LegacyPersonValue;
+  onValueChange?: (value: LegacyPersonValue) => void;
 };
 
 function getSelectedValue(
@@ -26,8 +27,10 @@ export function PersonSegmentedSelector({
   name = "person",
   value,
   defaultValue,
+  onValueChange,
 }: PersonSegmentedSelectorProps) {
   const selectedValue = getSelectedValue(value, defaultValue);
+  const isControlled = value !== undefined;
 
   return (
     <div className="grid grid-cols-3 gap-2">
@@ -41,7 +44,13 @@ export function PersonSegmentedSelector({
               name={name}
               type="radio"
               value={choice.value}
-              defaultChecked={choice.value === selectedValue}
+              defaultChecked={!isControlled && choice.value === selectedValue}
+              checked={isControlled ? choice.value === selectedValue : undefined}
+              onChange={
+                onValueChange
+                  ? () => onValueChange(choice.value)
+                  : undefined
+              }
               className="peer sr-only"
             />
             <Label
