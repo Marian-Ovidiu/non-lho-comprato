@@ -1,5 +1,6 @@
-﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
+import { cn } from "@/lib/utils";
 
 export type StatsOverview = {
   totalRealSpent: number;
@@ -23,7 +24,7 @@ type OverviewCard = {
 const cards: OverviewCard[] = [
   {
     key: "saved",
-    label: "Risparmiato totale",
+    label: "Tenuto in tasca",
     variant: "highlight",
   },
   {
@@ -37,18 +38,13 @@ const cards: OverviewCard[] = [
     variant: "default",
   },
   {
-    key: "entriesCount",
-    label: "Movimenti",
-    variant: "default",
-  },
-  {
     key: "averageSavedPerEntry",
-    label: "Media risparmio",
+    label: "Media per scelta",
     variant: "default",
   },
   {
     key: "savingRatePercent",
-    label: "Tasso risparmio",
+    label: "Efficienza",
     variant: "default",
   },
 ];
@@ -81,37 +77,42 @@ function getCardValue(card: OverviewCard, overview: StatsOverview): string {
 
 export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-      {cards.map((card) => {
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+      {cards.map((card, index) => {
         const value = getCardValue(card, overview);
+        const isPrimary = index === 0;
 
         return (
           <Card
             key={card.key}
-            className={
+            className={cn(
+              "overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5",
+              isPrimary && "col-span-2 xl:col-span-2",
               card.variant === "highlight"
-                ? "overflow-hidden border-success/20 bg-success/10 shadow-sm"
-                : "overflow-hidden border-border shadow-sm"
-            }
+                ? "border-success/20 bg-success/10 ring-success/10"
+                : "border-border/60",
+            )}
           >
             <CardHeader className="space-y-1 p-3 pb-2 sm:p-4 sm:pb-3">
               <CardTitle
-                className={
+                className={cn(
+                  "text-[10px] font-medium uppercase tracking-[0.18em]",
                   card.variant === "highlight"
-                    ? "text-[11px] font-medium uppercase tracking-[0.16em] text-success/90"
-                    : "text-[11px] font-medium uppercase tracking-[0.16em] text-muted-text"
-                }
+                    ? "text-success/90"
+                    : "text-muted-text",
+                )}
               >
                 {card.label}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
               <p
-                className={
+                className={cn(
+                  "leading-none tracking-tight",
                   card.variant === "highlight"
-                    ? "text-2xl font-semibold tracking-tight text-success sm:text-[1.75rem]"
-                    : "text-2xl font-semibold tracking-tight text-foreground sm:text-[1.75rem]"
-                }
+                    ? "text-2xl font-semibold text-success sm:text-[1.75rem]"
+                    : "text-[1.55rem] font-semibold text-foreground sm:text-[1.65rem]",
+                )}
               >
                 {value}
               </p>
@@ -122,4 +123,3 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
     </div>
   );
 }
-

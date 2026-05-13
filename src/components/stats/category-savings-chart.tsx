@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   Bar,
@@ -28,7 +28,7 @@ type CategorySavingsChartProps = {
 
 function EmptyChart() {
   return (
-    <div className="flex h-[220px] items-center justify-center rounded-2xl border border-dashed border-border bg-surface-muted px-4 text-center text-sm text-muted-text sm:h-[240px]">
+    <div className="flex h-[220px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 px-4 text-center text-sm leading-6 text-muted-text sm:h-[240px]">
       Nessun dato per categoria ancora disponibile.
     </div>
   );
@@ -50,7 +50,7 @@ function CategoryTooltip({
   const saved = payload[0]?.value ?? 0;
 
   return (
-    <div className="rounded-2xl border border-border bg-popover p-3 text-popover-foreground shadow-lg">
+    <div className="rounded-2xl border border-border/70 bg-popover px-3 py-2.5 text-popover-foreground shadow-[0_18px_40px_-28px_rgba(0,0,0,0.75)]">
       <p className="text-sm font-semibold text-popover-foreground">
         {label ?? "Categoria"}
       </p>
@@ -67,54 +67,67 @@ export function CategorySavingsChart({ data }: CategorySavingsChartProps) {
     .slice(0, 8);
 
   return (
-    <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-1 p-4 pb-0 sm:p-5">
-        <CardTitle className="text-base">Risparmio per categoria</CardTitle>
-        <p className="text-sm text-muted-text">
-          Le categorie che ti fanno tenere più soldi in tasca.
+    <Card className="overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5">
+      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
+        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+          Categorie che contano
+        </CardTitle>
+        <p className="text-sm leading-6 text-muted-text">
+          Le categorie che ti stanno lasciando pi&ugrave; soldi in tasca.
         </p>
       </CardHeader>
       <CardContent className="p-4 pt-3 sm:p-5 sm:pt-3">
         {chartData.length === 0 ? (
           <EmptyChart />
         ) : (
-          <div className="h-[250px] w-full sm:h-[290px]">
-            <ResponsiveContainer
-              width="100%"
-              height="100%"
-              minWidth={0}
-              minHeight={250}
-              initialDimension={{ width: 0, height: 0 }}
-            >
-              <BarChart
-                data={chartData}
-                margin={{ top: 8, right: 12, left: 0, bottom: 4 }}
+          <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-2.5 sm:p-3">
+            <div className="h-[250px] w-full sm:h-[290px]">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+                minWidth={0}
+                minHeight={250}
+                initialDimension={{ width: 0, height: 0 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis
-                  dataKey="categoryName"
-                  tickLine={false}
-                  axisLine={false}
-                  interval={0}
-                  minTickGap={8}
-                  tick={{ fontSize: 12 }}
-                  tickMargin={8}
-                />
-                <YAxis
-                  tickLine={false}
-                  axisLine={false}
-                  width={64}
-                  tick={{ fontSize: 12 }}
-                  tickFormatter={(value) => formatMoney(Number(value))}
-                />
-                <Tooltip content={<CategoryTooltip />} />
-                <Bar dataKey="totalSaved" fill="var(--success)" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  barCategoryGap="20%"
+                >
+                  <CartesianGrid
+                    stroke="var(--border)"
+                    strokeOpacity={0.38}
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="categoryName"
+                    tickLine={false}
+                    axisLine={false}
+                    interval={0}
+                    minTickGap={8}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tickMargin={10}
+                  />
+                  <YAxis
+                    tickLine={false}
+                    axisLine={false}
+                    width={56}
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    tickFormatter={(value) => formatMoney(Number(value))}
+                  />
+                  <Tooltip content={<CategoryTooltip />} />
+                  <Bar
+                    dataKey="totalSaved"
+                    fill="var(--success)"
+                    radius={[10, 10, 4, 4]}
+                    maxBarSize={30}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-

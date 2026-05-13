@@ -27,16 +27,18 @@ function formatPercent(value: number): string {
 
 export function HabitStatsList({ habits }: HabitStatsListProps) {
   return (
-    <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
-        <CardTitle>Performance abitudini</CardTitle>
-        <p className="text-sm text-muted-text">
-          Qui vedi come stanno andando le abitudini ricorrenti.
+    <Card className="overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5">
+      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
+        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
+          Abitudini che reggono
+        </CardTitle>
+        <p className="text-sm leading-6 text-muted-text">
+          Qui vedi quali abitudini stanno cambiando il ritmo delle spese.
         </p>
       </CardHeader>
-      <CardContent className="p-5 sm:p-6">
+      <CardContent className="p-4 sm:p-5">
         {habits.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-surface-muted p-5 text-sm text-muted-text">
+          <div className="rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 p-5 text-sm leading-6 text-muted-text">
             Nessuna abitudine ancora tracciata.
           </div>
         ) : (
@@ -44,11 +46,13 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
             {habits.map((habit) => (
               <div
                 key={habit.habitId}
-                className="rounded-2xl border border-border bg-surface-muted p-4"
+                className="rounded-3xl border border-border/60 bg-surface-muted/70 p-4"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-1">
-                    <p className="font-semibold text-foreground">{habit.habitName}</p>
+                    <p className="font-semibold tracking-tight text-foreground">
+                      {habit.habitName}
+                    </p>
                     <p className="text-sm text-muted-text">
                       <span aria-hidden="true">
                         {getCategoryEmoji({ name: habit.categoryName })}
@@ -58,7 +62,7 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
                   </div>
 
                   <div className="text-left sm:text-right">
-                    <p className="text-lg font-semibold text-success">
+                    <p className="text-lg font-semibold tracking-tight text-success">
                       {formatMoney(habit.totalSaved)}
                     </p>
                     <p className="text-xs text-muted-text">Risparmiati</p>
@@ -66,10 +70,18 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
                 </div>
 
                 <div className="mt-4 grid gap-2 sm:grid-cols-4">
-                  <Badge variant="secondary">Evitati: {habit.avoidedCount}</Badge>
-                  <Badge variant="secondary">Fatti: {habit.spentCount}</Badge>
-                  <Badge variant="secondary">Saltati: {habit.skippedCount}</Badge>
-                  <Badge variant="secondary">In attesa: {habit.pendingCount}</Badge>
+                  <Badge variant="secondary" className="rounded-full">
+                    Evitati: {habit.avoidedCount}
+                  </Badge>
+                  <Badge variant="secondary" className="rounded-full">
+                    Fatti: {habit.spentCount}
+                  </Badge>
+                  <Badge variant="secondary" className="rounded-full">
+                    Saltati: {habit.skippedCount}
+                  </Badge>
+                  <Badge variant="secondary" className="rounded-full">
+                    In attesa: {habit.pendingCount}
+                  </Badge>
                 </div>
 
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -79,8 +91,8 @@ export function HabitStatsList({ habits }: HabitStatsListProps) {
                       {habit.totalOccurrences}
                     </span>
                   </p>
-                  <Badge className="w-fit bg-accent text-background hover:bg-accent">
-                    Disciplina {formatPercent(habit.disciplineRatePercent)}
+                  <Badge className="w-fit rounded-full bg-accent text-background hover:bg-accent">
+                    Evitati {formatPercent(habit.disciplineRatePercent)}
                   </Badge>
                 </div>
               </div>
