@@ -53,6 +53,38 @@ function getGreeting() {
   return "Buonasera, Marian 👋";
 }
 
+function getDashboardContext({
+  savedToday,
+  entriesTodayCount,
+  monthSaved,
+  activeGoalsCount,
+  todayHabitsCount,
+}: {
+  savedToday: number;
+  entriesTodayCount: number;
+  monthSaved: number;
+  activeGoalsCount: number;
+  todayHabitsCount: number;
+}) {
+  if (savedToday > 0) {
+    return `Hai già tenuto ${formatEuro(savedToday)} oggi.`;
+  }
+
+  if (entriesTodayCount > 0) {
+    return "Hai già registrato i movimenti di oggi.";
+  }
+
+  if (monthSaved > 0) {
+    return `Oggi è leggero. Hai già protetto ${formatEuro(monthSaved)} questo mese.`;
+  }
+
+  if (todayHabitsCount > 0 || activeGoalsCount > 0) {
+    return "La giornata è ancora aperta. I tuoi obiettivi restano pronti, senza pressione.";
+  }
+
+  return "La giornata è ancora tutta da impostare.";
+}
+
 type MomentumView =
   | {
       label: string;
@@ -92,16 +124,14 @@ function pickMomentumView({
   activeGoals,
   todayHabits,
   savedToday,
-  currentStreak,
   monthSaved,
-  pendingHabitsCount,
+  entriesTodayCount,
 }: {
   activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>>;
   todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>>;
   savedToday: number;
-  currentStreak: number;
   monthSaved: number;
-  pendingHabitsCount: number;
+  entriesTodayCount: number;
 }): MomentumView {
   const strongestGoal = activeGoals
     .filter((goal) => goal.progressAmount > 0)
@@ -113,14 +143,14 @@ function pickMomentumView({
 
   if (strongestGoal) {
     return {
-      label: "Obiettivo attivo",
-      title: `${strongestGoal.isCompleted ? "🎉" : "🎯"} ${Math.round(
-        strongestGoal.progressPercent,
-      )}% di ${strongestGoal.title}`,
+      label: "Oggi",
+      title: strongestGoal.isCompleted
+        ? `${strongestGoal.title} è già dentro il quadro di oggi`
+        : `Stai avanzando verso ${strongestGoal.title}`,
       detail: strongestGoal.isCompleted
         ? `Hai già messo da parte ${formatEuro(strongestGoal.progressAmount)}.`
         : `Ti mancano ${formatEuro(strongestGoal.remainingAmount)} per arrivare a ${formatEuro(strongestGoal.targetAmount)}.`,
-      badge: strongestGoal.isCompleted ? "Completato" : "Goal",
+      badge: strongestGoal.isCompleted ? "Chiuso" : "In corso",
       tone: "goal",
       icon: Target,
       progressPercent: strongestGoal.progressPercent,
@@ -133,10 +163,10 @@ function pickMomentumView({
 
   if (strongestAvoidedHabit) {
     return {
-      label: "Scelta di oggi",
-      title: `${getCategoryEmoji(strongestAvoidedHabit.habit.category)} ${strongestAvoidedHabit.habit.name} evitata`,
-      detail: `Hai tenuto ${formatEuro(Number(strongestAvoidedHabit.habit.amount))} nel portafoglio.`,
-      badge: "Oggi",
+      label: "Oggi",
+      title: `Hai già tenuto ${formatEuro(Number(strongestAvoidedHabit.habit.amount))} nel portafoglio`,
+      detail: `${getCategoryEmoji(strongestAvoidedHabit.habit.category)} ${strongestAvoidedHabit.habit.name} è già stata evitata.`,
+      badge: "Buona scelta",
       tone: "habit",
       icon: Flame,
     };
@@ -144,47 +174,77 @@ function pickMomentumView({
 
   if (savedToday > 0) {
     return {
-      label: "Trend positivo",
-      title: `Hai tenuto ${formatEuro(savedToday)} oggi`,
+      label: "Oggi",
+      title: `Hai già tenuto ${formatEuro(savedToday)} nel portafoglio`,
       detail:
-        currentStreak > 1
-          ? `${currentStreak} giorni consecutivi di risparmio.`
-          : "Hai già iniziato bene oggi.",
-      badge: "Oggi",
+        entriesTodayCount > 0
+          ? "La giornata è in movimento e il quadro resta pulito."
+          : "La giornata è in movimento, senza rumore inutile.",
+      badge: "In corso",
       tone: "savings",
       icon: TrendingUp,
     };
   }
 
-  if (currentStreak > 1) {
+  if (entriesTodayCount > 0) {
     return {
-      label: "Momentum",
-      title: `${currentStreak} giorni di risparmio consecutivi`,
-      detail: `Hai già tenuto ${formatEuro(monthSaved)} questo mese.`,
-      badge: "Stabile",
-      tone: "savings",
-      icon: TrendingUp,
-    };
-  }
-
-  if (pendingHabitsCount > 0) {
-    return {
-      label: "Da chiudere",
-      title: `${pendingHabitsCount} abitudini da controllare`,
-      detail: "Chiuderle oggi mantiene il ritmo del portafoglio.",
-      badge: "Oggi",
+      label: "Oggi",
+      title: "Movimenti di oggi registrati",
+      detail: "La giornata è ancora aperta, ma il quadro è già leggibile.",
+      badge: "Leggero",
       tone: "fallback",
       icon: Compass,
     };
   }
 
   return {
-    label: "Pronto",
-    title: "Oggi puoi partire leggero",
-    detail: "Aggiungi un movimento e il primo segnale apparirà qui.",
-    badge: "Start",
+    label: "Oggi",
+    title:
+      monthSaved > 0 ? "Oggi è ancora tutto aperto" : "Oggi è ancora aperto",
+    detail:
+      monthSaved > 0
+        ? `Hai già protetto ${formatEuro(monthSaved)} questo mese. Il resto può aspettare.`
+        : "Aggiungi il primo movimento e il quadro prende forma subito.",
+    badge: monthSaved > 0 ? "Calmo" : "Nuovo",
     tone: "fallback",
     icon: Compass,
+  };
+}
+
+function getDashboardEmptyStateCopy({
+  monthSaved,
+  activeGoalsCount,
+  todayHabitsCount,
+}: {
+  monthSaved: number;
+  activeGoalsCount: number;
+  todayHabitsCount: number;
+}) {
+  if (monthSaved === 0 && activeGoalsCount === 0 && todayHabitsCount === 0) {
+    return {
+      title: "Ancora nessun movimento",
+      description:
+        "Aggiungi il primo movimento e il quadro di oggi prenderà forma subito.",
+      note: "Bastano pochi secondi per partire.",
+      actionLabel: "Aggiungi movimento",
+    };
+  }
+
+  if (monthSaved > 0) {
+    return {
+      title: "Giornata ancora aperta",
+      description: `Hai già protetto ${formatEuro(monthSaved)} questo mese. Oggi può restare leggero.`,
+      note: "Il prossimo tap aggiornerà subito il quadro.",
+      actionLabel: "Nuovo movimento",
+    };
+  }
+
+  return {
+    title: "Giornata leggera finora",
+    description:
+      "I tuoi obiettivi restano pronti, senza pressione. Se serve, un solo tap basta per aggiungere un nuovo segnale.",
+    note: "Puoi rientrare e uscire in pochi secondi.",
+    actionLabel: "Aggiungi movimento",
   };
 }
 
@@ -253,9 +313,13 @@ export default async function Home() {
     activeGoals,
     todayHabits,
     savedToday: todaySummary.totalSavedToday,
-    currentStreak: currentStreak.currentStreak,
     monthSaved,
-    pendingHabitsCount,
+    entriesTodayCount: todaySummary.entriesTodayCount,
+  });
+  const dashboardEmptyState = getDashboardEmptyStateCopy({
+    monthSaved,
+    activeGoalsCount: activeGoals.length,
+    todayHabitsCount: todayHabits.length,
   });
 
   return (
@@ -268,7 +332,13 @@ export default async function Home() {
 
       <PageHeader
         title={getGreeting()}
-        context={`Hai tenuto ${formatEuro(todaySummary.totalSavedToday)} oggi`}
+        context={getDashboardContext({
+          savedToday: todaySummary.totalSavedToday,
+          entriesTodayCount: todaySummary.entriesTodayCount,
+          monthSaved,
+          activeGoalsCount: activeGoals.length,
+          todayHabitsCount: todayHabits.length,
+        })}
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Nuovo movimento</Link>
@@ -276,14 +346,14 @@ export default async function Home() {
         }
         chips={[
           {
-            label: `💰 ${formatEuro(todaySummary.totalSavedToday)} oggi`,
+            label: `${formatEuro(todaySummary.totalSavedToday)} oggi`,
             tone: "success",
           },
           {
-            label: `⏳ ${pendingHabitsCount} in attesa`,
+            label: `${todaySummary.entriesTodayCount} movimenti`,
           },
           {
-            label: `📈 ${formatEuro(monthSaved)} mese`,
+            label: `${formatEuro(monthSaved)} mese`,
             tone: "success",
           },
         ]}
@@ -317,7 +387,7 @@ export default async function Home() {
         {recentEntries.length > 0 ? (
           <RecentEntries entries={recentEntries} />
         ) : (
-          <DashboardEmptyState />
+          <DashboardEmptyState {...dashboardEmptyState} />
         )}
 
         {hasUtilityPanels ? (

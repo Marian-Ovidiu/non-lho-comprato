@@ -56,18 +56,18 @@ export function DashboardHudCards({
   return (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
       <HudCard
-        label="Risparmiato oggi"
+        label="Oggi"
         value={formatMoney(totalSavedToday)}
         tone="success"
       />
 
       <HudCard
-        label="Risparmiato mese"
+        label="Questo mese"
         value={formatMoney(totalSavedMonth)}
       />
 
       <HudCard
-        label="Movimenti oggi"
+        label="Inseriti oggi"
         value={String(entriesTodayCount)}
       />
     </div>
