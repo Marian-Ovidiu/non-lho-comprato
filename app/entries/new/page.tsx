@@ -4,6 +4,8 @@ import { PageHeader } from "@/src/components/layout/page-header";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { normalizeLegacyPerson } from "@/src/lib/ui-person";
 
+export const dynamic = "force-dynamic";
+
 function getSearchValue(
   value: string | string[] | undefined,
 ): string | undefined {

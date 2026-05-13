@@ -9,6 +9,8 @@ import { ThemeSelector } from "@/src/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+export const dynamic = "force-dynamic";
+
 type ToolCardProps = {
   href?: string;
   label: string;

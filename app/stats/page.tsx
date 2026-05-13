@@ -20,6 +20,8 @@ import { StatsOverviewCards } from "@/src/components/stats/stats-overview-cards"
 import { TopSavingsList } from "@/src/components/stats/top-savings-list";
 import { getPersonFilter } from "@/src/lib/person-filter";
 
+export const dynamic = "force-dynamic";
+
 type StatsPageProps = {
   searchParams: Promise<{
     person?: string | string[];

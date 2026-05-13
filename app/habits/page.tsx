@@ -15,6 +15,8 @@ import { PageHeader } from "@/src/components/layout/page-header";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default async function HabitsPage() {
   await finalizeOldPendingOccurrences();
   await ensureTodayHabitOccurrences();

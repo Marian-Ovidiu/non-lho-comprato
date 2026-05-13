@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
 
+export const dynamic = "force-dynamic";
+
 export default async function OnboardingPage() {
   const authUser = await getAuthenticatedUser();
 

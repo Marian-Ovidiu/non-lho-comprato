@@ -23,6 +23,8 @@ import { getGlobalStreak } from "@/src/actions/streaks";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
 import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
+export const dynamic = "force-dynamic";
+
 function formatEuro(value: number) {
   return new Intl.NumberFormat("it-IT", {
     style: "currency",

@@ -10,9 +10,19 @@ import {
   getLegacyAuthMapping,
 } from "@/src/lib/auth/provisioning";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
+import { cache } from "react";
 
 const LEGACY_CURRENT_USER_ID = "legacy-marian";
 const LEGACY_CURRENT_WORKSPACE_ID = "legacy-marian-martina";
+const shouldLogPerformance = process.env.NODE_ENV !== "production";
+
+function logPerformance(label: string, startedAt: number) {
+  if (!shouldLogPerformance) {
+    return;
+  }
+
+  console.info(`[perf] ${label} ${Math.round(performance.now() - startedAt)}ms`);
+}
 
 export type AuthenticatedUser = {
   id: string;
@@ -28,20 +38,27 @@ export type AuthenticatedWorkspace = {
   ownerUserId: string;
 };
 
-async function getSupabaseUser() {
+const getSupabaseUser = cache(async () => {
+  const startedAt = performance.now();
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {
+    logPerformance("auth/supabase-user-unavailable", startedAt);
     return null;
   }
 
   const { data, error } = await supabase.auth.getUser();
 
   if (error || !data.user) {
+    logPerformance(
+      error ? "auth/supabase-get-user-error" : "auth/supabase-get-user-empty",
+      startedAt,
+    );
     return null;
   }
 
   const user = data.user;
+  logPerformance("auth/supabase-get-user", startedAt);
 
   return {
     id: user.id,
@@ -55,7 +72,7 @@ async function getSupabaseUser() {
       (user.user_metadata?.picture as string | undefined) ??
       null,
   } satisfies AuthenticatedUser;
-}
+});
 
 export function isLegacyFallbackEnabled() {
   return (
@@ -64,15 +81,15 @@ export function isLegacyFallbackEnabled() {
   );
 }
 
-async function ensureAuthenticatedUser(authenticatedUser: AuthenticatedUser) {
+const ensureAuthenticatedUser = cache(async (authenticatedUser: AuthenticatedUser) => {
   return ensureAppUserForAuthUser(authenticatedUser);
-}
+});
 
-export async function getAuthenticatedUser(): Promise<AuthenticatedUser | null> {
+export const getAuthenticatedUser = cache(async (): Promise<AuthenticatedUser | null> => {
   return getSupabaseUser();
-}
+});
 
-export async function requireAuth(): Promise<AuthenticatedUser> {
+export const requireAuth = cache(async (): Promise<AuthenticatedUser> => {
   const user = await getAuthenticatedUser();
 
   if (!user) {
@@ -80,13 +97,16 @@ export async function requireAuth(): Promise<AuthenticatedUser> {
   }
 
   return user;
-}
+});
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
+  const startedAt = performance.now();
   const authenticatedUser = await getAuthenticatedUser();
 
   if (authenticatedUser) {
-    return ensureAuthenticatedUser(authenticatedUser);
+    const user = await ensureAuthenticatedUser(authenticatedUser);
+    logPerformance("auth/current-user", startedAt);
+    return user;
   }
 
   if (!isLegacyFallbackEnabled()) {
@@ -101,10 +121,12 @@ export async function getCurrentUser() {
     throw new Error("Current user not found");
   }
 
+  logPerformance("auth/current-user-legacy", startedAt);
   return legacyUser;
-}
+});
 
-export async function getCurrentWorkspace() {
+export const getCurrentWorkspace = cache(async () => {
+  const startedAt = performance.now();
   const authenticatedUser = await getAuthenticatedUser();
 
   if (authenticatedUser) {
@@ -112,10 +134,14 @@ export async function getCurrentWorkspace() {
     const legacyMapping = getLegacyAuthMapping(authenticatedUser.email);
 
     if (legacyMapping) {
-      return ensureLegacyWorkspaceForUser(user.id);
+      const workspace = await ensureLegacyWorkspaceForUser(user.id);
+      logPerformance("auth/current-workspace-legacy", startedAt);
+      return workspace;
     }
 
-    return ensureDefaultWorkspaceForUser(user);
+    const workspace = await ensureDefaultWorkspaceForUser(user);
+    logPerformance("auth/current-workspace", startedAt);
+    return workspace;
   }
 
   if (!isLegacyFallbackEnabled()) {
@@ -142,17 +168,18 @@ export async function getCurrentWorkspace() {
     throw new Error("Current user is not a member of the active workspace");
   }
 
+  logPerformance("auth/current-workspace-legacy", startedAt);
   return workspace;
-}
+});
 
-export async function requireWorkspace() {
+export const requireWorkspace = cache(async () => {
   return getCurrentWorkspace();
-}
+});
 
-export async function getCurrentWorkspaceId(): Promise<string> {
+export const getCurrentWorkspaceId = cache(async (): Promise<string> => {
   const workspace = await getCurrentWorkspace();
   return workspace.id;
-}
+});
 
 export function getLegacyFallbackPerson(): typeof DEFAULT_LEGACY_PERSON {
   return normalizeLegacyPerson(DEFAULT_LEGACY_PERSON) ?? DEFAULT_LEGACY_PERSON;

@@ -5,6 +5,8 @@ import { EntryList } from "@/src/components/entries/entry-list";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 
+export const dynamic = "force-dynamic";
+
 export default async function EntriesPage() {
   type EntryItem = Awaited<ReturnType<typeof getEntries>>[number];
   let entries: EntryItem[] = [];
