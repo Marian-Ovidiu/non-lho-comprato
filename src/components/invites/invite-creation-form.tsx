@@ -44,6 +44,7 @@ export function InviteCreationForm({
   currentWorkspace,
 }: InviteCreationFormProps) {
   const router = useRouter();
+  const inviteMethod = "link";
   const [state, formAction, pending] = useActionState(
     async (_previousState: InviteCreationState, formData: FormData) =>
       createWorkspaceInviteAction(formData),
@@ -101,8 +102,44 @@ export function InviteCreationForm({
           <p className="text-sm leading-6 text-muted-text">
             {currentWorkspace.isShared
               ? "Invia un invito a una persona. Quando accetta, vedrete gli stessi movimenti condivisi."
-              : "Inserisci un'email e, se vuoi, il nome del nuovo spazio condiviso."}
+              : "Inserisci un'email e, se vuoi, il nome del nuovo spazio condiviso. Solo l'email indicata potrà accettare l'invito."}
           </p>
+        </div>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div
+            className={cn(
+              "rounded-3xl border p-4 shadow-sm transition-[transform,border-color,background-color,box-shadow,opacity] duration-200",
+              inviteMethod === "link"
+                ? "border-primary/25 bg-primary/8 ring-1 ring-primary/15"
+                : "border-border/70 bg-background/70",
+            )}
+          >
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-text">
+                <Link2 className="size-3.5" aria-hidden="true" />
+                Link invito
+              </div>
+              <p className="text-sm leading-6 text-foreground">
+                Crea un link da copiare e inviare alla persona.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-dashed border-border/70 bg-background/50 p-4 opacity-70">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs font-medium text-muted-text">
+                <Users2 className="size-3.5" aria-hidden="true" />
+                Invio via email
+              </div>
+              <p className="text-sm leading-6 text-muted-text">
+                Presto disponibile.
+              </p>
+              <Button type="button" variant="outline" className="h-10 w-full rounded-2xl" disabled>
+                Presto disponibile
+              </Button>
+            </div>
+          </div>
         </div>
 
         <form action={formAction} className="space-y-4">

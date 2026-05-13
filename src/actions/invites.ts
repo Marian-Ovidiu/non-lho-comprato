@@ -164,7 +164,7 @@ export async function createWorkspaceInviteAction(
 
     return {
       success: true,
-      message: "Invito pronto",
+      message: "Link invito pronto",
       invitePath: getWorkspaceInvitePath(token),
       workspace: {
         id: targetWorkspace.id,
