@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -34,9 +33,9 @@ export function LoginPanel({
   title = "Accedi",
   description = "Usa il provider del tuo account Supabase per entrare nel workspace.",
 }: LoginPanelProps = {}) {
-  const router = useRouter();
   const [pendingProvider, setPendingProvider] =
     useState<SupabaseOAuthProvider | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const visibleProviders = providers
     ? SUPABASE_OAUTH_PROVIDERS.filter((provider) =>
         providers.includes(provider.value),
@@ -47,18 +46,21 @@ export function LoginPanel({
     const supabase = createSupabaseBrowserClient();
 
     if (!supabase) {
-      window.alert("Supabase Auth is not configured.");
+      const message = "Supabase Auth is not configured.";
+      console.error("[auth] google login unavailable", message);
+      setLoginError(message);
       return;
     }
 
     setPendingProvider(provider);
+    setLoginError(null);
 
     const redirectTo = `${window.location.origin}/auth/callback`;
-    console.info("[auth] provider clicked", provider);
+    console.info("[auth] google login clicked");
     console.info("[auth] redirectTo", redirectTo);
 
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
           redirectTo,
@@ -66,33 +68,51 @@ export function LoginPanel({
       });
 
       if (error) {
-        console.error("[auth] signInWithOAuth error", error);
-        window.alert(error.message);
+        console.error("[auth] oauth error", error.message);
+        setLoginError(error.message);
         setPendingProvider(null);
         return;
       }
 
-      router.refresh();
+      const hasUrl = Boolean(data?.url);
+      console.info("[auth] oauth url available", hasUrl);
+
+      if (data?.url) {
+        window.location.assign(data.url);
+        return;
+      }
+
+      const message =
+        "Non riesco ad aprire il flusso Google adesso. Riprova tra poco.";
+      console.error("[auth] oauth missing url");
+      setLoginError(message);
+      setPendingProvider(null);
     } catch (thrownError) {
-      console.error("[auth] signInWithOAuth threw", thrownError);
-      window.alert(
+      const message =
         thrownError instanceof Error
           ? thrownError.message
-          : "Unable to start OAuth login.",
-      );
+          : "Unable to start OAuth login.";
+      console.error("[auth] oauth threw", message);
+      setLoginError(message);
       setPendingProvider(null);
     }
   }
 
   if (compact) {
     return (
-      <div
-        className={cn(
-          "grid gap-2.5 rounded-3xl border border-border/80 bg-surface/80 p-3 shadow-sm sm:p-4",
-          visibleProviders.length > 1 ? "sm:grid-cols-2" : undefined,
-          className,
-        )}
-      >
+      <div className={cn("space-y-3", className)}>
+        {loginError ? (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive">
+            {loginError}
+          </div>
+        ) : null}
+
+        <div
+          className={cn(
+            "grid gap-2.5 rounded-3xl border border-border/80 bg-surface/80 p-3 shadow-sm sm:p-4",
+            visibleProviders.length > 1 ? "sm:grid-cols-2" : undefined,
+          )}
+        >
         {visibleProviders.map((provider) => {
           const isPending = pendingProvider === provider.value;
 
@@ -115,6 +135,7 @@ export function LoginPanel({
             </Button>
           );
         })}
+        </div>
       </div>
     );
   }
@@ -128,6 +149,12 @@ export function LoginPanel({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 p-4 pt-3 sm:p-5 sm:pt-4">
+        {loginError ? (
+          <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive">
+            {loginError}
+          </div>
+        ) : null}
+
         <div className="grid gap-2.5 sm:grid-cols-2">
           {visibleProviders.map((provider) => {
             const isPending = pendingProvider === provider.value;
