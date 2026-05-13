@@ -17,6 +17,7 @@ import { MomentumCard } from "@/src/components/dashboard/momentum-card";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
 import {
   ensureTodayHabitOccurrences,
   finalizeOldPendingOccurrences,
@@ -607,6 +608,10 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   return (
     <main className="space-y-3 sm:space-y-4">
+      {arrivedFromOnboarding ? (
+        <PostHogEventOnMount eventName="onboarding_completed" />
+      ) : null}
+
       <DailyCheckinOverlay
         savedToday={todaySummary.totalSavedToday}
         pendingHabitsCount={pendingHabitsCount}

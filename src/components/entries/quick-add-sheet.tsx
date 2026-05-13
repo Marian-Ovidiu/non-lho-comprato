@@ -40,6 +40,7 @@ import {
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
 import { PersonSegmentedSelector } from "@/src/components/entries/person-segmented-selector";
+import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type CategoryOption = {
   id: string;
@@ -63,6 +64,7 @@ type QuickAddState = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
+  isFirstEntryCreated?: boolean;
 };
 
 type QuickAddDraft = {
@@ -232,11 +234,16 @@ export function QuickAddSheet({
     }
 
     didHandleSuccessRef.current = true;
+    trackPostHogEvent("quick_add_saved");
+    trackPostHogEvent("entry_created");
+    if (state.isFirstEntryCreated) {
+      trackPostHogEvent("first_entry_created");
+    }
     router.refresh();
     setOpen(false);
     setActivePreset(null);
     setDraft(getInitialDraft());
-  }, [router, state.success]);
+  }, [router, state.isFirstEntryCreated, state.success]);
 
   function resolveCategoryId(categorySlug: string) {
     const bySlug = categoryOptions.find((category) => category.slug === categorySlug);
@@ -304,6 +311,7 @@ export function QuickAddSheet({
           variant="default"
           size="icon"
           className="size-12 -mt-4 rounded-full border border-premium-accent/30 bg-primary text-primary-foreground shadow-lg transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:scale-[0.975] active:opacity-95"
+          onClick={() => trackPostHogEvent("quick_add_opened")}
         >
           <Plus className="size-5" aria-hidden="true" />
           <span className="sr-only">Nuovo movimento</span>

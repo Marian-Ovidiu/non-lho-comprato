@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type WorkspaceOption = {
   id: string;
@@ -166,7 +167,12 @@ export function WorkspaceSwitcher({
 
                     <button
                       type="submit"
-                    className={cn(
+                      onClick={() => {
+                        if (!isCurrent) {
+                          trackPostHogEvent("workspace_switched");
+                        }
+                      }}
+                      className={cn(
                         "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
                         "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
                         isCurrent

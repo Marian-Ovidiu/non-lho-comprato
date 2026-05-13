@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { signOutAction } from "@/src/actions/auth";
 import { Button } from "@/components/ui/button";
+import { resetPostHog } from "@/src/lib/posthog";
 
 type AuthControlsProps = {
   isAuthenticated: boolean;
@@ -29,7 +30,12 @@ export function AuthControls({
           {userLabel}
         </span>
       ) : null}
-      <form action={signOutAction}>
+      <form
+        action={signOutAction}
+        onSubmit={() => {
+          resetPostHog();
+        }}
+      >
         <Button type="submit" variant="outline" size="sm" className="rounded-full">
           Esci
         </Button>

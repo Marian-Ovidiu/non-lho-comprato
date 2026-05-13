@@ -163,6 +163,8 @@ model User {
   updatedAt            DateTime          @updatedAt
   ownedWorkspaces      Workspace[]
   workspaceMemberships WorkspaceMember[]
+  workspaceInvitesCreated WorkspaceInvite[] @relation("WorkspaceInviteCreatedBy")
+  workspaceInvitesAccepted WorkspaceInvite[] @relation("WorkspaceInviteAcceptedBy")
   createdEntries       Entry[]           @relation("EntryCreatedBy")
   paidEntries          Entry[]           @relation("EntryPaidBy")
 }
@@ -174,6 +176,7 @@ model Workspace {
   ownerUserId  String
   owner        User              @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
   members      WorkspaceMember[]
+  invites      WorkspaceInvite[]
   categories   Category[]
   entries      Entry[]
   habits       Habit[]
@@ -197,4 +200,24 @@ model WorkspaceMember {
   @@unique([workspaceId, userId])
   @@index([workspaceId])
   @@index([userId])
+}
+
+model WorkspaceInvite {
+  id                String     @id @default(cuid())
+  tokenHash         String     @unique
+  workspaceId       String
+  workspace         Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedEmail      String
+  createdByUserId   String?
+  createdBy         User?      @relation("WorkspaceInviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  acceptedByUserId  String?
+  acceptedBy        User?      @relation("WorkspaceInviteAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
+  acceptedAt        DateTime?
+  expiresAt         DateTime
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  @@index([workspaceId])
+  @@index([invitedEmail])
+  @@index([expiresAt])
 }

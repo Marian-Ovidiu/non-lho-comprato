@@ -125,14 +125,14 @@ export default async function MorePage() {
                     {profileLabel}
                   </CardTitle>
                   <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
-                    {workspace.name} <span aria-hidden="true">•</span>{" "}
+                    {workspace.name} <span aria-hidden="true">·</span>{" "}
                     {workspaceLabel}
                   </p>
                 </div>
               </div>
             </CardHeader>
 
-            <CardContent className="flex flex-col gap-3 p-4 pt-4 sm:flex-row sm:items-center sm:justify-between sm:p-5 sm:pt-4">
+            <CardContent className="flex flex-col gap-3 p-4 pt-4 sm:p-5 sm:pt-4">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="rounded-full border border-border bg-background/60 px-3 py-1 text-xs font-medium text-muted-text">
                   Workspace
@@ -142,15 +142,25 @@ export default async function MorePage() {
                 </span>
               </div>
 
-              <form action={signOutAction}>
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <Button
-                  type="submit"
+                  asChild
                   variant="outline"
                   className="h-10 w-full rounded-2xl px-4 sm:w-auto"
                 >
-                  Esci
+                  <Link href="/invite">Invita una persona</Link>
                 </Button>
-              </form>
+
+                <form action={signOutAction}>
+                  <Button
+                    type="submit"
+                    variant="outline"
+                    className="h-10 w-full rounded-2xl px-4 sm:w-auto"
+                  >
+                    Esci
+                  </Button>
+                </form>
+              </div>
             </CardContent>
           </Card>
         ) : (

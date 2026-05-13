@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DEFAULT_LEGACY_PERSON } from "@/src/lib/ui-person";
 import type { LegacyPersonValue } from "@/src/lib/ui-person";
 import { PersonSegmentedSelector } from "@/src/components/entries/person-segmented-selector";
+import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type CategoryOption = {
   id: string;
@@ -40,6 +41,7 @@ type FormState = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
+  isFirstEntryCreated?: boolean;
 };
 
 type EntryFormProps = {
@@ -98,13 +100,17 @@ export function EntryForm({ categories, initialValues }: EntryFormProps) {
     }
 
     didHandleSuccessRef.current = true;
+    trackPostHogEvent("entry_created");
+    if (state.isFirstEntryCreated) {
+      trackPostHogEvent("first_entry_created");
+    }
 
     const timeout = window.setTimeout(() => {
       redirect("/");
     }, 800);
 
     return () => window.clearTimeout(timeout);
-  }, [redirect, state.success]);
+  }, [redirect, state.isFirstEntryCreated, state.success]);
 
   const helperText = useMemo(() => {
     if (!hasCategories) {

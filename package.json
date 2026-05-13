@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -16,6 +17,7 @@
   "dependencies": {
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@sentry/nextjs": "^10.53.1",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.1",
     "class-variance-authority": "^0.7.1",
@@ -24,6 +26,7 @@
     "lucide-react": "^1.14.0",
     "next": "16.2.4",
     "pg": "^8.20.0",
+    "posthog-js": "^1.373.4",
     "prisma": "^7.8.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",

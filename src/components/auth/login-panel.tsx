@@ -12,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { trackPostHogEvent } from "@/src/lib/posthog";
 import { createSupabaseBrowserClient } from "@/src/lib/supabase/browser";
 import {
   SUPABASE_OAUTH_PROVIDERS,
@@ -24,6 +25,7 @@ type LoginPanelProps = {
   className?: string;
   title?: string;
   description?: string;
+  redirectPath?: string;
 };
 
 export function LoginPanel({
@@ -32,6 +34,7 @@ export function LoginPanel({
   className,
   title = "Accedi",
   description = "Usa il provider del tuo account Supabase per entrare nel workspace.",
+  redirectPath,
 }: LoginPanelProps = {}) {
   const [pendingProvider, setPendingProvider] =
     useState<SupabaseOAuthProvider | null>(null);
@@ -54,8 +57,13 @@ export function LoginPanel({
 
     setPendingProvider(provider);
     setLoginError(null);
+    trackPostHogEvent("onboarding_started");
 
-    const redirectTo = `${window.location.origin}/auth/callback`;
+    const callbackPath =
+      redirectPath && redirectPath.startsWith("/") && !redirectPath.startsWith("//")
+        ? `/auth/callback?next=${encodeURIComponent(redirectPath)}`
+        : "/auth/callback";
+    const redirectTo = `${window.location.origin}${callbackPath}`;
     console.info("[auth] google login clicked");
     console.info("[auth] redirectTo", redirectTo);
 

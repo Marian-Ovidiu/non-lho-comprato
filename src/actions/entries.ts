@@ -24,6 +24,7 @@ type CreateEntryResult = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
+  isFirstEntryCreated?: boolean;
 };
 
 type EntryWithCategory = {
@@ -434,6 +435,9 @@ export async function createEntry(
   try {
     const currentUser = await getCurrentUser();
     const workspaceId = await getCurrentWorkspaceId();
+    const existingEntryCount = await prisma.entry.count({
+      where: await getCurrentWorkspaceScopedWhere(),
+    });
     const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
@@ -471,6 +475,7 @@ export async function createEntry(
     return {
       success: true,
       message: "Entrata salvata con successo",
+      isFirstEntryCreated: existingEntryCount === 0,
     };
   } catch (error) {
     console.error("Failed to create entry:", error);

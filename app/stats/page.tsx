@@ -9,6 +9,7 @@ import {
 } from "@/src/actions/stats";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
 import { CategorySavingsChart } from "@/src/components/stats/category-savings-chart";
 import { CategoryStatsList } from "@/src/components/stats/category-stats-list";
 import { HabitStatsList } from "@/src/components/stats/habit-stats-list";
@@ -185,6 +186,8 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
   return (
     <main className="space-y-5 sm:space-y-6">
+      <PostHogEventOnMount eventName="stats_viewed" />
+
       <PageHeader
         title="Statistiche"
         context={heroSummary}

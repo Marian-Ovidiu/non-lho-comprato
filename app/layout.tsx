@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import { AppShell } from "@/src/components/layout/app-shell";
+import { PostHogNavigationTracker } from "@/src/components/analytics/posthog-navigation-tracker";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
@@ -53,6 +54,7 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body className="min-h-screen flex flex-col bg-background text-foreground">
+        <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />
         {authenticatedUser && workspaceShell ? (
           <AppShell
             workspace={workspaceShell.currentWorkspace}

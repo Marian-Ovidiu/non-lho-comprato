@@ -1,6 +1,10 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import { NotebookPen } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { trackPostHogEvent } from "@/src/lib/posthog";
 
 export type HomeReflectionNoteProps = {
   label: string;
@@ -8,6 +12,17 @@ export type HomeReflectionNoteProps = {
 };
 
 export function HomeReflectionNote({ label, text }: HomeReflectionNoteProps) {
+  const didTrackRef = useRef(false);
+
+  useEffect(() => {
+    if (didTrackRef.current) {
+      return;
+    }
+
+    didTrackRef.current = true;
+    trackPostHogEvent("reflection_note_seen");
+  }, []);
+
   return (
     <div
       className={cn(
