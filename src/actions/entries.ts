@@ -281,6 +281,61 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
+function isMissingEntryBeneficiaryTable(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const code = "code" in error ? String(error.code) : "";
+  if (code === "P2021") {
+    return true;
+  }
+
+  const message = "message" in error ? String(error.message) : "";
+  return (
+    message.includes("EntryBeneficiary") &&
+    message.includes("does not exist")
+  );
+}
+
+async function findEntriesForList(
+  where: Awaited<ReturnType<typeof getCurrentWorkspaceScopedWhere>>,
+): Promise<EntryWithCategory[]> {
+  const baseQuery = {
+    where,
+    orderBy: {
+      date: "desc" as const,
+    },
+    include: {
+      category: true,
+    },
+  };
+
+  try {
+    return await prisma.entry.findMany({
+      ...baseQuery,
+      include: {
+        ...baseQuery.include,
+        beneficiaries: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+  } catch (error) {
+    if (!isMissingEntryBeneficiaryTable(error)) {
+      throw error;
+    }
+
+    const entries = await prisma.entry.findMany(baseQuery);
+    return entries.map((entry) => ({
+      ...entry,
+      beneficiaries: [],
+    }));
+  }
+}
+
 function serializeEntry(
   entry: EntryWithCategory,
   members: WorkspaceMemberOption[],
@@ -321,20 +376,7 @@ export async function getEntries(
     getCurrentWorkspaceMembers(),
   ]);
 
-  const entries = await prisma.entry.findMany({
-    where: workspaceWhere,
-    orderBy: {
-      date: "desc",
-    },
-    include: {
-      category: true,
-      beneficiaries: {
-        select: {
-          userId: true,
-        },
-      },
-    },
-  });
+  const entries = await findEntriesForList(workspaceWhere);
 
   return entries.map((entry) => serializeEntry(entry, members));
 }
@@ -349,41 +391,67 @@ export async function getEntryById(
   }
 
   try {
-    const entry = await prisma.entry.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        title: true,
-        categoryId: true,
-        realCost: true,
-        alternativeCost: true,
-        savedAmount: true,
-        date: true,
-        note: true,
-        source: true,
-        person: true,
-        paidBy: true,
-        beneficiaries: {
-          select: {
-            userId: true,
-          },
-        },
-        paidByUserId: true,
-        habitOccurrenceId: true,
-        createdAt: true,
-        updatedAt: true,
-        workspaceId: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            color: true,
-            icon: true,
-          },
+    const entrySelect = {
+      id: true,
+      title: true,
+      categoryId: true,
+      realCost: true,
+      alternativeCost: true,
+      savedAmount: true,
+      date: true,
+      note: true,
+      source: true,
+      person: true,
+      paidBy: true,
+      paidByUserId: true,
+      habitOccurrenceId: true,
+      createdAt: true,
+      updatedAt: true,
+      workspaceId: true,
+      category: {
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          color: true,
+          icon: true,
         },
       },
-    });
+    } as const;
+
+    let entry:
+      | (EntryWithCategory & { workspaceId: string | null })
+      | null = null;
+
+    try {
+      entry = await prisma.entry.findUnique({
+        where: { id },
+        select: {
+          ...entrySelect,
+          beneficiaries: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      });
+    } catch (error) {
+      if (!isMissingEntryBeneficiaryTable(error)) {
+        throw error;
+      }
+
+      const legacyEntry = await prisma.entry.findUnique({
+        where: { id },
+        select: entrySelect,
+      });
+
+      entry = legacyEntry
+        ? {
+            ...legacyEntry,
+            beneficiaries: [],
+          }
+        : null;
+    }
 
     if (!entry) {
       return null;

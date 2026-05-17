@@ -180,7 +180,9 @@ export function resolveEntryPeopleFromRecord(
     getDefaultPaidByUserId(members);
 
   let beneficiaryUserIds = Array.from(
-    new Set(entry.beneficiaries.map((beneficiary) => beneficiary.userId)),
+    new Set(
+      (entry.beneficiaries ?? []).map((beneficiary) => beneficiary.userId),
+    ),
   );
 
   if (beneficiaryUserIds.length === 0) {
