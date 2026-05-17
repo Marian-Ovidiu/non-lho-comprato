@@ -184,17 +184,25 @@ export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
 
   if (legacyMapping) {
     // TODO: replace this legacy-email bridge with proper invited-member onboarding.
+    const email = normalizeEmail(authUser.email);
+    const existingByEmail = email
+      ? await prisma.user.findUnique({
+          where: { email },
+        })
+      : null;
+    const targetUserId = existingByEmail?.id ?? legacyMapping.userId;
+
     const user = await prisma.user.upsert({
       where: {
-        id: legacyMapping.userId,
+        id: targetUserId,
       },
       update: {
         email: authUser.email,
-        name: authUser.name,
-        image: authUser.image,
+        name: authUser.name ?? existingByEmail?.name,
+        image: authUser.image ?? existingByEmail?.image,
       },
       create: {
-        id: legacyMapping.userId,
+        id: targetUserId,
         email: authUser.email,
         name: authUser.name,
         image: authUser.image,

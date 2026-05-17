@@ -108,6 +108,8 @@ export function mapEntryParticipantToUserId(
   return (
     sortedMembers.find((member) => member.userId === LEGACY_MARIAN_USER_ID)
       ?.userId ??
+    sortedMembers.find((member) => member.userId !== LEGACY_MARTINA_USER_ID)
+      ?.userId ??
     sortedMembers[0]?.userId ??
     null
   );
