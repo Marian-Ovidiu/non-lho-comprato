@@ -322,15 +322,6 @@ export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
 export async function ensureDefaultWorkspaceForUser(user: AppUserLike) {
   const startedAt = performance.now();
 
-  const adoptedProductionWorkspace = await adoptProductionWorkspaceForUser(
-    user.id,
-  );
-
-  if (adoptedProductionWorkspace) {
-    logPerformance("auth/ensure-default-workspace-production", startedAt);
-    return adoptedProductionWorkspace;
-  }
-
   return prisma.$transaction(async (tx) => {
     const ownedWorkspace = await tx.workspace.findFirst({
       where: {
@@ -476,7 +467,6 @@ export async function resolveWorkspaceForAuthenticatedUser(
   selectedWorkspaceId?: string | null,
 ) {
   const user = await ensureAppUserForAuthUser(authUser);
-  await adoptProductionWorkspaceForUser(user.id);
   const accessibleWorkspaces = await getAccessibleWorkspacesForUserId(user.id);
 
   const { workspace, resolutionPath } = await resolveActiveWorkspaceForUser({
