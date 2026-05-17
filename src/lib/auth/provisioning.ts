@@ -437,7 +437,7 @@ export async function ensureLegacyWorkspaceForUser(userId: string) {
   return toWorkspaceRecord(workspace);
 }
 
-async function getAccessibleWorkspacesForUserId(userId: string) {
+export async function getAccessibleWorkspacesForUserId(userId: string) {
   return prisma.workspace.findMany({
     where: {
       OR: [
@@ -492,6 +492,61 @@ export async function resolveWorkspaceForAuthenticatedUser(
     workspace,
     accessibleWorkspaces,
     resolutionPath,
+  };
+}
+
+function pickAccessibleWorkspace(
+  userId: string,
+  accessibleWorkspaces: WorkspaceRecord[],
+): WorkspaceRecord | null {
+  if (accessibleWorkspaces.length === 0) {
+    return null;
+  }
+
+  const privateWorkspace = accessibleWorkspaces.find(
+    (workspace) => workspace.id === getPrivateWorkspaceId(userId),
+  );
+
+  if (privateWorkspace) {
+    return privateWorkspace;
+  }
+
+  const ownedWorkspace = accessibleWorkspaces.find(
+    (workspace) => workspace.ownerUserId === userId,
+  );
+
+  if (ownedWorkspace) {
+    return ownedWorkspace;
+  }
+
+  return accessibleWorkspaces[0] ?? null;
+}
+
+async function resolveDefaultWorkspaceForUser(
+  userId: string,
+  email: string | null,
+  accessibleWorkspaces: WorkspaceRecord[],
+  resolutionPath: string,
+): Promise<{ workspace: WorkspaceRecord; resolutionPath: string }> {
+  const fallbackWorkspace = pickAccessibleWorkspace(userId, accessibleWorkspaces);
+
+  if (fallbackWorkspace) {
+    return {
+      workspace: fallbackWorkspace,
+      resolutionPath,
+    };
+  }
+
+  return {
+    workspace: toWorkspaceRecord(
+      await ensureDefaultWorkspaceForUser({
+        id: userId,
+        email,
+        name: null,
+        image: null,
+      }),
+    ),
+    resolutionPath: `${resolutionPath}:create-private`,
   };
 }
 
@@ -556,24 +611,19 @@ export async function resolveActiveWorkspaceForUser({
         resolutionPath: "cookie:selected",
       };
     }
+
+    return resolveDefaultWorkspaceForUser(
+      userId,
+      email,
+      accessibleWorkspaces,
+      "cookie:ignored-not-member",
+    );
   }
 
-  if (productionWorkspace) {
-    return {
-      workspace: productionWorkspace,
-      resolutionPath: "production:membership",
-    };
-  }
-
-  return {
-    workspace: toWorkspaceRecord(
-      await ensureDefaultWorkspaceForUser({
-        id: userId,
-        email,
-        name: null,
-        image: null,
-      }),
-    ),
-    resolutionPath: "default:create-or-owned",
-  };
+  return resolveDefaultWorkspaceForUser(
+    userId,
+    email,
+    accessibleWorkspaces,
+    "accessible:fallback",
+  );
 }

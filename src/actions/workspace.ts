@@ -5,7 +5,6 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/src/lib/prisma";
-import { getCurrentWorkspace } from "@/src/lib/auth/session";
 import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
@@ -42,12 +41,15 @@ export async function switchWorkspaceAction(formData: FormData) {
     },
   });
 
+  if (!workspace) {
+    redirect(returnTo);
+  }
+
   const cookieStore = await cookies();
-  const targetWorkspaceId = workspace?.id ?? (await getCurrentWorkspace()).id;
 
   cookieStore.set(
     WORKSPACE_SELECTION_COOKIE,
-    targetWorkspaceId,
+    workspace.id,
     getWorkspaceSelectionCookieOptions(),
   );
 

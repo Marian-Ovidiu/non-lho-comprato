@@ -1,6 +1,7 @@
 import { prisma } from "@/src/lib/prisma";
 import {
   ensureAppUserForAuthUser,
+  getAccessibleWorkspacesForUserId,
   resolveWorkspaceForAuthenticatedUser,
 } from "@/src/lib/auth/provisioning";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
@@ -88,31 +89,6 @@ const ensureAuthenticatedUser = cache(async (authenticatedUser: AuthenticatedUse
   return ensureAppUserForAuthUser(authenticatedUser);
 });
 
-const getAccessibleWorkspacesForUser = cache(async (userId: string) => {
-  return prisma.workspace.findMany({
-    where: {
-      OR: [
-        {
-          ownerUserId: userId,
-        },
-        {
-          members: {
-            some: {
-              userId,
-            },
-          },
-        },
-      ],
-    },
-    select: {
-      id: true,
-      name: true,
-      kind: true,
-      ownerUserId: true,
-    },
-  });
-});
-
 async function getSelectedWorkspaceId() {
   const cookieStore = await cookies();
   return cookieStore.get(WORKSPACE_SELECTION_COOKIE)?.value ?? null;
@@ -172,7 +148,8 @@ export const getCurrentWorkspace = cache(async () => {
     if (
       selectedWorkspaceId &&
       workspace.id !== selectedWorkspaceId &&
-      resolutionPath === "cookie:fallback-empty-to-production"
+      (resolutionPath === "cookie:fallback-empty-to-production" ||
+        resolutionPath.startsWith("cookie:ignored-not-member"))
     ) {
       try {
         const cookieStore = await cookies();
@@ -252,7 +229,5 @@ export const getAccessibleWorkspacesForCurrentUser = cache(async () => {
   }
 
   const user = await ensureAuthenticatedUser(authenticatedUser);
-  const workspaces = await getAccessibleWorkspacesForUser(user.id);
-
-  return workspaces;
+  return getAccessibleWorkspacesForUserId(user.id);
 });
