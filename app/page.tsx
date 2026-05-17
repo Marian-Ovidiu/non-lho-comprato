@@ -14,6 +14,7 @@ import {
   type HomeReflectionNoteProps,
 } from "@/src/components/dashboard/home-reflection-note";
 import { MomentumCard } from "@/src/components/dashboard/momentum-card";
+import { StreakHeroCard } from "@/src/components/dashboard/streak-hero-card";
 import { RecentEntries } from "@/src/components/dashboard/recent-entries";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ import {
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
+import { getGlobalStreak } from "@/src/actions/streaks";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getCategoryEmoji } from "@/src/lib/visual-cues";
@@ -512,6 +514,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   let activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
   let todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
   let pendingHabitsCount = 0;
+  let currentStreak = 0;
   let entriesLoadError: string | null = null;
   let dashboardLoadError: string | null = null;
 
@@ -524,16 +527,18 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   try {
-    const [loadedSummary, loadedTodaySummary, loadedGoals, loadedTodayHabits] =
+    const [loadedSummary, loadedTodaySummary, loadedGoals, loadedTodayHabits, globalStreak] =
       await Promise.all([
         getDashboardSummary(),
         getTodayDashboardSummary(),
         getGoalsWithProgress(),
         getTodayHabitOccurrences(),
+        getGlobalStreak(),
       ]);
 
     monthSaved = loadedSummary.totalSaved;
     todaySummary = loadedTodaySummary;
+    currentStreak = globalStreak.currentStreak;
     activeGoals = loadedGoals.filter((goal) => goal.isActive).slice(0, 3);
     todayHabits = loadedTodayHabits;
     pendingHabitsCount = loadedTodayHabits.filter(
@@ -671,6 +676,8 @@ export default async function Home({ searchParams }: HomePageProps) {
         totalSavedMonth={monthSaved}
         entriesCount={allEntries.length}
       />
+
+      <StreakHeroCard currentStreak={currentStreak} />
 
       <MomentumCard
         label={momentumView.label}

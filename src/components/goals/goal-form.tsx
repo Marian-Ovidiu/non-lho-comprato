@@ -121,7 +121,7 @@ export function GoalForm() {
               <Input
                 id="emoji"
                 name="emoji"
-                placeholder="âœˆï¸"
+                placeholder="✈️"
                 autoComplete="off"
                 maxLength={4}
                 aria-invalid={Boolean(state.errors?.emoji)}

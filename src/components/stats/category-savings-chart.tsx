@@ -81,7 +81,7 @@ export function CategorySavingsChart({ data }: CategorySavingsChartProps) {
           Categorie che contano
         </CardTitle>
         <p className="text-sm leading-6 text-muted-text">
-          Le categorie che ti stanno lasciando pi&ugrave; soldi in tasca.
+          Le categorie che ti stanno lasciando più soldi in tasca.
         </p>
       </CardHeader>
       <CardContent className="p-4 pt-3 sm:p-5 sm:pt-3">
