@@ -1,7 +1,7 @@
 "use server";
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
+import { buildWorkspaceMemberEntryWhere } from "@/src/lib/workspace-member-filter";
 import {
   aggregateMemberSpendingStats,
   type MemberSpendingEntry,
@@ -110,23 +110,24 @@ function sum(values: Array<unknown>): number {
 }
 
 async function buildEntryWhere(
-  person?: PersonFilterValue,
+  memberUserId: string | undefined,
   where: Prisma.EntryWhereInput = {},
 ): Promise<Prisma.EntryWhereInput> {
+  const members = await getCurrentWorkspaceMembers();
+
   return {
     ...where,
-    ...buildPersonWhere(person),
+    ...buildWorkspaceMemberEntryWhere(memberUserId, members),
     ...(await getCurrentWorkspaceScopedWhere()),
   };
 }
 
 async function buildHabitOccurrenceWhere(
-  person?: PersonFilterValue,
+  memberUserId: string | undefined,
 ): Promise<Prisma.HabitOccurrenceWhereInput> {
-  const personWhere = buildPersonWhere(person);
   const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
-  if (Object.keys(personWhere).length === 0) {
+  if (!memberUserId) {
     return {
       habit: {
         is: workspaceWhere,
@@ -134,12 +135,16 @@ async function buildHabitOccurrenceWhere(
     };
   }
 
+  const members = await getCurrentWorkspaceMembers();
+
   return {
     habit: {
       is: workspaceWhere,
     },
     entry: {
-      is: await getCurrentWorkspaceScopedWhere(personWhere),
+      is: await getCurrentWorkspaceScopedWhere(
+        buildWorkspaceMemberEntryWhere(memberUserId, members),
+      ),
     },
   };
 }
@@ -184,11 +189,11 @@ function emptyOverview(): StatsOverview {
 }
 
 export async function getStatsOverview(
-  person?: PersonFilterValue,
+  memberUserId?: string,
 ): Promise<StatsOverview> {
   try {
     const entries = await prisma.entry.findMany({
-      where: await buildEntryWhere(person),
+      where: await buildEntryWhere(memberUserId),
       select: {
         realCost: true,
         alternativeCost: true,
@@ -225,11 +230,11 @@ export async function getStatsOverview(
 }
 
 export async function getMonthlyStats(
-  person?: PersonFilterValue,
+  memberUserId?: string,
 ): Promise<MonthlyStatsItem[]> {
   try {
     const entries = await prisma.entry.findMany({
-      where: await buildEntryWhere(person),
+      where: await buildEntryWhere(memberUserId),
       select: {
         date: true,
         realCost: true,
@@ -293,11 +298,11 @@ export async function getMonthlyStats(
 }
 
 export async function getCategoryStats(
-  person?: PersonFilterValue,
+  memberUserId?: string,
 ): Promise<CategoryStatsItem[]> {
   try {
     const entries = await prisma.entry.findMany({
-      where: await buildEntryWhere(person),
+      where: await buildEntryWhere(memberUserId),
       select: {
         categoryId: true,
         realCost: true,
@@ -369,18 +374,18 @@ export async function getCategoryStats(
 }
 
 export async function getTopSavings(
-  person?: PersonFilterValue,
+  memberUserId?: string,
   limit?: number,
 ): Promise<TopSavingsItem[]>;
 export async function getTopSavings(limit?: number): Promise<TopSavingsItem[]>;
 export async function getTopSavings(
-  personOrLimit?: PersonFilterValue | number,
+  memberUserIdOrLimit?: string | number,
   limit = 10,
 ): Promise<TopSavingsItem[]> {
-  const person =
-    typeof personOrLimit === "string" ? personOrLimit : undefined;
+  const memberUserId =
+    typeof memberUserIdOrLimit === "string" ? memberUserIdOrLimit : undefined;
   const requestedLimit =
-    typeof personOrLimit === "number" ? personOrLimit : limit;
+    typeof memberUserIdOrLimit === "number" ? memberUserIdOrLimit : limit;
   const safeLimit = Number.isFinite(requestedLimit)
     ? Math.max(0, Math.floor(requestedLimit))
     : 10;
@@ -391,7 +396,7 @@ export async function getTopSavings(
 
   try {
     const entries = await prisma.entry.findMany({
-      where: await buildEntryWhere(person, {
+      where: await buildEntryWhere(memberUserId, {
         savedAmount: {
           gt: 0,
         },
@@ -438,11 +443,11 @@ export async function getTopSavings(
 }
 
 export async function getHabitStats(
-  person?: PersonFilterValue,
+  memberUserId?: string,
 ): Promise<HabitStatsItem[]> {
   try {
     const occurrences = await prisma.habitOccurrence.findMany({
-      where: await buildHabitOccurrenceWhere(person),
+      where: await buildHabitOccurrenceWhere(memberUserId),
       select: {
         status: true,
         habit: {
@@ -573,13 +578,13 @@ function toMemberSpendingEntries(
 }
 
 export async function getWorkspaceMemberSpendingStats(
-  person?: PersonFilterValue,
+  memberUserId?: string,
 ): Promise<WorkspaceMemberSpendingStatsItem[]> {
   try {
     const [members, entries] = await Promise.all([
       getCurrentWorkspaceMembers(),
       prisma.entry.findMany({
-        where: await buildEntryWhere(person),
+        where: await buildEntryWhere(memberUserId),
         select: {
           realCost: true,
           paidByUserId: true,

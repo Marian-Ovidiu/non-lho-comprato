@@ -2,33 +2,29 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
-import {
-  getPersonFilterOptions,
-  normalizeLegacyPerson,
-} from "@/src/lib/ui-person";
+import { getWorkspaceMemberFilterOptions } from "@/src/lib/workspace-member-filter";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type PersonFilterProps = {
-  person?: PersonFilterValue;
+  members: WorkspaceMemberOption[];
+  selectedMemberUserId?: string;
   basePath: "/" | "/stats";
   compact?: boolean;
 };
 
 export function PersonFilter({
-  person,
+  members,
+  selectedMemberUserId,
   basePath,
   compact = false,
 }: PersonFilterProps) {
-  const options = getPersonFilterOptions().map((option) => ({
+  const options = getWorkspaceMemberFilterOptions(members).map((option) => ({
     href:
       option.value === ""
         ? basePath
         : `${basePath}?person=${encodeURIComponent(option.value)}`,
     label: option.label,
-    value:
-      option.value === ""
-        ? undefined
-        : (option.value as PersonFilterValue),
+    value: option.value === "" ? undefined : option.value,
   }));
 
   return (
@@ -53,11 +49,11 @@ export function PersonFilter({
         </p>
         <div className="flex flex-wrap gap-2">
           {options.map((option) => {
-            const isActive = normalizeLegacyPerson(person) === option.value;
+            const isActive = selectedMemberUserId === option.value;
 
             return (
               <Button
-                key={option.label}
+                key={option.value ?? "all"}
                 asChild
                 variant={isActive ? "default" : "outline"}
                 size="sm"

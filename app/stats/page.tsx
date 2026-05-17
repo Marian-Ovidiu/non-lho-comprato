@@ -20,7 +20,8 @@ import { StatsHeroCard } from "@/src/components/stats/stats-hero-card";
 import { StatsOverviewCards } from "@/src/components/stats/stats-overview-cards";
 import { TopSavingsList } from "@/src/components/stats/top-savings-list";
 import { formatMoney } from "@/src/lib/formatters";
-import { getPersonFilter } from "@/src/lib/person-filter";
+import { getWorkspaceMemberFilter } from "@/src/lib/workspace-member-filter";
+import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 
 export const dynamic = "force-dynamic";
 
@@ -126,14 +127,18 @@ function getStatsSummary({
 }
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
-  const person = getPersonFilter((await searchParams).person);
+  const members = await getCurrentWorkspaceMembers();
+  const memberUserId = getWorkspaceMemberFilter(
+    (await searchParams).person,
+    members,
+  );
   const [overview, monthlyStats, categoryStats, topSavings, habitStats] =
     await Promise.all([
-      getStatsOverview(person),
-      getMonthlyStats(person),
-      getCategoryStats(person),
-      getTopSavings(person),
-      getHabitStats(person),
+      getStatsOverview(memberUserId),
+      getMonthlyStats(memberUserId),
+      getCategoryStats(memberUserId),
+      getTopSavings(memberUserId),
+      getHabitStats(memberUserId),
     ]);
 
   const isCompletelyEmpty =
@@ -177,7 +182,12 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
           ]}
         />
 
-        <PersonFilter person={person} basePath="/stats" compact />
+        <PersonFilter
+          members={members}
+          selectedMemberUserId={memberUserId}
+          basePath="/stats"
+          compact
+        />
 
         <StatsEmptyState />
       </main>
@@ -203,7 +213,12 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         ]}
       />
 
-      <PersonFilter person={person} basePath="/stats" compact />
+      <PersonFilter
+        members={members}
+        selectedMemberUserId={memberUserId}
+        basePath="/stats"
+        compact
+      />
 
       <StatsHeroCard
         totalSaved={overview.totalSaved}
