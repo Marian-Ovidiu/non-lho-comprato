@@ -27,6 +27,15 @@ import {
   getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
+import {
+  formatEntryLoadError,
+  isEntryLoadDebugEnabled,
+  logEntryLoadStep,
+} from "@/src/lib/entry-load-debug";
+import {
+  entryListSelect,
+  entryListSelectWithBeneficiaries,
+} from "@/src/lib/entry-list-select";
 import { isWorkspaceDebugEnabled, logWorkspaceDebug } from "@/src/lib/workspace-debug";
 
 type CreateEntryResult = {
@@ -258,22 +267,13 @@ async function findEntriesForList(
     orderBy: {
       date: "desc" as const,
     },
-    include: {
-      category: true,
-    },
+    select: entryListSelect,
   };
 
   try {
     return await prisma.entry.findMany({
       ...baseQuery,
-      include: {
-        ...baseQuery.include,
-        beneficiaries: {
-          select: {
-            userId: true,
-          },
-        },
-      },
+      select: entryListSelectWithBeneficiaries,
     });
   } catch (error) {
     if (!isMissingEntryBeneficiaryTable(error)) {
@@ -282,6 +282,7 @@ async function findEntriesForList(
 
     logEntryLoadError("findEntriesForList.beneficiariesInclude", error, {
       fallback: "legacy-person-fields",
+      where,
     });
 
     const entries = await prisma.entry.findMany(baseQuery);
@@ -329,6 +330,10 @@ export async function getEntries(
 ): Promise<SerializableEntry[]> {
   let workspaceId = "unknown";
 
+  logEntryLoadStep("start", {
+    personFilter: person ?? "all",
+  });
+
   try {
     const [workspaceWhere, members] = await Promise.all([
       getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
@@ -336,13 +341,36 @@ export async function getEntries(
     ]);
 
     workspaceId = workspaceWhere.workspaceId;
+
+    logEntryLoadStep("where", {
+      workspaceId,
+      personFilter: person ?? "all",
+      prismaWhere: workspaceWhere,
+    });
+
+    const rawCount = await prisma.entry.count({
+      where: workspaceWhere,
+    });
+
+    logEntryLoadStep("rawCount", {
+      workspaceId,
+      rawCount,
+    });
+
     const entries = await findEntriesForList(workspaceWhere);
 
-    if (isWorkspaceDebugEnabled()) {
+    logEntryLoadStep("result", {
+      workspaceId,
+      rawCount,
+      resultLength: entries.length,
+    });
+
+    if (isEntryLoadDebugEnabled() || isWorkspaceDebugEnabled()) {
       logWorkspaceDebug("getEntries", {
         workspaceId,
         personFilter: person ?? "all",
-        whereKeys: Object.keys(workspaceWhere),
+        prismaWhere: workspaceWhere,
+        rawCount,
         entryCount: entries.length,
       });
     }
@@ -354,11 +382,17 @@ export async function getEntries(
       personFilter: person ?? "all",
     });
 
+    logEntryLoadStep("error", {
+      workspaceId,
+      personFilter: person ?? "all",
+      message: formatEntryLoadError(error),
+    });
+
     if (isWorkspaceDebugEnabled()) {
       logWorkspaceDebug("getEntries.error", {
         workspaceId,
         personFilter: person ?? "all",
-        message: error instanceof Error ? error.message : String(error),
+        message: formatEntryLoadError(error),
       });
     }
 

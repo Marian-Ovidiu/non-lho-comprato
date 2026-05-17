@@ -26,6 +26,8 @@ import {
 import { getDashboardSummary, getEntries } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getTodayDashboardSummary } from "@/src/actions/dashboard";
+import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
+import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 export const dynamic = "force-dynamic";
@@ -510,28 +512,36 @@ export default async function Home({ searchParams }: HomePageProps) {
   let activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
   let todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
   let pendingHabitsCount = 0;
+  let entriesLoadError: string | null = null;
+  let dashboardLoadError: string | null = null;
 
   try {
-    const [loadedSummary, loadedTodaySummary, loadedEntries, loadedGoals, loadedTodayHabits] =
+    allEntries = await getEntries();
+    recentEntries = allEntries.slice(0, 3);
+  } catch (error) {
+    entriesLoadError = formatEntryLoadError(error);
+    console.error("Failed to load entries for dashboard:", error);
+  }
+
+  try {
+    const [loadedSummary, loadedTodaySummary, loadedGoals, loadedTodayHabits] =
       await Promise.all([
         getDashboardSummary(),
         getTodayDashboardSummary(),
-        getEntries(),
         getGoalsWithProgress(),
         getTodayHabitOccurrences(),
       ]);
 
     monthSaved = loadedSummary.totalSaved;
     todaySummary = loadedTodaySummary;
-    allEntries = loadedEntries;
-    recentEntries = loadedEntries.slice(0, 3);
     activeGoals = loadedGoals.filter((goal) => goal.isActive).slice(0, 3);
     todayHabits = loadedTodayHabits;
     pendingHabitsCount = loadedTodayHabits.filter(
       (occurrence) => occurrence.status === "pending",
     ).length;
   } catch (error) {
-    console.error("Failed to load dashboard data:", error);
+    dashboardLoadError = formatEntryLoadError(error);
+    console.error("Failed to load dashboard summary:", error);
   }
 
   const oldestEntry = allEntries.at(-1);
@@ -641,6 +651,20 @@ export default async function Home({ searchParams }: HomePageProps) {
           },
         ]}
       />
+
+      {entriesLoadError ? (
+        <DataLoadErrorBanner
+          title="Impossibile caricare i movimenti recenti"
+          message={entriesLoadError}
+        />
+      ) : null}
+
+      {dashboardLoadError ? (
+        <DataLoadErrorBanner
+          title="Impossibile caricare il riepilogo della dashboard"
+          message={dashboardLoadError}
+        />
+      ) : null}
 
       <DashboardHudCards
         totalSavedToday={todaySummary.totalSavedToday}
