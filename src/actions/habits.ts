@@ -603,6 +603,108 @@ export async function deleteHabit(
   }
 }
 
+export async function updateHabit(
+  habitId: string,
+  formData: FormData,
+): Promise<HabitActionResult> {
+  const id = habitId.trim();
+  const errors: Record<string, string> = {};
+
+  if (!id) {
+    return {
+      success: false,
+      message: "ID abitudine non valido",
+    };
+  }
+
+  const name = getText(formData, "name");
+  const categoryId = getText(formData, "categoryId");
+  const amount = getMoney(formData, "amount");
+  const activeDays = parseActiveDays(formData);
+  const isActive = parseBoolean(getText(formData, "isActive"));
+
+  if (!name) {
+    errors.name = "Il nome è obbligatorio";
+  }
+
+  if (!categoryId) {
+    errors.categoryId = "Seleziona una categoria";
+  }
+
+  if (amount.error) {
+    errors.amount = amount.error;
+  }
+
+  if (activeDays.error) {
+    errors.activeDays = activeDays.error;
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      success: false,
+      message: "Controlla i campi evidenziati",
+      errors,
+    };
+  }
+
+  try {
+    const existingHabit = await prisma.habit.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        workspaceId: true,
+      },
+    });
+
+    if (!existingHabit) {
+      return {
+        success: false,
+        message: "Abitudine non trovata",
+      };
+    }
+
+    await requireWorkspaceAccessForRecord(existingHabit, "Abitudine");
+
+    const workspaceId = await getCurrentWorkspaceId();
+    const category = await resolveCategory(categoryId, workspaceId);
+
+    if (!category) {
+      return {
+        success: false,
+        message: "Controlla i campi evidenziati",
+        errors: {
+          categoryId: "Seleziona una categoria valida",
+        },
+      };
+    }
+
+    await prisma.habit.update({
+      where: { id },
+      data: {
+        name,
+        categoryId: category.id,
+        amount: toDecimalString(amount.value),
+        activeDays: activeDays.value,
+        isActive,
+      },
+    });
+
+    tryRevalidatePaths();
+
+    return {
+      success: true,
+      message: "Abitudine aggiornata con successo",
+    };
+  } catch (error) {
+    console.error("Failed to update habit:", error);
+    return {
+      success: false,
+      message:
+        "Non riesco ad aggiornare l'abitudine adesso. Controlla il database e riprova tra poco.",
+    };
+  }
+}
+
 export async function deleteHabitFromForm(
   formData: FormData,
 ): Promise<HabitActionResult> {

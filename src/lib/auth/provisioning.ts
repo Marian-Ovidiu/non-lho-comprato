@@ -508,31 +508,28 @@ export async function resolveActiveWorkspaceForUser({
     (workspace) => workspace.id === productionId,
   );
 
-  const legacyMapping = getLegacyAuthMapping(email);
-
-  if (legacyMapping) {
-    return ensureLegacyWorkspaceForUser(userId);
-  }
-
   if (selectedWorkspaceId) {
     const selectedWorkspace = accessibleWorkspaces.find(
       (workspace) => workspace.id === selectedWorkspaceId,
     );
 
     if (selectedWorkspace) {
-      if (productionWorkspace && selectedWorkspace.id !== productionId) {
-        const [selectedEntries, productionEntries] = await Promise.all([
-          countWorkspaceEntries(selectedWorkspace.id),
-          countWorkspaceEntries(productionId),
-        ]);
-
-        if (selectedEntries === 0 && productionEntries > 0) {
-          return productionWorkspace;
-        }
-      }
-
       return selectedWorkspace;
     }
+  }
+
+  const legacyMapping = getLegacyAuthMapping(email);
+
+  if (legacyMapping) {
+    const legacyWorkspace = accessibleWorkspaces.find(
+      (workspace) => workspace.id === legacyMapping.workspaceId,
+    );
+
+    if (legacyWorkspace) {
+      return legacyWorkspace;
+    }
+
+    return ensureLegacyWorkspaceForUser(userId);
   }
 
   if (productionWorkspace) {

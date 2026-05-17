@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import {
   Check,
@@ -96,6 +96,10 @@ export function WorkspaceSwitcher({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [switchingWorkspaceId, setSwitchingWorkspaceId] = useState<string | null>(
+    null,
+  );
+  const [isSwitching, startSwitchTransition] = useTransition();
   const hasMultipleWorkspaces = availableWorkspaces.length > 1;
 
   const returnTo = useMemo(() => {
@@ -166,24 +170,39 @@ export function WorkspaceSwitcher({
               {availableWorkspaces.map((workspace) => {
                 const isCurrent = workspace.id === currentWorkspace.id;
 
+                const isSubmitting =
+                  isSwitching && switchingWorkspaceId === workspace.id;
+
                 return (
-                  <form key={workspace.id} action={switchWorkspaceAction}>
+                  <form
+                    key={workspace.id}
+                    action={(formData) => {
+                      startSwitchTransition(async () => {
+                        setSwitchingWorkspaceId(workspace.id);
+                        setOpen(false);
+
+                        if (!isCurrent) {
+                          trackPostHogEvent("workspace_switched");
+                        }
+
+                        await switchWorkspaceAction(formData);
+                      });
+                    }}
+                  >
                     <input type="hidden" name="workspaceId" value={workspace.id} />
                     <input type="hidden" name="returnTo" value={returnTo} />
 
                     <button
                       type="submit"
-                      onClick={() => {
-                        if (!isCurrent) {
-                          trackPostHogEvent("workspace_switched");
-                        }
-                      }}
+                      disabled={isSwitching}
+                      aria-busy={isSubmitting}
                       className={cn(
                         "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
                         "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
                         isCurrent
                           ? "border-primary/25 bg-primary/8 ring-1 ring-primary/20"
                           : "border-border bg-background",
+                        isSubmitting && "opacity-70",
                       )}
                       aria-current={isCurrent ? "true" : undefined}
                     >
@@ -207,7 +226,11 @@ export function WorkspaceSwitcher({
                             Attivo
                           </Badge>
                         ) : null}
-                        {isCurrent ? (
+                        {isSubmitting ? (
+                          <span className="text-xs font-medium text-muted-text">
+                            Cambio...
+                          </span>
+                        ) : isCurrent ? (
                           <Check className="size-4 text-primary" aria-hidden="true" />
                         ) : null}
                       </span>

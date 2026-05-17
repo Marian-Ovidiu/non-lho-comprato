@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { MoreHorizontal } from "lucide-react";
+import { Loader2, MoreHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
@@ -78,6 +78,7 @@ function getBeneficiariesLabel(
 export function EntryCard({ entry, members }: EntryCardProps) {
   const router = useRouter();
   const [isDeleting, startTransition] = useTransition();
+  const [isRemoved, setIsRemoved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const savedAmount = Number(entry.savedAmount);
@@ -123,8 +124,13 @@ export function EntryCard({ entry, members }: EntryCardProps) {
         return;
       }
 
+      setIsRemoved(true);
       router.refresh();
     });
+  }
+
+  if (isRemoved) {
+    return null;
   }
 
   const savedTone =
@@ -142,7 +148,21 @@ export function EntryCard({ entry, members }: EntryCardProps) {
         : "border-border/70 bg-surface-muted/80";
 
   return (
-    <Card className="overflow-hidden border-border/80 shadow-sm">
+    <Card
+      className={cn(
+        "relative overflow-hidden border-border/80 shadow-sm transition-opacity",
+        isDeleting && "pointer-events-none opacity-60",
+      )}
+      aria-busy={isDeleting}
+    >
+      {isDeleting ? (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/55 backdrop-blur-[1px]">
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
+            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            Eliminazione...
+          </span>
+        </div>
+      ) : null}
       <CardContent className="space-y-3 p-4 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">

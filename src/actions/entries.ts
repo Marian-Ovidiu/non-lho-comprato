@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 
-import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { DEFAULT_CATEGORIES, mergeCategoryOptions } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
 import {
   parseBeneficiaryUserIdsFromForm,
@@ -487,20 +487,11 @@ export async function getCategories() {
       },
     });
 
-    if (categories.length > 0) {
-      return categories;
-    }
+    return mergeCategoryOptions(categories);
   } catch (error) {
     console.warn("Falling back to static categories:", error);
+    return mergeCategoryOptions([]);
   }
-
-  return DEFAULT_CATEGORIES.map((category) => ({
-    id: category.slug,
-    name: category.name,
-    slug: category.slug,
-    color: category.color,
-    icon: category.icon,
-  }));
 }
 
 export async function createEntry(

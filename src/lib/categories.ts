@@ -29,3 +29,35 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   },
   { name: "Altro", slug: "altro", icon: "more-horizontal", color: "#6b7280" },
 ];
+
+export type CategoryOption = {
+  id: string;
+  name: string;
+  slug: string;
+  color: string | null;
+  icon: string | null;
+};
+
+export function mergeCategoryOptions(
+  dbCategories: CategoryOption[],
+): CategoryOption[] {
+  const bySlug = new Map<string, CategoryOption>();
+
+  for (const category of DEFAULT_CATEGORIES) {
+    bySlug.set(category.slug, {
+      id: category.slug,
+      name: category.name,
+      slug: category.slug,
+      color: category.color,
+      icon: category.icon,
+    });
+  }
+
+  for (const category of dbCategories) {
+    bySlug.set(category.slug, category);
+  }
+
+  return Array.from(bySlug.values()).sort((left, right) =>
+    left.name.localeCompare(right.name, "it"),
+  );
+}

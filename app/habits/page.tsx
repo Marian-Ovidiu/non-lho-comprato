@@ -66,7 +66,7 @@ export default async function HabitsPage() {
       </section>
 
       <section id="le-tue-abitudini" className="space-y-4">
-        <HabitList habits={habits} />
+        <HabitList habits={habits} categories={categoryOptions} />
       </section>
     </main>
   );
