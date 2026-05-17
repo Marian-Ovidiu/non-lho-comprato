@@ -14,6 +14,7 @@ import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
+import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-reminder-on-open";
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
@@ -153,6 +154,7 @@ export function AppShell({
   auth: AppShellAuth;
 }) {
   const pathname = usePathname();
+  useDailyReminderOnOpen();
 
   return (
     <div className="min-h-screen bg-background text-foreground">

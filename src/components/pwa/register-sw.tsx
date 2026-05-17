@@ -2,6 +2,8 @@
 
 import { useEffect } from "react";
 
+import { NotificationPermissionPrompt } from "@/src/components/notifications/notification-permission-prompt";
+
 export function RegisterSW() {
   useEffect(() => {
     if (process.env.NODE_ENV !== "production") {
@@ -23,5 +25,5 @@ export function RegisterSW() {
     void registerServiceWorker();
   }, []);
 
-  return null;
+  return <NotificationPermissionPrompt />;
 }
