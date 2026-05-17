@@ -41,7 +41,7 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
           <CardContent className="space-y-4 p-5 pt-0">
             <p className="text-sm leading-6 text-muted-text">
               Il movimento potrebbe essere stato eliminato oppure l&apos;indirizzo
-              non e piu valido.
+              non è più valido.
             </p>
             <Button asChild className="w-full sm:w-auto">
               <Link href="/entries">Torna ai movimenti</Link>

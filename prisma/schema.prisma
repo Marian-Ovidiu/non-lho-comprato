@@ -73,6 +73,7 @@ model Entry {
   alternativeCost   Decimal          @db.Decimal(10, 2)
   savedAmount       Decimal          @db.Decimal(10, 2)
   date              DateTime
+  isFirstEntryOfDay Boolean          @default(false)
   note              String?
   source            EntrySource      @default(manual)
   person            Person           @default(MARIAN)

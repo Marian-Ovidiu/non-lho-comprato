@@ -758,8 +758,8 @@ export async function getMonthlyReport(
       `A ${monthLower} avete risparmiato ${formatMoney(totalSaved)}.`,
       `Marian ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, Martina ${formatMoney(personTotals.MARTINA.totalSaved)}, Condivise ${formatMoney(personTotals.TUTTI.totalSaved)}.`,
       bestCategory
-        ? `La categoria migliore e stata ${bestCategory.categoryName}.`
-        : "Nessuna categoria si e distinta questo mese.",
+        ? `La categoria migliore è stata ${bestCategory.categoryName}.`
+        : "Nessuna categoria si è distinta questo mese.",
       biggestSaving
         ? `La schivata del mese: ${biggestSaving.title} (+${formatMoney(
             biggestSaving.savedAmount,

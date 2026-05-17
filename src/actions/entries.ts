@@ -4,6 +4,8 @@ import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES, mergeCategoryOptions } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
+import { resolveIsFirstEntryOfDay } from "@/src/lib/entry-first-of-day";
+import { getGlobalStreak } from "@/src/actions/streaks";
 import {
   parseBeneficiaryUserIdsFromForm,
   parsePaidByUserIdFromForm,
@@ -31,6 +33,9 @@ type CreateEntryResult = {
   message: string;
   errors?: Record<string, string>;
   isFirstEntryCreated?: boolean;
+  isFirstEntryOfDay?: boolean;
+  streakFrom?: number;
+  streakTo?: number;
 };
 
 type EntryWithCategory = {
@@ -585,6 +590,19 @@ export async function createEntry(
       };
     }
 
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+    const isFirstEntryOfDay = await resolveIsFirstEntryOfDay(
+      date,
+      workspaceWhere,
+      prisma,
+    );
+    let streakFrom: number | undefined;
+    let streakTo: number | undefined;
+
+    if (isFirstEntryOfDay) {
+      streakFrom = (await getGlobalStreak()).currentStreak;
+    }
+
     await prisma.entry.create({
       data: {
         workspaceId,
@@ -594,6 +612,7 @@ export async function createEntry(
         alternativeCost: toDecimalString(alternativeCost.value),
         savedAmount: toDecimalString(savedAmount),
         date,
+        isFirstEntryOfDay,
         note: note || null,
         source: "manual",
         paidByUserId: ownership.paidByUserId,
@@ -607,6 +626,10 @@ export async function createEntry(
       },
     });
 
+    if (isFirstEntryOfDay) {
+      streakTo = (await getGlobalStreak()).currentStreak;
+    }
+
     tryRevalidatePath("/");
     tryRevalidatePath("/entries");
     tryRevalidatePath("/stats");
@@ -615,6 +638,9 @@ export async function createEntry(
       success: true,
       message: "Entrata salvata con successo",
       isFirstEntryCreated: existingEntryCount === 0,
+      isFirstEntryOfDay,
+      streakFrom,
+      streakTo,
     };
   } catch (error) {
     console.error("Failed to create entry:", error);

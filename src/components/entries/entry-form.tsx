@@ -30,6 +30,7 @@ import {
   getDefaultPaidByUserId,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
+import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type CategoryOption = {
@@ -45,6 +46,9 @@ type FormState = {
   message: string;
   errors?: Record<string, string>;
   isFirstEntryCreated?: boolean;
+  isFirstEntryOfDay?: boolean;
+  streakFrom?: number;
+  streakTo?: number;
 };
 
 type EntryFormProps = {
@@ -90,6 +94,9 @@ export function EntryForm({
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const redirect = useCallback((path: string) => router.replace(path), [router]);
+  const { tryTrigger, overlay } = useStreakCelebrationTrigger({
+    onComplete: () => redirect("/"),
+  });
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
       return createEntry(formData);
@@ -121,12 +128,16 @@ export function EntryForm({
       trackPostHogEvent("first_entry_created");
     }
 
+    if (tryTrigger(state)) {
+      return;
+    }
+
     const timeout = window.setTimeout(() => {
       redirect("/");
     }, 800);
 
     return () => window.clearTimeout(timeout);
-  }, [redirect, state.isFirstEntryCreated, state.success]);
+  }, [redirect, state, tryTrigger]);
 
   const helperText = useMemo(() => {
     if (!hasCategories) {
@@ -137,7 +148,9 @@ export function EntryForm({
   }, [hasCategories]);
 
   return (
-    <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm">
+    <>
+      {overlay}
+      <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
         <CardTitle>Nuovo movimento</CardTitle>
         <CardDescription className="max-w-xl text-sm leading-5">
@@ -279,5 +292,6 @@ export function EntryForm({
         </CardFooter>
       </form>
     </Card>
+    </>
   );
 }

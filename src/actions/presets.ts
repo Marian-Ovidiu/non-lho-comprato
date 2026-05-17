@@ -20,6 +20,9 @@ type PresetActionResult = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
+  isFirstEntryOfDay?: boolean;
+  streakFrom?: number;
+  streakTo?: number;
 };
 
 type DecimalLike = {
@@ -40,7 +43,7 @@ function getMoney(formData: FormData, name: string): {
   const raw = getText(formData, name);
 
   if (!raw) {
-    return { value: Number.NaN, error: "Questo campo e obbligatorio" };
+    return { value: Number.NaN, error: "Questo campo è obbligatorio" };
   }
 
   const normalized = raw.replace(",", ".");
@@ -172,7 +175,7 @@ export async function createPreset(
   const person = getOptionalPerson(formData);
 
   if (!title) {
-    errors.title = "Il titolo e obbligatorio";
+    errors.title = "Il titolo è obbligatorio";
   }
 
   if (title && title.length < 2) {
@@ -329,6 +332,9 @@ export async function createEntryFromPreset(
     return {
       success: true,
       message: "Entrata creata dal preset",
+      isFirstEntryOfDay: result.isFirstEntryOfDay,
+      streakFrom: result.streakFrom,
+      streakTo: result.streakTo,
     };
   } catch (error) {
     console.error("Failed to create entry from preset:", error);
@@ -382,7 +388,7 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
     console.error("Failed to delete preset:", error);
     return {
       success: false,
-      message: "Si e verificato un errore durante l'eliminazione",
+      message: "Si è verificato un errore durante l'eliminazione",
     };
   }
 }

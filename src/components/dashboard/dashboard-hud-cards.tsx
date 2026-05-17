@@ -1,4 +1,5 @@
 import { Card } from "@/components/ui/card";
+import { getGlobalStreak } from "@/src/actions/streaks";
 import { formatMoney } from "@/src/lib/formatters";
 
 type DashboardHudCardsProps = {
@@ -48,13 +49,15 @@ function HudCard({
   );
 }
 
-export function DashboardHudCards({
+export async function DashboardHudCards({
   totalSavedToday,
   totalSavedMonth,
   entriesCount,
 }: DashboardHudCardsProps) {
+  const { currentStreak } = await getGlobalStreak();
+
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
       <HudCard
         label="Oggi"
         value={formatMoney(totalSavedToday)}
@@ -69,6 +72,11 @@ export function DashboardHudCards({
       <HudCard
         label="Segnali totali"
         value={String(entriesCount)}
+      />
+
+      <HudCard
+        label="Giorni consecutivi"
+        value={String(currentStreak)}
       />
     </div>
   );

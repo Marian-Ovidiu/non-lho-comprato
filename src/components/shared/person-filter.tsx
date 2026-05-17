@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import {
   getPersonFilterOptions,
@@ -34,9 +35,9 @@ export function PersonFilter({
     <section
       aria-labelledby="person-filter-title"
       className={
-          compact
-          ? "rounded-xl border border-border bg-surface p-3 shadow-sm dark:border-border dark:bg-accent"
-          : "rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-border dark:bg-accent"
+        compact
+          ? "rounded-xl border border-border bg-surface p-3 shadow-sm dark:border-border dark:bg-surface-muted"
+          : "rounded-2xl border border-border bg-surface p-4 shadow-sm dark:border-border dark:bg-surface-muted"
       }
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -44,8 +45,8 @@ export function PersonFilter({
           id="person-filter-title"
           className={
             compact
-              ? "text-xs font-medium uppercase tracking-[0.16em] text-muted-text"
-              : "text-sm font-medium text-foreground"
+              ? "text-xs font-medium uppercase tracking-[0.16em] text-muted-text dark:text-muted-text"
+              : "text-sm font-medium text-foreground dark:text-foreground"
           }
         >
           Persona
@@ -60,11 +61,14 @@ export function PersonFilter({
                 asChild
                 variant={isActive ? "default" : "outline"}
                 size="sm"
-                className={
+                className={cn(
                   compact
                     ? "h-8 w-auto px-3 text-xs sm:text-sm"
-                    : "w-full sm:w-auto"
-                }
+                    : "w-full sm:w-auto",
+                  isActive
+                    ? "dark:bg-primary dark:text-primary-foreground dark:hover:bg-primary-hover dark:hover:text-primary-foreground"
+                    : "dark:border-border dark:bg-surface dark:text-foreground dark:hover:bg-surface-muted dark:hover:text-foreground",
+                )}
               >
                 <Link
                   href={option.href}

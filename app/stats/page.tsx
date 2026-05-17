@@ -229,7 +229,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
       <StatsOverviewCards overview={overview} />
 
-      <section className="grid gap-3 xl:grid-cols-[1.08fr_0.92fr]">
+      <section aria-label="Grafici" className="grid gap-4">
         <MonthlySavingsChart data={monthlyChartData} />
         <CategorySavingsChart data={categoryStats} />
       </section>

@@ -41,6 +41,7 @@ import {
   getDefaultPaidByUserId,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
+import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type CategoryOption = {
@@ -66,6 +67,9 @@ type QuickAddState = {
   message: string;
   errors?: Record<string, string>;
   isFirstEntryCreated?: boolean;
+  isFirstEntryOfDay?: boolean;
+  streakFrom?: number;
+  streakTo?: number;
 };
 
 type QuickAddDraft = {
@@ -212,6 +216,9 @@ export function QuickAddSheet({
   const firstPresetRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const didHandleSuccessRef = useRef(false);
+  const { tryTrigger, overlay } = useStreakCelebrationTrigger({
+    onComplete: () => router.refresh(),
+  });
   const categoryOptions = useMemo(
     () =>
       (categories?.length ? categories : DEFAULT_CATEGORIES).map((category) =>
@@ -256,11 +263,16 @@ export function QuickAddSheet({
     if (state.isFirstEntryCreated) {
       trackPostHogEvent("first_entry_created");
     }
-    router.refresh();
+
+    const showedCelebration = tryTrigger(state);
+    if (!showedCelebration) {
+      router.refresh();
+    }
+
     setOpen(false);
     setActivePreset(null);
     setDraft(getInitialDraft(members, currentUserId));
-  }, [currentUserId, members, router, state.isFirstEntryCreated, state.success]);
+  }, [currentUserId, members, router, state, tryTrigger]);
 
   function resolveCategoryId(categorySlug: string) {
     const bySlug = categoryOptions.find((category) => category.slug === categorySlug);
@@ -310,7 +322,9 @@ export function QuickAddSheet({
   }
 
   return (
-    <Dialog
+    <>
+      {overlay}
+      <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
@@ -592,5 +606,6 @@ export function QuickAddSheet({
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

@@ -41,7 +41,7 @@ export function StatsHeroCard({
         <CardTitle className="max-w-2xl text-[2rem] font-semibold tracking-tight text-foreground sm:text-[2.5rem]">
           {hasData
             ? `Hai tenuto ${formatMoney(totalSaved)} in tasca`
-            : "Il quadro del mese Ã¨ ancora aperto"}
+            : "Il quadro del mese è ancora aperto"}
         </CardTitle>
         <p className="max-w-3xl text-sm leading-6 text-muted-text sm:text-[15px]">
           {summary}

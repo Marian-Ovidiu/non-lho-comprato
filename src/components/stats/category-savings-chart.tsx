@@ -26,9 +26,17 @@ type CategorySavingsChartProps = {
   }>;
 };
 
+function truncateCategoryLabel(value: string, maxLength = 14) {
+  if (value.length <= maxLength) {
+    return value;
+  }
+
+  return `${value.slice(0, maxLength - 1)}…`;
+}
+
 function EmptyChart() {
   return (
-    <div className="flex h-[220px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 px-4 text-center text-sm leading-6 text-muted-text sm:h-[240px]">
+    <div className="flex h-[280px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 px-4 text-center text-sm leading-6 text-muted-text sm:h-[320px]">
       Nessun dato per categoria ancora disponibile.
     </div>
   );
@@ -81,12 +89,12 @@ export function CategorySavingsChart({ data }: CategorySavingsChartProps) {
           <EmptyChart />
         ) : (
           <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-2.5 sm:p-3">
-            <div className="h-[250px] w-full sm:h-[290px]">
+            <div className="h-[280px] w-full sm:h-[320px]">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
                 minWidth={0}
-                minHeight={250}
+                minHeight={280}
                 initialDimension={{ width: 0, height: 0 }}
               >
                 <BarChart
@@ -107,6 +115,7 @@ export function CategorySavingsChart({ data }: CategorySavingsChartProps) {
                     minTickGap={8}
                     tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                     tickMargin={10}
+                    tickFormatter={truncateCategoryLabel}
                   />
                   <YAxis
                     tickLine={false}

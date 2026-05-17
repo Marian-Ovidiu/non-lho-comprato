@@ -109,7 +109,7 @@ export function PresetForm({ categories }: PresetFormProps) {
               <Input
                 id="title"
                 name="title"
-                placeholder="Caffe evitato"
+                placeholder="Caffè evitato"
                 autoComplete="off"
                 aria-invalid={Boolean(state.errors?.title)}
               />
@@ -168,7 +168,7 @@ export function PresetForm({ categories }: PresetFormProps) {
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="person">Di chi e il preset?</Label>
+              <Label htmlFor="person">Di chi è il preset?</Label>
               <select
                 id="person"
                 name="person"

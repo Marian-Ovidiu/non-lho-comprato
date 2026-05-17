@@ -16,6 +16,7 @@ import {
   getPresetPersonLabel,
 } from "@/src/lib/ui-person";
 import { CategoryPill } from "@/src/components/shared/category-pill";
+import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 
 type PresetCardData = {
   id: string;
@@ -67,6 +68,9 @@ export function PresetCard({
   showDelete = true,
 }: PresetCardProps) {
   const router = useRouter();
+  const { tryTrigger, overlay } = useStreakCelebrationTrigger({
+    onComplete: () => router.refresh(),
+  });
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
   const [messageTone, setMessageTone] = useState<"success" | "error" | null>(
@@ -90,7 +94,10 @@ export function PresetCard({
       showFeedback(result.message, result.success ? "success" : "error");
 
       if (result.success) {
-        router.refresh();
+        const showedCelebration = tryTrigger(result);
+        if (!showedCelebration) {
+          router.refresh();
+        }
       }
     });
   }
@@ -114,7 +121,9 @@ export function PresetCard({
   }
 
   return (
-    <Card className="overflow-hidden border-border shadow-sm">
+    <>
+      {overlay}
+      <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className={cn("space-y-3 p-5 pb-0", compact && "p-4 pb-0")}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
@@ -223,6 +232,7 @@ export function PresetCard({
         ) : null}
       </CardFooter>
     </Card>
+    </>
   );
 }
 

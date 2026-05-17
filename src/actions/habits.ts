@@ -6,6 +6,7 @@ import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
+import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
 import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import {
   getCurrentUser,
@@ -378,10 +379,11 @@ async function syncOccurrenceStatus(
 
     await requireWorkspaceAccessForRecord(occurrence, "Occorrenza abitudine");
 
-    const [currentUser, workspaceId, members] = await Promise.all([
+    const [currentUser, workspaceId, members, workspaceWhere] = await Promise.all([
       getCurrentUser(),
       getCurrentWorkspaceId(),
       getCurrentWorkspaceMembers(),
+      getCurrentWorkspaceScopedWhere(),
     ]);
 
     await prisma.$transaction(async (tx) => {
@@ -395,11 +397,21 @@ async function syncOccurrenceStatus(
         return;
       }
 
-      const entryData = buildEntryDataForOccurrence(occurrence, status, {
-        workspaceId,
-        currentUserId: currentUser.id,
-        members,
-      });
+      const isFirstEntryOfDay = await resolveIsFirstEntryOfDayForHabitOccurrence(
+        occurrence.date,
+        workspaceWhere,
+        tx,
+        id,
+      );
+
+      const entryData = {
+        ...buildEntryDataForOccurrence(occurrence, status, {
+          workspaceId,
+          currentUserId: currentUser.id,
+          members,
+        }),
+        isFirstEntryOfDay,
+      };
 
       await tx.entry.upsert({
         where: { habitOccurrenceId: id },
@@ -897,23 +909,33 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
           continue;
         }
 
-        const entryData = buildEntryDataForOccurrence(
-          {
-            id: occurrence.id,
-            date: occurrence.date,
-            habit: {
-              name: occurrence.habit.name,
-              categoryId: occurrence.habit.categoryId,
-              amount: occurrence.habit.amount,
-            },
-          },
-          "spent",
-          {
-            workspaceId,
-            currentUserId: currentUser.id,
-            members,
-          },
+        const isFirstEntryOfDay = await resolveIsFirstEntryOfDayForHabitOccurrence(
+          occurrence.date,
+          workspaceWhere,
+          tx,
+          occurrence.id,
         );
+
+        const entryData = {
+          ...buildEntryDataForOccurrence(
+            {
+              id: occurrence.id,
+              date: occurrence.date,
+              habit: {
+                name: occurrence.habit.name,
+                categoryId: occurrence.habit.categoryId,
+                amount: occurrence.habit.amount,
+              },
+            },
+            "spent",
+            {
+              workspaceId,
+              currentUserId: currentUser.id,
+              members,
+            },
+          ),
+          isFirstEntryOfDay,
+        };
 
         await tx.habitOccurrence.update({
           where: { id: occurrence.id },

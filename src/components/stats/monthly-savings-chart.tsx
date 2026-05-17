@@ -26,7 +26,7 @@ type MonthlySavingsChartProps = {
 
 function EmptyChart() {
   return (
-    <div className="flex h-[220px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 px-4 text-center text-sm leading-6 text-muted-text sm:h-[240px]">
+    <div className="flex h-[260px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 px-4 text-center text-sm leading-6 text-muted-text sm:h-[300px]">
       Nessun dato mensile ancora disponibile.
     </div>
   );
@@ -83,12 +83,12 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
           <EmptyChart />
         ) : (
           <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-2.5 sm:p-3">
-            <div className="h-[230px] w-full sm:h-[260px]">
+            <div className="h-[260px] w-full sm:h-[300px]">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
                 minWidth={0}
-                minHeight={230}
+                minHeight={260}
                 initialDimension={{ width: 0, height: 0 }}
               >
                 <LineChart
