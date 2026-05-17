@@ -1,4 +1,5 @@
 import { prisma } from "@/src/lib/prisma";
+import { logWorkspaceResolutionSnapshot } from "@/src/lib/workspace-debug";
 
 const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-marian-martina";
 const DEFAULT_LEGACY_MARIAN_USER_ID = "legacy-marian";
@@ -478,17 +479,29 @@ export async function resolveWorkspaceForAuthenticatedUser(
   await adoptProductionWorkspaceForUser(user.id);
   const accessibleWorkspaces = await getAccessibleWorkspacesForUserId(user.id);
 
-  const workspace = await resolveActiveWorkspaceForUser({
+  const { workspace, resolutionPath } = await resolveActiveWorkspaceForUser({
     userId: user.id,
     email: authUser.email,
     selectedWorkspaceId,
     accessibleWorkspaces,
   });
 
+  await logWorkspaceResolutionSnapshot({
+    source: "resolveWorkspaceForAuthenticatedUser",
+    authUserId: authUser.id,
+    authUserEmail: authUser.email,
+    appUserId: user.id,
+    selectedWorkspaceId: selectedWorkspaceId ?? null,
+    resolvedWorkspace: workspace,
+    accessibleWorkspaces,
+    resolutionPath,
+  });
+
   return {
     user,
     workspace,
     accessibleWorkspaces,
+    resolutionPath,
   };
 }
 
@@ -502,7 +515,7 @@ export async function resolveActiveWorkspaceForUser({
   email: string | null;
   selectedWorkspaceId?: string | null;
   accessibleWorkspaces: WorkspaceRecord[];
-}): Promise<WorkspaceRecord> {
+}): Promise<{ workspace: WorkspaceRecord; resolutionPath: string }> {
   const productionId = getLegacyWorkspaceId();
   const productionWorkspace = accessibleWorkspaces.find(
     (workspace) => workspace.id === productionId,
@@ -516,10 +529,16 @@ export async function resolveActiveWorkspaceForUser({
     );
 
     if (legacyWorkspace) {
-      return legacyWorkspace;
+      return {
+        workspace: legacyWorkspace,
+        resolutionPath: "legacy-email:accessible",
+      };
     }
 
-    return ensureLegacyWorkspaceForUser(userId);
+    return {
+      workspace: await ensureLegacyWorkspaceForUser(userId),
+      resolutionPath: "legacy-email:ensure",
+    };
   }
 
   if (selectedWorkspaceId) {
@@ -535,24 +554,36 @@ export async function resolveActiveWorkspaceForUser({
         ]);
 
         if (selectedEntries === 0 && productionEntries > 0) {
-          return productionWorkspace;
+          return {
+            workspace: productionWorkspace,
+            resolutionPath: "cookie:fallback-empty-to-production",
+          };
         }
       }
 
-      return selectedWorkspace;
+      return {
+        workspace: selectedWorkspace,
+        resolutionPath: "cookie:selected",
+      };
     }
   }
 
   if (productionWorkspace) {
-    return productionWorkspace;
+    return {
+      workspace: productionWorkspace,
+      resolutionPath: "production:membership",
+    };
   }
 
-  return toWorkspaceRecord(
-    await ensureDefaultWorkspaceForUser({
-      id: userId,
-      email,
-      name: null,
-      image: null,
-    }),
-  );
+  return {
+    workspace: toWorkspaceRecord(
+      await ensureDefaultWorkspaceForUser({
+        id: userId,
+        email,
+        name: null,
+        image: null,
+      }),
+    ),
+    resolutionPath: "default:create-or-owned",
+  };
 }

@@ -6,7 +6,14 @@ import {
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { WORKSPACE_SELECTION_COOKIE } from "@/src/lib/workspace-selection";
+import {
+  WORKSPACE_SELECTION_COOKIE,
+  getWorkspaceSelectionCookieOptions,
+} from "@/src/lib/workspace-selection";
+import {
+  isWorkspaceDebugEnabled,
+  logWorkspaceDebug,
+} from "@/src/lib/workspace-debug";
 
 const LEGACY_CURRENT_USER_ID = "legacy-marian";
 const LEGACY_CURRENT_WORKSPACE_ID = "legacy-marian-martina";
@@ -156,10 +163,45 @@ export const getCurrentWorkspace = cache(async () => {
   const authenticatedUser = await getAuthenticatedUser();
 
   if (authenticatedUser) {
-    const { workspace } = await resolveWorkspaceForAuthenticatedUser(
+    const selectedWorkspaceId = await getSelectedWorkspaceId();
+    const { workspace, resolutionPath } = await resolveWorkspaceForAuthenticatedUser(
       authenticatedUser,
-      await getSelectedWorkspaceId(),
+      selectedWorkspaceId,
     );
+
+    if (
+      selectedWorkspaceId &&
+      workspace.id !== selectedWorkspaceId &&
+      resolutionPath === "cookie:fallback-empty-to-production"
+    ) {
+      try {
+        const cookieStore = await cookies();
+        cookieStore.set(
+          WORKSPACE_SELECTION_COOKIE,
+          workspace.id,
+          getWorkspaceSelectionCookieOptions(),
+        );
+      } catch (cookieError) {
+        if (isWorkspaceDebugEnabled()) {
+          logWorkspaceDebug("getCurrentWorkspace.cookieSyncFailed", {
+            message:
+              cookieError instanceof Error ? cookieError.message : String(cookieError),
+          });
+        }
+      }
+    }
+
+    if (isWorkspaceDebugEnabled()) {
+      logWorkspaceDebug("getCurrentWorkspace", {
+        authenticatedUserId: authenticatedUser.id,
+        authenticatedUserEmail: authenticatedUser.email,
+        selectedWorkspaceId,
+        resolvedWorkspaceId: workspace.id,
+        resolvedWorkspaceName: workspace.name,
+        resolvedWorkspaceKind: workspace.kind,
+        resolutionPath,
+      });
+    }
 
     logPerformance("auth/current-workspace-resolved", startedAt);
     return workspace;

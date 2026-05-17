@@ -27,6 +27,7 @@ import {
   getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
+import { isWorkspaceDebugEnabled, logWorkspaceDebug } from "@/src/lib/workspace-debug";
 
 type CreateEntryResult = {
   success: boolean;
@@ -337,12 +338,30 @@ export async function getEntries(
     workspaceId = workspaceWhere.workspaceId;
     const entries = await findEntriesForList(workspaceWhere);
 
+    if (isWorkspaceDebugEnabled()) {
+      logWorkspaceDebug("getEntries", {
+        workspaceId,
+        personFilter: person ?? "all",
+        whereKeys: Object.keys(workspaceWhere),
+        entryCount: entries.length,
+      });
+    }
+
     return entries.map((entry) => serializeEntry(entry, members));
   } catch (error) {
     logEntryLoadError("getEntries", error, {
       workspaceId,
       personFilter: person ?? "all",
     });
+
+    if (isWorkspaceDebugEnabled()) {
+      logWorkspaceDebug("getEntries.error", {
+        workspaceId,
+        personFilter: person ?? "all",
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     throw error;
   }
 }
@@ -460,6 +479,23 @@ export async function getDashboardSummary(
       savedAmount: true,
     },
   });
+
+  if (isWorkspaceDebugEnabled()) {
+    const allTimeCount = await prisma.entry.count({
+      where: {
+        workspaceId: workspaceWhere.workspaceId,
+      },
+    });
+
+    logWorkspaceDebug("getDashboardSummary", {
+      workspaceId: workspaceWhere.workspaceId,
+      personFilter: person ?? "all",
+      monthStart: monthStart.toISOString(),
+      nextMonthStart: nextMonthStart.toISOString(),
+      entriesThisMonth: entries.length,
+      entriesAllTimeInWorkspace: allTimeCount,
+    });
+  }
 
   const summary: MonthlySummary = {
     totalRealSpent: 0,
