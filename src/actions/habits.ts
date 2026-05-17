@@ -3,15 +3,18 @@
 import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
-import { DEFAULT_LEGACY_PERSON } from "@/src/lib/ui-person";
+import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
+  getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type HabitActionResult = {
   success: boolean;
@@ -279,17 +282,24 @@ function buildEntryDataForOccurrence(
   context: {
     workspaceId: string;
     currentUserId: string;
+    members: WorkspaceMemberOption[];
   },
 ) {
   const amount = Number(occurrence.habit.amount);
+  const beneficiaryUserIds = [context.currentUserId];
+  const personFields = syncEntryPersonColumns(
+    context.currentUserId,
+    beneficiaryUserIds,
+    context.members,
+  );
   const sharedFields = {
     workspaceId: context.workspaceId,
     createdByUserId: context.currentUserId,
     paidByUserId: context.currentUserId,
-    paidBy: DEFAULT_LEGACY_PERSON,
-    person: DEFAULT_LEGACY_PERSON,
+    paidBy: personFields.paidBy,
+    person: personFields.person,
     beneficiaries: {
-      create: [{ userId: context.currentUserId }],
+      create: beneficiaryUserIds.map((userId) => ({ userId })),
     },
     visibility: EntryVisibility.workspace,
   };
@@ -368,8 +378,11 @@ async function syncOccurrenceStatus(
 
     await requireWorkspaceAccessForRecord(occurrence, "Occorrenza abitudine");
 
-    const currentUser = await getCurrentUser();
-    const workspaceId = await getCurrentWorkspaceId();
+    const [currentUser, workspaceId, members] = await Promise.all([
+      getCurrentUser(),
+      getCurrentWorkspaceId(),
+      getCurrentWorkspaceMembers(),
+    ]);
 
     await prisma.$transaction(async (tx) => {
       await tx.habitOccurrence.update({
@@ -385,6 +398,7 @@ async function syncOccurrenceStatus(
       const entryData = buildEntryDataForOccurrence(occurrence, status, {
         workspaceId,
         currentUserId: currentUser.id,
+        members,
       });
 
       await tx.entry.upsert({
@@ -495,6 +509,36 @@ function isHabitDeleteMode(value: string): value is HabitDeleteMode {
   return value === "habit_only" || value === "habit_and_entries";
 }
 
+function getHabitLinkedEntriesWhere(habitId: string): Prisma.EntryWhereInput {
+  return {
+    habitOccurrence: {
+      habitId,
+    },
+  };
+}
+
+async function applyHabitDeletionToLinkedEntries(
+  tx: Prisma.TransactionClient,
+  habitId: string,
+  mode: HabitDeleteMode,
+): Promise<void> {
+  const linkedEntriesWhere = getHabitLinkedEntriesWhere(habitId);
+
+  if (mode === "habit_and_entries") {
+    await tx.entry.deleteMany({
+      where: linkedEntriesWhere,
+    });
+    return;
+  }
+
+  await tx.entry.updateMany({
+    where: linkedEntriesWhere,
+    data: {
+      habitOccurrenceId: null,
+    },
+  });
+}
+
 export async function deleteHabit(
   habitId: string,
   mode: HabitDeleteMode,
@@ -533,35 +577,8 @@ export async function deleteHabit(
 
     await requireWorkspaceAccessForRecord(habit, "Abitudine");
 
-    const occurrences = await prisma.habitOccurrence.findMany({
-      where: { habitId: id },
-      select: { id: true },
-    });
-    const occurrenceIds = occurrences.map((occurrence) => occurrence.id);
-
     await prisma.$transaction(async (tx) => {
-      if (occurrenceIds.length > 0) {
-        if (mode === "habit_and_entries") {
-          await tx.entry.deleteMany({
-            where: {
-              habitOccurrenceId: {
-                in: occurrenceIds,
-              },
-            },
-          });
-        } else {
-          await tx.entry.updateMany({
-            where: {
-              habitOccurrenceId: {
-                in: occurrenceIds,
-              },
-            },
-            data: {
-              habitOccurrenceId: null,
-            },
-          });
-        }
-      }
+      await applyHabitDeletionToLinkedEntries(tx, id, mode);
 
       await tx.habit.delete({
         where: { id },
@@ -584,6 +601,22 @@ export async function deleteHabit(
       message: "Non riesco a eliminare l'abitudine adesso. Riprova tra poco.",
     };
   }
+}
+
+export async function deleteHabitFromForm(
+  formData: FormData,
+): Promise<HabitActionResult> {
+  const habitId = getText(formData, "habitId");
+  const mode = getText(formData, "deleteMode");
+
+  if (!isHabitDeleteMode(mode)) {
+    return {
+      success: false,
+      message: "Modalità di eliminazione non valida",
+    };
+  }
+
+  return deleteHabit(habitId, mode);
 }
 
 export async function getHabits(): Promise<HabitListItem[]> {
@@ -750,8 +783,11 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
     }
 
     let finalizedCount = 0;
-    const currentUser = await getCurrentUser();
-    const workspaceId = await getCurrentWorkspaceId();
+    const [currentUser, workspaceId, members] = await Promise.all([
+      getCurrentUser(),
+      getCurrentWorkspaceId(),
+      getCurrentWorkspaceMembers(),
+    ]);
 
     await prisma.$transaction(async (tx) => {
       for (const occurrence of pendingOccurrences) {
@@ -773,6 +809,7 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
           {
             workspaceId,
             currentUserId: currentUser.id,
+            members,
           },
         );
 

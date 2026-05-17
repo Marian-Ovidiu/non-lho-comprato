@@ -159,7 +159,10 @@ export function AppShell({
       <header className="sticky top-0 z-30 border-b border-border bg-surface/84 backdrop-blur supports-[backdrop-filter]:bg-surface/78">
         <div className="mx-auto w-full max-w-5xl px-4 py-2 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 space-y-1">
+              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-text">
+                Spazio attivo
+              </p>
               <WorkspaceSwitcher
                 currentWorkspace={workspace}
                 availableWorkspaces={availableWorkspaces}

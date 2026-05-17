@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/src/components/shared/empty-state";
+import { WORKSPACE_EMPTY_ENTRIES_TITLE } from "@/src/components/shared/workspace-empty-entries-copy";
 
 type DashboardEmptyStateProps = {
   title?: string;
@@ -12,14 +13,13 @@ type DashboardEmptyStateProps = {
 };
 
 export function DashboardEmptyState({
-  title = "Ancora nessun movimento",
   description = "Segna qui il primo risparmio e vedrai il quadro di oggi prendere forma.",
   note = "Bastano pochi secondi per partire.",
   actionLabel = "Aggiungi movimento",
 }: DashboardEmptyStateProps = {}) {
   return (
     <EmptyState
-      title={title}
+      title={WORKSPACE_EMPTY_ENTRIES_TITLE}
       description={description}
       note={note}
       icon={<Sparkles className="size-5" aria-hidden="true" />}

@@ -59,7 +59,7 @@ function WorkspaceChip({
   return (
     <span
       className={cn(
-        "inline-flex min-w-0 items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5 text-left shadow-sm transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.99]",
+        "inline-flex min-w-0 max-w-full items-center gap-2.5 rounded-2xl border border-border/70 bg-background/80 px-3 py-2 text-left shadow-sm transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.99]",
         interactive &&
           "hover:-translate-y-px hover:bg-surface-muted/70 hover:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.55)]",
       )}
@@ -67,12 +67,15 @@ function WorkspaceChip({
       <WorkspaceMark isShared={workspace.isShared} />
 
       <span className="min-w-0 flex-1">
-        <span className="block truncate text-sm font-medium text-foreground">
+        <span className="block truncate text-base font-semibold leading-tight text-foreground">
           {workspace.name}
+        </span>
+        <span className="mt-0.5 block truncate text-xs leading-4 text-muted-text">
+          {getWorkspaceLabel(workspace)} · {getWorkspaceSubtitle(workspace)}
         </span>
       </span>
 
-      <span className="hidden shrink-0 items-center rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-text sm:inline-flex">
+      <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-text">
         {getWorkspaceLabel(workspace)}
       </span>
 
@@ -102,7 +105,10 @@ export function WorkspaceSwitcher({
 
   if (!hasMultipleWorkspaces) {
     return (
-      <div className="inline-flex w-full min-w-0 items-center gap-2">
+      <div
+        className="w-full min-w-0"
+        aria-label={`Spazio attivo: ${currentWorkspace.name}`}
+      >
         <WorkspaceChip workspace={currentWorkspace} interactive={false} />
       </div>
     );

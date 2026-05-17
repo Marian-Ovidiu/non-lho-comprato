@@ -2,8 +2,11 @@
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
+import {
+  aggregateMemberSpendingStats,
+  type MemberSpendingEntry,
+} from "@/src/lib/member-spending-stats";
 import { prisma } from "@/src/lib/prisma";
-import { getWorkspaceMemberLabel } from "@/src/lib/workspace-members";
 import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
@@ -67,8 +70,8 @@ export type WorkspaceMemberSpendingStatsItem = {
   userId: string;
   label: string;
   totalPaidByUser: number;
-  personalPaidByUser: number;
-  sharedPaidByUser: number;
+  personalSpending: number;
+  sharedSpending: number;
 };
 
 type DecimalLike = {
@@ -548,8 +551,24 @@ function emptyWorkspaceMemberSpendingStats(
     userId: member.userId,
     label: member.label,
     totalPaidByUser: 0,
-    personalPaidByUser: 0,
-    sharedPaidByUser: 0,
+    personalSpending: 0,
+    sharedSpending: 0,
+  }));
+}
+
+function toMemberSpendingEntries(
+  entries: Array<{
+    realCost: unknown;
+    paidByUserId: string | null;
+    beneficiaries: Array<{ userId: string }>;
+  }>,
+): MemberSpendingEntry[] {
+  return entries.map((entry) => ({
+    realCost: toNumber(entry.realCost),
+    paidByUserId: entry.paidByUserId,
+    beneficiaryUserIds: entry.beneficiaries.map(
+      (beneficiary) => beneficiary.userId,
+    ),
   }));
 }
 
@@ -560,9 +579,7 @@ export async function getWorkspaceMemberSpendingStats(
     const [members, entries] = await Promise.all([
       getCurrentWorkspaceMembers(),
       prisma.entry.findMany({
-        where: await buildEntryWhere(person, {
-          paidByUserId: { not: null },
-        }),
+        where: await buildEntryWhere(person),
         select: {
           realCost: true,
           paidByUserId: true,
@@ -575,63 +592,22 @@ export async function getWorkspaceMemberSpendingStats(
       }),
     ]);
 
-    const totals = new Map(
-      members.map((member) => [
-        member.userId,
-        {
-          userId: member.userId,
-          label: member.label,
-          totalPaidByUser: 0,
-          personalPaidByUser: 0,
-          sharedPaidByUser: 0,
-        },
-      ]),
+    const totalsByUserId = aggregateMemberSpendingStats(
+      members.map((member) => member.userId),
+      toMemberSpendingEntries(entries),
     );
 
-    for (const entry of entries) {
-      const payerUserId = entry.paidByUserId;
-      if (!payerUserId) {
-        continue;
-      }
+    return members.map((member) => {
+      const totals = totalsByUserId.get(member.userId);
 
-      const memberTotals = totals.get(payerUserId);
-      if (!memberTotals) {
-        continue;
-      }
-
-      const realCost = toNumber(entry.realCost);
-      const beneficiaryUserIds = entry.beneficiaries.map(
-        (beneficiary) => beneficiary.userId,
-      );
-
-      memberTotals.totalPaidByUser = round2(
-        memberTotals.totalPaidByUser + realCost,
-      );
-
-      if (
-        beneficiaryUserIds.length === 1 &&
-        beneficiaryUserIds[0] === payerUserId
-      ) {
-        memberTotals.personalPaidByUser = round2(
-          memberTotals.personalPaidByUser + realCost,
-        );
-      } else if (beneficiaryUserIds.length > 1) {
-        memberTotals.sharedPaidByUser = round2(
-          memberTotals.sharedPaidByUser + realCost,
-        );
-      }
-    }
-
-    return members.map(
-      (member) =>
-        totals.get(member.userId) ?? {
-          userId: member.userId,
-          label: getWorkspaceMemberLabel(member),
-          totalPaidByUser: 0,
-          personalPaidByUser: 0,
-          sharedPaidByUser: 0,
-        },
-    );
+      return {
+        userId: member.userId,
+        label: member.label,
+        totalPaidByUser: totals?.totalPaidByUser ?? 0,
+        personalSpending: totals?.personalSpending ?? 0,
+        sharedSpending: totals?.sharedSpending ?? 0,
+      };
+    });
   } catch (error) {
     console.error("Failed to load workspace member spending stats:", error);
 

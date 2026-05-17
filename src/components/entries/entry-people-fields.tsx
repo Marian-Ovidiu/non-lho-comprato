@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -44,6 +46,20 @@ function getMemberGridClass(count: number) {
   return "grid-cols-2 sm:grid-cols-3";
 }
 
+function getExpenseHelperText(
+  beneficiaryUserIds: readonly string[],
+): string | null {
+  if (beneficiaryUserIds.length === 1) {
+    return "Spesa personale";
+  }
+
+  if (beneficiaryUserIds.length > 1) {
+    return "Spesa condivisa";
+  }
+
+  return null;
+}
+
 export function EntryPeopleFields({
   members,
   paidByUserId,
@@ -56,13 +72,31 @@ export function EntryPeopleFields({
     sortedMembers.some((member) => member.userId === paidByUserId)
       ? paidByUserId
       : getDefaultPaidByUserId(sortedMembers, paidByUserId);
-  const selectedBeneficiaries = new Set(
-    (beneficiaryUserIds ??
-      getDefaultBeneficiaryUserIds(sortedMembers, selectedPaidBy)).filter(
-      (userId) => sortedMembers.some((member) => member.userId === userId),
-    ),
+  const initialBeneficiaryUserIds = (
+    beneficiaryUserIds ??
+    getDefaultBeneficiaryUserIds(sortedMembers, selectedPaidBy)
+  ).filter((userId) =>
+    sortedMembers.some((member) => member.userId === userId),
   );
+  const [selectedBeneficiaryUserIds, setSelectedBeneficiaryUserIds] = useState(
+    initialBeneficiaryUserIds,
+  );
+  const selectedBeneficiaries = useMemo(
+    () => new Set(selectedBeneficiaryUserIds),
+    [selectedBeneficiaryUserIds],
+  );
+  const expenseHelperText = getExpenseHelperText(selectedBeneficiaryUserIds);
   const gridClass = getMemberGridClass(sortedMembers.length);
+
+  function toggleBeneficiary(userId: string, checked: boolean) {
+    setSelectedBeneficiaryUserIds((current) => {
+      if (checked) {
+        return Array.from(new Set([...current, userId]));
+      }
+
+      return current.filter((id) => id !== userId);
+    });
+  }
 
   if (sortedMembers.length === 0) {
     return (
@@ -77,14 +111,14 @@ export function EntryPeopleFields({
       <input type="hidden" name="beneficiariesMode" value="explicit" />
 
       <div className="space-y-2">
-        <Label htmlFor="paidByUserId">Pagato da</Label>
+        <Label htmlFor="paidByUserId">Chi paga</Label>
         <Select name="paidByUserId" defaultValue={selectedPaidBy} required>
           <SelectTrigger
             id="paidByUserId"
             className="w-full"
             aria-invalid={Boolean(errors?.paidByUserId)}
           >
-            <SelectValue placeholder="Seleziona chi ha pagato" />
+            <SelectValue placeholder="Seleziona chi paga" />
           </SelectTrigger>
           <SelectContent>
             {sortedMembers.map((member) => (
@@ -99,11 +133,16 @@ export function EntryPeopleFields({
 
       <fieldset className="space-y-2.5">
         <legend className="text-sm font-medium text-foreground">
-          Per chi era
+          Per chi è la spesa
         </legend>
-        <p className="text-xs leading-5 text-muted-text">
-          Puoi selezionare più persone del workspace.
-        </p>
+        {expenseHelperText ? (
+          <p
+            className="text-xs font-medium leading-5 text-foreground"
+            aria-live="polite"
+          >
+            {expenseHelperText}
+          </p>
+        ) : null}
         <div className={cn("grid gap-2", gridClass)}>
           {sortedMembers.map((member) => {
             const id = `beneficiary-${member.userId}`;
@@ -116,7 +155,10 @@ export function EntryPeopleFields({
                   name="beneficiaryUserIds"
                   type="checkbox"
                   value={member.userId}
-                  defaultChecked={selectedBeneficiaries.has(member.userId)}
+                  checked={selectedBeneficiaries.has(member.userId)}
+                  onChange={(event) =>
+                    toggleBeneficiary(member.userId, event.target.checked)
+                  }
                   className="peer sr-only"
                 />
                 <Label

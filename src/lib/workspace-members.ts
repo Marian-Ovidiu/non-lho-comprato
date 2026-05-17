@@ -1,10 +1,3 @@
-import type { Person } from "@/src/lib/generated/prisma/enums";
-import {
-  getBeneficiariesFromLegacyPerson,
-  type EntryParticipantValue,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
-
 export type WorkspaceMemberOption = {
   userId: string;
   label: string;
@@ -60,10 +53,6 @@ export function sortWorkspaceMembers(
   });
 }
 
-function getSortedMemberUserIds(members: WorkspaceMemberOption[]): string[] {
-  return sortWorkspaceMembers(members).map((member) => member.userId);
-}
-
 export function getDefaultPaidByUserId(
   members: WorkspaceMemberOption[],
   currentUserId?: string | null,
@@ -72,7 +61,7 @@ export function getDefaultPaidByUserId(
     return currentUserId;
   }
 
-  return getSortedMemberUserIds(members)[0] ?? currentUserId ?? "";
+  return sortWorkspaceMembers(members)[0]?.userId ?? currentUserId ?? "";
 }
 
 export function getDefaultBeneficiaryUserIds(
@@ -88,101 +77,10 @@ export function getDefaultBeneficiaryUserIds(
   return [fallback];
 }
 
-export function mapUserIdToEntryParticipant(
-  userId: string,
-  members: WorkspaceMemberOption[],
-): EntryParticipantValue {
-  if (userId === LEGACY_MARTINA_USER_ID) {
-    return "MARTINA";
-  }
-
-  const sortedIds = getSortedMemberUserIds(members);
-  const index = sortedIds.indexOf(userId);
-
-  if (index === 1) {
-    return "MARTINA";
-  }
-
-  return "MARIAN";
-}
-
-export function mapEntryParticipantToUserId(
-  participant: EntryParticipantValue,
-  members: WorkspaceMemberOption[],
-): string | null {
-  const sortedMembers = sortWorkspaceMembers(members);
-
-  if (participant === "MARTINA") {
-    return (
-      sortedMembers.find((member) => member.userId === LEGACY_MARTINA_USER_ID)
-        ?.userId ??
-      sortedMembers[1]?.userId ??
-      null
-    );
-  }
-
-  return (
-    sortedMembers.find((member) => member.userId === LEGACY_MARIAN_USER_ID)
-      ?.userId ??
-    sortedMembers.find((member) => member.userId !== LEGACY_MARTINA_USER_ID)
-      ?.userId ??
-    sortedMembers[0]?.userId ??
-    null
-  );
-}
-
-export function mapUserIdsToLegacyPersonFields(
-  paidByUserId: string,
-  beneficiaryUserIds: string[],
-  members: WorkspaceMemberOption[],
-): {
-  person: LegacyPersonValue;
-  paidBy: EntryParticipantValue;
-  beneficiaries: EntryParticipantValue[];
-} {
-  const paidBy = mapUserIdToEntryParticipant(paidByUserId, members);
-  const beneficiaries = Array.from(
-    new Set(
-      beneficiaryUserIds.map((userId) =>
-        mapUserIdToEntryParticipant(userId, members),
-      ),
-    ),
-  );
-
-  const sortedMembers = sortWorkspaceMembers(members);
-  const allParticipants = sortedMembers.map((member) =>
-    mapUserIdToEntryParticipant(member.userId, members),
-  );
-  const includesAllMembers =
-    allParticipants.length > 0 &&
-    allParticipants.every((participant) => beneficiaries.includes(participant));
-
-  let person: LegacyPersonValue;
-
-  if (beneficiaries.length >= 2 || includesAllMembers) {
-    person = "TUTTI";
-  } else if (beneficiaries[0] === "MARTINA") {
-    person = "MARTINA";
-  } else {
-    person = "MARIAN";
-  }
-
-  return {
-    person,
-    paidBy,
-    beneficiaries:
-      beneficiaries.length > 0
-        ? beneficiaries
-        : [mapUserIdToEntryParticipant(paidByUserId, members)],
-  };
-}
-
 export function resolveEntryPeopleFromRecord(
   entry: {
     paidByUserId: string | null;
-    paidBy: Person;
     beneficiaries: { userId: string }[];
-    person: Person;
   },
   members: WorkspaceMemberOption[],
 ): {
@@ -190,24 +88,10 @@ export function resolveEntryPeopleFromRecord(
   beneficiaryUserIds: string[];
 } {
   const paidByUserId =
-    entry.paidByUserId ??
-    mapEntryParticipantToUserId(
-      entry.paidBy as EntryParticipantValue,
-      members,
-    ) ??
-    getDefaultPaidByUserId(members);
-
-  let beneficiaryUserIds = Array.from(
-    new Set(
-      (entry.beneficiaries ?? []).map((beneficiary) => beneficiary.userId),
-    ),
+    entry.paidByUserId ?? getDefaultPaidByUserId(members);
+  const beneficiaryUserIds = Array.from(
+    new Set(entry.beneficiaries.map((beneficiary) => beneficiary.userId)),
   );
-
-  if (beneficiaryUserIds.length === 0) {
-    beneficiaryUserIds = getBeneficiariesFromLegacyPerson(entry.person)
-      .map((participant) => mapEntryParticipantToUserId(participant, members))
-      .filter((userId): userId is string => Boolean(userId));
-  }
 
   return {
     paidByUserId,

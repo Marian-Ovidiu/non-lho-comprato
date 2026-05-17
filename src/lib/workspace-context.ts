@@ -4,11 +4,6 @@ import {
   getWorkspaceMemberLabel,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
-import {
-  DEFAULT_LEGACY_PERSON,
-  normalizeLegacyPerson,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
 import { cache } from "react";
 import { getLegacyWorkspaceId } from "@/src/lib/auth/provisioning";
 import {
@@ -208,24 +203,6 @@ export async function requireWorkspaceAccessForRecord<
   }
 
   return record;
-}
-
-export function mapLegacyPersonToUserId(
-  person?: LegacyPersonValue | string | null,
-): string | null {
-  const normalizedPerson = normalizeLegacyPerson(
-    person == null ? undefined : String(person),
-  );
-
-  if (normalizedPerson === DEFAULT_LEGACY_PERSON) {
-    return LEGACY_CURRENT_USER_ID;
-  }
-
-  if (normalizedPerson === "MARTINA") {
-    return "legacy-martina";
-  }
-
-  return null;
 }
 
 export { getAuthenticatedUser, requireAuth, requireWorkspace } from "@/src/lib/auth/session";

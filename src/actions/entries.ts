@@ -4,14 +4,17 @@ import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
-import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
+import {
+  parseBeneficiaryUserIdsFromForm,
+  parsePaidByUserIdFromForm,
+  validateEntryOwnership,
+} from "@/src/lib/entry-ownership";
+import { EntryVisibility, type Person } from "@/src/lib/generated/prisma/enums";
+import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import { prisma } from "@/src/lib/prisma";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import type { LegacyPersonValue } from "@/src/lib/ui-person";
 import {
-  getDefaultBeneficiaryUserIds,
-  getDefaultPaidByUserId,
-  mapUserIdsToLegacyPersonFields,
   resolveEntryPeopleFromRecord,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
@@ -40,8 +43,8 @@ type EntryWithCategory = {
   date: Date;
   note: string | null;
   source: string;
-  person: LegacyPersonValue;
-  paidBy: LegacyPersonValue;
+  person: Person;
+  paidBy: Person;
   beneficiaries: { userId: string }[];
   paidByUserId: string | null;
   habitOccurrenceId: string | null;
@@ -115,85 +118,6 @@ function getMoney(formData: FormData, name: string): {
   }
 
   return { value };
-}
-
-function getPaidByUserId(
-  formData: FormData,
-  members: WorkspaceMemberOption[],
-  currentUserId: string,
-): {
-  value: string;
-  error?: string;
-} {
-  const raw = getText(formData, "paidByUserId");
-  const memberIds = new Set(members.map((member) => member.userId));
-
-  if (raw && memberIds.has(raw)) {
-    return { value: raw };
-  }
-
-  if (!raw) {
-    return {
-      value: getDefaultPaidByUserId(members, currentUserId),
-    };
-  }
-
-  return {
-    value: getDefaultPaidByUserId(members, currentUserId),
-    error: "Seleziona chi ha pagato",
-  };
-}
-
-function getBeneficiaryUserIds(
-  formData: FormData,
-  members: WorkspaceMemberOption[],
-  paidByUserId: string,
-): {
-  value: string[];
-  error?: string;
-} {
-  const rawValues = formData.getAll("beneficiaryUserIds");
-  const isExplicitField = getText(formData, "beneficiariesMode") === "explicit";
-  const memberIds = new Set(members.map((member) => member.userId));
-
-  if (rawValues.length === 0) {
-    if (isExplicitField) {
-      return {
-        value: getDefaultBeneficiaryUserIds(members, paidByUserId),
-        error: "Seleziona almeno un beneficiario",
-      };
-    }
-
-    return {
-      value: getDefaultBeneficiaryUserIds(members, paidByUserId),
-    };
-  }
-
-  const values = rawValues
-    .filter((value): value is string => typeof value === "string")
-    .flatMap((value) => value.split(","))
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  const invalidValue = values.find((value) => !memberIds.has(value));
-
-  if (invalidValue) {
-    return {
-      value: getDefaultBeneficiaryUserIds(members, paidByUserId),
-      error: "Seleziona beneficiari validi",
-    };
-  }
-
-  const beneficiaryUserIds = Array.from(new Set(values));
-
-  if (beneficiaryUserIds.length === 0) {
-    return {
-      value: getDefaultBeneficiaryUserIds(members, paidByUserId),
-      error: "Seleziona almeno un beneficiario",
-    };
-  }
-
-  return { value: beneficiaryUserIds };
 }
 
 function toDecimalString(value: number): string {
@@ -591,33 +515,20 @@ export async function createEntry(
   const realCost = getMoney(formData, "realCost");
   const alternativeCost = getMoney(formData, "alternativeCost");
   let members: WorkspaceMemberOption[] = [];
-  let currentUserId = "";
 
   try {
-    const [loadedMembers, currentUser] = await Promise.all([
-      getCurrentWorkspaceMembers(),
-      getCurrentUser(),
-    ]);
-    members = loadedMembers;
-    currentUserId = currentUser.id;
+    members = await getCurrentWorkspaceMembers();
   } catch {
     members = [];
   }
 
-  const paidByUserId = getPaidByUserId(formData, members, currentUserId);
-  const beneficiaryUserIds = getBeneficiaryUserIds(
-    formData,
+  const ownership = validateEntryOwnership(
+    {
+      paidByUserId: parsePaidByUserIdFromForm(formData),
+      beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
+    },
     members,
-    paidByUserId.value,
   );
-  const legacyFields =
-    members.length > 0
-      ? mapUserIdsToLegacyPersonFields(
-          paidByUserId.value,
-          beneficiaryUserIds.value,
-          members,
-        )
-      : null;
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -637,16 +548,8 @@ export async function createEntry(
     errors.alternativeCost = alternativeCost.error;
   }
 
-  if (members.length === 0) {
-    errors.paidByUserId = "Nessun membro disponibile nel workspace";
-  }
-
-  if (paidByUserId.error) {
-    errors.paidByUserId = paidByUserId.error;
-  }
-
-  if (beneficiaryUserIds.error) {
-    errors.beneficiaryUserIds = beneficiaryUserIds.error;
+  if (!ownership.ok) {
+    Object.assign(errors, ownership.errors);
   }
 
   const date = new Date(dateValue);
@@ -654,7 +557,7 @@ export async function createEntry(
     errors.date = "Inserisci una data valida";
   }
 
-  if (Object.keys(errors).length > 0) {
+  if (Object.keys(errors).length > 0 || !ownership.ok) {
     return {
       success: false,
       message: "Controlla i campi evidenziati",
@@ -662,15 +565,11 @@ export async function createEntry(
     };
   }
 
-  if (!legacyFields) {
-    return {
-      success: false,
-      message: "Controlla i campi evidenziati",
-      errors: {
-        paidByUserId: "Nessun membro disponibile nel workspace",
-      },
-    };
-  }
+  const personFields = syncEntryPersonColumns(
+    ownership.paidByUserId,
+    ownership.beneficiaryUserIds,
+    members,
+  );
 
   const savedAmount = calculateSavedAmount(
     realCost.value,
@@ -706,12 +605,12 @@ export async function createEntry(
         date,
         note: note || null,
         source: "manual",
-        paidByUserId: paidByUserId.value,
+        paidByUserId: ownership.paidByUserId,
         beneficiaries: {
-          create: beneficiaryUserIds.value.map((userId) => ({ userId })),
+          create: ownership.beneficiaryUserIds.map((userId) => ({ userId })),
         },
-        person: legacyFields.person,
-        paidBy: legacyFields.paidBy,
+        person: personFields.person,
+        paidBy: personFields.paidBy,
         createdByUserId: currentUser.id,
         visibility: EntryVisibility.workspace,
       },
@@ -754,33 +653,20 @@ export async function updateEntry(
   const realCost = getMoney(formData, "realCost");
   const alternativeCost = getMoney(formData, "alternativeCost");
   let members: WorkspaceMemberOption[] = [];
-  let currentUserId = "";
 
   try {
-    const [loadedMembers, currentUser] = await Promise.all([
-      getCurrentWorkspaceMembers(),
-      getCurrentUser(),
-    ]);
-    members = loadedMembers;
-    currentUserId = currentUser.id;
+    members = await getCurrentWorkspaceMembers();
   } catch {
     members = [];
   }
 
-  const paidByUserId = getPaidByUserId(formData, members, currentUserId);
-  const beneficiaryUserIds = getBeneficiaryUserIds(
-    formData,
+  const ownership = validateEntryOwnership(
+    {
+      paidByUserId: parsePaidByUserIdFromForm(formData),
+      beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
+    },
     members,
-    paidByUserId.value,
   );
-  const legacyFields =
-    members.length > 0
-      ? mapUserIdsToLegacyPersonFields(
-          paidByUserId.value,
-          beneficiaryUserIds.value,
-          members,
-        )
-      : null;
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -800,16 +686,8 @@ export async function updateEntry(
     errors.alternativeCost = alternativeCost.error;
   }
 
-  if (members.length === 0) {
-    errors.paidByUserId = "Nessun membro disponibile nel workspace";
-  }
-
-  if (paidByUserId.error) {
-    errors.paidByUserId = paidByUserId.error;
-  }
-
-  if (beneficiaryUserIds.error) {
-    errors.beneficiaryUserIds = beneficiaryUserIds.error;
+  if (!ownership.ok) {
+    Object.assign(errors, ownership.errors);
   }
 
   const date = new Date(dateValue);
@@ -817,7 +695,7 @@ export async function updateEntry(
     errors.date = "Inserisci una data valida";
   }
 
-  if (Object.keys(errors).length > 0) {
+  if (Object.keys(errors).length > 0 || !ownership.ok) {
     return {
       success: false,
       message: "Controlla i campi evidenziati",
@@ -825,15 +703,11 @@ export async function updateEntry(
     };
   }
 
-  if (!legacyFields) {
-    return {
-      success: false,
-      message: "Controlla i campi evidenziati",
-      errors: {
-        paidByUserId: "Nessun membro disponibile nel workspace",
-      },
-    };
-  }
+  const personFields = syncEntryPersonColumns(
+    ownership.paidByUserId,
+    ownership.beneficiaryUserIds,
+    members,
+  );
 
   const savedAmount = calculateSavedAmount(
     realCost.value,
@@ -892,12 +766,12 @@ export async function updateEntry(
           savedAmount: toDecimalString(savedAmount),
           date,
           note: note || null,
-          paidByUserId: paidByUserId.value,
+          paidByUserId: ownership.paidByUserId,
           beneficiaries: {
-            create: beneficiaryUserIds.value.map((userId) => ({ userId })),
+            create: ownership.beneficiaryUserIds.map((userId) => ({ userId })),
           },
-          person: legacyFields.person,
-          paidBy: legacyFields.paidBy,
+          person: personFields.person,
+          paidBy: personFields.paidBy,
           source: existingEntry.source,
           habitOccurrenceId: existingEntry.habitOccurrenceId,
           createdByUserId: existingEntry.createdByUserId ?? currentUser.id,

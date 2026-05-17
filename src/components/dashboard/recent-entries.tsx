@@ -4,6 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CategoryPill } from "@/src/components/shared/category-pill";
+import {
+  WORKSPACE_EMPTY_ENTRIES_DESCRIPTION,
+  WORKSPACE_EMPTY_ENTRIES_TITLE,
+} from "@/src/components/shared/workspace-empty-entries-copy";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 
 type RecentEntriesProps = {
@@ -54,6 +58,19 @@ export function RecentEntries({ entries, description = "Gli ultimi 3 movimenti i
       </CardHeader>
 
       <CardContent className="space-y-2 p-4 sm:p-5">
+        {entries.length === 0 ? (
+          <div
+            className="rounded-2xl border border-dashed border-border/70 bg-surface-muted/50 px-4 py-5"
+            role="status"
+          >
+            <p className="text-sm font-semibold text-foreground">
+              {WORKSPACE_EMPTY_ENTRIES_TITLE}
+            </p>
+            <p className="mt-1 text-sm leading-5 text-muted-text">
+              {WORKSPACE_EMPTY_ENTRIES_DESCRIPTION}
+            </p>
+          </div>
+        ) : null}
         {entries.map((entry, index) => (
           <div key={entry.id} className="space-y-2.5">
             <div className="flex items-start justify-between gap-3 rounded-2xl border border-border/70 bg-surface-muted/60 px-3 py-2.5">

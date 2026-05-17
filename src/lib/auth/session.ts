@@ -1,9 +1,5 @@
 import { prisma } from "@/src/lib/prisma";
 import {
-  DEFAULT_LEGACY_PERSON,
-  normalizeLegacyPerson,
-} from "@/src/lib/ui-person";
-import {
   ensureAppUserForAuthUser,
   resolveWorkspaceForAuthenticatedUser,
 } from "@/src/lib/auth/provisioning";
@@ -218,7 +214,3 @@ export const getAccessibleWorkspacesForCurrentUser = cache(async () => {
 
   return workspaces;
 });
-
-export function getLegacyFallbackPerson(): typeof DEFAULT_LEGACY_PERSON {
-  return normalizeLegacyPerson(DEFAULT_LEGACY_PERSON) ?? DEFAULT_LEGACY_PERSON;
-}

@@ -1,8 +1,6 @@
 export const LEGACY_PERSON_VALUES = ["MARIAN", "MARTINA", "TUTTI"] as const;
-export const ENTRY_PARTICIPANT_VALUES = ["MARIAN", "MARTINA"] as const;
 
 export type LegacyPersonValue = (typeof LEGACY_PERSON_VALUES)[number];
-export type EntryParticipantValue = (typeof ENTRY_PARTICIPANT_VALUES)[number];
 
 export type PersonFilterValue = LegacyPersonValue;
 
@@ -36,7 +34,6 @@ export type PersonBucketSummary<T> = {
 };
 
 export const DEFAULT_LEGACY_PERSON: LegacyPersonValue = "MARIAN";
-export const DEFAULT_ENTRY_PARTICIPANT: EntryParticipantValue = "MARIAN";
 
 export const PERSON_FILTER_LABELS = {
   ALL: "Tutti i movimenti",
@@ -49,11 +46,6 @@ export const PERSON_OWNERSHIP_LABELS = {
   MARIAN: "Marian",
   MARTINA: "Martina",
   TUTTI: "Condivisa",
-} as const;
-
-export const ENTRY_PARTICIPANT_LABELS = {
-  MARIAN: "Marian",
-  MARTINA: "Martina",
 } as const;
 
 export const GOAL_SCOPE_LABELS = {
@@ -80,28 +72,12 @@ export function normalizeLegacyPerson(
   return isLegacyPerson(value) ? value : null;
 }
 
-export function isEntryParticipant(
-  value?: string | null,
-): value is EntryParticipantValue {
-  return ENTRY_PARTICIPANT_VALUES.includes(value as EntryParticipantValue);
-}
-
-export function normalizeEntryParticipant(
-  value?: string | null,
-): EntryParticipantValue | null {
-  return isEntryParticipant(value) ? value : null;
-}
-
 export function isSharedPerson(person?: string | null): boolean {
   return person === "TUTTI";
 }
 
 export function getLegacyPersonValues(): LegacyPersonValue[] {
   return [...LEGACY_PERSON_VALUES];
-}
-
-export function getEntryParticipantValues(): EntryParticipantValue[] {
-  return [...ENTRY_PARTICIPANT_VALUES];
 }
 
 export function getPersonFilterLabel(person?: string | null): string {
@@ -132,16 +108,6 @@ export function getEntryOwnershipLabel(
   }
 
   return PERSON_OWNERSHIP_LABELS.MARIAN;
-}
-
-export function getEntryParticipantLabel(
-  person: string | null | undefined,
-): string {
-  if (person === "MARTINA") {
-    return ENTRY_PARTICIPANT_LABELS.MARTINA;
-  }
-
-  return ENTRY_PARTICIPANT_LABELS.MARIAN;
 }
 
 export function getGoalScopeLabel(person: string | null | undefined): string {
@@ -190,62 +156,6 @@ export function getPersonOwnershipOptions(): PersonChoice[] {
     value,
     label: getEntryOwnershipLabel(value),
   }));
-}
-
-export function getEntryParticipantOptions() {
-  return ENTRY_PARTICIPANT_VALUES.map((value) => ({
-    value,
-    label: getEntryParticipantLabel(value),
-  }));
-}
-
-export function getBeneficiariesFromLegacyPerson(
-  person?: string | null,
-): EntryParticipantValue[] {
-  if (person === "MARTINA") {
-    return ["MARTINA"];
-  }
-
-  if (isSharedPerson(person)) {
-    return ["MARIAN", "MARTINA"];
-  }
-
-  return [DEFAULT_ENTRY_PARTICIPANT];
-}
-
-export function normalizeBeneficiaries(
-  values: Array<string | null | undefined>,
-  fallbackPerson?: string | null,
-): EntryParticipantValue[] {
-  const normalized = Array.from(
-    new Set(
-      values
-        .map((value) => normalizeEntryParticipant(value))
-        .filter((value): value is EntryParticipantValue => value !== null),
-    ),
-  );
-
-  return normalized.length > 0
-    ? normalized
-    : getBeneficiariesFromLegacyPerson(fallbackPerson);
-}
-
-export function getLegacyPersonFromBeneficiaries(
-  beneficiaries: EntryParticipantValue[],
-): LegacyPersonValue {
-  const normalized = normalizeBeneficiaries(beneficiaries);
-  const includesMarian = normalized.includes("MARIAN");
-  const includesMartina = normalized.includes("MARTINA");
-
-  if (includesMarian && includesMartina) {
-    return "TUTTI";
-  }
-
-  if (includesMartina) {
-    return "MARTINA";
-  }
-
-  return "MARIAN";
 }
 
 export function getGoalScopeOptions(): PersonSelectChoice[] {

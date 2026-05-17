@@ -4,6 +4,10 @@ import { Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntryCard } from "@/src/components/entries/entry-card";
 import { EmptyState } from "@/src/components/shared/empty-state";
+import {
+  WORKSPACE_EMPTY_ENTRIES_DESCRIPTION,
+  WORKSPACE_EMPTY_ENTRIES_TITLE,
+} from "@/src/components/shared/workspace-empty-entries-copy";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type EntryListProps = {
@@ -30,8 +34,8 @@ export function EntryList({ entries, members }: EntryListProps) {
   if (entries.length === 0) {
     return (
       <EmptyState
-        title="Nessun movimento ancora"
-        description="🧾 Quando aggiungi il primo movimento, lo troverai qui con data, categoria e risparmio."
+        title={WORKSPACE_EMPTY_ENTRIES_TITLE}
+        description={WORKSPACE_EMPTY_ENTRIES_DESCRIPTION}
         note="È il posto giusto per tenere tutto ordinato, senza complicazioni."
         icon={<Inbox className="size-5" aria-hidden="true" />}
         action={
