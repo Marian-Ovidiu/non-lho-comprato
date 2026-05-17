@@ -115,11 +115,13 @@ export async function adoptProductionWorkspaceForUser(
     });
   }
 
-  await ensureWorkspaceMember(
-    workspaceId,
-    userId,
-    userId === DEFAULT_LEGACY_MARIAN_USER_ID ? "owner" : "member",
-  );
+  if (userId !== DEFAULT_LEGACY_MARIAN_USER_ID) {
+    await ensureWorkspaceMember(
+      workspaceId,
+      userId,
+      userId === DEFAULT_LEGACY_MARIAN_USER_ID ? "owner" : "member",
+    );
+  }
 
   return {
     id: workspace.id,
@@ -153,6 +155,35 @@ export function getLegacyAuthMapping(email: string | null | undefined) {
   }
 
   return null;
+}
+
+async function resolveCanonicalMarianUserId(): Promise<string | null> {
+  const workspaceId = getLegacyWorkspaceId();
+  const workspace = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { ownerUserId: true },
+  });
+
+  if (
+    workspace?.ownerUserId &&
+    workspace.ownerUserId !== DEFAULT_LEGACY_MARTINA_USER_ID &&
+    workspace.ownerUserId !== DEFAULT_LEGACY_MARIAN_USER_ID
+  ) {
+    return workspace.ownerUserId;
+  }
+
+  const member = await prisma.workspaceMember.findFirst({
+    where: {
+      workspaceId,
+      userId: {
+        notIn: [DEFAULT_LEGACY_MARTINA_USER_ID, DEFAULT_LEGACY_MARIAN_USER_ID],
+      },
+    },
+    select: { userId: true },
+    orderBy: { createdAt: "asc" },
+  });
+
+  return member?.userId ?? null;
 }
 
 async function ensureWorkspaceMember(
@@ -190,14 +221,28 @@ export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
           where: { email },
         })
       : null;
-    const targetUserId = existingByEmail?.id ?? legacyMapping.userId;
+    const canonicalMarianUserId = await resolveCanonicalMarianUserId();
+
+    let targetUserId =
+      existingByEmail?.id ??
+      (legacyMapping.userId === DEFAULT_LEGACY_MARIAN_USER_ID
+        ? (canonicalMarianUserId ?? authUser.id)
+        : legacyMapping.userId);
+
+    if (
+      legacyMapping.userId === DEFAULT_LEGACY_MARIAN_USER_ID &&
+      targetUserId === DEFAULT_LEGACY_MARIAN_USER_ID &&
+      canonicalMarianUserId
+    ) {
+      targetUserId = canonicalMarianUserId;
+    }
 
     const user = await prisma.user.upsert({
       where: {
         id: targetUserId,
       },
       update: {
-        email: authUser.email,
+        email: authUser.email ?? existingByEmail?.email,
         name: authUser.name ?? existingByEmail?.name,
         image: authUser.image ?? existingByEmail?.image,
       },

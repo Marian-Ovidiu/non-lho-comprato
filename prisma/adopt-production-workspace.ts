@@ -67,6 +67,10 @@ async function main() {
   let membershipsAdded = 0;
 
   for (const user of users) {
+    if (user.id === "legacy-marian") {
+      continue;
+    }
+
     const existingMembership = await prisma.workspaceMember.findUnique({
       where: {
         workspaceId_userId: {

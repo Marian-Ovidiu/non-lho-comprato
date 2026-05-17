@@ -15,6 +15,22 @@ export type WorkspaceMemberOption = {
 const LEGACY_MARIAN_USER_ID = "legacy-marian";
 const LEGACY_MARTINA_USER_ID = "legacy-martina";
 
+export function dedupeWorkspaceMemberOptions(
+  members: WorkspaceMemberOption[],
+): WorkspaceMemberOption[] {
+  const hasCanonicalMarian = members.some(
+    (member) =>
+      member.userId !== LEGACY_MARIAN_USER_ID &&
+      member.userId !== LEGACY_MARTINA_USER_ID,
+  );
+
+  if (!hasCanonicalMarian) {
+    return members;
+  }
+
+  return members.filter((member) => member.userId !== LEGACY_MARIAN_USER_ID);
+}
+
 export function getWorkspaceMemberLabel(
   member: Pick<WorkspaceMemberOption, "name" | "email" | "userId">,
 ): string {

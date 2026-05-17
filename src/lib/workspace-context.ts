@@ -1,5 +1,6 @@
 import { prisma } from "@/src/lib/prisma";
 import {
+  dedupeWorkspaceMemberOptions,
   getWorkspaceMemberLabel,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
@@ -99,16 +100,18 @@ export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberOptio
     },
   });
 
-  return memberships.map((membership) => ({
-    userId: membership.userId,
-    name: membership.user.name,
-    email: membership.user.email,
-    label: getWorkspaceMemberLabel({
+  return dedupeWorkspaceMemberOptions(
+    memberships.map((membership) => ({
       userId: membership.userId,
       name: membership.user.name,
       email: membership.user.email,
-    }),
-  }));
+      label: getWorkspaceMemberLabel({
+        userId: membership.userId,
+        name: membership.user.name,
+        email: membership.user.email,
+      }),
+    })),
+  );
 }
 
 export async function getCurrentWorkspaceScopedWhere<
