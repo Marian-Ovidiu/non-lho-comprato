@@ -508,16 +508,6 @@ export async function resolveActiveWorkspaceForUser({
     (workspace) => workspace.id === productionId,
   );
 
-  if (selectedWorkspaceId) {
-    const selectedWorkspace = accessibleWorkspaces.find(
-      (workspace) => workspace.id === selectedWorkspaceId,
-    );
-
-    if (selectedWorkspace) {
-      return selectedWorkspace;
-    }
-  }
-
   const legacyMapping = getLegacyAuthMapping(email);
 
   if (legacyMapping) {
@@ -530,6 +520,27 @@ export async function resolveActiveWorkspaceForUser({
     }
 
     return ensureLegacyWorkspaceForUser(userId);
+  }
+
+  if (selectedWorkspaceId) {
+    const selectedWorkspace = accessibleWorkspaces.find(
+      (workspace) => workspace.id === selectedWorkspaceId,
+    );
+
+    if (selectedWorkspace) {
+      if (productionWorkspace && selectedWorkspace.id !== productionId) {
+        const [selectedEntries, productionEntries] = await Promise.all([
+          countWorkspaceEntries(selectedWorkspace.id),
+          countWorkspaceEntries(productionId),
+        ]);
+
+        if (selectedEntries === 0 && productionEntries > 0) {
+          return productionWorkspace;
+        }
+      }
+
+      return selectedWorkspace;
+    }
   }
 
   if (productionWorkspace) {
