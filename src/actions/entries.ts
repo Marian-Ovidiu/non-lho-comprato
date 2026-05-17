@@ -298,6 +298,28 @@ function isMissingEntryBeneficiaryTable(error: unknown): boolean {
   );
 }
 
+function logEntryLoadError(
+  operation: string,
+  error: unknown,
+  context: Record<string, unknown> = {},
+) {
+  const prismaCode =
+    error && typeof error === "object" && "code" in error
+      ? String(error.code)
+      : undefined;
+
+  console.error(`[entries] ${operation} failed`, {
+    ...context,
+    prismaCode,
+    message: error instanceof Error ? error.message : String(error),
+    hint:
+      prismaCode === "P2021" || isMissingEntryBeneficiaryTable(error)
+        ? 'Run "npx prisma migrate deploy" to create EntryBeneficiary.'
+        : undefined,
+  });
+  console.error(error);
+}
+
 async function findEntriesForList(
   where: Awaited<ReturnType<typeof getCurrentWorkspaceScopedWhere>>,
 ): Promise<EntryWithCategory[]> {
@@ -327,6 +349,10 @@ async function findEntriesForList(
     if (!isMissingEntryBeneficiaryTable(error)) {
       throw error;
     }
+
+    logEntryLoadError("findEntriesForList.beneficiariesInclude", error, {
+      fallback: "legacy-person-fields",
+    });
 
     const entries = await prisma.entry.findMany(baseQuery);
     return entries.map((entry) => ({
@@ -371,14 +397,25 @@ function serializeEntry(
 export async function getEntries(
   person?: PersonFilterValue,
 ): Promise<SerializableEntry[]> {
-  const [workspaceWhere, members] = await Promise.all([
-    getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
-    getCurrentWorkspaceMembers(),
-  ]);
+  let workspaceId = "unknown";
 
-  const entries = await findEntriesForList(workspaceWhere);
+  try {
+    const [workspaceWhere, members] = await Promise.all([
+      getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
+      getCurrentWorkspaceMembers(),
+    ]);
 
-  return entries.map((entry) => serializeEntry(entry, members));
+    workspaceId = workspaceWhere.workspaceId;
+    const entries = await findEntriesForList(workspaceWhere);
+
+    return entries.map((entry) => serializeEntry(entry, members));
+  } catch (error) {
+    logEntryLoadError("getEntries", error, {
+      workspaceId,
+      personFilter: person ?? "all",
+    });
+    throw error;
+  }
 }
 
 export async function getEntryById(
@@ -440,6 +477,11 @@ export async function getEntryById(
         throw error;
       }
 
+      logEntryLoadError("getEntryById.beneficiariesSelect", error, {
+        entryId: id,
+        fallback: "legacy-person-fields",
+      });
+
       const legacyEntry = await prisma.entry.findUnique({
         where: { id },
         select: entrySelect,
@@ -462,8 +504,8 @@ export async function getEntryById(
     const members = await getCurrentWorkspaceMembers();
     return serializeEntry(entry, members);
   } catch (error) {
-    console.error("Failed to load entry:", error);
-    return null;
+    logEntryLoadError("getEntryById", error, { entryId: id });
+    throw error;
   }
 }
 

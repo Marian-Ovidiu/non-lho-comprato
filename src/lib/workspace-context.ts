@@ -9,6 +9,7 @@ import {
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
 import { cache } from "react";
+import { getLegacyWorkspaceId } from "@/src/lib/auth/provisioning";
 import {
   getCurrentUser as getAuthCurrentUser,
   getCurrentWorkspace as getAuthCurrentWorkspace,
@@ -147,6 +148,7 @@ export async function getWorkspaceShellContext(): Promise<WorkspaceShellContext>
     getWorkspaceShellOptions(),
   ]);
 
+  const productionWorkspaceId = getLegacyWorkspaceId();
   const sortedWorkspaces = [...availableWorkspaces].sort((a, b) => {
     if (a.id === currentWorkspace.id) {
       return -1;
@@ -156,8 +158,16 @@ export async function getWorkspaceShellContext(): Promise<WorkspaceShellContext>
       return 1;
     }
 
+    if (a.id === productionWorkspaceId) {
+      return -1;
+    }
+
+    if (b.id === productionWorkspaceId) {
+      return 1;
+    }
+
     if (a.kind !== b.kind) {
-      return a.kind === "private" ? -1 : 1;
+      return a.kind === "shared" ? -1 : 1;
     }
 
     return a.name.localeCompare(b.name, "it");

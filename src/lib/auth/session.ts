@@ -5,9 +5,7 @@ import {
 } from "@/src/lib/ui-person";
 import {
   ensureAppUserForAuthUser,
-  ensureDefaultWorkspaceForUser,
-  ensureLegacyWorkspaceForUser,
-  getLegacyAuthMapping,
+  resolveWorkspaceForAuthenticatedUser,
 } from "@/src/lib/auth/provisioning";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 import { cookies } from "next/headers";
@@ -162,31 +160,12 @@ export const getCurrentWorkspace = cache(async () => {
   const authenticatedUser = await getAuthenticatedUser();
 
   if (authenticatedUser) {
-    const user = await ensureAuthenticatedUser(authenticatedUser);
-    const selectedWorkspaceId = await getSelectedWorkspaceId();
+    const { workspace } = await resolveWorkspaceForAuthenticatedUser(
+      authenticatedUser,
+      await getSelectedWorkspaceId(),
+    );
 
-    if (selectedWorkspaceId) {
-      const accessibleWorkspaces = await getAccessibleWorkspacesForUser(user.id);
-      const selectedWorkspace = accessibleWorkspaces.find(
-        (workspace) => workspace.id === selectedWorkspaceId,
-      );
-
-      if (selectedWorkspace) {
-        logPerformance("auth/current-workspace-selected", startedAt);
-        return selectedWorkspace;
-      }
-    }
-
-    const legacyMapping = getLegacyAuthMapping(authenticatedUser.email);
-
-    if (legacyMapping) {
-      const workspace = await ensureLegacyWorkspaceForUser(user.id);
-      logPerformance("auth/current-workspace-legacy", startedAt);
-      return workspace;
-    }
-
-    const workspace = await ensureDefaultWorkspaceForUser(user);
-    logPerformance("auth/current-workspace", startedAt);
+    logPerformance("auth/current-workspace-resolved", startedAt);
     return workspace;
   }
 

@@ -3,6 +3,7 @@ import { prisma } from "@/src/lib/prisma";
 const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-marian-martina";
 const DEFAULT_LEGACY_MARIAN_USER_ID = "legacy-marian";
 const DEFAULT_LEGACY_MARTINA_USER_ID = "legacy-martina";
+const DEFAULT_PRODUCTION_WORKSPACE_NAME = "Marian & Martina";
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
 
 function logPerformance(label: string, startedAt: number) {
@@ -39,8 +40,93 @@ function getPrivateWorkspaceId(userId: string) {
   return `private-${userId}`;
 }
 
+type WorkspaceRecord = {
+  id: string;
+  name: string;
+  kind: "private" | "shared";
+  ownerUserId: string;
+};
+
+function toWorkspaceRecord(workspace: {
+  id: string;
+  name: string;
+  kind: string;
+  ownerUserId: string;
+}): WorkspaceRecord {
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    kind: workspace.kind === "shared" ? "shared" : "private",
+    ownerUserId: workspace.ownerUserId,
+  };
+}
+
 export function getLegacyWorkspaceId() {
   return process.env.LEGACY_WORKSPACE_ID?.trim() || DEFAULT_LEGACY_WORKSPACE_ID;
+}
+
+export function getProductionWorkspaceDisplayName() {
+  return (
+    process.env.PRODUCTION_WORKSPACE_NAME?.trim() ||
+    DEFAULT_PRODUCTION_WORKSPACE_NAME
+  );
+}
+
+export async function countWorkspaceEntries(workspaceId: string) {
+  return prisma.entry.count({
+    where: {
+      workspaceId,
+    },
+  });
+}
+
+export async function adoptProductionWorkspaceForUser(
+  userId: string,
+): Promise<WorkspaceRecord | null> {
+  const workspaceId = getLegacyWorkspaceId();
+  const workspace = await prisma.workspace.findUnique({
+    where: {
+      id: workspaceId,
+    },
+    include: {
+      _count: {
+        select: {
+          entries: true,
+        },
+      },
+    },
+  });
+
+  if (!workspace || workspace._count.entries === 0) {
+    return null;
+  }
+
+  const displayName = getProductionWorkspaceDisplayName();
+
+  if (workspace.name !== displayName || workspace.kind !== "shared") {
+    await prisma.workspace.update({
+      where: {
+        id: workspaceId,
+      },
+      data: {
+        name: displayName,
+        kind: "shared",
+      },
+    });
+  }
+
+  await ensureWorkspaceMember(
+    workspaceId,
+    userId,
+    userId === DEFAULT_LEGACY_MARIAN_USER_ID ? "owner" : "member",
+  );
+
+  return {
+    id: workspace.id,
+    name: displayName,
+    kind: "shared",
+    ownerUserId: workspace.ownerUserId,
+  };
 }
 
 export function getLegacyAuthMapping(email: string | null | undefined) {
@@ -182,6 +268,15 @@ export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
 export async function ensureDefaultWorkspaceForUser(user: AppUserLike) {
   const startedAt = performance.now();
 
+  const adoptedProductionWorkspace = await adoptProductionWorkspaceForUser(
+    user.id,
+  );
+
+  if (adoptedProductionWorkspace) {
+    logPerformance("auth/ensure-default-workspace-production", startedAt);
+    return adoptedProductionWorkspace;
+  }
+
   return prisma.$transaction(async (tx) => {
     const ownedWorkspace = await tx.workspace.findFirst({
       where: {
@@ -273,6 +368,13 @@ export async function ensureDefaultWorkspaceForUser(user: AppUserLike) {
 
 export async function ensureLegacyWorkspaceForUser(userId: string) {
   const startedAt = performance.now();
+  const adoptedWorkspace = await adoptProductionWorkspaceForUser(userId);
+
+  if (adoptedWorkspace) {
+    logPerformance("auth/ensure-legacy-workspace-adopted", startedAt);
+    return toWorkspaceRecord(adoptedWorkspace);
+  }
+
   const workspaceId = getLegacyWorkspaceId();
   const workspace = await prisma.workspace.findUnique({
     where: {
@@ -287,5 +389,109 @@ export async function ensureLegacyWorkspaceForUser(userId: string) {
   await ensureWorkspaceMember(workspaceId, userId, "member");
 
   logPerformance("auth/ensure-legacy-workspace", startedAt);
-  return workspace;
+  return toWorkspaceRecord(workspace);
+}
+
+async function getAccessibleWorkspacesForUserId(userId: string) {
+  return prisma.workspace.findMany({
+    where: {
+      OR: [
+        {
+          ownerUserId: userId,
+        },
+        {
+          members: {
+            some: {
+              userId,
+            },
+          },
+        },
+      ],
+    },
+    select: {
+      id: true,
+      name: true,
+      kind: true,
+      ownerUserId: true,
+    },
+  });
+}
+
+export async function resolveWorkspaceForAuthenticatedUser(
+  authUser: AuthUserLike,
+  selectedWorkspaceId?: string | null,
+) {
+  const user = await ensureAppUserForAuthUser(authUser);
+  await adoptProductionWorkspaceForUser(user.id);
+  const accessibleWorkspaces = await getAccessibleWorkspacesForUserId(user.id);
+
+  const workspace = await resolveActiveWorkspaceForUser({
+    userId: user.id,
+    email: authUser.email,
+    selectedWorkspaceId,
+    accessibleWorkspaces,
+  });
+
+  return {
+    user,
+    workspace,
+    accessibleWorkspaces,
+  };
+}
+
+export async function resolveActiveWorkspaceForUser({
+  userId,
+  email,
+  selectedWorkspaceId,
+  accessibleWorkspaces,
+}: {
+  userId: string;
+  email: string | null;
+  selectedWorkspaceId?: string | null;
+  accessibleWorkspaces: WorkspaceRecord[];
+}): Promise<WorkspaceRecord> {
+  const productionId = getLegacyWorkspaceId();
+  const productionWorkspace = accessibleWorkspaces.find(
+    (workspace) => workspace.id === productionId,
+  );
+
+  const legacyMapping = getLegacyAuthMapping(email);
+
+  if (legacyMapping) {
+    return ensureLegacyWorkspaceForUser(userId);
+  }
+
+  if (selectedWorkspaceId) {
+    const selectedWorkspace = accessibleWorkspaces.find(
+      (workspace) => workspace.id === selectedWorkspaceId,
+    );
+
+    if (selectedWorkspace) {
+      if (productionWorkspace && selectedWorkspace.id !== productionId) {
+        const [selectedEntries, productionEntries] = await Promise.all([
+          countWorkspaceEntries(selectedWorkspace.id),
+          countWorkspaceEntries(productionId),
+        ]);
+
+        if (selectedEntries === 0 && productionEntries > 0) {
+          return productionWorkspace;
+        }
+      }
+
+      return selectedWorkspace;
+    }
+  }
+
+  if (productionWorkspace) {
+    return productionWorkspace;
+  }
+
+  return toWorkspaceRecord(
+    await ensureDefaultWorkspaceForUser({
+      id: userId,
+      email,
+      name: null,
+      image: null,
+    }),
+  );
 }

@@ -1,6 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 
+import { resolveWorkspaceForAuthenticatedUser } from "@/src/lib/auth/provisioning";
 import { createSupabaseRouteClient } from "@/src/lib/supabase/route";
+import {
+  WORKSPACE_SELECTION_COOKIE,
+  getWorkspaceSelectionCookieOptions,
+} from "@/src/lib/workspace-selection";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -29,6 +34,35 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("[auth] exchangeCodeForSession error", error);
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user) {
+    try {
+      const { workspace } = await resolveWorkspaceForAuthenticatedUser({
+        id: user.id,
+        email: user.email ?? null,
+        name:
+          (user.user_metadata?.full_name as string | undefined) ??
+          (user.user_metadata?.name as string | undefined) ??
+          null,
+        image:
+          (user.user_metadata?.avatar_url as string | undefined) ??
+          (user.user_metadata?.picture as string | undefined) ??
+          null,
+      });
+
+      response.cookies.set(
+        WORKSPACE_SELECTION_COOKIE,
+        workspace.id,
+        getWorkspaceSelectionCookieOptions(),
+      );
+    } catch (provisionError) {
+      console.error("[auth] workspace adoption after login failed", provisionError);
+    }
   }
 
   return response;
