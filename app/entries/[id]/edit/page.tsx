@@ -6,6 +6,7 @@ import { getCategories, getEntryById } from "@/src/actions/entries";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { EntryEditForm } from "@/src/components/entries/entry-edit-form";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -18,7 +19,11 @@ type EditEntryPageProps = {
 export default async function EditEntryPage({ params }: EditEntryPageProps) {
   const { id } = await params;
 
-  const [entry, categories] = await Promise.all([getEntryById(id), getCategories()]);
+  const [entry, categories, members] = await Promise.all([
+    getEntryById(id),
+    getCategories(),
+    getCurrentWorkspaceMembers(),
+  ]);
 
   if (!entry) {
     return (
@@ -66,7 +71,11 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
         title="Modifica movimento"
       />
 
-      <EntryEditForm entry={entry} categories={resolvedCategories} />
+      <EntryEditForm
+        entry={entry}
+        categories={resolvedCategories}
+        members={members}
+      />
     </main>
   );
 }

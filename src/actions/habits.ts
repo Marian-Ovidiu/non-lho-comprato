@@ -19,6 +19,8 @@ type HabitActionResult = {
   errors?: Record<string, string>;
 };
 
+export type HabitDeleteMode = "habit_only" | "habit_and_entries";
+
 type SyncResult = {
   createdCount?: number;
   finalizedCount?: number;
@@ -284,8 +286,12 @@ function buildEntryDataForOccurrence(
     workspaceId: context.workspaceId,
     createdByUserId: context.currentUserId,
     paidByUserId: context.currentUserId,
-    visibility: EntryVisibility.workspace,
+    paidBy: DEFAULT_LEGACY_PERSON,
     person: DEFAULT_LEGACY_PERSON,
+    beneficiaries: {
+      create: [{ userId: context.currentUserId }],
+    },
+    visibility: EntryVisibility.workspace,
   };
 
   if (status === "spent") {
@@ -481,6 +487,101 @@ export async function createHabit(
       success: false,
       message:
         "Non riesco a salvare l'abitudine adesso. Controlla il database e riprova tra poco.",
+    };
+  }
+}
+
+function isHabitDeleteMode(value: string): value is HabitDeleteMode {
+  return value === "habit_only" || value === "habit_and_entries";
+}
+
+export async function deleteHabit(
+  habitId: string,
+  mode: HabitDeleteMode,
+): Promise<HabitActionResult> {
+  const id = habitId.trim();
+
+  if (!id) {
+    return {
+      success: false,
+      message: "ID abitudine non valido",
+    };
+  }
+
+  if (!isHabitDeleteMode(mode)) {
+    return {
+      success: false,
+      message: "Modalità di eliminazione non valida",
+    };
+  }
+
+  try {
+    const habit = await prisma.habit.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        workspaceId: true,
+      },
+    });
+
+    if (!habit) {
+      return {
+        success: false,
+        message: "Abitudine non trovata",
+      };
+    }
+
+    await requireWorkspaceAccessForRecord(habit, "Abitudine");
+
+    const occurrences = await prisma.habitOccurrence.findMany({
+      where: { habitId: id },
+      select: { id: true },
+    });
+    const occurrenceIds = occurrences.map((occurrence) => occurrence.id);
+
+    await prisma.$transaction(async (tx) => {
+      if (occurrenceIds.length > 0) {
+        if (mode === "habit_and_entries") {
+          await tx.entry.deleteMany({
+            where: {
+              habitOccurrenceId: {
+                in: occurrenceIds,
+              },
+            },
+          });
+        } else {
+          await tx.entry.updateMany({
+            where: {
+              habitOccurrenceId: {
+                in: occurrenceIds,
+              },
+            },
+            data: {
+              habitOccurrenceId: null,
+            },
+          });
+        }
+      }
+
+      await tx.habit.delete({
+        where: { id },
+      });
+    });
+
+    tryRevalidatePaths();
+
+    return {
+      success: true,
+      message:
+        mode === "habit_and_entries"
+          ? "Abitudine e movimenti collegati eliminati"
+          : "Abitudine eliminata. I movimenti generati restano nel registro.",
+    };
+  } catch (error) {
+    console.error("Failed to delete habit:", error);
+    return {
+      success: false,
+      message: "Non riesco a eliminare l'abitudine adesso. Riprova tra poco.",
     };
   }
 }

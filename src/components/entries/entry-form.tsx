@@ -24,9 +24,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { DEFAULT_LEGACY_PERSON } from "@/src/lib/ui-person";
-import type { LegacyPersonValue } from "@/src/lib/ui-person";
-import { PersonSegmentedSelector } from "@/src/components/entries/person-segmented-selector";
+import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
+import {
+  getDefaultBeneficiaryUserIds,
+  getDefaultPaidByUserId,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type CategoryOption = {
@@ -46,12 +49,15 @@ type FormState = {
 
 type EntryFormProps = {
   categories: CategoryOption[];
+  members: WorkspaceMemberOption[];
+  currentUserId: string;
   initialValues?: {
     title?: string;
     categoryId?: string;
     realCost?: string;
     alternativeCost?: string;
-    person?: LegacyPersonValue;
+    paidByUserId?: string;
+    beneficiaryUserIds?: string[];
     date?: string;
   };
 };
@@ -74,7 +80,12 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-sm text-destructive">{message}</p>;
 }
 
-export function EntryForm({ categories, initialValues }: EntryFormProps) {
+export function EntryForm({
+  categories,
+  members,
+  currentUserId,
+  initialValues,
+}: EntryFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -87,7 +98,12 @@ export function EntryForm({ categories, initialValues }: EntryFormProps) {
   );
 
   const hasCategories = categories.length > 0;
-  const initialPerson = initialValues?.person ?? DEFAULT_LEGACY_PERSON;
+  const initialPaidByUserId =
+    initialValues?.paidByUserId ??
+    getDefaultPaidByUserId(members, currentUserId);
+  const initialBeneficiaryUserIds =
+    initialValues?.beneficiaryUserIds ??
+    getDefaultBeneficiaryUserIds(members, initialPaidByUserId);
 
   useEffect(() => {
     if (!state.success) {
@@ -181,13 +197,12 @@ export function EntryForm({ categories, initialValues }: EntryFormProps) {
               <FieldError message={state.errors?.categoryId} />
             </div>
 
-            <fieldset className="space-y-2.5">
-              <legend className="text-sm font-medium text-foreground">
-                Chi ha fatto la spesa?
-              </legend>
-              <PersonSegmentedSelector defaultValue={initialPerson} />
-              <FieldError message={state.errors?.person} />
-            </fieldset>
+            <EntryPeopleFields
+              members={members}
+              paidByUserId={initialPaidByUserId}
+              beneficiaryUserIds={initialBeneficiaryUserIds}
+              errors={state.errors}
+            />
           </div>
 
           <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
@@ -257,7 +272,7 @@ export function EntryForm({ categories, initialValues }: EntryFormProps) {
           <Button
             type="submit"
             className="h-11 w-full px-5 sm:w-auto"
-            disabled={pending || !hasCategories}
+            disabled={pending || !hasCategories || members.length === 0}
           >
             {pending ? "Salvataggio..." : "Salva movimento"}
           </Button>
@@ -266,4 +281,3 @@ export function EntryForm({ categories, initialValues }: EntryFormProps) {
     </Card>
   );
 }
-

@@ -12,9 +12,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import {
-  getEntryOwnershipLabel,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
+  getMemberLabel,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 import { CategoryPill } from "@/src/components/shared/category-pill";
 
 type EntryCardProps = {
@@ -25,14 +25,16 @@ type EntryCardProps = {
       name: string;
       slug?: string | null;
     };
-    date: Date;
+    date: string | Date;
     realCost: unknown;
     alternativeCost: unknown;
     savedAmount: unknown;
     note: string | null;
     source: string;
-    person: LegacyPersonValue | null;
+    paidByUserId?: string | null;
+    beneficiaryUserIds?: string[];
   };
+  members: WorkspaceMemberOption[];
 };
 
 function formatSignedMoney(value: unknown) {
@@ -54,12 +56,33 @@ function getSourceLabel(source: string) {
   return source === "habit" ? "Abitudine" : "Manuale";
 }
 
-export function EntryCard({ entry }: EntryCardProps) {
+function getBeneficiariesLabel(
+  members: WorkspaceMemberOption[],
+  beneficiaryUserIds: string[] | undefined,
+) {
+  if (!beneficiaryUserIds || beneficiaryUserIds.length === 0) {
+    return null;
+  }
+
+  const labels = beneficiaryUserIds
+    .map((userId) => getMemberLabel(members, userId))
+    .filter((label): label is string => Boolean(label));
+
+  if (labels.length === 0) {
+    return null;
+  }
+
+  return labels.join(", ");
+}
+
+export function EntryCard({ entry, members }: EntryCardProps) {
   const router = useRouter();
   const [isDeleting, startTransition] = useTransition();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const savedAmount = Number(entry.savedAmount);
+  const paidByLabel = getMemberLabel(members, entry.paidByUserId);
+  const beneficiariesLabel = getBeneficiariesLabel(members, entry.beneficiaryUserIds);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent | TouchEvent) {
@@ -132,8 +155,7 @@ export function EntryCard({ entry }: EntryCardProps) {
                 className="px-2.5 py-0.5 text-[11px]"
               />
               <p className="text-xs leading-5 text-muted-text sm:text-sm">
-                {formatDate(entry.date)} <span aria-hidden="true">•</span>{" "}
-                {getEntryOwnershipLabel(entry.person)}
+                {formatDate(entry.date)}
               </p>
             </div>
           </div>
@@ -189,9 +211,17 @@ export function EntryCard({ entry }: EntryCardProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-text sm:text-sm">
-          <span>{formatDate(entry.date)}</span>
-          <span aria-hidden="true">•</span>
-          <span>{getEntryOwnershipLabel(entry.person)}</span>
+          {paidByLabel ? (
+            <>
+              <span>Pagato da {paidByLabel}</span>
+              {beneficiariesLabel ? (
+                <>
+                  <span aria-hidden="true">•</span>
+                  <span>Per {beneficiariesLabel}</span>
+                </>
+              ) : null}
+            </>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-2 gap-2">

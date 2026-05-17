@@ -6,7 +6,10 @@ import { PostHogNavigationTracker } from "@/src/components/analytics/posthog-nav
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
-import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
+import {
+  getCurrentWorkspaceMembers,
+  getWorkspaceShellContext,
+} from "@/src/lib/workspace-context";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -43,6 +46,10 @@ export default async function RootLayout({
 }>) {
   const authenticatedUser = await getAuthenticatedUser();
   const workspaceShell = authenticatedUser ? await getWorkspaceShellContext() : null;
+  const workspaceMembers =
+    authenticatedUser && workspaceShell
+      ? await getCurrentWorkspaceMembers()
+      : [];
 
   return (
     <html
@@ -59,6 +66,8 @@ export default async function RootLayout({
           <AppShell
             workspace={workspaceShell.currentWorkspace}
             availableWorkspaces={workspaceShell.availableWorkspaces}
+            workspaceMembers={workspaceMembers}
+            currentUserId={authenticatedUser.id}
             auth={{
               isAuthenticated: true,
               userLabel: authenticatedUser.name ?? authenticatedUser.email ?? null,

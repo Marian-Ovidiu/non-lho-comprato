@@ -155,7 +155,7 @@ function getHomeReflection({
 
   const now = new Date();
   const weekEntries = entries.filter(
-    (entry) => differenceInCalendarDays(now, entry.date) < 7,
+    (entry) => differenceInCalendarDays(now, new Date(entry.date)) < 7,
   );
 
   const categoryCounts = new Map<
@@ -534,7 +534,8 @@ export default async function Home({ searchParams }: HomePageProps) {
     console.error("Failed to load dashboard data:", error);
   }
 
-  const firstEntryDate = allEntries.at(-1)?.date ?? null;
+  const oldestEntry = allEntries.at(-1);
+  const firstEntryDate = oldestEntry ? new Date(oldestEntry.date) : null;
   const homePhase = getHomePhase({
     entryCount: allEntries.length,
     firstEntryDate,

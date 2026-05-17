@@ -23,8 +23,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { normalizeLegacyPerson, type LegacyPersonValue } from "@/src/lib/ui-person";
-import { PersonSegmentedSelector } from "@/src/components/entries/person-segmented-selector";
+import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type CategoryOption = {
   id: string;
@@ -43,7 +43,8 @@ type EntryToEdit = {
   date: string;
   note: string | null;
   source: string;
-  person: LegacyPersonValue;
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
 };
 
 type FormState = {
@@ -55,6 +56,7 @@ type FormState = {
 type EntryEditFormProps = {
   entry: EntryToEdit;
   categories: CategoryOption[];
+  members: WorkspaceMemberOption[];
 };
 
 const ROME_TIME_ZONE = "Europe/Rome";
@@ -94,7 +96,7 @@ function getDateValue(date: string) {
   return `${year}-${month}-${day}`;
 }
 
-export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
+export function EntryEditForm({ entry, categories, members }: EntryEditFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -192,15 +194,12 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
               <FieldError message={state.errors?.categoryId} />
             </div>
 
-            <fieldset className="space-y-2.5">
-              <legend className="text-sm font-medium text-foreground">
-                Chi ha fatto la spesa?
-              </legend>
-              <PersonSegmentedSelector
-                value={normalizeLegacyPerson(entry.person)}
-              />
-              <FieldError message={state.errors?.person} />
-            </fieldset>
+            <EntryPeopleFields
+              members={members}
+              paidByUserId={entry.paidByUserId}
+              beneficiaryUserIds={entry.beneficiaryUserIds}
+              errors={state.errors}
+            />
           </div>
 
           <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
@@ -267,7 +266,7 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
           <Button
             type="submit"
             className="h-11 w-full px-5 sm:w-auto"
-            disabled={pending || !hasCategories}
+            disabled={pending || !hasCategories || members.length === 0}
           >
             {pending ? "Salvataggio..." : "Salva modifiche"}
           </Button>
@@ -276,4 +275,3 @@ export function EntryEditForm({ entry, categories }: EntryEditFormProps) {
     </Card>
   );
 }
-

@@ -21,5 +21,11 @@ export const DEFAULT_CATEGORIES: DefaultCategory[] = [
   { name: "Regali", slug: "regali", icon: "gift", color: "#ec4899" },
   { name: "Tech", slug: "tech", icon: "laptop", color: "#14b8a6" },
   { name: "Beauty", slug: "beauty", icon: "sparkles", color: "#d946ef" },
+  {
+    name: "Sigarette / Accessori",
+    slug: "sigarette-accessori",
+    icon: "cigarette",
+    color: "#78716c",
+  },
   { name: "Altro", slug: "altro", icon: "more-horizontal", color: "#6b7280" },
 ];

@@ -4,7 +4,7 @@ import { Inbox } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { EntryCard } from "@/src/components/entries/entry-card";
 import { EmptyState } from "@/src/components/shared/empty-state";
-import type { LegacyPersonValue } from "@/src/lib/ui-person";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type EntryListProps = {
   entries: Array<{
@@ -14,17 +14,19 @@ type EntryListProps = {
       name: string;
       slug: string;
     };
-    date: Date;
+    date: string;
     realCost: unknown;
     alternativeCost: unknown;
     savedAmount: unknown;
     note: string | null;
     source: string;
-    person: LegacyPersonValue | null;
+    paidByUserId: string;
+    beneficiaryUserIds: string[];
   }>;
+  members: WorkspaceMemberOption[];
 };
 
-export function EntryList({ entries }: EntryListProps) {
+export function EntryList({ entries, members }: EntryListProps) {
   if (entries.length === 0) {
     return (
       <EmptyState
@@ -44,7 +46,7 @@ export function EntryList({ entries }: EntryListProps) {
   return (
     <div className="space-y-3">
       {entries.map((entry) => (
-        <EntryCard key={entry.id} entry={entry} />
+        <EntryCard key={entry.id} entry={entry} members={members} />
       ))}
     </div>
   );

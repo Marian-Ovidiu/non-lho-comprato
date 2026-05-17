@@ -7,16 +7,19 @@ import { calculateSavedAmount } from "@/src/lib/entry-calculations";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
+import type { LegacyPersonValue } from "@/src/lib/ui-person";
 import {
-  DEFAULT_LEGACY_PERSON,
-  normalizeLegacyPerson,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
+  getDefaultBeneficiaryUserIds,
+  getDefaultPaidByUserId,
+  mapUserIdsToLegacyPersonFields,
+  resolveEntryPeopleFromRecord,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
+  getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
-  mapLegacyPersonToUserId,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 
@@ -38,6 +41,9 @@ type EntryWithCategory = {
   note: string | null;
   source: string;
   person: LegacyPersonValue;
+  paidBy: LegacyPersonValue;
+  beneficiaries: { userId: string }[];
+  paidByUserId: string | null;
   habitOccurrenceId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -61,6 +67,8 @@ type SerializableEntry = {
   note: string | null;
   source: string;
   person: LegacyPersonValue;
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
   habitOccurrenceId: string | null;
   createdAt: string;
   updatedAt: string;
@@ -109,26 +117,83 @@ function getMoney(formData: FormData, name: string): {
   return { value };
 }
 
-function getPerson(formData: FormData): {
-  value: LegacyPersonValue;
+function getPaidByUserId(
+  formData: FormData,
+  members: WorkspaceMemberOption[],
+  currentUserId: string,
+): {
+  value: string;
   error?: string;
 } {
-  const raw = getText(formData, "person");
+  const raw = getText(formData, "paidByUserId");
+  const memberIds = new Set(members.map((member) => member.userId));
 
-  if (!raw) {
-    return { value: DEFAULT_LEGACY_PERSON };
+  if (raw && memberIds.has(raw)) {
+    return { value: raw };
   }
 
-  const normalized = normalizeLegacyPerson(raw);
-
-  if (normalized) {
-    return { value: normalized };
+  if (!raw) {
+    return {
+      value: getDefaultPaidByUserId(members, currentUserId),
+    };
   }
 
   return {
-    value: DEFAULT_LEGACY_PERSON,
-    error: "Seleziona una persona valida",
+    value: getDefaultPaidByUserId(members, currentUserId),
+    error: "Seleziona chi ha pagato",
   };
+}
+
+function getBeneficiaryUserIds(
+  formData: FormData,
+  members: WorkspaceMemberOption[],
+  paidByUserId: string,
+): {
+  value: string[];
+  error?: string;
+} {
+  const rawValues = formData.getAll("beneficiaryUserIds");
+  const isExplicitField = getText(formData, "beneficiariesMode") === "explicit";
+  const memberIds = new Set(members.map((member) => member.userId));
+
+  if (rawValues.length === 0) {
+    if (isExplicitField) {
+      return {
+        value: getDefaultBeneficiaryUserIds(members, paidByUserId),
+        error: "Seleziona almeno un beneficiario",
+      };
+    }
+
+    return {
+      value: getDefaultBeneficiaryUserIds(members, paidByUserId),
+    };
+  }
+
+  const values = rawValues
+    .filter((value): value is string => typeof value === "string")
+    .flatMap((value) => value.split(","))
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  const invalidValue = values.find((value) => !memberIds.has(value));
+
+  if (invalidValue) {
+    return {
+      value: getDefaultBeneficiaryUserIds(members, paidByUserId),
+      error: "Seleziona beneficiari validi",
+    };
+  }
+
+  const beneficiaryUserIds = Array.from(new Set(values));
+
+  if (beneficiaryUserIds.length === 0) {
+    return {
+      value: getDefaultBeneficiaryUserIds(members, paidByUserId),
+      error: "Seleziona almeno un beneficiario",
+    };
+  }
+
+  return { value: beneficiaryUserIds };
 }
 
 function toDecimalString(value: number): string {
@@ -216,7 +281,12 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function serializeEntry(entry: EntryWithCategory): SerializableEntry {
+function serializeEntry(
+  entry: EntryWithCategory,
+  members: WorkspaceMemberOption[],
+): SerializableEntry {
+  const people = resolveEntryPeopleFromRecord(entry, members);
+
   return {
     id: entry.id,
     title: entry.title,
@@ -228,6 +298,8 @@ function serializeEntry(entry: EntryWithCategory): SerializableEntry {
     note: entry.note,
     source: entry.source,
     person: entry.person,
+    paidByUserId: people.paidByUserId,
+    beneficiaryUserIds: people.beneficiaryUserIds,
     habitOccurrenceId: entry.habitOccurrenceId,
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
@@ -243,18 +315,28 @@ function serializeEntry(entry: EntryWithCategory): SerializableEntry {
 
 export async function getEntries(
   person?: PersonFilterValue,
-): Promise<EntryWithCategory[]> {
-  const workspaceWhere = await getCurrentWorkspaceScopedWhere(buildPersonWhere(person));
+): Promise<SerializableEntry[]> {
+  const [workspaceWhere, members] = await Promise.all([
+    getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
+    getCurrentWorkspaceMembers(),
+  ]);
 
-  return prisma.entry.findMany({
+  const entries = await prisma.entry.findMany({
     where: workspaceWhere,
     orderBy: {
       date: "desc",
     },
     include: {
       category: true,
+      beneficiaries: {
+        select: {
+          userId: true,
+        },
+      },
     },
   });
+
+  return entries.map((entry) => serializeEntry(entry, members));
 }
 
 export async function getEntryById(
@@ -280,6 +362,13 @@ export async function getEntryById(
         note: true,
         source: true,
         person: true,
+        paidBy: true,
+        beneficiaries: {
+          select: {
+            userId: true,
+          },
+        },
+        paidByUserId: true,
         habitOccurrenceId: true,
         createdAt: true,
         updatedAt: true,
@@ -302,7 +391,8 @@ export async function getEntryById(
 
     await requireWorkspaceAccessForRecord(entry, "Movimento");
 
-    return serializeEntry(entry);
+    const members = await getCurrentWorkspaceMembers();
+    return serializeEntry(entry, members);
   } catch (error) {
     console.error("Failed to load entry:", error);
     return null;
@@ -390,7 +480,34 @@ export async function createEntry(
   const dateValue = getText(formData, "date");
   const realCost = getMoney(formData, "realCost");
   const alternativeCost = getMoney(formData, "alternativeCost");
-  const person = getPerson(formData);
+  let members: WorkspaceMemberOption[] = [];
+  let currentUserId = "";
+
+  try {
+    const [loadedMembers, currentUser] = await Promise.all([
+      getCurrentWorkspaceMembers(),
+      getCurrentUser(),
+    ]);
+    members = loadedMembers;
+    currentUserId = currentUser.id;
+  } catch {
+    members = [];
+  }
+
+  const paidByUserId = getPaidByUserId(formData, members, currentUserId);
+  const beneficiaryUserIds = getBeneficiaryUserIds(
+    formData,
+    members,
+    paidByUserId.value,
+  );
+  const legacyFields =
+    members.length > 0
+      ? mapUserIdsToLegacyPersonFields(
+          paidByUserId.value,
+          beneficiaryUserIds.value,
+          members,
+        )
+      : null;
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -410,8 +527,16 @@ export async function createEntry(
     errors.alternativeCost = alternativeCost.error;
   }
 
-  if (person.error) {
-    errors.person = person.error;
+  if (members.length === 0) {
+    errors.paidByUserId = "Nessun membro disponibile nel workspace";
+  }
+
+  if (paidByUserId.error) {
+    errors.paidByUserId = paidByUserId.error;
+  }
+
+  if (beneficiaryUserIds.error) {
+    errors.beneficiaryUserIds = beneficiaryUserIds.error;
   }
 
   const date = new Date(dateValue);
@@ -424,6 +549,16 @@ export async function createEntry(
       success: false,
       message: "Controlla i campi evidenziati",
       errors,
+    };
+  }
+
+  if (!legacyFields) {
+    return {
+      success: false,
+      message: "Controlla i campi evidenziati",
+      errors: {
+        paidByUserId: "Nessun membro disponibile nel workspace",
+      },
     };
   }
 
@@ -461,9 +596,13 @@ export async function createEntry(
         date,
         note: note || null,
         source: "manual",
-        person: person.value,
+        paidByUserId: paidByUserId.value,
+        beneficiaries: {
+          create: beneficiaryUserIds.value.map((userId) => ({ userId })),
+        },
+        person: legacyFields.person,
+        paidBy: legacyFields.paidBy,
         createdByUserId: currentUser.id,
-        paidByUserId: mapLegacyPersonToUserId(person.value),
         visibility: EntryVisibility.workspace,
       },
     });
@@ -504,7 +643,34 @@ export async function updateEntry(
   const dateValue = getText(formData, "date");
   const realCost = getMoney(formData, "realCost");
   const alternativeCost = getMoney(formData, "alternativeCost");
-  const person = getPerson(formData);
+  let members: WorkspaceMemberOption[] = [];
+  let currentUserId = "";
+
+  try {
+    const [loadedMembers, currentUser] = await Promise.all([
+      getCurrentWorkspaceMembers(),
+      getCurrentUser(),
+    ]);
+    members = loadedMembers;
+    currentUserId = currentUser.id;
+  } catch {
+    members = [];
+  }
+
+  const paidByUserId = getPaidByUserId(formData, members, currentUserId);
+  const beneficiaryUserIds = getBeneficiaryUserIds(
+    formData,
+    members,
+    paidByUserId.value,
+  );
+  const legacyFields =
+    members.length > 0
+      ? mapUserIdsToLegacyPersonFields(
+          paidByUserId.value,
+          beneficiaryUserIds.value,
+          members,
+        )
+      : null;
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -524,8 +690,16 @@ export async function updateEntry(
     errors.alternativeCost = alternativeCost.error;
   }
 
-  if (person.error) {
-    errors.person = person.error;
+  if (members.length === 0) {
+    errors.paidByUserId = "Nessun membro disponibile nel workspace";
+  }
+
+  if (paidByUserId.error) {
+    errors.paidByUserId = paidByUserId.error;
+  }
+
+  if (beneficiaryUserIds.error) {
+    errors.beneficiaryUserIds = beneficiaryUserIds.error;
   }
 
   const date = new Date(dateValue);
@@ -538,6 +712,16 @@ export async function updateEntry(
       success: false,
       message: "Controlla i campi evidenziati",
       errors,
+    };
+  }
+
+  if (!legacyFields) {
+    return {
+      success: false,
+      message: "Controlla i campi evidenziati",
+      errors: {
+        paidByUserId: "Nessun membro disponibile nel workspace",
+      },
     };
   }
 
@@ -582,24 +766,34 @@ export async function updateEntry(
       };
     }
 
-    await prisma.entry.update({
-      where: { id },
-      data: {
-        workspaceId,
-        title,
-        categoryId: category.id,
-        realCost: toDecimalString(realCost.value),
-        alternativeCost: toDecimalString(alternativeCost.value),
-        savedAmount: toDecimalString(savedAmount),
-        date,
-        note: note || null,
-        person: person.value,
-        source: existingEntry.source,
-        habitOccurrenceId: existingEntry.habitOccurrenceId,
-        createdByUserId: existingEntry.createdByUserId ?? currentUser.id,
-        paidByUserId: mapLegacyPersonToUserId(person.value),
-        visibility: EntryVisibility.workspace,
-      },
+    await prisma.$transaction(async (tx) => {
+      await tx.entryBeneficiary.deleteMany({
+        where: { entryId: id },
+      });
+
+      await tx.entry.update({
+        where: { id },
+        data: {
+          workspaceId,
+          title,
+          categoryId: category.id,
+          realCost: toDecimalString(realCost.value),
+          alternativeCost: toDecimalString(alternativeCost.value),
+          savedAmount: toDecimalString(savedAmount),
+          date,
+          note: note || null,
+          paidByUserId: paidByUserId.value,
+          beneficiaries: {
+            create: beneficiaryUserIds.value.map((userId) => ({ userId })),
+          },
+          person: legacyFields.person,
+          paidBy: legacyFields.paidBy,
+          source: existingEntry.source,
+          habitOccurrenceId: existingEntry.habitOccurrenceId,
+          createdByUserId: existingEntry.createdByUserId ?? currentUser.id,
+          visibility: EntryVisibility.workspace,
+        },
+      });
     });
 
     tryRevalidatePath("/");

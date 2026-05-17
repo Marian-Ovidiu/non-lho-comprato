@@ -35,11 +35,12 @@ import {
 import { cn } from "@/lib/utils";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { getCategoryIdentity } from "@/src/lib/category-identity";
+import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
 import {
-  DEFAULT_LEGACY_PERSON,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
-import { PersonSegmentedSelector } from "@/src/components/entries/person-segmented-selector";
+  getDefaultBeneficiaryUserIds,
+  getDefaultPaidByUserId,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type CategoryOption = {
@@ -57,7 +58,7 @@ type QuickAddPreset = {
   categorySlug: string;
   amount: number;
   rangeLabel: string;
-  person?: LegacyPersonValue;
+  shared?: boolean;
 };
 
 type QuickAddState = {
@@ -72,7 +73,8 @@ type QuickAddDraft = {
   categoryId: string;
   realCost: string;
   alternativeCost: string;
-  person: LegacyPersonValue;
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
   date: string;
 };
 
@@ -90,7 +92,6 @@ const presets: QuickAddPreset[] = [
     categorySlug: "caffe",
     amount: 4,
     rangeLabel: "2 - 5 €",
-    person: "MARIAN",
   },
   {
     id: "delivery",
@@ -99,7 +100,7 @@ const presets: QuickAddPreset[] = [
     categorySlug: "delivery",
     amount: 24,
     rangeLabel: "15 - 30 €",
-    person: "TUTTI",
+    shared: true,
   },
   {
     id: "grocery",
@@ -131,13 +132,19 @@ function getTodayLocal() {
   return format(new Date(), "yyyy-MM-dd");
 }
 
-function getInitialDraft(): QuickAddDraft {
+function getInitialDraft(
+  members: WorkspaceMemberOption[],
+  currentUserId: string,
+): QuickAddDraft {
+  const paidByUserId = getDefaultPaidByUserId(members, currentUserId);
+
   return {
     title: "",
     categoryId: "",
     realCost: "0",
     alternativeCost: "",
-    person: DEFAULT_LEGACY_PERSON,
+    paidByUserId,
+    beneficiaryUserIds: getDefaultBeneficiaryUserIds(members, paidByUserId),
     date: getTodayLocal(),
   };
 }
@@ -165,8 +172,12 @@ function getSearchHref(draft: QuickAddDraft) {
     params.set("alternativeCost", draft.alternativeCost);
   }
 
-  if (draft.person) {
-    params.set("person", draft.person);
+  if (draft.paidByUserId) {
+    params.set("paidByUserId", draft.paidByUserId);
+  }
+
+  if (draft.beneficiaryUserIds.length > 0) {
+    params.set("beneficiaryUserIds", draft.beneficiaryUserIds.join(","));
   }
 
   if (draft.date) {
@@ -180,6 +191,8 @@ function getSearchHref(draft: QuickAddDraft) {
 export function QuickAddSheet({
   categories,
   workspace,
+  members,
+  currentUserId,
 }: {
   categories?: CategoryOption[];
   workspace: {
@@ -187,11 +200,15 @@ export function QuickAddSheet({
     kind: "private" | "shared";
     isShared: boolean;
   };
+  members: WorkspaceMemberOption[];
+  currentUserId: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
-  const [draft, setDraft] = useState<QuickAddDraft>(() => getInitialDraft());
+  const [draft, setDraft] = useState<QuickAddDraft>(() =>
+    getInitialDraft(members, currentUserId),
+  );
   const firstPresetRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -242,8 +259,8 @@ export function QuickAddSheet({
     router.refresh();
     setOpen(false);
     setActivePreset(null);
-    setDraft(getInitialDraft());
-  }, [router, state.isFirstEntryCreated, state.success]);
+    setDraft(getInitialDraft(members, currentUserId));
+  }, [currentUserId, members, router, state.isFirstEntryCreated, state.success]);
 
   function resolveCategoryId(categorySlug: string) {
     const bySlug = categoryOptions.find((category) => category.slug === categorySlug);
@@ -269,12 +286,18 @@ export function QuickAddSheet({
     }
 
     setActivePreset(preset.id);
+    const paidByUserId = getDefaultPaidByUserId(members, currentUserId);
+    const beneficiaryUserIds = preset.shared
+      ? members.map((member) => member.userId)
+      : getDefaultBeneficiaryUserIds(members, paidByUserId);
+
     setDraft({
       title: preset.title,
       categoryId: resolveCategoryId(preset.categorySlug),
       realCost: "0",
       alternativeCost: getMoneyValue(preset.amount),
-      person: preset.person ?? DEFAULT_LEGACY_PERSON,
+      paidByUserId,
+      beneficiaryUserIds,
       date: getTodayLocal(),
     });
     focusTitleSoon();
@@ -282,15 +305,7 @@ export function QuickAddSheet({
 
   function personalize() {
     setActivePreset("custom");
-    setDraft((current) => ({
-      ...current,
-      title: "",
-      categoryId: "",
-      realCost: "0",
-      alternativeCost: "",
-      person: DEFAULT_LEGACY_PERSON,
-      date: getTodayLocal(),
-    }));
+    setDraft(getInitialDraft(members, currentUserId));
     focusTitleSoon();
   }
 
@@ -302,7 +317,7 @@ export function QuickAddSheet({
 
         if (!nextOpen) {
           setActivePreset(null);
-          setDraft(getInitialDraft());
+          setDraft(getInitialDraft(members, currentUserId));
         }
       }}
     >
@@ -545,20 +560,13 @@ export function QuickAddSheet({
                 </div>
               </div>
 
-              <fieldset className="space-y-2.5">
-                <legend className="text-sm font-medium text-foreground">
-                  Persona
-                </legend>
-                <PersonSegmentedSelector
-                  value={draft.person}
-                  onValueChange={(value) =>
-                    setDraft((current) => ({
-                      ...current,
-                      person: value,
-                    }))
-                  }
-                />
-              </fieldset>
+              <EntryPeopleFields
+                key={`${draft.paidByUserId}:${draft.beneficiaryUserIds.join(",")}`}
+                members={members}
+                paidByUserId={draft.paidByUserId}
+                beneficiaryUserIds={draft.beneficiaryUserIds}
+                errors={state.errors}
+              />
             </div>
 
             <div className="mt-4 flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row">
@@ -567,6 +575,7 @@ export function QuickAddSheet({
                 className="h-11 w-full px-5 sm:flex-1"
                 disabled={
                   pending ||
+                  members.length === 0 ||
                   !draft.title.trim() ||
                   !draft.categoryId.trim() ||
                   !draft.alternativeCost.trim()

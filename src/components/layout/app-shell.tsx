@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 export type AppShellWorkspace = {
   id: string;
@@ -140,11 +141,15 @@ export function AppShell({
   children,
   workspace,
   availableWorkspaces,
+  workspaceMembers,
+  currentUserId,
   auth,
 }: {
   children: React.ReactNode;
   workspace: AppShellWorkspace;
   availableWorkspaces: AppShellWorkspace[];
+  workspaceMembers: WorkspaceMemberOption[];
+  currentUserId: string;
   auth: AppShellAuth;
 }) {
   const pathname = usePathname();
@@ -209,7 +214,11 @@ export function AppShell({
               mobile
             />
             <div className="flex justify-center">
-              <QuickAddSheet workspace={workspace} />
+              <QuickAddSheet
+                workspace={workspace}
+                members={workspaceMembers}
+                currentUserId={currentUserId}
+              />
             </div>
             <NavButton
               href={primaryNavItems[3].href}

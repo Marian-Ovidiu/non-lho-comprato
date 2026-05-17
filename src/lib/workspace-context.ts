@@ -1,5 +1,9 @@
 import { prisma } from "@/src/lib/prisma";
 import {
+  getWorkspaceMemberLabel,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
+import {
   DEFAULT_LEGACY_PERSON,
   normalizeLegacyPerson,
   type LegacyPersonValue,
@@ -73,6 +77,37 @@ export async function getCurrentWorkspace(): Promise<CurrentWorkspace> {
 
 export async function getCurrentWorkspaceId(): Promise<string> {
   return getAuthCurrentWorkspaceId();
+}
+
+export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberOption[]> {
+  const workspaceId = await getCurrentWorkspaceId();
+
+  const memberships = await prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  return memberships.map((membership) => ({
+    userId: membership.userId,
+    name: membership.user.name,
+    email: membership.user.email,
+    label: getWorkspaceMemberLabel({
+      userId: membership.userId,
+      name: membership.user.name,
+      email: membership.user.email,
+    }),
+  }));
 }
 
 export async function getCurrentWorkspaceScopedWhere<

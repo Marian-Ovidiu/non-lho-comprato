@@ -17,7 +17,7 @@ type RecentEntriesProps = {
     realCost: unknown;
     alternativeCost: unknown;
     savedAmount: unknown;
-    date: Date;
+    date: string | Date;
     note: string | null;
   }>;
   description?: string;

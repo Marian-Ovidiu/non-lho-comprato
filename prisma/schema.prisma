@@ -76,11 +76,13 @@ model Entry {
   note              String?
   source            EntrySource      @default(manual)
   person            Person           @default(MARIAN)
+  paidBy            Person           @default(MARIAN)
   visibility        EntryVisibility  @default(workspace)
+  beneficiaries     EntryBeneficiary[]
   createdByUserId   String?
   createdBy         User?            @relation("EntryCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   paidByUserId      String?
-  paidBy            User?            @relation("EntryPaidBy", fields: [paidByUserId], references: [id], onDelete: SetNull)
+  paidByUser        User?            @relation("EntryPaidBy", fields: [paidByUserId], references: [id], onDelete: SetNull)
   habitOccurrenceId String?          @unique
   habitOccurrence   HabitOccurrence? @relation(fields: [habitOccurrenceId], references: [id], onDelete: SetNull)
   createdAt         DateTime         @default(now())
@@ -89,6 +91,19 @@ model Entry {
   @@index([workspaceId])
   @@index([createdByUserId])
   @@index([paidByUserId])
+}
+
+model EntryBeneficiary {
+  id        String   @id @default(cuid())
+  entryId   String
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([entryId, userId])
+  @@index([entryId])
+  @@index([userId])
 }
 
 model Habit {
@@ -165,8 +180,9 @@ model User {
   workspaceMemberships WorkspaceMember[]
   workspaceInvitesCreated WorkspaceInvite[] @relation("WorkspaceInviteCreatedBy")
   workspaceInvitesAccepted WorkspaceInvite[] @relation("WorkspaceInviteAcceptedBy")
-  createdEntries       Entry[]           @relation("EntryCreatedBy")
-  paidEntries          Entry[]           @relation("EntryPaidBy")
+  createdEntries       Entry[]             @relation("EntryCreatedBy")
+  paidEntries          Entry[]             @relation("EntryPaidBy")
+  beneficiaryEntries   EntryBeneficiary[]
 }
 
 model Workspace {

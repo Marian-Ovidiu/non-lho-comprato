@@ -4,15 +4,17 @@ import { getEntries } from "@/src/actions/entries";
 import { EntryList } from "@/src/components/entries/entry-list";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
+import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 
 export const dynamic = "force-dynamic";
 
 export default async function EntriesPage() {
   type EntryItem = Awaited<ReturnType<typeof getEntries>>[number];
   let entries: EntryItem[] = [];
+  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
 
   try {
-    entries = await getEntries();
+    [entries, members] = await Promise.all([getEntries(), getCurrentWorkspaceMembers()]);
   } catch (error) {
     console.error("Failed to load entries:", error);
   }
@@ -33,7 +35,7 @@ export default async function EntriesPage() {
         ]}
       />
 
-      <EntryList entries={entries} />
+      <EntryList entries={entries} members={members} />
     </main>
   );
 }

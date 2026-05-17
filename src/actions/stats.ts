@@ -3,7 +3,11 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
-import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { getWorkspaceMemberLabel } from "@/src/lib/workspace-members";
+import {
+  getCurrentWorkspaceMembers,
+  getCurrentWorkspaceScopedWhere,
+} from "@/src/lib/workspace-context";
 
 type StatsOverview = {
   totalRealSpent: number;
@@ -57,6 +61,14 @@ type HabitStatsItem = {
   pendingCount: number;
   totalSaved: number;
   disciplineRatePercent: number;
+};
+
+export type WorkspaceMemberSpendingStatsItem = {
+  userId: string;
+  label: string;
+  totalPaidByUser: number;
+  personalPaidByUser: number;
+  sharedPaidByUser: number;
 };
 
 type DecimalLike = {
@@ -526,5 +538,108 @@ export async function getHabitStats(
   } catch (error) {
     console.error("Failed to load habit stats:", error);
     return [];
+  }
+}
+
+function emptyWorkspaceMemberSpendingStats(
+  members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
+): WorkspaceMemberSpendingStatsItem[] {
+  return members.map((member) => ({
+    userId: member.userId,
+    label: member.label,
+    totalPaidByUser: 0,
+    personalPaidByUser: 0,
+    sharedPaidByUser: 0,
+  }));
+}
+
+export async function getWorkspaceMemberSpendingStats(
+  person?: PersonFilterValue,
+): Promise<WorkspaceMemberSpendingStatsItem[]> {
+  try {
+    const [members, entries] = await Promise.all([
+      getCurrentWorkspaceMembers(),
+      prisma.entry.findMany({
+        where: await buildEntryWhere(person, {
+          paidByUserId: { not: null },
+        }),
+        select: {
+          realCost: true,
+          paidByUserId: true,
+          beneficiaries: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    const totals = new Map(
+      members.map((member) => [
+        member.userId,
+        {
+          userId: member.userId,
+          label: member.label,
+          totalPaidByUser: 0,
+          personalPaidByUser: 0,
+          sharedPaidByUser: 0,
+        },
+      ]),
+    );
+
+    for (const entry of entries) {
+      const payerUserId = entry.paidByUserId;
+      if (!payerUserId) {
+        continue;
+      }
+
+      const memberTotals = totals.get(payerUserId);
+      if (!memberTotals) {
+        continue;
+      }
+
+      const realCost = toNumber(entry.realCost);
+      const beneficiaryUserIds = entry.beneficiaries.map(
+        (beneficiary) => beneficiary.userId,
+      );
+
+      memberTotals.totalPaidByUser = round2(
+        memberTotals.totalPaidByUser + realCost,
+      );
+
+      if (
+        beneficiaryUserIds.length === 1 &&
+        beneficiaryUserIds[0] === payerUserId
+      ) {
+        memberTotals.personalPaidByUser = round2(
+          memberTotals.personalPaidByUser + realCost,
+        );
+      } else if (beneficiaryUserIds.length > 1) {
+        memberTotals.sharedPaidByUser = round2(
+          memberTotals.sharedPaidByUser + realCost,
+        );
+      }
+    }
+
+    return members.map(
+      (member) =>
+        totals.get(member.userId) ?? {
+          userId: member.userId,
+          label: getWorkspaceMemberLabel(member),
+          totalPaidByUser: 0,
+          personalPaidByUser: 0,
+          sharedPaidByUser: 0,
+        },
+    );
+  } catch (error) {
+    console.error("Failed to load workspace member spending stats:", error);
+
+    try {
+      const members = await getCurrentWorkspaceMembers();
+      return emptyWorkspaceMemberSpendingStats(members);
+    } catch {
+      return [];
+    }
   }
 }
