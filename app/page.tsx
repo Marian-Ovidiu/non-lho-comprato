@@ -7,6 +7,7 @@ import { PublicAccessGate } from "@/src/components/public/public-access-gate";
 import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { DashboardEmptyState } from "@/src/components/dashboard/dashboard-empty-state";
 import { DashboardHabitsPreview } from "@/src/components/dashboard/dashboard-habits-preview";
+import { CoupleBalanceCard } from "@/src/components/dashboard/couple-balance-card";
 import { DashboardHudCards } from "@/src/components/dashboard/dashboard-hud-cards";
 import { GoalsPreview } from "@/src/components/dashboard/goals-preview";
 import {
@@ -24,9 +25,15 @@ import {
   finalizeOldPendingOccurrences,
   getTodayHabitOccurrences,
 } from "@/src/actions/habits";
-import { getDashboardSummary, getEntries } from "@/src/actions/entries";
+import {
+  getDashboardSummary,
+  getEntries,
+} from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
-import { getTodayDashboardSummary } from "@/src/actions/dashboard";
+import {
+  getTodayDashboardSummary,
+  getWorkspaceBalance,
+} from "@/src/actions/dashboard";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
@@ -515,6 +522,13 @@ export default async function Home({ searchParams }: HomePageProps) {
   let todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
   let pendingHabitsCount = 0;
   let currentStreak = 0;
+  let workspaceBalance: Awaited<ReturnType<typeof getWorkspaceBalance>> = {
+    supported: false,
+    status: "unsupported",
+    amount: 0,
+    counterpartUserId: null,
+    counterpartLabel: null,
+  };
   let entriesLoadError: string | null = null;
   let dashboardLoadError: string | null = null;
 
@@ -527,10 +541,18 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   try {
-    const [loadedSummary, loadedTodaySummary, loadedGoals, loadedTodayHabits, globalStreak] =
+    const [
+      loadedSummary,
+      loadedTodaySummary,
+      loadedWorkspaceBalance,
+      loadedGoals,
+      loadedTodayHabits,
+      globalStreak,
+    ] =
       await Promise.all([
         getDashboardSummary(),
         getTodayDashboardSummary(),
+        getWorkspaceBalance(),
         getGoalsWithProgress(),
         getTodayHabitOccurrences(),
         getGlobalStreak(),
@@ -538,6 +560,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
     monthSaved = loadedSummary.totalSaved;
     todaySummary = loadedTodaySummary;
+    workspaceBalance = loadedWorkspaceBalance;
     currentStreak = globalStreak.currentStreak;
     activeGoals = loadedGoals.filter((goal) => goal.isActive).slice(0, 3);
     todayHabits = loadedTodayHabits;
@@ -678,6 +701,8 @@ export default async function Home({ searchParams }: HomePageProps) {
       />
 
       <StreakHeroCard currentStreak={currentStreak} />
+
+      <CoupleBalanceCard balance={workspaceBalance} />
 
       <MomentumCard
         label={momentumView.label}

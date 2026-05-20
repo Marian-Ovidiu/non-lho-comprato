@@ -4,7 +4,12 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { buildPersonWhere } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
-import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { computeCoupleWorkspaceBalance, type WorkspaceBalanceCardState } from "@/src/lib/workspace-balance";
+import {
+  getCurrentUser,
+  getCurrentWorkspaceMembers,
+  getCurrentWorkspaceScopedWhere,
+} from "@/src/lib/workspace-context";
 
 type TodayDashboardSummary = {
   totalSavedToday: number;
@@ -107,6 +112,49 @@ export async function getTodayDashboardSummary(
       totalRealSpentToday: 0,
       totalSavedToday: 0,
       entriesTodayCount: 0,
+    };
+  }
+}
+
+export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> {
+  try {
+    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+    const [currentUser, members, entries] = await Promise.all([
+      getCurrentUser(),
+      getCurrentWorkspaceMembers(),
+      prisma.entry.findMany({
+        where: workspaceWhere,
+        select: {
+          realCost: true,
+          paidByUserId: true,
+          beneficiaries: {
+            select: {
+              userId: true,
+            },
+          },
+        },
+      }),
+    ]);
+
+    return computeCoupleWorkspaceBalance(
+      members,
+      currentUser.id,
+      entries.map((entry) => ({
+        realCost: Number(entry.realCost),
+        paidByUserId: entry.paidByUserId,
+        beneficiaryUserIds: entry.beneficiaries.map(
+          (beneficiary) => beneficiary.userId,
+        ),
+      })),
+    );
+  } catch (error) {
+    console.error("Failed to load workspace balance:", error);
+    return {
+      supported: false,
+      status: "unsupported",
+      amount: 0,
+      counterpartUserId: null,
+      counterpartLabel: null,
     };
   }
 }
