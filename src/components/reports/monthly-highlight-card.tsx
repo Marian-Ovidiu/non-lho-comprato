@@ -1,10 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
-import {
-  getEntryOwnershipLabel,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
 
 type CategoryHighlight = {
   name: string;
@@ -17,7 +13,7 @@ type BiggestSaving = {
   title: string;
   savedAmount: number;
   date: string | Date;
-  person: LegacyPersonValue;
+  ownershipLabel: string;
   categoryName: string;
 } | null;
 
@@ -95,7 +91,7 @@ export function MonthlyHighlightCard({
               </p>
               {biggestSaving ? (
                 <Badge variant="secondary" className="bg-surface/80">
-                  {getEntryOwnershipLabel(biggestSaving.person)}
+                  {biggestSaving.ownershipLabel}
                 </Badge>
               ) : null}
             </div>

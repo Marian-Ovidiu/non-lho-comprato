@@ -49,9 +49,9 @@ export default async function MonthlyReportPage({
           <MonthlyOverviewCards overview={report.overview} />
 
           <PersonSplitCards
-            marian={report.personSplit.marian}
-            martina={report.personSplit.martina}
-            condivise={report.personSplit.condivise}
+            primary={report.memberSplit.primary}
+            secondary={report.memberSplit.secondary}
+            shared={report.memberSplit.shared}
           />
 
           <MonthlyHighlightCard

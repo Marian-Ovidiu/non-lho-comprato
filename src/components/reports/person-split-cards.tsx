@@ -1,17 +1,17 @@
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
-import { buildPersonBuckets } from "@/src/lib/ui-person";
 
 type PersonSummary = {
+  label: string;
   totalSaved: number;
   entriesCount: number;
 };
 
 type PersonSplitCardsProps = {
-  marian?: PersonSummary | null;
-  martina?: PersonSummary | null;
-  condivise?: PersonSummary | null;
+  primary?: PersonSummary | null;
+  secondary?: PersonSummary | null;
+  shared?: PersonSummary | null;
 };
 
 function getPersonCardTone(index: number) {
@@ -23,11 +23,9 @@ function getPersonCardTone(index: number) {
 }
 
 function PersonCard({
-  label,
   summary,
   toneIndex,
 }: {
-  label: string;
   summary?: PersonSummary | null;
   toneIndex: number;
 }) {
@@ -36,7 +34,7 @@ function PersonCard({
       <CardHeader className="space-y-2 p-5 pb-3">
         <div className="flex items-center justify-between gap-3">
           <CardTitle className="text-sm font-medium text-muted-text">
-            {label}
+            {summary?.label ?? "Membro"}
           </CardTitle>
           <Badge variant="secondary">
             {summary?.entriesCount ?? 0} movimenti
@@ -56,16 +54,10 @@ function PersonCard({
 }
 
 export function PersonSplitCards({
-  marian,
-  martina,
-  condivise,
+  primary,
+  secondary,
+  shared,
 }: PersonSplitCardsProps) {
-  const buckets = buildPersonBuckets({
-    MARIAN: marian,
-    MARTINA: martina,
-    TUTTI: condivise,
-  });
-
   return (
     <section className="space-y-4">
       <div className="space-y-1">
@@ -78,11 +70,14 @@ export function PersonSplitCards({
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {buckets.map((bucket, index) => (
+        {[
+          primary,
+          secondary,
+          shared,
+        ].map((summary, index) => (
           <PersonCard
-            key={bucket.key}
-            label={bucket.label}
-            summary={bucket.summary}
+            key={summary?.label ?? index}
+            summary={summary}
             toneIndex={index}
           />
         ))}

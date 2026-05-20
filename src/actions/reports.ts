@@ -2,12 +2,14 @@
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { formatMoney } from "@/src/lib/formatters";
+import { getEntryExpenseKind } from "@/src/lib/entry-ownership";
 import { prisma } from "@/src/lib/prisma";
-import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 import {
-  buildPersonBuckets,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
+  getCurrentWorkspaceMembers,
+  getCurrentWorkspaceScopedWhere,
+} from "@/src/lib/workspace-context";
+import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
+import { getMemberLabel, resolveEntryPeopleFromRecord } from "@/src/lib/workspace-members";
 
 type DecimalLike = {
   toString?: () => string;
@@ -26,24 +28,18 @@ export type MonthlyReportOverview = {
   savingRatePercent: number;
 };
 
-export type MonthlyReportPersonSummary = {
-  totalSaved: number;
-  entriesCount: number;
-};
-
-export type MonthlyReportPersonSplitItem = {
-  key: LegacyPersonValue | "TOTAL";
+export type MonthlyReportMemberSummary = {
+  userId: string | null;
   label: string;
   totalSaved: number;
   entriesCount: number;
-  sharePercent: number;
 };
 
-export type MonthlyReportPersonSplit = MonthlyReportPersonSplitItem[] & {
-  marian: MonthlyReportPersonSummary;
-  martina: MonthlyReportPersonSummary;
-  condivise: MonthlyReportPersonSummary;
-  total: MonthlyReportPersonSummary;
+export type MonthlyReportMemberSplit = {
+  primary: MonthlyReportMemberSummary;
+  secondary: MonthlyReportMemberSummary;
+  shared: MonthlyReportMemberSummary;
+  total: MonthlyReportMemberSummary;
 };
 
 export type MonthlyReportBestCategory = {
@@ -69,7 +65,7 @@ export type MonthlyReportBiggestSaving = {
   title: string;
   savedAmount: number;
   date: string;
-  person: LegacyPersonValue;
+  ownershipLabel: string;
   categoryName: string;
   realCost: number;
   alternativeCost: number;
@@ -100,7 +96,7 @@ export type MonthlyReportData = {
   month: string;
   label: string;
   overview: MonthlyReportOverview;
-  personSplit: MonthlyReportPersonSplit;
+  memberSplit: MonthlyReportMemberSplit;
   bestCategory: MonthlyReportBestCategory;
   worstCategory: MonthlyReportWorstCategory;
   biggestSaving: MonthlyReportBiggestSaving;
@@ -306,62 +302,93 @@ async function buildHabitOccurrenceWhere(monthKey: string): Promise<Prisma.Habit
   };
 }
 
-function getMonthPersonSummary(entryCount: number, totalSaved: number): MonthlyReportPersonSummary {
+function createMonthlyReportMemberSummary(
+  userId: string | null,
+  label: string,
+  totalSaved = 0,
+  entriesCount = 0,
+): MonthlyReportMemberSummary {
   return {
-    entriesCount: entryCount,
+    userId,
+    label,
     totalSaved: round2(totalSaved),
+    entriesCount,
   };
 }
 
-function buildPersonSplit(
-  totals: {
-    MARIAN: MonthlyReportPersonSummary;
-    MARTINA: MonthlyReportPersonSummary;
-    TUTTI: MonthlyReportPersonSummary;
+function getEntryOwnershipLabelFromMembers(
+  entry: {
+    paidByUserId: string | null;
+    beneficiaries: Array<{ userId: string }>;
   },
+  members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
+): string {
+  const resolved = resolveEntryPeopleFromRecord(entry, members);
+  const expenseKind = getEntryExpenseKind(resolved.beneficiaryUserIds);
+
+  if (expenseKind === "shared") {
+    return "Condivise";
+  }
+
+  const soleUserId = resolved.beneficiaryUserIds[0] ?? resolved.paidByUserId;
+  return getMemberLabel(members, soleUserId) ?? "Membro";
+}
+
+function buildMemberSplit(
+  entries: Array<{
+    paidByUserId: string | null;
+    beneficiaries: Array<{ userId: string }>;
+    savedAmount: unknown;
+  }>,
+  members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
   totalSaved: number,
   entriesCount: number,
-): MonthlyReportPersonSplit {
-  const split = buildPersonBuckets({
-    MARIAN: totals.MARIAN,
-    MARTINA: totals.MARTINA,
-    TUTTI: totals.TUTTI,
-  }).map((bucket) => ({
-    key: bucket.key,
-    label: bucket.label,
-    totalSaved: bucket.summary.totalSaved,
-    entriesCount: bucket.summary.entriesCount,
-    sharePercent:
-      totalSaved === 0
-        ? 0
-        : round2((bucket.summary.totalSaved / totalSaved) * 100),
-  })) as MonthlyReportPersonSplitItem[];
+): MonthlyReportMemberSplit {
+  const slots = getWorkspaceMemberSlots(members);
+  const primaryLabel = getMemberLabel(members, slots.primaryUserId) ?? "Membro";
+  const secondaryLabel =
+    getMemberLabel(members, slots.secondaryUserId) ?? "Membro";
 
-  const splitWithTotal = [
-    {
-      key: "TOTAL" as const,
-      label: "Totale",
-      totalSaved,
-      entriesCount,
-      sharePercent: 100,
-    },
-  ] as MonthlyReportPersonSplitItem[];
+  const primary = createMonthlyReportMemberSummary(
+    slots.primaryUserId,
+    primaryLabel,
+  );
+  const secondary = createMonthlyReportMemberSummary(
+    slots.secondaryUserId,
+    secondaryLabel,
+  );
+  const shared = createMonthlyReportMemberSummary(null, "Condivise");
 
-  return Object.assign([...split, ...splitWithTotal], {
-    marian: getMonthPersonSummary(
-      totals.MARIAN.entriesCount,
-      totals.MARIAN.totalSaved,
-    ),
-    martina: getMonthPersonSummary(
-      totals.MARTINA.entriesCount,
-      totals.MARTINA.totalSaved,
-    ),
-    condivise: getMonthPersonSummary(
-      totals.TUTTI.entriesCount,
-      totals.TUTTI.totalSaved,
-    ),
-    total: getMonthPersonSummary(entriesCount, totalSaved),
-  });
+  for (const entry of entries) {
+    const resolved = resolveEntryPeopleFromRecord(entry, members);
+    const expenseKind = getEntryExpenseKind(resolved.beneficiaryUserIds);
+    const savedAmount = toNumber(entry.savedAmount);
+
+    if (expenseKind === "shared") {
+      shared.totalSaved = round2(shared.totalSaved + savedAmount);
+      shared.entriesCount += 1;
+      continue;
+    }
+
+    const beneficiaryUserId =
+      resolved.beneficiaryUserIds[0] ?? resolved.paidByUserId;
+
+    if (beneficiaryUserId && beneficiaryUserId === slots.secondaryUserId) {
+      secondary.totalSaved = round2(secondary.totalSaved + savedAmount);
+      secondary.entriesCount += 1;
+      continue;
+    }
+
+    primary.totalSaved = round2(primary.totalSaved + savedAmount);
+    primary.entriesCount += 1;
+  }
+
+  return {
+    primary,
+    secondary,
+    shared,
+    total: createMonthlyReportMemberSummary(null, "Totale", totalSaved, entriesCount),
+  };
 }
 
 function buildStreakSummary(dayTotals: Map<string, number>): MonthlyReportStreakSummary {
@@ -413,7 +440,12 @@ function buildStreakSummary(dayTotals: Map<string, number>): MonthlyReportStreak
   };
 }
 
-function buildEmptyReport(monthKey: string): MonthlyReportData {
+function buildEmptyReport(
+  monthKey: string,
+  members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
+): MonthlyReportData {
+  const memberSplit = buildMemberSplit([], members, 0, 0);
+
   return {
     month: monthKey,
     label: formatMonthLabel(monthKey),
@@ -424,15 +456,7 @@ function buildEmptyReport(monthKey: string): MonthlyReportData {
       entriesCount: 0,
       savingRatePercent: 0,
     },
-    personSplit: buildPersonSplit(
-      {
-        MARIAN: { totalSaved: 0, entriesCount: 0 },
-        MARTINA: { totalSaved: 0, entriesCount: 0 },
-        TUTTI: { totalSaved: 0, entriesCount: 0 },
-      },
-      0,
-      0,
-    ),
+    memberSplit,
     bestCategory: null,
     worstCategory: null,
     biggestSaving: null,
@@ -501,6 +525,7 @@ export async function getMonthlyReport(
   const selectedMonth = normalizeMonthKey(requestedMonth);
 
   try {
+    const members = await getCurrentWorkspaceMembers();
     const entryWhere = await buildEntryWhere(selectedMonth);
     const habitOccurrenceWhere = await buildHabitOccurrenceWhere(selectedMonth);
 
@@ -515,7 +540,12 @@ export async function getMonthlyReport(
           alternativeCost: true,
           savedAmount: true,
           note: true,
-          person: true,
+          paidByUserId: true,
+          beneficiaries: {
+            select: {
+              userId: true,
+            },
+          },
           category: {
             select: {
               name: true,
@@ -557,7 +587,7 @@ export async function getMonthlyReport(
         selectedMonth,
         selectedMonthLabel: formatMonthLabel(selectedMonth),
         monthOptions,
-        report: buildEmptyReport(selectedMonth),
+        report: buildEmptyReport(selectedMonth, members),
       };
     }
 
@@ -579,28 +609,7 @@ export async function getMonthlyReport(
         ? 0
         : round2((totalSaved / totalAlternativeCost) * 100);
 
-    const personTotals = {
-      MARIAN: {
-        totalSaved: 0,
-        entriesCount: 0,
-      },
-      MARTINA: {
-        totalSaved: 0,
-        entriesCount: 0,
-      },
-      TUTTI: {
-        totalSaved: 0,
-        entriesCount: 0,
-      },
-    };
-
-    for (const entry of monthEntries) {
-      const current = personTotals[entry.person];
-      current.totalSaved = round2(current.totalSaved + toNumber(entry.savedAmount));
-      current.entriesCount += 1;
-    }
-
-    const personSplit = buildPersonSplit(personTotals, totalSaved, entriesCount);
+    const memberSplit = buildMemberSplit(monthEntries, members, totalSaved, entriesCount);
 
     const categoryMap = new Map<
       string,
@@ -638,7 +647,7 @@ export async function getMonthlyReport(
           realCost: toNumber(entry.realCost),
           alternativeCost: toNumber(entry.alternativeCost),
           savedAmount: toNumber(entry.savedAmount),
-          person: entry.person,
+          ownershipLabel: getEntryOwnershipLabelFromMembers(entry, members),
           note: entry.note,
         };
       }
@@ -756,7 +765,11 @@ export async function getMonthlyReport(
 
     const recapParts = [
       `A ${monthLower} avete risparmiato ${formatMoney(totalSaved)}.`,
-      `Marian ha risparmiato ${formatMoney(personTotals.MARIAN.totalSaved)}, Martina ${formatMoney(personTotals.MARTINA.totalSaved)}, Condivise ${formatMoney(personTotals.TUTTI.totalSaved)}.`,
+      `Risparmio per membro: ${memberSplit.primary.label} ${formatMoney(
+        memberSplit.primary.totalSaved,
+      )}, ${memberSplit.secondary.label} ${formatMoney(
+        memberSplit.secondary.totalSaved,
+      )}, ${memberSplit.shared.label} ${formatMoney(memberSplit.shared.totalSaved)}.`,
       bestCategory
         ? `La categoria migliore è stata ${bestCategory.categoryName}.`
         : "Nessuna categoria si è distinta questo mese.",
@@ -784,7 +797,7 @@ export async function getMonthlyReport(
           entriesCount,
           savingRatePercent,
         },
-        personSplit,
+        memberSplit,
         bestCategory,
         worstCategory,
         biggestSaving,
@@ -798,12 +811,13 @@ export async function getMonthlyReport(
   } catch (error) {
     console.error("Failed to load monthly report:", error);
     const monthOptions = ensureSelectedMonthOption([], selectedMonth);
+    const members = await getCurrentWorkspaceMembers().catch(() => []);
 
     return {
       selectedMonth,
       selectedMonthLabel: formatMonthLabel(selectedMonth),
       monthOptions,
-      report: buildEmptyReport(selectedMonth),
+      report: buildEmptyReport(selectedMonth, members),
     };
   }
 }

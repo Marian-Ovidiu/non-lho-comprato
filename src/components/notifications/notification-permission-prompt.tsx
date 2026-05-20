@@ -12,6 +12,7 @@ function isNotificationSupported(): boolean {
 
 export function NotificationPermissionPrompt() {
   const [visible, setVisible] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
   const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
@@ -19,10 +20,28 @@ export function NotificationPermissionPrompt() {
       return;
     }
 
-    if (Notification.permission === "default") {
+    if (Notification.permission === "default" && hasInteracted) {
       setVisible(true);
     }
-  }, []);
+  }, [hasInteracted]);
+
+  useEffect(() => {
+    if (hasInteracted) {
+      return;
+    }
+
+    const markInteracted = () => {
+      setHasInteracted(true);
+    };
+
+    window.addEventListener("pointerdown", markInteracted, { once: true });
+    window.addEventListener("keydown", markInteracted, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", markInteracted);
+      window.removeEventListener("keydown", markInteracted);
+    };
+  }, [hasInteracted]);
 
   const handleRequest = useCallback(async () => {
     if (!isNotificationSupported()) {
@@ -35,10 +54,12 @@ export function NotificationPermissionPrompt() {
     } finally {
       setRequesting(false);
       setVisible(
-        isNotificationSupported() && Notification.permission === "default",
+        isNotificationSupported() &&
+          Notification.permission === "default" &&
+          hasInteracted,
       );
     }
-  }, []);
+  }, [hasInteracted]);
 
   if (!visible) {
     return null;
