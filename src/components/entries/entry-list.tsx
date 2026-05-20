@@ -126,6 +126,8 @@ export function EntryList({
   const [isLoading, setIsLoading] = useState(false);
   const initialSearchHandledRef = useRef(false);
   const requestIdRef = useRef(0);
+  const searchTerm = searchValue.trim();
+  const hasSearchTerm = searchTerm.length > 0;
 
   const groups = useMemo(() => groupEntries(entries), [entries]);
 
@@ -233,7 +235,7 @@ export function EntryList({
           isSearching={isSearching}
         />
 
-        {searchValue.trim() && !isSearching ? (
+        {hasSearchTerm && !isSearching ? (
           <EmptyState
             title={searchError ? "Ricerca non disponibile" : "Nessun movimento trovato"}
             description={
@@ -241,7 +243,7 @@ export function EntryList({
                 ? searchError
                 : "Prova un termine diverso o svuota la ricerca."
             }
-            note="Il filtro usa workspace, titolo, categoria, importo e membri già caricati."
+            note="Il filtro usa workspace, titolo, descrizione, categoria, importo e persone già caricate."
             icon={<Search className="size-5" aria-hidden="true" />}
           />
         ) : (

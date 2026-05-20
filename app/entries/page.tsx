@@ -17,7 +17,7 @@ export default async function EntriesPage() {
 
   try {
     [entriesPage, members] = await Promise.all([
-      getEntriesPage(),
+      getEntriesPage({ limit: 20 }),
       getCurrentWorkspaceMembers(),
     ]);
   } catch (error) {
