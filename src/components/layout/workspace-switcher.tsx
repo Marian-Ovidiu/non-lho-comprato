@@ -93,6 +93,10 @@ export function WorkspaceSwitcher({
   const [isSwitching, startSwitchTransition] = useTransition();
   const hasMultipleWorkspaces = availableWorkspaces.length > 1;
 
+  function emitWorkspaceSwitchEvent(name: "nlc:workspace-switch-start" | "nlc:workspace-switch-end") {
+    window.dispatchEvent(new Event(name));
+  }
+
   const returnTo = useMemo(() => {
     const query = searchParams.toString();
     return query ? `${pathname}?${query}` : pathname;
@@ -173,11 +177,17 @@ export function WorkspaceSwitcher({
                         setSwitchingWorkspaceId(workspace.id);
                         setOpen(false);
 
+                        emitWorkspaceSwitchEvent("nlc:workspace-switch-start");
+
                         if (!isCurrent) {
                           trackPostHogEvent("workspace_switched");
                         }
 
-                        await switchWorkspaceAction(formData);
+                        try {
+                          await switchWorkspaceAction(formData);
+                        } finally {
+                          emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+                        }
                       });
                     }}
                   >

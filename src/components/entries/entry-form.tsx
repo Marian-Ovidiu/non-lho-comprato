@@ -1,8 +1,9 @@
 ﻿"use client";
 
-import { useActionState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
+import { Check } from "lucide-react";
 
 import { createEntry } from "@/src/actions/entries";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
 import {
   getDefaultBeneficiaryUserIds,
@@ -93,6 +95,11 @@ export function EntryForm({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
+  const redirectTimerRef = useRef<number | null>(null);
+  const successTimerRef = useRef<number | null>(null);
+  const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
+    "idle",
+  );
   const redirect = useCallback((path: string) => router.replace(path), [router]);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => redirect("/"),
@@ -115,6 +122,7 @@ export function EntryForm({
   useEffect(() => {
     if (!state.success) {
       didHandleSuccessRef.current = false;
+      setSuccessStage("idle");
       return;
     }
 
@@ -128,16 +136,40 @@ export function EntryForm({
       trackPostHogEvent("first_entry_created");
     }
 
-    if (tryTrigger(state)) {
-      return;
+    setSuccessStage("confirming");
+
+    if (successTimerRef.current) {
+      window.clearTimeout(successTimerRef.current);
     }
 
-    const timeout = window.setTimeout(() => {
-      redirect("/");
-    }, 800);
+    if (redirectTimerRef.current) {
+      window.clearTimeout(redirectTimerRef.current);
+    }
 
-    return () => window.clearTimeout(timeout);
+    const showedCelebration = tryTrigger(state);
+
+    successTimerRef.current = window.setTimeout(() => {
+      setSuccessStage("closing");
+    }, 120);
+
+    if (!showedCelebration) {
+      redirectTimerRef.current = window.setTimeout(() => {
+        redirect("/");
+      }, 320);
+    }
   }, [redirect, state, tryTrigger]);
+
+  useEffect(() => {
+    return () => {
+      if (successTimerRef.current) {
+        window.clearTimeout(successTimerRef.current);
+      }
+
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
+    };
+  }, []);
 
   const helperText = useMemo(() => {
     if (!hasCategories) {
@@ -150,7 +182,12 @@ export function EntryForm({
   return (
     <>
       {overlay}
-      <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm">
+      <Card
+        className={cn(
+          "mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm transition-[opacity,transform,filter] duration-200 ease-out",
+          successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
+        )}
+      >
       <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
         <CardTitle>Nuovo movimento</CardTitle>
         <CardDescription className="max-w-xl text-sm leading-5">
@@ -162,13 +199,20 @@ export function EntryForm({
         <CardContent className="space-y-5 p-4 sm:p-5">
           {state.message ? (
             <div
-              className={
+              className={cn(
+                "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
                 state.success
-                  ? "rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm leading-6 text-success"
-                  : "rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive"
-              }
+                  ? "border-success/20 bg-success/10 text-success"
+                  : "border-destructive/20 bg-destructive/10 text-destructive",
+                successStage !== "idle" && "opacity-100",
+              )}
             >
-              {state.message}
+              <span className="flex items-start gap-2">
+                {state.success ? (
+                  <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                ) : null}
+                <span>{state.message}</span>
+              </span>
             </div>
           ) : null}
 

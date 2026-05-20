@@ -1,7 +1,8 @@
 ﻿"use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Check } from "lucide-react";
 
 import { createHabit } from "@/src/actions/habits";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 type CategoryOption = {
   id: string;
@@ -67,8 +69,13 @@ function FieldError({ message }: { message?: string }) {
 export function HabitForm({ categories }: HabitFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+  const successTimerRef = useRef<number | null>(null);
   const [categoryId, setCategoryId] = useState("");
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
+    "idle",
+  );
 
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
@@ -78,10 +85,23 @@ export function HabitForm({ categories }: HabitFormProps) {
         formRef.current?.reset();
         setCategoryId("");
         setSelectedDays([]);
+        setSuccessStage("confirming");
 
-        window.setTimeout(() => {
+        if (refreshTimerRef.current) {
+          window.clearTimeout(refreshTimerRef.current);
+        }
+
+        if (successTimerRef.current) {
+          window.clearTimeout(successTimerRef.current);
+        }
+
+        successTimerRef.current = window.setTimeout(() => {
+          setSuccessStage("closing");
+        }, 120);
+
+        refreshTimerRef.current = window.setTimeout(() => {
           router.refresh();
-        }, 500);
+        }, 240);
       }
 
       return result;
@@ -107,6 +127,20 @@ export function HabitForm({ categories }: HabitFormProps) {
     );
   }
 
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+
+      if (successTimerRef.current) {
+        window.clearTimeout(successTimerRef.current);
+      }
+    };
+  }, []);
+
+  const hasSuccessFeedback = successStage !== "idle" && state.success;
+
   return (
     <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
@@ -118,17 +152,29 @@ export function HabitForm({ categories }: HabitFormProps) {
       </CardHeader>
 
       <form ref={formRef} action={formAction}>
-        <CardContent className="space-y-5 p-4 sm:p-5">
+        <CardContent
+          className={cn(
+            "space-y-5 p-4 sm:p-5 transition-[opacity,transform,filter] duration-200 ease-out",
+            successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
+          )}
+        >
           {state.message ? (
             <div
-              className={
+              className={cn(
+                "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
                 state.success
-                  ? "rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm leading-6 text-success"
-                  : "rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive"
-              }
+                  ? "border-success/20 bg-success/10 text-success"
+                  : "border-destructive/20 bg-destructive/10 text-destructive",
+                hasSuccessFeedback && "translate-y-0 opacity-100",
+              )}
               aria-live="polite"
             >
-              {state.message}
+              <span className="flex items-start gap-2">
+                {state.success ? (
+                  <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                ) : null}
+                <span>{state.message}</span>
+              </span>
             </div>
           ) : null}
 
@@ -254,5 +300,3 @@ export function HabitForm({ categories }: HabitFormProps) {
     </Card>
   );
 }
-
-

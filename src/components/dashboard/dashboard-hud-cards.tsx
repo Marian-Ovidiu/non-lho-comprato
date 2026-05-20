@@ -12,17 +12,20 @@ function HudCard({
   label,
   value,
   tone = "default",
+  delay = 0,
 }: {
   label: string;
   value: string;
   tone?: "default" | "success";
+  delay?: number;
 }) {
   return (
     <Card
+      style={{ animationDelay: `${delay}ms` }}
       className={
         tone === "success"
-          ? "overflow-hidden border-success/20 bg-success/10 shadow-sm"
-          : "overflow-hidden border-border bg-surface shadow-sm"
+          ? "dashboard-card-reveal overflow-hidden border-success/20 bg-success/10 shadow-sm motion-reduce:animate-none"
+          : "dashboard-card-reveal overflow-hidden border-border bg-surface shadow-sm motion-reduce:animate-none"
       }
     >
       <div className="flex h-full min-h-[4.75rem] flex-col justify-between gap-1.5 p-2.5 sm:p-3.5">
@@ -62,22 +65,14 @@ export async function DashboardHudCards({
         label="Oggi"
         value={formatMoney(totalSavedToday)}
         tone="success"
+        delay={0}
       />
 
-      <HudCard
-        label="Questo mese"
-        value={formatMoney(totalSavedMonth)}
-      />
+      <HudCard label="Questo mese" value={formatMoney(totalSavedMonth)} delay={60} />
 
-      <HudCard
-        label="Segnali totali"
-        value={String(entriesCount)}
-      />
+      <HudCard label="Segnali totali" value={String(entriesCount)} delay={120} />
 
-      <HudCard
-        label="Giorni consecutivi"
-        value={String(currentStreak)}
-      />
+      <HudCard label="Giorni consecutivi" value={String(currentStreak)} delay={180} />
     </div>
   );
 }

@@ -209,6 +209,24 @@
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .dashboard-card-reveal {
+    animation: dashboard-card-reveal 220ms ease-out both;
+  }
+}
+
+@keyframes dashboard-card-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .streak-flame-wrap {
   animation: streak-flame-glow 1.1s ease-in-out infinite;
 }

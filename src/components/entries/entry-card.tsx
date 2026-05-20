@@ -78,12 +78,23 @@ function getBeneficiariesLabel(
 export function EntryCard({ entry, members }: EntryCardProps) {
   const router = useRouter();
   const [isDeleting, startTransition] = useTransition();
+  const [isCollapsing, setIsCollapsing] = useState(false);
   const [isRemoved, setIsRemoved] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const collapseTimerRef = useRef<number | null>(null);
   const savedAmount = Number(entry.savedAmount);
   const paidByLabel = getMemberLabel(members, entry.paidByUserId);
   const beneficiariesLabel = getBeneficiariesLabel(members, entry.beneficiaryUserIds);
+  const isBusy = isDeleting || isCollapsing;
+
+  useEffect(() => {
+    return () => {
+      if (collapseTimerRef.current) {
+        window.clearTimeout(collapseTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     function handlePointerDown(event: MouseEvent | TouchEvent) {
@@ -124,8 +135,11 @@ export function EntryCard({ entry, members }: EntryCardProps) {
         return;
       }
 
-      setIsRemoved(true);
-      router.refresh();
+      setIsCollapsing(true);
+      collapseTimerRef.current = window.setTimeout(() => {
+        setIsRemoved(true);
+        router.refresh();
+      }, 180);
     });
   }
 
@@ -148,22 +162,31 @@ export function EntryCard({ entry, members }: EntryCardProps) {
         : "border-border/70 bg-surface-muted/80";
 
   return (
-    <Card
+    <div
       className={cn(
-        "relative overflow-hidden border-border/80 shadow-sm transition-opacity",
-        isDeleting && "pointer-events-none opacity-60",
+        "overflow-hidden transition-[max-height,opacity,transform,margin] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
+        isCollapsing && "max-h-0 -translate-y-1 opacity-0",
       )}
-      aria-busy={isDeleting}
+      style={{
+        maxHeight: isCollapsing ? 0 : 1200,
+      }}
     >
-      {isDeleting ? (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/55 backdrop-blur-[1px]">
-          <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
-            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-            Eliminazione...
-          </span>
-        </div>
-      ) : null}
-      <CardContent className="space-y-3 p-4 sm:p-4">
+      <Card
+        className={cn(
+          "relative overflow-hidden border-border/80 shadow-sm transition-opacity duration-200",
+          isBusy && "pointer-events-none opacity-60",
+        )}
+        aria-busy={isBusy}
+      >
+        {isBusy ? (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/55 backdrop-blur-[1px]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
+              <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+              Eliminazione...
+            </span>
+          </div>
+        ) : null}
+        <CardContent className="space-y-3 p-4 sm:p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
             <h2 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-[1.05rem]">
@@ -278,6 +301,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
           ) : null}
         </div>
       </CardContent>
-    </Card>
+      </Card>
+    </div>
   );
 }

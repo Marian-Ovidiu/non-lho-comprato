@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   Home,
@@ -154,7 +155,40 @@ export function AppShell({
   auth: AppShellAuth;
 }) {
   const pathname = usePathname();
+  const [isWorkspaceSwitching, setIsWorkspaceSwitching] = useState(false);
+  const workspaceSwitchEndTimerRef = useRef<number | null>(null);
   useDailyReminderOnOpen();
+
+  useEffect(() => {
+    function handleWorkspaceSwitchStart() {
+      setIsWorkspaceSwitching(true);
+    }
+
+    function handleWorkspaceSwitchEnd() {
+      if (workspaceSwitchEndTimerRef.current) {
+        window.clearTimeout(workspaceSwitchEndTimerRef.current);
+      }
+
+      workspaceSwitchEndTimerRef.current = window.setTimeout(() => {
+        setIsWorkspaceSwitching(false);
+      }, 120);
+    }
+
+    window.addEventListener("nlc:workspace-switch-start", handleWorkspaceSwitchStart);
+    window.addEventListener("nlc:workspace-switch-end", handleWorkspaceSwitchEnd);
+
+    return () => {
+      if (workspaceSwitchEndTimerRef.current) {
+        window.clearTimeout(workspaceSwitchEndTimerRef.current);
+      }
+
+      window.removeEventListener(
+        "nlc:workspace-switch-start",
+        handleWorkspaceSwitchStart,
+      );
+      window.removeEventListener("nlc:workspace-switch-end", handleWorkspaceSwitchEnd);
+    };
+  }, []);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
@@ -194,7 +228,13 @@ export function AppShell({
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+8rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8">
+      <div
+        className={cn(
+          "mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+8rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8",
+          "transition-[opacity,filter] duration-150 ease-out motion-reduce:transition-none",
+          isWorkspaceSwitching && "pointer-events-none opacity-75 blur-[0.5px]",
+        )}
+      >
         {children}
       </div>
 

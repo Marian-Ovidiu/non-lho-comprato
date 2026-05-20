@@ -6,6 +6,7 @@ import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import {
   ArrowRight,
+  Check,
   LockKeyhole,
   Plus,
   SlidersHorizontal,
@@ -216,6 +217,11 @@ export function QuickAddSheet({
   const firstPresetRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const didHandleSuccessRef = useRef(false);
+  const closeTimerRef = useRef<number | null>(null);
+  const refreshTimerRef = useRef<number | null>(null);
+  const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
+    "idle",
+  );
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
   });
@@ -250,6 +256,7 @@ export function QuickAddSheet({
   useEffect(() => {
     if (!state.success) {
       didHandleSuccessRef.current = false;
+      setSuccessStage("idle");
       return;
     }
 
@@ -264,15 +271,44 @@ export function QuickAddSheet({
       trackPostHogEvent("first_entry_created");
     }
 
-    const showedCelebration = tryTrigger(state);
-    if (!showedCelebration) {
-      router.refresh();
+    setSuccessStage("confirming");
+
+    if (closeTimerRef.current) {
+      window.clearTimeout(closeTimerRef.current);
     }
 
-    setOpen(false);
-    setActivePreset(null);
-    setDraft(getInitialDraft(members, currentUserId));
+    if (refreshTimerRef.current) {
+      window.clearTimeout(refreshTimerRef.current);
+    }
+
+    const showedCelebration = tryTrigger(state);
+
+    closeTimerRef.current = window.setTimeout(() => {
+      setSuccessStage("closing");
+    }, 120);
+
+    refreshTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      setActivePreset(null);
+      setDraft(getInitialDraft(members, currentUserId));
+
+      if (!showedCelebration) {
+        router.refresh();
+      }
+    }, 240);
   }, [currentUserId, members, router, state, tryTrigger]);
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) {
+        window.clearTimeout(closeTimerRef.current);
+      }
+
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+    };
+  }, []);
 
   function resolveCategoryId(categorySlug: string) {
     const bySlug = categoryOptions.find((category) => category.slug === categorySlug);
@@ -357,7 +393,12 @@ export function QuickAddSheet({
           firstPresetRef.current?.focus();
         }}
       >
-        <div className="max-h-[88vh] overflow-y-auto overscroll-contain">
+        <div
+          className={cn(
+            "max-h-[88vh] overflow-y-auto overscroll-contain transition-[opacity,transform,filter] duration-200 ease-out",
+            successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
+          )}
+        >
           <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
@@ -480,13 +521,20 @@ export function QuickAddSheet({
             <div className="space-y-4">
               {state.message ? (
                 <div
-                  className={
+                  className={cn(
+                    "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
                     state.success
-                      ? "rounded-2xl border border-success/20 bg-success/10 px-4 py-3 text-sm leading-6 text-success"
-                      : "rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive"
-                  }
+                      ? "border-success/20 bg-success/10 text-success"
+                      : "border-destructive/20 bg-destructive/10 text-destructive",
+                    successStage !== "idle" && "opacity-100",
+                  )}
                 >
-                  {state.message}
+                  <span className="flex items-start gap-2">
+                    {state.success ? (
+                      <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                    ) : null}
+                    <span>{state.message}</span>
+                  </span>
                 </div>
               ) : null}
 

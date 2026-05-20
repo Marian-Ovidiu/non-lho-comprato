@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Check, Loader2, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 import {
   deleteHabit,
@@ -115,8 +115,13 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
   );
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const [editMessage, setEditMessage] = useState("");
+  const [editSuccessStage, setEditSuccessStage] = useState<"idle" | "confirming" | "closing">(
+    "idle",
+  );
   const [isEditing, startEditTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
+  const refreshTimerRef = useRef<number | null>(null);
+  const successTimerRef = useRef<number | null>(null);
 
   const activeDayLabels = getActiveDayLabels(habit.activeDays);
   const selectedLabels = useMemo(
@@ -150,14 +155,32 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
       const result = await updateHabit(habit.id, formData);
 
       if (!result.success) {
+        setEditSuccessStage("idle");
         setEditMessage(result.message);
         setEditErrors(result.errors ?? {});
         return;
       }
 
-      setEditOpen(false);
+      setEditMessage(result.message);
+      setEditSuccessStage("confirming");
       setMenuOpen(false);
-      router.refresh();
+
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+
+      if (successTimerRef.current) {
+        window.clearTimeout(successTimerRef.current);
+      }
+
+      successTimerRef.current = window.setTimeout(() => {
+        setEditSuccessStage("closing");
+      }, 120);
+
+      refreshTimerRef.current = window.setTimeout(() => {
+        setEditOpen(false);
+        router.refresh();
+      }, 240);
     });
   }
 
@@ -176,6 +199,18 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
       router.refresh();
     });
   }
+
+  useEffect(() => {
+    return () => {
+      if (refreshTimerRef.current) {
+        window.clearTimeout(refreshTimerRef.current);
+      }
+
+      if (successTimerRef.current) {
+        window.clearTimeout(successTimerRef.current);
+      }
+    };
+  }, []);
 
   return (
     <>
@@ -299,18 +334,30 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
             Aggiorna nome, categoria, importo e giorni attivi.
           </DialogDescription>
 
-          <form className="space-y-4" onSubmit={handleEditSubmit}>
+          <form
+            className={cn(
+              "space-y-4 transition-[opacity,transform,filter] duration-200 ease-out",
+              editSuccessStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
+            )}
+            onSubmit={handleEditSubmit}
+          >
             {editMessage ? (
               <p
                 className={cn(
-                  "rounded-2xl border px-4 py-3 text-sm leading-6",
-                  editMessage.includes("successo")
+                  "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
+                  editSuccessStage !== "idle"
                     ? "border-success/20 bg-success/10 text-success"
                     : "border-destructive/20 bg-destructive/10 text-destructive",
+                  editSuccessStage !== "idle" && "opacity-100",
                 )}
                 aria-live="polite"
               >
-                {editMessage}
+                <span className="flex items-start gap-2">
+                  {editSuccessStage !== "idle" ? (
+                    <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                  ) : null}
+                  <span>{editMessage}</span>
+                </span>
               </p>
             ) : null}
 
