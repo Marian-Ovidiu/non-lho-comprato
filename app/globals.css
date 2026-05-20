@@ -236,6 +236,16 @@
   }
 }
 
+@keyframes skeleton-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  100% {
+    transform: translateX(120%);
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .dashboard-card-reveal {
     animation: dashboard-card-reveal 220ms ease-out both;
@@ -247,6 +257,42 @@
 
   .streak-celebration-count-pop {
     animation: streak-celebration-count-pop 320ms ease-out;
+  }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.skeleton-shimmer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-120%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.28),
+    transparent
+  );
+  animation: skeleton-shimmer 1.8s ease-in-out infinite;
+}
+
+.dark .skeleton-shimmer::before {
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-shimmer::before {
+    animation: none;
+    display: none;
   }
 }
 
