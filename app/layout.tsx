@@ -35,8 +35,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f4f1ea" },
-    { media: "(prefers-color-scheme: dark)", color: "#111111" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
   ],
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({
@@ -60,7 +63,7 @@ export default async function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
-      <body className="min-h-screen flex flex-col bg-background text-foreground">
+      <body className="min-h-[100dvh] flex flex-col bg-background text-foreground">
         <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />
         {authenticatedUser && workspaceShell ? (
           <AppShell

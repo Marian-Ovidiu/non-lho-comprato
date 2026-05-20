@@ -157,9 +157,9 @@ export function AppShell({
   useDailyReminderOnOpen();
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-[100dvh] bg-background text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-surface/84 backdrop-blur supports-[backdrop-filter]:bg-surface/78">
-        <div className="mx-auto w-full max-w-5xl px-4 py-2 sm:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-5xl px-4 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:px-6 sm:pt-[calc(env(safe-area-inset-top)+0.5rem)] lg:px-8">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
               <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-text">
@@ -194,7 +194,7 @@ export function AppShell({
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-5xl px-4 py-4 pb-32 sm:px-6 sm:py-6 sm:pb-8 lg:px-8">
+      <div className="mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+8rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8">
         {children}
       </div>
 

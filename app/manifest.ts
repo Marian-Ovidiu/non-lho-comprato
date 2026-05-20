@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const PWA_SPLASH_COLOR = "#0f0f0f";
+const PWA_SPLASH_COLOR = "#09090b";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -9,7 +9,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Traccia quanto spendi e quanto hai evitato di buttare.",
     start_url: "/",
     scope: "/",
-    display: "standalone",
+    display: "fullscreen",
+    display_override: ["fullscreen", "standalone"],
     orientation: "portrait",
     background_color: PWA_SPLASH_COLOR,
     theme_color: PWA_SPLASH_COLOR,
