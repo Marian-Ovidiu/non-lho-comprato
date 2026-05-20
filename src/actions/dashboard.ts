@@ -10,6 +10,7 @@ import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
 } from "@/src/lib/workspace-context";
+import { getRomeDayRangeForDate } from "@/src/lib/rome-dates";
 
 type TodayDashboardSummary = {
   totalSavedToday: number;
@@ -20,8 +21,6 @@ type TodayDashboardSummary = {
 type DecimalLike = {
   toString?: () => string;
 };
-
-const ROME_TIME_ZONE = "Europe/Rome";
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
@@ -49,28 +48,10 @@ function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function getRomeTodayRange(): { start: Date; end: Date } {
-  const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).formatToParts(new Date());
-
-  const year = Number(parts.find((part) => part.type === "year")?.value);
-  const month = Number(parts.find((part) => part.type === "month")?.value);
-  const day = Number(parts.find((part) => part.type === "day")?.value);
-
-  const start = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(year, month - 1, day + 1, 0, 0, 0, 0));
-
-  return { start, end };
-}
-
 async function buildEntryWhere(
   person?: PersonFilterValue,
 ): Promise<Prisma.EntryWhereInput> {
-  const { start, end } = getRomeTodayRange();
+  const { start, end } = getRomeDayRangeForDate(new Date());
 
   return getCurrentWorkspaceScopedWhere({
     ...buildPersonWhere(person),

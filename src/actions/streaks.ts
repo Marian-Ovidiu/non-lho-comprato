@@ -3,6 +3,7 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
+import { buildRomeStreakResult, getRomeDateKey } from "@/src/lib/rome-dates";
 import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
 
 type StreakResult = {
@@ -24,8 +25,6 @@ type StreakScope = {
   person?: PersonFilterValue;
   categoryId?: string;
 };
-
-const ROME_TIME_ZONE = "Europe/Rome";
 
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
@@ -67,115 +66,8 @@ async function buildEntryWhere(scope: StreakScope = {}): Promise<Prisma.EntryWhe
   return where;
 }
 
-function getRomeDateParts(date: Date): {
-  year: number;
-  month: number;
-  day: number;
-} {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const parts = formatter.formatToParts(date);
-  const year = Number(parts.find((part) => part.type === "year")?.value);
-  const month = Number(parts.find((part) => part.type === "month")?.value);
-  const day = Number(parts.find((part) => part.type === "day")?.value);
-
-  return {
-    year,
-    month,
-    day,
-  };
-}
-
-function getRomeDateKey(date: Date): string {
-  const parts = getRomeDateParts(date);
-
-  if (
-    !Number.isFinite(parts.year) ||
-    !Number.isFinite(parts.month) ||
-    !Number.isFinite(parts.day)
-  ) {
-    return "";
-  }
-
-  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(
-    2,
-    "0",
-  )}-${String(parts.day).padStart(2, "0")}`;
-}
-
-function shiftDateKey(dateKey: string, deltaDays: number): string {
-  const [yearPart, monthPart, dayPart] = dateKey.split("-");
-  const year = Number(yearPart);
-  const month = Number(monthPart);
-  const day = Number(dayPart);
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day)
-  ) {
-    return "";
-  }
-
-  const shifted = new Date(Date.UTC(year, month - 1, day));
-  shifted.setUTCDate(shifted.getUTCDate() + deltaDays);
-
-  return `${String(shifted.getUTCFullYear()).padStart(4, "0")}-${String(
-    shifted.getUTCMonth() + 1,
-  ).padStart(2, "0")}-${String(shifted.getUTCDate()).padStart(2, "0")}`;
-}
-
-function isNextCalendarDay(previousDateKey: string, nextDateKey: string): boolean {
-  return shiftDateKey(previousDateKey, 1) === nextDateKey;
-}
-
 function buildStreakResult(dayTotals: Map<string, number>): StreakResult {
-  const streakDates = Array.from(dayTotals.entries())
-    .filter(([, totalSaved]) => totalSaved > 0)
-    .map(([dateKey]) => dateKey)
-    .sort((left, right) => left.localeCompare(right));
-
-  if (streakDates.length === 0) {
-    return {
-      currentStreak: 0,
-      bestStreak: 0,
-      streakDates: [],
-    };
-  }
-
-  const segments: string[][] = [];
-  let currentSegment = [streakDates[0]];
-
-  for (let index = 1; index < streakDates.length; index += 1) {
-    const currentDate = streakDates[index];
-    const previousDate = currentSegment[currentSegment.length - 1];
-
-    if (isNextCalendarDay(previousDate, currentDate)) {
-      currentSegment.push(currentDate);
-      continue;
-    }
-
-    segments.push(currentSegment);
-    currentSegment = [currentDate];
-  }
-
-  segments.push(currentSegment);
-
-  const bestSegment = segments.reduce((longest, segment) =>
-    segment.length > longest.length ? segment : longest,
-  );
-  const latestSegment = segments[segments.length - 1];
-
-  return {
-    currentStreak: latestSegment.length,
-    bestStreak: bestSegment.length,
-    streakDates: latestSegment,
-  };
+  return buildRomeStreakResult(dayTotals.keys());
 }
 
 async function loadStreakData(scope: StreakScope = {}): Promise<{
@@ -202,8 +94,7 @@ async function loadStreakData(scope: StreakScope = {}): Promise<{
         continue;
       }
 
-      const currentTotal = dayTotals.get(dateKey) ?? 0;
-      dayTotals.set(dateKey, round2(currentTotal + toNumber(entry.savedAmount)));
+      dayTotals.set(dateKey, round2((dayTotals.get(dateKey) ?? 0) + toNumber(entry.savedAmount)));
     }
 
     const streak = buildStreakResult(dayTotals);

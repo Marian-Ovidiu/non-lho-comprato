@@ -4,6 +4,7 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { formatMoney } from "@/src/lib/formatters";
 import { getEntryExpenseKind } from "@/src/lib/entry-ownership";
 import { prisma } from "@/src/lib/prisma";
+import { buildRomeStreakResult } from "@/src/lib/rome-dates";
 import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
@@ -392,51 +393,11 @@ function buildMemberSplit(
 }
 
 function buildStreakSummary(dayTotals: Map<string, number>): MonthlyReportStreakSummary {
-  const savedDates = Array.from(dayTotals.entries())
-    .filter(([, totalSaved]) => totalSaved > 0)
-    .map(([dateKey]) => dateKey)
-    .sort((left, right) => left.localeCompare(right));
-
-  if (savedDates.length === 0) {
-    return {
-      currentStreak: 0,
-      bestStreak: 0,
-      streakDates: [],
-      savedDaysCount: 0,
-    };
-  }
-
-  const segments: string[][] = [];
-  let currentSegment = [savedDates[0]];
-
-  for (let index = 1; index < savedDates.length; index += 1) {
-    const currentDate = savedDates[index];
-    const previousDate = currentSegment[currentSegment.length - 1];
-    const previousAsDate = new Date(`${previousDate}T00:00:00.000Z`);
-    previousAsDate.setUTCDate(previousAsDate.getUTCDate() + 1);
-    const nextDate = getRomeDateKey(previousAsDate);
-
-    if (nextDate === currentDate) {
-      currentSegment.push(currentDate);
-      continue;
-    }
-
-    segments.push(currentSegment);
-    currentSegment = [currentDate];
-  }
-
-  segments.push(currentSegment);
-
-  const bestSegment = segments.reduce((longest, segment) =>
-    segment.length > longest.length ? segment : longest,
-  );
-  const latestSegment = segments[segments.length - 1];
+  const streak = buildRomeStreakResult(dayTotals.keys());
 
   return {
-    currentStreak: latestSegment.length,
-    bestStreak: bestSegment.length,
-    streakDates: latestSegment,
-    savedDaysCount: savedDates.length,
+    ...streak,
+    savedDaysCount: Array.from(dayTotals.keys()).length,
   };
 }
 
