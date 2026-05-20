@@ -1,5 +1,6 @@
 ﻿"use server";
 
+import { Prisma } from "@/src/lib/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES, mergeCategoryOptions } from "@/src/lib/categories";
@@ -104,6 +105,19 @@ type MonthlySummary = {
   totalAlternativeCost: number;
   totalSaved: number;
   entriesCount: number;
+};
+
+export type EntriesPageResult = {
+  entries: SerializableEntry[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+type EntriesPageOptions = {
+  person?: PersonFilterValue;
+  q?: string;
+  cursor?: string;
+  limit?: number;
 };
 
 function getText(formData: FormData, name: string): string {
@@ -264,9 +278,17 @@ async function findEntriesForList(
 ): Promise<EntryWithCategory[]> {
   const baseQuery = {
     where,
-    orderBy: {
-      date: "desc" as const,
-    },
+    orderBy: [
+      {
+        date: "desc" as const,
+      },
+      {
+        createdAt: "desc" as const,
+      },
+      {
+        id: "desc" as const,
+      },
+    ],
     select: entryListSelect,
   };
 
@@ -291,6 +313,198 @@ async function findEntriesForList(
       beneficiaries: [],
     }));
   }
+}
+
+async function findEntriesPage(
+  where: Prisma.EntryWhereInput,
+  options: {
+    cursor?: string;
+    limit: number;
+  },
+): Promise<EntryWithCategory[]> {
+  const orderBy = [
+    {
+      date: "desc" as const,
+    },
+    {
+      createdAt: "desc" as const,
+    },
+    {
+      id: "desc" as const,
+    },
+  ];
+
+  try {
+    if (options.cursor) {
+      return await prisma.entry.findMany({
+        where,
+        take: options.limit + 1,
+        cursor: { id: options.cursor },
+        skip: 1,
+        orderBy,
+        select: entryListSelectWithBeneficiaries,
+      });
+    }
+
+    return await prisma.entry.findMany({
+      where,
+      take: options.limit + 1,
+      orderBy,
+      select: entryListSelectWithBeneficiaries,
+    });
+  } catch (error) {
+    if (!isMissingEntryBeneficiaryTable(error)) {
+      throw error;
+    }
+
+    logEntryLoadError("findEntriesPage.beneficiariesInclude", error, {
+      fallback: "legacy-person-fields",
+      where,
+      cursor: options.cursor ?? null,
+      limit: options.limit,
+    });
+
+    const entries = options.cursor
+      ? await prisma.entry.findMany({
+          where,
+          take: options.limit + 1,
+          cursor: { id: options.cursor },
+          skip: 1,
+          orderBy,
+          select: entryListSelect,
+        })
+      : await prisma.entry.findMany({
+          where,
+          take: options.limit + 1,
+          orderBy,
+          select: entryListSelect,
+        });
+
+    return entries.map((entry) => ({
+      ...entry,
+      beneficiaries: [],
+    }));
+  }
+}
+
+function normalizeSearchQuery(query?: string): string {
+  return query?.trim().toLowerCase() ?? "";
+}
+
+function parseSimpleAmountQuery(query: string): Prisma.Decimal | null {
+  const cleaned = query.replace(/[^\d,.-]/g, "").trim();
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const normalized =
+    cleaned.includes(",") && cleaned.includes(".")
+      ? cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")
+        ? cleaned.replace(/\./g, "").replace(",", ".")
+        : cleaned.replace(/,/g, "")
+      : cleaned.replace(",", ".");
+
+  if (!/^[-+]?\d*(\.\d+)?$/.test(normalized) || normalized === "+" || normalized === "-" || normalized === "." || normalized === "-.") {
+    return null;
+  }
+
+  try {
+    return new Prisma.Decimal(normalized);
+  } catch {
+    return null;
+  }
+}
+
+function buildEntriesSearchWhere(
+  query: string,
+  members: WorkspaceMemberOption[],
+): Prisma.EntryWhereInput {
+  const normalizedQuery = normalizeSearchQuery(query);
+
+  if (!normalizedQuery) {
+    return {};
+  }
+
+  const matchingMemberIds = members
+    .filter((member) => {
+      const haystacks = [member.label, member.name, member.email, member.userId];
+      return haystacks.some((value) =>
+        value?.toLowerCase().includes(normalizedQuery),
+      );
+    })
+    .map((member) => member.userId);
+
+  const amount = parseSimpleAmountQuery(normalizedQuery);
+  const textWhere: Prisma.EntryWhereInput[] = [
+    {
+      title: {
+        contains: normalizedQuery,
+        mode: "insensitive",
+      },
+    },
+    {
+      note: {
+        contains: normalizedQuery,
+        mode: "insensitive",
+      },
+    },
+    {
+      category: {
+        is: {
+          OR: [
+            {
+              name: {
+                contains: normalizedQuery,
+                mode: "insensitive",
+              },
+            },
+            {
+              slug: {
+                contains: normalizedQuery,
+                mode: "insensitive",
+              },
+            },
+          ],
+        },
+      },
+    },
+  ];
+
+  if (amount) {
+    textWhere.push({
+      OR: [
+        { realCost: amount },
+        { alternativeCost: amount },
+        { savedAmount: amount },
+      ],
+    });
+  }
+
+  if (matchingMemberIds.length > 0) {
+    textWhere.push({
+      OR: [
+        {
+          paidByUserId: {
+            in: matchingMemberIds,
+          },
+        },
+        {
+          beneficiaries: {
+            some: {
+              userId: {
+                in: matchingMemberIds,
+              },
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  return {
+    OR: textWhere,
+  };
 }
 
 function serializeEntry(
@@ -396,6 +610,68 @@ export async function getEntries(
       });
     }
 
+    throw error;
+  }
+}
+
+export async function getEntriesPage(
+  personOrOptions?: PersonFilterValue | EntriesPageOptions,
+  maybeOptions?: Omit<EntriesPageOptions, "person">,
+): Promise<EntriesPageResult> {
+  const options =
+    typeof personOrOptions === "string" || personOrOptions === undefined
+      ? {
+          person: personOrOptions,
+          ...(maybeOptions ?? {}),
+        }
+      : personOrOptions;
+
+  const limit = options.limit ?? 20;
+  const cursor = options.cursor?.trim() || undefined;
+  const person = options.person;
+  const searchQuery = normalizeSearchQuery(options.q);
+
+  let workspaceId = "unknown";
+
+  try {
+    const [workspaceWhere, members] = await Promise.all([
+      getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
+      getCurrentWorkspaceMembers(),
+    ]);
+
+    workspaceId = workspaceWhere.workspaceId;
+    const searchWhere = buildEntriesSearchWhere(searchQuery, members);
+    const combinedWhere =
+      Object.keys(searchWhere).length > 0
+        ? {
+            AND: [workspaceWhere, searchWhere],
+          }
+        : workspaceWhere;
+
+    const entries = await findEntriesPage(combinedWhere, {
+      cursor,
+      limit,
+    });
+
+    const hasMore = entries.length > limit;
+    const pageEntries = hasMore ? entries.slice(0, limit) : entries;
+    const serializedEntries = pageEntries.map((entry) =>
+      serializeEntry(entry, members),
+    );
+
+    return {
+      entries: serializedEntries,
+      nextCursor: hasMore ? pageEntries.at(-1)?.id ?? null : null,
+      hasMore,
+    };
+  } catch (error) {
+    logEntryLoadError("getEntriesPage", error, {
+      workspaceId,
+      personFilter: person ?? "all",
+      searchQuery: searchQuery || "all",
+      cursor: cursor ?? null,
+      limit,
+    });
     throw error;
   }
 }

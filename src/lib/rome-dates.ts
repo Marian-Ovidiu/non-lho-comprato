@@ -110,11 +110,39 @@ function shiftDateKey(dateKey: string, deltaDays: number): string {
   ).padStart(2, "0")}-${String(shifted.getUTCDate()).padStart(2, "0")}`;
 }
 
+export function shiftRomeDateKey(
+  dateKey: string,
+  deltaDays: number,
+): string {
+  return shiftDateKey(dateKey, deltaDays);
+}
+
 export function isNextRomeCalendarDay(
   previousDateKey: string,
   nextDateKey: string,
 ): boolean {
   return shiftDateKey(previousDateKey, 1) === nextDateKey;
+}
+
+export function formatRomeDateLabel(dateKey: string): string {
+  const [yearPart, monthPart, dayPart] = dateKey.split("-");
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+  const day = Number(dayPart);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
+    return dateKey;
+  }
+
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
 export function buildRomeStreakResult(dateKeys: Iterable<string>): {
