@@ -22,6 +22,7 @@ import { TopSavingsList } from "@/src/components/stats/top-savings-list";
 import { formatMoney } from "@/src/lib/formatters";
 import { getWorkspaceMemberFilter } from "@/src/lib/workspace-member-filter";
 import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
+import { spacing } from "@/src/lib/spacing";
 
 export const dynamic = "force-dynamic";
 
@@ -167,7 +168,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
 
   if (isCompletelyEmpty) {
     return (
-      <main className="space-y-5 sm:space-y-6">
+      <main className={spacing.pageStack}>
         <PageHeader
           title="Statistiche"
           context="Appena inizi a registrare movimenti, qui compariranno segnali utili e letture del mese."
@@ -195,7 +196,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   }
 
   return (
-    <main className="space-y-5 sm:space-y-6">
+    <main className={spacing.pageStack}>
       <PostHogEventOnMount eventName="stats_viewed" />
 
       <PageHeader

@@ -7,6 +7,7 @@ import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-ban
 import { Button } from "@/components/ui/button";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
+import { spacing } from "@/src/lib/spacing";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function EntriesPage() {
   }
 
   return (
-    <main className="space-y-5 sm:space-y-6">
+    <main className={spacing.pageStack}>
       <PageHeader
         title="Movimenti"
         context="Cronologia di ciò che hai speso e di ciò che hai evitato."

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
+import { spacing } from "@/src/lib/spacing";
 
 type DashboardHabitsPreviewProps = {
   occurrences: Array<{
@@ -35,7 +36,7 @@ export function DashboardHabitsPreview({
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-3.5 pb-0 sm:p-5">
+      <CardHeader className={spacing.cardHeader}>
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-1">
             <CardTitle className="text-base">Abitudini di oggi</CardTitle>
@@ -45,10 +46,10 @@ export function DashboardHabitsPreview({
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-3.5 p-3.5 sm:p-5">
+      <CardContent className={`space-y-4 ${spacing.cardBodyCompact}`}>
         {pendingOccurrences.length === 0 ? (
           <>
-            <div className="flex items-center gap-3 rounded-2xl bg-surface-muted px-3.5 py-3">
+            <div className="flex items-center gap-3 rounded-2xl bg-surface-muted px-4 py-3">
               <SunMedium className="size-5 shrink-0 text-success" aria-hidden="true" />
               <p className="text-sm leading-5 text-muted-text">
                 Nessun controllo urgente da fare adesso.
@@ -64,11 +65,11 @@ export function DashboardHabitsPreview({
           </>
         ) : (
           <>
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {visibleOccurrences.map((occurrence) => (
                 <div
                   key={occurrence.id}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-surface-muted px-3 py-2.5"
+                  className="flex items-center justify-between gap-3 rounded-2xl bg-surface-muted px-3 py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-foreground">
@@ -76,7 +77,7 @@ export function DashboardHabitsPreview({
                     </p>
                     <CategoryPill
                       category={occurrence.habit.category}
-                      className="mt-1 px-2 py-0.5 text-[11px]"
+                      className="mt-1 px-3 py-1 text-[11px]"
                     />
                   </div>
 

@@ -4,6 +4,7 @@ import { ArrowRight, BarChart3, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
+import { spacing } from "@/src/lib/spacing";
 
 type MonthlyReportPreviewProps = {
   report: {
@@ -25,7 +26,7 @@ type MonthlyReportPreviewProps = {
 export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-3.5 pb-0 sm:p-5">
+      <CardHeader className={spacing.cardHeader}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
               <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
@@ -54,14 +55,14 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-2.5 p-3.5 sm:p-5">
+      <CardContent className={`space-y-3 ${spacing.cardBodyCompact}`}>
         {!report || !report.hasData ? (
           <p className="text-sm leading-5 text-muted-text">
             Appena arrivano movimenti nel mese in corso, qui trovi il riepilogo.
           </p>
         ) : (
-          <div className="grid gap-2.5 sm:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-surface-muted px-3.5 py-3">
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Risparmiato
               </p>
@@ -70,7 +71,7 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-border bg-surface-muted px-3.5 py-3">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Categoria top
               </p>
@@ -79,7 +80,7 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
               </p>
             </div>
 
-            <div className="rounded-2xl border border-border bg-surface-muted px-3.5 py-3">
+            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
                 Schivata top
               </p>

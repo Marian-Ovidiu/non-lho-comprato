@@ -188,7 +188,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
             </span>
           </div>
         ) : null}
-        <CardContent className="space-y-3 p-4 sm:p-4">
+        <CardContent className="space-y-3 p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
             <h2 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-[1.05rem]">
@@ -197,7 +197,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
             <div className="flex flex-wrap items-center gap-2">
               <CategoryPill
                 category={entry.category}
-                className="px-2.5 py-0.5 text-[11px]"
+                className="px-3 py-1 text-[11px]"
               />
               <p className="text-xs leading-5 text-muted-text sm:text-sm">
                 {formatDate(entry.date)}
@@ -270,7 +270,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          <div className={cn("rounded-2xl border px-3 py-2.5", spentSurface)}>
+          <div className={cn("rounded-2xl border px-3 py-2", spentSurface)}>
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
               Speso
             </p>
@@ -279,7 +279,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
             </p>
           </div>
 
-          <div className={cn("rounded-2xl border px-3 py-2.5", spentSurface)}>
+          <div className={cn("rounded-2xl border px-3 py-2", spentSurface)}>
             <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
               Avresti speso
             </p>

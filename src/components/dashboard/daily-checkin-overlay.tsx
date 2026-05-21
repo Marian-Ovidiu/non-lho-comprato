@@ -75,7 +75,7 @@ export function DailyCheckinOverlay({
         className="w-full max-w-lg overflow-hidden border-border bg-surface shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <CardHeader className="space-y-3 p-5 pb-0 sm:p-6">
+        <CardHeader className="space-y-3 p-4 pb-0 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-3">
               <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
@@ -107,7 +107,7 @@ export function DailyCheckinOverlay({
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-5 p-5 pt-4 sm:p-6 sm:pt-4">
+        <CardContent className="space-y-4 p-4 pt-4 sm:p-6 sm:pt-4">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">

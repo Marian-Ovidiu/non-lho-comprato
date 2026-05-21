@@ -11,6 +11,7 @@ import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceUiContext,
 } from "@/src/lib/workspace-context";
+import { spacing } from "@/src/lib/spacing";
 
 export const dynamic = "force-dynamic";
 
@@ -81,7 +82,7 @@ export default async function NewEntryPage({
   }
 
   return (
-    <main className="space-y-5 sm:space-y-6">
+    <main className={spacing.pageStack}>
       <PageHeader
         backHref="/entries"
         title="Nuovo movimento"

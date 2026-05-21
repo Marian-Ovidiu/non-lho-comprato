@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { EmptyState } from "@/src/components/shared/empty-state";
 import { HabitCard } from "@/src/components/habits/habit-card";
+import { spacing } from "@/src/lib/spacing";
 
 type CategoryOption = {
   id: string;
@@ -58,14 +59,14 @@ export function HabitList({ habits, categories }: HabitListProps) {
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
+      <CardHeader className={spacing.cardHeader}>
         <CardTitle>Le tue abitudini</CardTitle>
         <p className="text-sm text-muted-text">
           Le regole che hai già impostato, ordinate per nome.
         </p>
       </CardHeader>
 
-      <CardContent className="space-y-4 p-5 sm:p-6">
+      <CardContent className={`space-y-4 ${spacing.cardBody}`}>
         {habits.map((habit, index) => (
           <HabitCard
             key={habit.id}

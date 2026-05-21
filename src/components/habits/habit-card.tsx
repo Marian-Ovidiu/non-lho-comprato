@@ -238,7 +238,7 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
             <p className="truncate text-lg font-semibold text-foreground">{habit.name}</p>
             <CategoryPill
               category={habit.category}
-              className="px-2.5 py-0.5 text-[11px]"
+              className="px-3 py-1 text-[11px]"
             />
           </div>
 

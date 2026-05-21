@@ -14,6 +14,7 @@ import { TodayHabits } from "@/src/components/habits/today-habits";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { Button } from "@/components/ui/button";
+import { spacing } from "@/src/lib/spacing";
 
 export const dynamic = "force-dynamic";
 
@@ -39,7 +40,7 @@ export default async function HabitsPage() {
         }));
 
   return (
-    <main className="space-y-5 sm:space-y-6">
+    <main className={spacing.pageStack}>
       <PageHeader
         title="Abitudini"
         context={`${todayOccurrences.length} attive oggi`}

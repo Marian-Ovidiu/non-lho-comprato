@@ -40,7 +40,7 @@ export function DashboardQuickActions() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2.5">
+      <div className="grid grid-cols-2 gap-3">
         {actions.map((action) => {
           const Icon = action.icon;
 
@@ -49,7 +49,7 @@ export function DashboardQuickActions() {
               key={action.href}
               href={action.href}
               className={cn(
-                "group flex min-h-24 flex-col justify-between rounded-3xl border border-border bg-surface p-3.5 shadow-sm transition-colors",
+                "group flex min-h-24 flex-col justify-between rounded-3xl border border-border bg-surface p-4 shadow-sm transition-colors",
                 "hover:border-border/80 hover:bg-surface-muted active:translate-y-px",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               )}
@@ -63,7 +63,7 @@ export function DashboardQuickActions() {
                 <span className="block text-sm font-semibold text-foreground">
                   {action.title}
                 </span>
-                <span className="block text-xs leading-4.5 text-muted-text">
+                <span className="block text-xs leading-5 text-muted-text">
                   {action.description}
                 </span>
               </span>

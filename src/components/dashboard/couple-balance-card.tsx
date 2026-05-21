@@ -22,7 +22,7 @@ export function CoupleBalanceCard({ balance }: CoupleBalanceCardProps) {
 
   return (
     <Card className="overflow-hidden border-border shadow-sm dark:border-border">
-      <CardContent className="space-y-2 p-4 sm:p-5">
+      <CardContent className="space-y-2 p-4 sm:p-6">
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
           Bilancio coppia
         </p>

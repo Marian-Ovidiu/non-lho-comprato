@@ -62,7 +62,7 @@ export function MomentumCard({
 
   return (
     <Card size="sm" className={cn("overflow-hidden border shadow-sm", toneClasses.card)}>
-      <CardContent className="space-y-3 p-4 sm:p-5">
+      <CardContent className="space-y-3 p-4 sm:p-6">
         <div className="flex items-start gap-3">
           <div className={cn("flex size-10 shrink-0 items-center justify-center rounded-2xl", toneClasses.icon)}>
             <Icon className="size-4" aria-hidden="true" />
@@ -80,7 +80,7 @@ export function MomentumCard({
 
           <span
             className={cn(
-              "shrink-0 rounded-full border px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.12em]",
+              "shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium uppercase tracking-[0.12em]",
               toneClasses.badge,
             )}
           >

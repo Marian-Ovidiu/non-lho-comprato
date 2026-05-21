@@ -438,7 +438,7 @@ export function QuickAddSheet({
             successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
           )}
         >
-          <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
+          <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
@@ -482,7 +482,7 @@ export function QuickAddSheet({
             </div>
           </div>
 
-          <div className="grid gap-2.5 px-4 py-4 sm:grid-cols-2 sm:px-5">
+          <div className="grid gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
             {presets.map((preset, index) => {
               const isActive = activePreset === preset.id;
               const presetIdentity = getCategoryIdentity({
@@ -553,7 +553,7 @@ export function QuickAddSheet({
             </button>
           </div>
 
-          <form action={formAction} className="border-t border-border/70 px-4 py-4 sm:px-5">
+          <form action={formAction} className="border-t border-border/70 px-4 py-4 sm:px-6">
             <input type="hidden" name="realCost" value={draft.realCost} />
             <input type="hidden" name="date" value={draft.date} />
 

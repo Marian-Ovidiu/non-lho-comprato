@@ -12,6 +12,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
+import { spacing } from "@/src/lib/spacing";
 
 type MonthlySavingsChartProps = {
   data: Array<{
@@ -52,7 +53,7 @@ function MonthlyTooltip({
   const saved = payload[0]?.value ?? 0;
 
   return (
-    <div className="rounded-2xl border border-border/70 bg-popover px-3 py-2.5 text-popover-foreground shadow-[0_18px_40px_-28px_rgba(0,0,0,0.75)]">
+    <div className="rounded-2xl border border-border/70 bg-popover px-3 py-3 text-popover-foreground shadow-[0_18px_40px_-28px_rgba(0,0,0,0.75)]">
       <p className="text-sm font-semibold text-popover-foreground">
         {label ? `Mese: ${label}` : "Mese"}
       </p>
@@ -70,7 +71,7 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
 
   return (
     <Card className="overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5">
-      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
+      <CardHeader className={spacing.cardHeader}>
         <CardTitle className="text-base font-semibold tracking-tight text-foreground">
           Direzione nel tempo
         </CardTitle>
@@ -78,11 +79,11 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
           Come si sta muovendo il risparmio mese per mese.
         </p>
       </CardHeader>
-      <CardContent className="p-4 pt-3 sm:p-5 sm:pt-3">
+      <CardContent className={`pt-3 ${spacing.cardBody}`}>
         {chartData.length === 0 ? (
           <EmptyChart />
         ) : (
-          <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-2.5 sm:p-3">
+          <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:p-4">
             <div className="h-[260px] w-full sm:h-[300px]">
               <ResponsiveContainer
                 width="100%"

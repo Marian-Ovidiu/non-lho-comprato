@@ -1,6 +1,7 @@
 import { Card } from "@/components/ui/card";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import { formatMoney } from "@/src/lib/formatters";
+import { spacing } from "@/src/lib/spacing";
 
 type DashboardHudCardsProps = {
   totalSavedToday: number;
@@ -28,7 +29,7 @@ function HudCard({
           : "dashboard-card-reveal overflow-hidden border-border bg-surface shadow-sm motion-reduce:animate-none"
       }
     >
-      <div className="flex h-full min-h-[4.75rem] flex-col justify-between gap-1.5 p-2.5 sm:p-3.5">
+      <div className={`flex h-full min-h-[4.75rem] flex-col justify-between gap-2 ${spacing.cardBodyCompact}`}>
         <p
           className={
             tone === "success"

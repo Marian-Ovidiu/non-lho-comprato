@@ -37,6 +37,7 @@ import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-
 import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
+import { spacing } from "@/src/lib/spacing";
 
 type CategoryOption = {
   id: string;
@@ -229,7 +230,7 @@ export function EntryForm({
           successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
         )}
       >
-        <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
+        <CardHeader className={spacing.cardHeader}>
           <CardTitle>Nuovo movimento</CardTitle>
           <CardDescription className="max-w-xl text-sm leading-5">
             {helperText}
@@ -237,7 +238,7 @@ export function EntryForm({
         </CardHeader>
 
         <form ref={formRef} action={formAction}>
-          <CardContent className="space-y-5 p-4 sm:p-5">
+          <CardContent className={`space-y-4 ${spacing.cardBody}`}>
             {state.message ? (
               <div
                 className={cn(
@@ -310,7 +311,7 @@ export function EntryForm({
             />
           </div>
 
-            <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
+            <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-6">
               <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="realCost">Quanto hai speso davvero</Label>
@@ -394,7 +395,7 @@ export function EntryForm({
             </div>
           </CardContent>
 
-          <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-4 sm:flex-row sm:justify-end sm:p-5">
+          <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-4 sm:flex-row sm:justify-end sm:p-6">
             <Button
               type="submit"
               className="h-11 w-full px-5 sm:w-auto"

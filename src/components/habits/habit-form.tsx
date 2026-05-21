@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/src/lib/haptics";
+import { spacing } from "@/src/lib/spacing";
 
 type CategoryOption = {
   id: string;
@@ -145,7 +146,7 @@ export function HabitForm({ categories }: HabitFormProps) {
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
+      <CardHeader className={spacing.cardHeader}>
         <CardTitle>Nuova abitudine</CardTitle>
         <CardDescription className="max-w-2xl text-sm leading-5">
           Imposta una spesa che torna spesso. Se non la segni, la consideriamo
@@ -156,7 +157,7 @@ export function HabitForm({ categories }: HabitFormProps) {
       <form ref={formRef} action={formAction}>
         <CardContent
           className={cn(
-            "space-y-5 p-4 sm:p-5 transition-[opacity,transform,filter] duration-200 ease-out",
+            `space-y-4 ${spacing.cardBody} transition-[opacity,transform,filter] duration-200 ease-out`,
             successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
           )}
         >
@@ -289,7 +290,7 @@ export function HabitForm({ categories }: HabitFormProps) {
           </div>
         </CardContent>
 
-        <div className="border-t border-border bg-surface-muted p-4 sm:p-5">
+        <div className="border-t border-border bg-surface-muted p-4 sm:p-6">
           <Button
             type="submit"
             className="w-full sm:w-auto"

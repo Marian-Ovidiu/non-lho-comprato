@@ -276,7 +276,7 @@ export function EntryList({
       ) : null}
 
       {groups.map((group) => (
-        <section key={group.dateKey} className="space-y-2.5">
+        <section key={group.dateKey} className="space-y-3">
           <div className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-surface px-4 py-3 shadow-sm">
             <p className="text-sm font-medium leading-5 text-foreground">
               {getDaySummary(group)}
@@ -346,7 +346,7 @@ function SearchBar({
           <button
             type="button"
             onClick={() => onChange("")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-text transition-colors hover:text-foreground"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full p-2 text-muted-text transition-colors hover:text-foreground"
             aria-label="Cancella ricerca"
           >
             <X className="size-4" aria-hidden="true" />

@@ -148,7 +148,7 @@ export function EntryPeopleFields({
         <FieldError message={errors?.paidByUserId} />
       </div>
 
-      <fieldset className="space-y-2.5">
+      <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-foreground">
           Per chi è la spesa
         </legend>

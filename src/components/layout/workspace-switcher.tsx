@@ -151,7 +151,7 @@ export function WorkspaceSwitcher({
           </div>
 
           <div className="space-y-3 px-4 py-4 sm:px-5">
-            <div className="rounded-3xl border border-border/70 bg-background/70 p-3.5">
+            <div className="rounded-3xl border border-border/70 bg-background/70 p-4">
               <div className="flex items-start gap-3">
                 <WorkspaceMark isShared={currentWorkspace.isShared} />
                 <div className="min-w-0 space-y-1">

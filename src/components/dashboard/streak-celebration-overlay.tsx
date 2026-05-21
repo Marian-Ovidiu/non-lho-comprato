@@ -124,7 +124,7 @@ export function StreakCelebrationOverlay({
   return createPortal(
     <div
       className={cn(
-        "fixed inset-0 z-[100] flex items-center justify-center p-5 sm:p-6",
+        "fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6",
         "bg-[radial-gradient(circle_at_center,rgba(212,180,131,0.18)_0%,rgba(9,9,11,0.74)_55%,rgba(9,9,11,0.9)_100%)]",
         "backdrop-blur-xl transition-[opacity,background-color,backdrop-filter] duration-200 ease-out motion-reduce:transition-none",
         isEntering ? "opacity-100" : "opacity-0",

@@ -8,6 +8,7 @@ import { EmptyState } from "@/src/components/shared/empty-state";
 import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
 import { HabitOccurrenceActions } from "@/src/components/habits/habit-occurrence-actions";
+import { spacing } from "@/src/lib/spacing";
 
 type TodayHabitsProps = {
   occurrences: Array<{
@@ -85,7 +86,7 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
+      <CardHeader className={spacing.cardHeader}>
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
             <CardTitle>Oggi</CardTitle>
@@ -99,14 +100,14 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
         </div>
       </CardHeader>
 
-      <CardContent className="space-y-4 p-5 sm:p-6">
+      <CardContent className={`space-y-4 ${spacing.cardBody}`}>
         {occurrences.map((occurrence) => {
           const status = occurrence.status;
 
           return (
             <div
               key={occurrence.id}
-              className="rounded-3xl border border-border bg-surface-muted p-4 shadow-sm sm:p-5"
+              className="rounded-3xl border border-border bg-surface-muted p-4 shadow-sm sm:p-6"
             >
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -117,7 +118,7 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                     <div className="flex flex-wrap items-center gap-2">
                       <CategoryPill
                         category={occurrence.habit.category}
-                        className="px-2.5 py-0.5 text-[11px]"
+                        className="px-3 py-1 text-[11px]"
                       />
                       <span className="text-sm text-muted-text">
                         {formatMoney(occurrence.habit.amount)}
@@ -146,7 +147,7 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                     <p className="mt-1">
                       <CategoryPill
                         category={occurrence.habit.category}
-                        className="px-2.5 py-0.5 text-[11px]"
+                        className="px-3 py-1 text-[11px]"
                       />
                     </p>
                   </div>
@@ -172,4 +173,3 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
     </Card>
   );
 }
-

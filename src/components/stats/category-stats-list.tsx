@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
+import { spacing } from "@/src/lib/spacing";
 
 type CategoryStatsListProps = {
   categories: Array<{
@@ -19,7 +20,7 @@ type CategoryStatsListProps = {
 export function CategoryStatsList({ categories }: CategoryStatsListProps) {
   return (
     <Card className="overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5">
-      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
+      <CardHeader className={spacing.cardHeader}>
         <CardTitle className="text-base font-semibold tracking-tight text-foreground">
           Dove stai salvando di più
         </CardTitle>
@@ -27,9 +28,9 @@ export function CategoryStatsList({ categories }: CategoryStatsListProps) {
           Le categorie che ti stanno lasciando più soldi in tasca.
         </p>
       </CardHeader>
-      <CardContent className="p-4 sm:p-5">
+      <CardContent className={spacing.cardBody}>
         {categories.length === 0 ? (
-          <div className="rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 p-5 text-sm leading-6 text-muted-text">
+          <div className="rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 p-4 sm:p-6 text-sm leading-6 text-muted-text">
             Nessun dato per categoria ancora disponibile.
           </div>
         ) : (
@@ -53,7 +54,7 @@ export function CategoryStatsList({ categories }: CategoryStatsListProps) {
                       name: category.categoryName,
                       slug: category.categorySlug,
                     }}
-                    className="px-2.5 py-0.5 text-[11px]"
+                    className="px-3 py-1 text-[11px]"
                   />
                 </div>
 

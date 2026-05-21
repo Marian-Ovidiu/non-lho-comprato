@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
+import { spacing } from "@/src/lib/spacing";
+
 type PageHeaderProps = {
   eyebrow?: string;
   title: string;
@@ -23,7 +25,7 @@ export function PageHeader({
   chips,
 }: PageHeaderProps) {
   return (
-    <section className="rounded-3xl border border-border/70 bg-surface/70 p-3.5 shadow-sm sm:p-4">
+    <section className={spacing.headerShell}>
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0 space-y-0.5">

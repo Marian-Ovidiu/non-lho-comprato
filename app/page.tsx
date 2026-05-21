@@ -38,6 +38,7 @@ import { getGlobalStreak } from "@/src/actions/streaks";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getCategoryEmoji } from "@/src/lib/visual-cues";
+import { spacing } from "@/src/lib/spacing";
 
 export const dynamic = "force-dynamic";
 
@@ -646,7 +647,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             : "Le mete che stanno ricevendo risparmio adesso.";
 
   return (
-    <main className="space-y-3 sm:space-y-4">
+    <main className={spacing.pageStack}>
       {arrivedFromOnboarding ? (
         <PostHogEventOnMount eventName="onboarding_completed" />
       ) : null}

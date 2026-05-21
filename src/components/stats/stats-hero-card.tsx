@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
 import { cn } from "@/lib/utils";
+import { spacing } from "@/src/lib/spacing";
 
 type HeroInsight = {
   label: string;
@@ -33,7 +34,7 @@ export function StatsHeroCard({
           : "bg-gradient-to-br from-surface via-surface to-surface-muted/70",
       )}
     >
-      <CardHeader className="space-y-2 p-4 pb-0 sm:p-5">
+      <CardHeader className={spacing.cardHeader}>
         <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
           <Sparkles className="size-3.5 text-success" aria-hidden="true" />
           Lettura del mese
@@ -48,7 +49,7 @@ export function StatsHeroCard({
         </p>
       </CardHeader>
 
-      <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
+      <CardContent className={`pt-4 ${spacing.cardBody}`}>
         <div className="grid gap-3 sm:grid-cols-3">
           {insights.map((insight, index) => {
             const isPrimary = index === 0;
