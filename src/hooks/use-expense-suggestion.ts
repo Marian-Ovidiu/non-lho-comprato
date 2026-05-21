@@ -38,12 +38,9 @@ export function useExpenseSuggestion({
   useEffect(() => {
     const parsedRealCost = parseMoney(realCost);
     const signature = [
-      title.trim(),
       categoryId.trim(),
       workspaceId.trim(),
       Number.isFinite(parsedRealCost) ? parsedRealCost.toFixed(2) : "",
-      paidByUserId ?? "",
-      [...(beneficiaryUserIds ?? [])].sort().join(","),
     ].join("|");
 
     const hasRequiredFields =
@@ -100,12 +97,9 @@ export function useExpenseSuggestion({
 
     return () => window.clearTimeout(timeout);
   }, [
-    beneficiaryUserIds,
     categoryId,
     enabled,
-    paidByUserId,
     realCost,
-    title,
     workspaceId,
   ]);
 
