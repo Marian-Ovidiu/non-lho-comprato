@@ -48,7 +48,6 @@ export function useExpenseSuggestion({
 
     const hasRequiredFields =
       enabled &&
-      title.trim().length > 0 &&
       categoryId.trim().length > 0 &&
       workspaceId.trim().length > 0 &&
       Number.isFinite(parsedRealCost) &&

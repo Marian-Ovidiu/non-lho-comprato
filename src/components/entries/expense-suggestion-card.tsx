@@ -68,6 +68,18 @@ export function ExpenseSuggestionCard({
           </div>
         </div>
 
+        {isAppliedAutomatically ? (
+          <div className="rounded-2xl border border-premium-accent/20 bg-premium-accent/10 px-3 py-2 text-xs font-medium leading-5 text-premium-accent">
+            Suggerito in base alle tue spese in questa categoria
+          </div>
+        ) : null}
+
+        {!isAppliedAutomatically ? (
+          <p className="text-xs leading-5 text-muted-text">
+            Suggerito in base alle tue spese in questa categoria.
+          </p>
+        ) : null}
+
         {isAppliedAutomatically || hasAppliedValue ? (
           <p className="text-sm font-medium text-muted-text">
             Suggerimento applicato.

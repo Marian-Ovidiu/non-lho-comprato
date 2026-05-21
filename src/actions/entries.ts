@@ -957,7 +957,6 @@ export async function getExpenseSuggestion(
   const currentRealCost = Number(request.currentRealCost);
 
   if (
-    title.length < 2 ||
     !categoryId ||
     !workspaceId ||
     !Number.isFinite(currentRealCost)

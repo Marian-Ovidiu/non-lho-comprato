@@ -278,6 +278,27 @@ export function QuickAddSheet({
   const fullFormHref = useMemo(() => getSearchHref(draft), [draft]);
 
   useEffect(() => {
+    if (hasPositiveRealCost || alternativeCostTouchedRef.current) {
+      return;
+    }
+
+    if (draft.alternativeCost.trim().length === 0) {
+      return;
+    }
+
+    setDraft((current) => {
+      if (current.alternativeCost.trim().length === 0) {
+        return current;
+      }
+
+      return {
+        ...current,
+        alternativeCost: "",
+      };
+    });
+  }, [draft.alternativeCost, hasPositiveRealCost]);
+
+  useEffect(() => {
     if (!state.success) {
       didHandleSuccessRef.current = false;
       setSuccessStage("idle");
@@ -581,7 +602,6 @@ export function QuickAddSheet({
           </div>
 
           <form action={formAction} className="border-t border-border/70 px-4 py-4 sm:px-6">
-            <input type="hidden" name="realCost" value={draft.realCost} />
             <input type="hidden" name="date" value={draft.date} />
 
             <div className="space-y-4">
@@ -662,7 +682,36 @@ export function QuickAddSheet({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="quick-alternativeCost">Costo evitato</Label>
+                  <Label htmlFor="quick-realCost">Speso davvero</Label>
+                  <Input
+                    id="quick-realCost"
+                    name="realCost"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    value={draft.realCost}
+                    onChange={(event) =>
+                      setDraft((current) => ({
+                        ...current,
+                        realCost: event.target.value,
+                      }))
+                    }
+                    placeholder="2.00"
+                    aria-invalid={Boolean(state.errors?.realCost)}
+                  />
+                  {state.errors?.realCost ? (
+                    <p className="text-sm text-destructive">{state.errors.realCost}</p>
+                  ) : null}
+                  <p className="text-xs leading-5 text-muted-text">
+                    Inserisci una spesa reale per attivare il suggerimento.
+                  </p>
+                </div>
+              </div>
+
+              {hasPositiveRealCost ? (
+                <div className="space-y-2">
+                  <Label htmlFor="quick-alternativeCost">Quanto avresti speso</Label>
                   <Input
                     id="quick-alternativeCost"
                     name="alternativeCost"
@@ -687,24 +736,33 @@ export function QuickAddSheet({
                     </p>
                   ) : null}
                 </div>
-              </div>
+              ) : null}
 
-            {expenseSuggestion.suggestion && hasPositiveRealCost ? (
-              <ExpenseSuggestionCard
-                className="mt-4"
-                suggestion={expenseSuggestion.suggestion}
-                realCost={draft.realCost}
-                alternativeCost={draft.alternativeCost}
-                onApply={() => {
-                  alternativeCostTouchedRef.current = false;
-                  setDraft((current) => ({
-                    ...current,
-                    alternativeCost:
-                      expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
-                  }));
-                }}
-              />
-            ) : null}
+              {expenseSuggestion.suggestion && hasPositiveRealCost ? (
+                <ExpenseSuggestionCard
+                  className="mt-4"
+                  suggestion={expenseSuggestion.suggestion}
+                  realCost={draft.realCost}
+                  alternativeCost={draft.alternativeCost}
+                  isAppliedAutomatically={
+                    expenseSuggestion.suggestion.confidence >= 0.75 &&
+                    !alternativeCostTouchedRef.current &&
+                    draft.alternativeCost.trim().length > 0 &&
+                    Math.abs(
+                      Number(draft.alternativeCost.replace(",", ".")) -
+                        expenseSuggestion.suggestion.alternativeCost,
+                    ) < 0.01
+                  }
+                  onApply={() => {
+                    alternativeCostTouchedRef.current = false;
+                    setDraft((current) => ({
+                      ...current,
+                      alternativeCost:
+                        expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
+                    }));
+                  }}
+                />
+              ) : null}
 
               <EntryPeopleFields
                 key={`${draft.paidByUserId}:${draft.beneficiaryUserIds.join(",")}`}

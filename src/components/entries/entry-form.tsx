@@ -153,20 +153,43 @@ export function EntryForm({
   );
 
   const hasCategories = categories.length > 0;
+  const expenseSuggestionValue = expenseSuggestion.suggestion;
+  const isSuggestionAutoApplied =
+    expenseSuggestionValue !== null &&
+    hasPositiveRealCost &&
+    expenseSuggestionValue.confidence >= 0.75 &&
+    !alternativeCostTouchedRef.current &&
+    alternativeCost.trim().length > 0 &&
+    Math.abs(
+      Number(alternativeCost.replace(",", ".")) -
+        expenseSuggestionValue.alternativeCost,
+    ) < 0.01;
+
+  useEffect(() => {
+    if (hasPositiveRealCost || alternativeCostTouchedRef.current) {
+      return;
+    }
+
+    if (alternativeCost.trim().length === 0) {
+      return;
+    }
+
+    setAlternativeCost("");
+  }, [alternativeCost, hasPositiveRealCost]);
 
   useEffect(() => {
     if (
-      !expenseSuggestion.suggestion ||
+      !expenseSuggestionValue ||
       !hasPositiveRealCost ||
-      expenseSuggestion.suggestion.confidence < 0.75 ||
+      expenseSuggestionValue.confidence < 0.75 ||
       alternativeCostTouchedRef.current ||
       alternativeCost.trim().length > 0
     ) {
       return;
     }
 
-    setAlternativeCost(expenseSuggestion.suggestion.alternativeCost.toFixed(2));
-  }, [alternativeCost, expenseSuggestion.suggestion, hasPositiveRealCost]);
+    setAlternativeCost(expenseSuggestionValue.alternativeCost.toFixed(2));
+  }, [alternativeCost, expenseSuggestionValue, hasPositiveRealCost]);
 
   useEffect(() => {
     if (!state.success) {
@@ -324,7 +347,7 @@ export function EntryForm({
             <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-6">
               <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="realCost">Quanto hai speso davvero</Label>
+                <Label htmlFor="realCost">Speso davvero</Label>
                 <Input
                   id="realCost"
                   name="realCost"
@@ -358,19 +381,28 @@ export function EntryForm({
                   aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
                 <FieldError message={state.errors?.alternativeCost} />
+                {isSuggestionAutoApplied ? (
+                  <p className="rounded-2xl border border-premium-accent/20 bg-premium-accent/10 px-3 py-2 text-xs font-medium leading-5 text-premium-accent">
+                    Suggerito in base alle tue spese in questa categoria
+                  </p>
+                ) : null}
+                <p className="text-xs leading-5 text-muted-text">
+                  Usalo solo quando hai scelto un’alternativa più economica a una spesa reale.
+                </p>
               </div>
               </div>
 
-              {expenseSuggestion.suggestion && hasPositiveRealCost ? (
+              {expenseSuggestionValue && hasPositiveRealCost ? (
                 <div className="mt-4">
                   <ExpenseSuggestionCard
-                    suggestion={expenseSuggestion.suggestion}
+                    suggestion={expenseSuggestionValue}
                     realCost={realCost}
                     alternativeCost={alternativeCost}
+                    isAppliedAutomatically={isSuggestionAutoApplied}
                     onApply={() => {
                       alternativeCostTouchedRef.current = false;
                       setAlternativeCost(
-                        expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
+                        expenseSuggestionValue.alternativeCost.toFixed(2),
                       );
                     }}
                   />
