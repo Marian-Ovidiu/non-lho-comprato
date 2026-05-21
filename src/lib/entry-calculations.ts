@@ -31,6 +31,10 @@ export function calculateSavedAmount(
     return 0;
   }
 
+  if (real <= 0) {
+    return 0;
+  }
+
   return round2(alternative - real);
 }
 
@@ -42,6 +46,10 @@ export function calculateSavedPercentage(
   const alternative = toNumber(alternativeCost);
 
   if (!Number.isFinite(real) || !Number.isFinite(alternative)) {
+    return 0;
+  }
+
+  if (real <= 0) {
     return 0;
   }
 

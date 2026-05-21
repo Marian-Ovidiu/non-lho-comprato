@@ -161,6 +161,11 @@ function getMoneyValue(amount: number) {
   return amount.toFixed(2);
 }
 
+function hasPositiveMoneyInput(value: string): boolean {
+  const parsed = Number(value.trim().replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0;
+}
+
 function getSearchHref(draft: QuickAddDraft) {
   const params = new URLSearchParams();
 
@@ -255,6 +260,7 @@ export function QuickAddSheet({
     },
     initialState,
   );
+  const hasPositiveRealCost = hasPositiveMoneyInput(draft.realCost);
   const expenseSuggestion = useExpenseSuggestion({
     title: draft.title,
     categoryId: draft.categoryId,
@@ -263,6 +269,7 @@ export function QuickAddSheet({
     paidByUserId: draft.paidByUserId,
     beneficiaryUserIds: draft.beneficiaryUserIds,
     enabled:
+      hasPositiveRealCost &&
       activePreset === "custom" &&
       !alternativeCostTouchedRef.current &&
       draft.alternativeCost.trim().length === 0,
@@ -396,6 +403,7 @@ export function QuickAddSheet({
     if (
       activePreset !== "custom" ||
       !expenseSuggestion.suggestion ||
+      !hasPositiveRealCost ||
       expenseSuggestion.suggestion.confidence < 0.75 ||
       alternativeCostTouchedRef.current ||
       draft.alternativeCost.trim().length > 0
@@ -407,7 +415,12 @@ export function QuickAddSheet({
       ...current,
       alternativeCost: expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
     }));
-  }, [activePreset, draft.alternativeCost, expenseSuggestion.suggestion]);
+  }, [
+    activePreset,
+    draft.alternativeCost,
+    expenseSuggestion.suggestion,
+    hasPositiveRealCost,
+  ]);
 
   return (
     <>
@@ -676,7 +689,7 @@ export function QuickAddSheet({
                 </div>
               </div>
 
-            {expenseSuggestion.suggestion ? (
+            {expenseSuggestion.suggestion && hasPositiveRealCost ? (
               <ExpenseSuggestionCard
                 className="mt-4"
                 suggestion={expenseSuggestion.suggestion}

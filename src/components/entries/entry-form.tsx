@@ -83,6 +83,11 @@ function getTodayLocal() {
   return format(new Date(), "yyyy-MM-dd");
 }
 
+function hasPositiveMoneyInput(value: string): boolean {
+  const parsed = Number(value.trim().replace(",", "."));
+  return Number.isFinite(parsed) && parsed > 0;
+}
+
 function FieldError({ message }: { message?: string }) {
   if (!message) {
     return null;
@@ -123,6 +128,7 @@ export function EntryForm({
     initialBeneficiaryUserIds,
   );
   const alternativeCostTouchedRef = useRef(Boolean(initialValues?.alternativeCost?.trim()));
+  const hasPositiveRealCost = hasPositiveMoneyInput(realCost);
   const redirect = useCallback((path: string) => router.replace(path), [router]);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => redirect("/"),
@@ -134,7 +140,10 @@ export function EntryForm({
     realCost,
     paidByUserId,
     beneficiaryUserIds,
-    enabled: !alternativeCostTouchedRef.current && alternativeCost.trim().length === 0,
+    enabled:
+      hasPositiveRealCost &&
+      !alternativeCostTouchedRef.current &&
+      alternativeCost.trim().length === 0,
   });
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
@@ -148,6 +157,7 @@ export function EntryForm({
   useEffect(() => {
     if (
       !expenseSuggestion.suggestion ||
+      !hasPositiveRealCost ||
       expenseSuggestion.suggestion.confidence < 0.75 ||
       alternativeCostTouchedRef.current ||
       alternativeCost.trim().length > 0
@@ -156,7 +166,7 @@ export function EntryForm({
     }
 
     setAlternativeCost(expenseSuggestion.suggestion.alternativeCost.toFixed(2));
-  }, [alternativeCost, expenseSuggestion.suggestion]);
+  }, [alternativeCost, expenseSuggestion.suggestion, hasPositiveRealCost]);
 
   useEffect(() => {
     if (!state.success) {
@@ -351,7 +361,7 @@ export function EntryForm({
               </div>
               </div>
 
-              {expenseSuggestion.suggestion ? (
+              {expenseSuggestion.suggestion && hasPositiveRealCost ? (
                 <div className="mt-4">
                   <ExpenseSuggestionCard
                     suggestion={expenseSuggestion.suggestion}

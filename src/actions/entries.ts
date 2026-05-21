@@ -1061,9 +1061,11 @@ export async function createEntry(
     members,
   );
 
+  const normalizedAlternativeCost =
+    realCost.value > 0 ? alternativeCost.value : 0;
   const savedAmount = calculateSavedAmount(
     realCost.value,
-    alternativeCost.value,
+    normalizedAlternativeCost,
   );
 
   try {
@@ -1103,7 +1105,7 @@ export async function createEntry(
         title,
         categoryId: category.id,
         realCost: toDecimalString(realCost.value),
-        alternativeCost: toDecimalString(alternativeCost.value),
+        alternativeCost: toDecimalString(normalizedAlternativeCost),
         savedAmount: toDecimalString(savedAmount),
         date,
         isFirstEntryOfDay,
@@ -1220,9 +1222,11 @@ export async function updateEntry(
     members,
   );
 
+  const normalizedAlternativeCost =
+    realCost.value > 0 ? alternativeCost.value : 0;
   const savedAmount = calculateSavedAmount(
     realCost.value,
-    alternativeCost.value,
+    normalizedAlternativeCost,
   );
 
   try {
@@ -1273,7 +1277,7 @@ export async function updateEntry(
           title,
           categoryId: category.id,
           realCost: toDecimalString(realCost.value),
-          alternativeCost: toDecimalString(alternativeCost.value),
+          alternativeCost: toDecimalString(normalizedAlternativeCost),
           savedAmount: toDecimalString(savedAmount),
           date,
           note: note || null,
