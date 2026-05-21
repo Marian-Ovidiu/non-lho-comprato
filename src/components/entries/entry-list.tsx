@@ -351,9 +351,17 @@ function SearchBar({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="Cerca per titolo, categoria, importo o membro"
-          className="h-11 rounded-2xl pl-9 pr-9"
+          className="h-11 rounded-2xl pl-9 pr-16"
           aria-label="Cerca movimenti"
         />
+        {isSearching ? (
+          <span
+            className="pointer-events-none absolute right-9 top-1/2 -translate-y-1/2 text-muted-text"
+            aria-hidden="true"
+          >
+            <Loader2 className="size-4 animate-spin motion-reduce:animate-none" />
+          </span>
+        ) : null}
         {value ? (
           <button
             type="button"

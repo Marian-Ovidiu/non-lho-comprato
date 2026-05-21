@@ -7,6 +7,7 @@ import {
   BarChart3,
   Home,
   List,
+  Loader2,
   MoreHorizontal,
   Target,
 } from "lucide-react";
@@ -222,6 +223,18 @@ export function AppShell({
                 currentWorkspace={workspace}
                 availableWorkspaces={availableWorkspaces}
               />
+              {isWorkspaceSwitching ? (
+                <p
+                  className="inline-flex items-center gap-1 rounded-full border border-premium-accent/20 bg-premium-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-premium-accent"
+                  aria-live="polite"
+                >
+                  <Loader2
+                    className="size-3 animate-spin motion-reduce:animate-none"
+                    aria-hidden="true"
+                  />
+                  Cambio spazio…
+                </p>
+              ) : null}
             </div>
 
             <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">

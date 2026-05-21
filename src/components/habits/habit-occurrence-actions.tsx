@@ -1,7 +1,8 @@
-﻿"use client";
+"use client";
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Check, Loader2 } from "lucide-react";
 
 import {
   markHabitOccurrenceAvoided,
@@ -9,6 +10,8 @@ import {
   markHabitOccurrenceSpent,
 } from "@/src/actions/habits";
 import { Button } from "@/components/ui/button";
+import { triggerHaptic } from "@/src/lib/haptics";
+import { cn } from "@/lib/utils";
 
 type HabitOccurrenceActionsProps = {
   occurrenceId: string;
@@ -22,70 +25,106 @@ type FeedbackState =
     }
   | null;
 
+type ActionStatus = Exclude<HabitOccurrenceActionsProps["currentStatus"], "pending">;
+
 export function HabitOccurrenceActions({
   occurrenceId,
   currentStatus,
 }: HabitOccurrenceActionsProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [pendingStatus, setPendingStatus] = useState<ActionStatus | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
 
   function runAction(
     action: (id: string) => Promise<{ success: boolean; message: string }>,
+    nextStatus: ActionStatus,
   ) {
-    if (isPending) {
+    if (isPending || pendingStatus) {
       return;
     }
 
     setFeedback(null);
+    setPendingStatus(nextStatus);
+    triggerHaptic("subtle");
 
     startTransition(async () => {
-      const result = await action(occurrenceId);
+      let shouldClearPending = true;
 
-      setFeedback({
-        kind: result.success ? "success" : "error",
-        message: result.message,
-      });
+      try {
+        const result = await action(occurrenceId);
 
-      if (!result.success) {
-        return;
+        setFeedback({
+          kind: result.success ? "success" : "error",
+          message: result.message,
+        });
+
+        if (!result.success) {
+          return;
+        }
+
+        shouldClearPending = false;
+        window.setTimeout(() => {
+          setPendingStatus(null);
+          router.refresh();
+        }, 400);
+      } finally {
+        if (shouldClearPending) {
+          setPendingStatus(null);
+        }
       }
-
-      window.setTimeout(() => {
-        router.refresh();
-      }, 500);
     });
   }
 
+  function getButtonClass(status: ActionStatus) {
+    return cn(
+      "w-full",
+      pendingStatus === status && "border-primary/30 bg-primary/10 text-primary shadow-sm",
+    );
+  }
+
+  function getButtonLabel(label: string, status: ActionStatus) {
+    if (pendingStatus !== status) {
+      return label;
+    }
+
+    return (
+      <>
+        <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+        Salvo...
+      </>
+    );
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" aria-busy={Boolean(pendingStatus)}>
       <div className="grid gap-2 sm:grid-cols-3">
         <Button
           type="button"
-          className="w-full"
-          disabled={isPending}
+          className={getButtonClass("spent")}
+          disabled={isPending || Boolean(pendingStatus)}
           variant={currentStatus === "spent" ? "default" : "outline"}
-          onClick={() => runAction(markHabitOccurrenceSpent)}
+          onClick={() => runAction(markHabitOccurrenceSpent, "spent")}
         >
-          L&apos;ho fatto
+          {getButtonLabel("L&apos;ho fatto", "spent")}
         </Button>
         <Button
           type="button"
-          className="w-full"
-          disabled={isPending}
+          className={getButtonClass("avoided")}
+          disabled={isPending || Boolean(pendingStatus)}
           variant={currentStatus === "avoided" ? "default" : "outline"}
-          onClick={() => runAction(markHabitOccurrenceAvoided)}
+          onClick={() => runAction(markHabitOccurrenceAvoided, "avoided")}
         >
-          Evitato
+          {getButtonLabel("Evitato", "avoided")}
         </Button>
         <Button
           type="button"
-          className="w-full"
-          disabled={isPending}
+          className={getButtonClass("skipped")}
+          disabled={isPending || Boolean(pendingStatus)}
           variant={currentStatus === "skipped" ? "secondary" : "ghost"}
-          onClick={() => runAction(markHabitOccurrenceSkipped)}
+          onClick={() => runAction(markHabitOccurrenceSkipped, "skipped")}
         >
-          Salta
+          {getButtonLabel("Salta", "skipped")}
         </Button>
       </div>
 
@@ -99,9 +138,20 @@ export function HabitOccurrenceActions({
         }
         aria-live="polite"
       >
-        {feedback?.message ?? "Scegli come trattare questa abitudine di oggi."}
+        <span className="inline-flex items-start gap-2">
+          {feedback?.kind === "success" ? (
+            <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          ) : pendingStatus ? (
+            <Loader2 className="mt-0.5 size-3.5 shrink-0 animate-spin" aria-hidden="true" />
+          ) : null}
+          <span>
+            {feedback?.message ??
+              (pendingStatus
+                ? "Aggiornamento in corso..."
+                : "Scegli come trattare questa abitudine di oggi.")}
+          </span>
+        </span>
       </p>
     </div>
   );
 }
-
