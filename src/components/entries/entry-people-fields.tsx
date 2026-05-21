@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { Label } from "@/components/ui/label";
 import {
@@ -24,6 +24,8 @@ type EntryPeopleFieldsProps = {
   paidByUserId?: string | null;
   beneficiaryUserIds?: string[];
   errors?: Record<string, string>;
+  onPaidByUserIdChange?: (userId: string) => void;
+  onBeneficiaryUserIdsChange?: (userIds: string[]) => void;
 };
 
 function FieldError({ message }: { message?: string }) {
@@ -65,6 +67,8 @@ export function EntryPeopleFields({
   paidByUserId,
   beneficiaryUserIds,
   errors,
+  onPaidByUserIdChange,
+  onBeneficiaryUserIdsChange,
 }: EntryPeopleFieldsProps) {
   const sortedMembers = sortWorkspaceMembers(members);
   const selectedPaidBy =
@@ -87,6 +91,14 @@ export function EntryPeopleFields({
   );
   const expenseHelperText = getExpenseHelperText(selectedBeneficiaryUserIds);
   const gridClass = getMemberGridClass(sortedMembers.length);
+
+  useEffect(() => {
+    onPaidByUserIdChange?.(selectedPaidBy);
+  }, [onPaidByUserIdChange, selectedPaidBy]);
+
+  useEffect(() => {
+    onBeneficiaryUserIdsChange?.(selectedBeneficiaryUserIds);
+  }, [onBeneficiaryUserIdsChange, selectedBeneficiaryUserIds]);
 
   function toggleBeneficiary(userId: string, checked: boolean) {
     setSelectedBeneficiaryUserIds((current) => {
@@ -112,7 +124,12 @@ export function EntryPeopleFields({
 
       <div className="space-y-2">
         <Label htmlFor="paidByUserId">Chi paga</Label>
-        <Select name="paidByUserId" defaultValue={selectedPaidBy} required>
+        <Select
+          name="paidByUserId"
+          value={selectedPaidBy}
+          onValueChange={(value) => onPaidByUserIdChange?.(value)}
+          required
+        >
           <SelectTrigger
             id="paidByUserId"
             className="w-full"

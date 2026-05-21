@@ -27,12 +27,14 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
+import { ExpenseSuggestionCard } from "@/src/components/entries/expense-suggestion-card";
 import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
+import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 
@@ -58,6 +60,7 @@ type EntryFormProps = {
   categories: CategoryOption[];
   members: WorkspaceMemberOption[];
   currentUserId: string;
+  workspaceId: string;
   initialValues?: {
     title?: string;
     categoryId?: string;
@@ -91,6 +94,7 @@ export function EntryForm({
   categories,
   members,
   currentUserId,
+  workspaceId,
   initialValues,
 }: EntryFormProps) {
   const router = useRouter();
@@ -98,12 +102,38 @@ export function EntryForm({
   const didHandleSuccessRef = useRef(false);
   const redirectTimerRef = useRef<number | null>(null);
   const successTimerRef = useRef<number | null>(null);
+  const initialPaidByUserId =
+    initialValues?.paidByUserId ??
+    getDefaultPaidByUserId(members, currentUserId);
+  const initialBeneficiaryUserIds =
+    initialValues?.beneficiaryUserIds ??
+    getDefaultBeneficiaryUserIds(members, initialPaidByUserId);
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
+  const [title, setTitle] = useState(initialValues?.title ?? "");
+  const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? "");
+  const [realCost, setRealCost] = useState(initialValues?.realCost ?? "");
+  const [alternativeCost, setAlternativeCost] = useState(
+    initialValues?.alternativeCost ?? "",
+  );
+  const [paidByUserId, setPaidByUserId] = useState(initialPaidByUserId);
+  const [beneficiaryUserIds, setBeneficiaryUserIds] = useState(
+    initialBeneficiaryUserIds,
+  );
+  const alternativeCostTouchedRef = useRef(Boolean(initialValues?.alternativeCost?.trim()));
   const redirect = useCallback((path: string) => router.replace(path), [router]);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => redirect("/"),
+  });
+  const expenseSuggestion = useExpenseSuggestion({
+    title,
+    categoryId,
+    workspaceId,
+    realCost,
+    paidByUserId,
+    beneficiaryUserIds,
+    enabled: !alternativeCostTouchedRef.current && alternativeCost.trim().length === 0,
   });
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
@@ -113,12 +143,19 @@ export function EntryForm({
   );
 
   const hasCategories = categories.length > 0;
-  const initialPaidByUserId =
-    initialValues?.paidByUserId ??
-    getDefaultPaidByUserId(members, currentUserId);
-  const initialBeneficiaryUserIds =
-    initialValues?.beneficiaryUserIds ??
-    getDefaultBeneficiaryUserIds(members, initialPaidByUserId);
+
+  useEffect(() => {
+    if (
+      !expenseSuggestion.suggestion ||
+      expenseSuggestion.suggestion.confidence < 0.75 ||
+      alternativeCostTouchedRef.current ||
+      alternativeCost.trim().length > 0
+    ) {
+      return;
+    }
+
+    setAlternativeCost(expenseSuggestion.suggestion.alternativeCost.toFixed(2));
+  }, [alternativeCost, expenseSuggestion.suggestion]);
 
   useEffect(() => {
     if (!state.success) {
@@ -192,35 +229,35 @@ export function EntryForm({
           successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
         )}
       >
-      <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
-        <CardTitle>Nuovo movimento</CardTitle>
-        <CardDescription className="max-w-xl text-sm leading-5">
-          {helperText}
-        </CardDescription>
-      </CardHeader>
+        <CardHeader className="space-y-1.5 p-4 pb-0 sm:p-5">
+          <CardTitle>Nuovo movimento</CardTitle>
+          <CardDescription className="max-w-xl text-sm leading-5">
+            {helperText}
+          </CardDescription>
+        </CardHeader>
 
-      <form ref={formRef} action={formAction}>
-        <CardContent className="space-y-5 p-4 sm:p-5">
-          {state.message ? (
-            <div
-              className={cn(
-                "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
-                state.success
-                  ? "border-success/20 bg-success/10 text-success"
-                  : "border-destructive/20 bg-destructive/10 text-destructive",
-                successStage !== "idle" && "opacity-100",
-              )}
-            >
-              <span className="flex items-start gap-2">
-                {state.success ? (
-                  <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                ) : null}
-                <span>{state.message}</span>
-              </span>
-            </div>
-          ) : null}
+        <form ref={formRef} action={formAction}>
+          <CardContent className="space-y-5 p-4 sm:p-5">
+            {state.message ? (
+              <div
+                className={cn(
+                  "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
+                  state.success
+                    ? "border-success/20 bg-success/10 text-success"
+                    : "border-destructive/20 bg-destructive/10 text-destructive",
+                  successStage !== "idle" && "opacity-100",
+                )}
+              >
+                <span className="flex items-start gap-2">
+                  {state.success ? (
+                    <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+                  ) : null}
+                  <span>{state.message}</span>
+                </span>
+              </div>
+            ) : null}
 
-          <div className="grid gap-4">
+            <div className="grid gap-4">
             <div className="space-y-2">
               <Label htmlFor="title">Titolo</Label>
               <Input
@@ -228,7 +265,8 @@ export function EntryForm({
                 name="title"
                 placeholder="Pranzo a casa"
                 autoComplete="off"
-                defaultValue={initialValues?.title ?? ""}
+                value={title}
+                onChange={(event) => setTitle(event.target.value)}
                 aria-invalid={Boolean(state.errors?.title)}
               />
               <FieldError message={state.errors?.title} />
@@ -236,7 +274,11 @@ export function EntryForm({
 
             <div className="space-y-2">
               <Label htmlFor="categoryId">Categoria</Label>
-              <Select name="categoryId" defaultValue={initialValues?.categoryId ?? ""}>
+              <Select
+                name="categoryId"
+                value={categoryId}
+                onValueChange={setCategoryId}
+              >
                 <SelectTrigger
                   id="categoryId"
                   aria-invalid={Boolean(state.errors?.categoryId)}
@@ -260,14 +302,16 @@ export function EntryForm({
 
             <EntryPeopleFields
               members={members}
-              paidByUserId={initialPaidByUserId}
-              beneficiaryUserIds={initialBeneficiaryUserIds}
+              paidByUserId={paidByUserId}
+              beneficiaryUserIds={beneficiaryUserIds}
               errors={state.errors}
+              onPaidByUserIdChange={setPaidByUserId}
+              onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
             />
           </div>
 
-          <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
+              <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="realCost">Quanto hai speso davvero</Label>
                 <Input
@@ -278,7 +322,8 @@ export function EntryForm({
                   min="0"
                   step="0.01"
                   placeholder="2.00"
-                  defaultValue={initialValues?.realCost ?? ""}
+                  value={realCost}
+                  onChange={(event) => setRealCost(event.target.value)}
                   aria-invalid={Boolean(state.errors?.realCost)}
                 />
                 <FieldError message={state.errors?.realCost} />
@@ -294,52 +339,72 @@ export function EntryForm({
                   min="0"
                   step="0.01"
                   placeholder="18.00"
-                  defaultValue={initialValues?.alternativeCost ?? ""}
+                  value={alternativeCost}
+                  onChange={(event) => {
+                    alternativeCostTouchedRef.current = true;
+                    setAlternativeCost(event.target.value);
+                  }}
                   aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
                 <FieldError message={state.errors?.alternativeCost} />
               </div>
+              </div>
+
+              {expenseSuggestion.suggestion ? (
+                <div className="mt-4">
+                  <ExpenseSuggestionCard
+                    suggestion={expenseSuggestion.suggestion}
+                    realCost={realCost}
+                    alternativeCost={alternativeCost}
+                    onApply={() => {
+                      alternativeCostTouchedRef.current = false;
+                      setAlternativeCost(
+                        expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
+                      );
+                    }}
+                  />
+                </div>
+              ) : null}
+
+              <p className="mt-2 text-xs leading-5 text-muted-text">
+                Il risparmio finale viene calcolato dal server.
+              </p>
             </div>
 
-            <p className="mt-2 text-xs leading-5 text-muted-text">
-              Il risparmio finale viene calcolato dal server.
-            </p>
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="date">Data</Label>
+              <Input
+                id="date"
+                name="date"
+                type="date"
+                defaultValue={initialValues?.date ?? getTodayLocal()}
+                aria-invalid={Boolean(state.errors?.date)}
+              />
+              <FieldError message={state.errors?.date} />
+            </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="date">Data</Label>
-            <Input
-              id="date"
-              name="date"
-              type="date"
-              defaultValue={initialValues?.date ?? getTodayLocal()}
-              aria-invalid={Boolean(state.errors?.date)}
-            />
-            <FieldError message={state.errors?.date} />
-          </div>
+            <div className="space-y-2">
+              <Label htmlFor="note">Nota</Label>
+              <Textarea
+                id="note"
+                name="note"
+                placeholder="Pasta al tonno invece di delivery"
+                className="min-h-28"
+              />
+            </div>
+          </CardContent>
 
-          <div className="space-y-2">
-            <Label htmlFor="note">Nota</Label>
-            <Textarea
-              id="note"
-              name="note"
-              placeholder="Pasta al tonno invece di delivery"
-              className="min-h-28"
-            />
-          </div>
-        </CardContent>
-
-        <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-4 sm:flex-row sm:justify-end sm:p-5">
-          <Button
-            type="submit"
-            className="h-11 w-full px-5 sm:w-auto"
-            disabled={pending || !hasCategories || members.length === 0}
-          >
-            {pending ? "Salvataggio..." : "Salva movimento"}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+          <CardFooter className="flex-col gap-3 border-t border-border bg-surface-muted/50 p-4 sm:flex-row sm:justify-end sm:p-5">
+            <Button
+              type="submit"
+              className="h-11 w-full px-5 sm:w-auto"
+              disabled={pending || !hasCategories || members.length === 0}
+            >
+              {pending ? "Salvataggio..." : "Salva movimento"}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
     </>
   );
 }

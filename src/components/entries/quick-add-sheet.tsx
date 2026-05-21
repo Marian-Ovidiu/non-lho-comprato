@@ -37,12 +37,14 @@ import { cn } from "@/lib/utils";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { getCategoryIdentity } from "@/src/lib/category-identity";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
+import { ExpenseSuggestionCard } from "@/src/components/entries/expense-suggestion-card";
 import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
+import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 
@@ -202,6 +204,7 @@ export function QuickAddSheet({
 }: {
   categories?: CategoryOption[];
   workspace: {
+    id: string;
     name: string;
     kind: "private" | "shared";
     isShared: boolean;
@@ -223,6 +226,7 @@ export function QuickAddSheet({
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
+  const alternativeCostTouchedRef = useRef(false);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
   });
@@ -251,6 +255,18 @@ export function QuickAddSheet({
     },
     initialState,
   );
+  const expenseSuggestion = useExpenseSuggestion({
+    title: draft.title,
+    categoryId: draft.categoryId,
+    workspaceId: workspace.id,
+    realCost: draft.realCost,
+    paidByUserId: draft.paidByUserId,
+    beneficiaryUserIds: draft.beneficiaryUserIds,
+    enabled:
+      activePreset === "custom" &&
+      !alternativeCostTouchedRef.current &&
+      draft.alternativeCost.trim().length === 0,
+  });
 
   const fullFormHref = useMemo(() => getSearchHref(draft), [draft]);
 
@@ -357,9 +373,27 @@ export function QuickAddSheet({
 
   function personalize() {
     setActivePreset("custom");
+    alternativeCostTouchedRef.current = false;
     setDraft(getInitialDraft(members, currentUserId));
     focusTitleSoon();
   }
+
+  useEffect(() => {
+    if (
+      activePreset !== "custom" ||
+      !expenseSuggestion.suggestion ||
+      expenseSuggestion.suggestion.confidence < 0.75 ||
+      alternativeCostTouchedRef.current ||
+      draft.alternativeCost.trim().length > 0
+    ) {
+      return;
+    }
+
+    setDraft((current) => ({
+      ...current,
+      alternativeCost: expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
+    }));
+  }, [activePreset, draft.alternativeCost, expenseSuggestion.suggestion]);
 
   return (
     <>
@@ -371,6 +405,7 @@ export function QuickAddSheet({
 
         if (!nextOpen) {
           setActivePreset(null);
+          alternativeCostTouchedRef.current = false;
           setDraft(getInitialDraft(members, currentUserId));
         }
       }}
@@ -609,12 +644,13 @@ export function QuickAddSheet({
                     min="0"
                     step="0.01"
                     value={draft.alternativeCost}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      alternativeCostTouchedRef.current = true;
                       setDraft((current) => ({
                         ...current,
                         alternativeCost: event.target.value,
-                      }))
-                    }
+                      }));
+                    }}
                     placeholder="4.00"
                     aria-invalid={Boolean(state.errors?.alternativeCost)}
                   />
@@ -626,12 +662,41 @@ export function QuickAddSheet({
                 </div>
               </div>
 
+            {expenseSuggestion.suggestion ? (
+              <ExpenseSuggestionCard
+                className="mt-4"
+                suggestion={expenseSuggestion.suggestion}
+                realCost={draft.realCost}
+                alternativeCost={draft.alternativeCost}
+                onApply={() => {
+                  alternativeCostTouchedRef.current = false;
+                  setDraft((current) => ({
+                    ...current,
+                    alternativeCost:
+                      expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
+                  }));
+                }}
+              />
+            ) : null}
+
               <EntryPeopleFields
                 key={`${draft.paidByUserId}:${draft.beneficiaryUserIds.join(",")}`}
                 members={members}
                 paidByUserId={draft.paidByUserId}
                 beneficiaryUserIds={draft.beneficiaryUserIds}
                 errors={state.errors}
+                onPaidByUserIdChange={(value) =>
+                  setDraft((current) => ({
+                    ...current,
+                    paidByUserId: value,
+                  }))
+                }
+                onBeneficiaryUserIdsChange={(value) =>
+                  setDraft((current) => ({
+                    ...current,
+                    beneficiaryUserIds: value,
+                  }))
+                }
               />
             </div>
 

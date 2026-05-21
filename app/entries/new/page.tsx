@@ -98,6 +98,7 @@ export default async function NewEntryPage({
         categories={categories}
         members={members}
         currentUserId={currentUser.id}
+        workspaceId={workspace.id}
         initialValues={{
           title,
           categoryId,

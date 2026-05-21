@@ -37,6 +37,12 @@ import {
   entryListSelect,
   entryListSelectWithBeneficiaries,
 } from "@/src/lib/entry-list-select";
+import {
+  buildExpenseSuggestion,
+  type ExpenseSuggestionCandidate,
+  type ExpenseSuggestionInput,
+  type ExpenseSuggestionResult,
+} from "@/src/lib/expense-suggestion";
 import { isWorkspaceDebugEnabled, logWorkspaceDebug } from "@/src/lib/workspace-debug";
 
 type CreateEntryResult = {
@@ -106,6 +112,8 @@ type MonthlySummary = {
   totalSaved: number;
   entriesCount: number;
 };
+
+type ExpenseSuggestionRequest = ExpenseSuggestionInput;
 
 export type EntriesPageResult = {
   entries: SerializableEntry[];
@@ -387,8 +395,103 @@ async function findEntriesPage(
   }
 }
 
+async function findExpenseSuggestionCandidates(
+  where: Prisma.EntryWhereInput,
+): Promise<Array<ExpenseSuggestionCandidate>> {
+  try {
+    const entries = await prisma.entry.findMany({
+      where,
+      orderBy: [
+        {
+          date: "desc" as const,
+        },
+        {
+          createdAt: "desc" as const,
+        },
+      ],
+      take: 250,
+      select: {
+        title: true,
+        realCost: true,
+        date: true,
+        note: true,
+        paidByUserId: true,
+        beneficiaries: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+
+    return entries
+      .filter((entry) => !isLikelyImportedNoise(entry.title, entry.note))
+      .map((entry) => ({
+        title: entry.title,
+        realCost: toNumber(entry.realCost),
+        date: entry.date,
+        paidByUserId: entry.paidByUserId,
+        beneficiaryUserIds: entry.beneficiaries.map(
+          (beneficiary) => beneficiary.userId,
+        ),
+      }));
+  } catch (error) {
+    if (!isMissingEntryBeneficiaryTable(error)) {
+      throw error;
+    }
+
+    const entries = await prisma.entry.findMany({
+      where,
+      orderBy: [
+        {
+          date: "desc" as const,
+        },
+        {
+          createdAt: "desc" as const,
+        },
+      ],
+      take: 250,
+      select: {
+        title: true,
+        realCost: true,
+        date: true,
+        note: true,
+        paidByUserId: true,
+      },
+    });
+
+    return entries
+      .filter((entry) => !isLikelyImportedNoise(entry.title, entry.note))
+      .map((entry) => ({
+        title: entry.title,
+        realCost: toNumber(entry.realCost),
+        date: entry.date,
+        paidByUserId: entry.paidByUserId,
+        beneficiaryUserIds: [],
+      }));
+  }
+}
+
 function normalizeSearchQuery(query?: string): string {
   return query?.trim().toLowerCase() ?? "";
+}
+
+function isLikelyImportedNoise(title: string, note?: string | null): boolean {
+  const text = `${title} ${note ?? ""}`.toLowerCase();
+
+  return [
+    "csv",
+    "import",
+    "statement",
+    "transaction",
+    "paypal",
+    "stripe",
+    "revolut",
+    "nexi",
+    "bank",
+    "addebito",
+    "bonifico",
+  ].some((pattern) => text.includes(pattern));
 }
 
 function parseSimpleAmountQuery(query: string): Prisma.Decimal | null {
@@ -843,6 +946,51 @@ export async function getCategories() {
     console.warn("Falling back to static categories:", error);
     return mergeCategoryOptions([]);
   }
+}
+
+export async function getExpenseSuggestion(
+  request: ExpenseSuggestionRequest,
+): Promise<ExpenseSuggestionResult | null> {
+  const title = request.title.trim();
+  const categoryId = request.categoryId.trim();
+  const workspaceId = request.workspaceId.trim();
+  const currentRealCost = Number(request.currentRealCost);
+
+  if (
+    title.length < 2 ||
+    !categoryId ||
+    !workspaceId ||
+    !Number.isFinite(currentRealCost)
+  ) {
+    return null;
+  }
+
+  if (currentRealCost <= 0) {
+    return null;
+  }
+
+  const activeWorkspaceId = await getCurrentWorkspaceId();
+  if (activeWorkspaceId !== workspaceId) {
+    return null;
+  }
+
+  const candidates = await findExpenseSuggestionCandidates({
+    workspaceId,
+    categoryId,
+    source: "manual",
+    realCost: {
+      gt: 0,
+    },
+  });
+
+  return buildExpenseSuggestion(candidates, {
+    title,
+    categoryId,
+    workspaceId,
+    currentRealCost,
+    paidByUserId: request.paidByUserId ?? null,
+    beneficiaryUserIds: request.beneficiaryUserIds ?? [],
+  });
 }
 
 export async function createEntry(
