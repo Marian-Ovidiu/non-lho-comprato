@@ -83,11 +83,6 @@ function getTodayLocal() {
   return format(new Date(), "yyyy-MM-dd");
 }
 
-function hasPositiveMoneyInput(value: string): boolean {
-  const parsed = Number(value.trim().replace(",", "."));
-  return Number.isFinite(parsed) && parsed > 0;
-}
-
 function FieldError({ message }: { message?: string }) {
   if (!message) {
     return null;
@@ -128,7 +123,6 @@ export function EntryForm({
     initialBeneficiaryUserIds,
   );
   const alternativeCostTouchedRef = useRef(Boolean(initialValues?.alternativeCost?.trim()));
-  const hasPositiveRealCost = hasPositiveMoneyInput(realCost);
   const redirect = useCallback((path: string) => router.replace(path), [router]);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => redirect("/"),
@@ -141,7 +135,6 @@ export function EntryForm({
     paidByUserId,
     beneficiaryUserIds,
     enabled:
-      hasPositiveRealCost &&
       !alternativeCostTouchedRef.current &&
       alternativeCost.trim().length === 0,
   });
@@ -156,7 +149,6 @@ export function EntryForm({
   const expenseSuggestionValue = expenseSuggestion.suggestion;
   const isSuggestionAutoApplied =
     expenseSuggestionValue !== null &&
-    hasPositiveRealCost &&
     expenseSuggestionValue.confidence >= 0.75 &&
     !alternativeCostTouchedRef.current &&
     alternativeCost.trim().length > 0 &&
@@ -166,21 +158,8 @@ export function EntryForm({
     ) < 0.01;
 
   useEffect(() => {
-    if (hasPositiveRealCost || alternativeCostTouchedRef.current) {
-      return;
-    }
-
-    if (alternativeCost.trim().length === 0) {
-      return;
-    }
-
-    setAlternativeCost("");
-  }, [alternativeCost, hasPositiveRealCost]);
-
-  useEffect(() => {
     if (
       !expenseSuggestionValue ||
-      !hasPositiveRealCost ||
       expenseSuggestionValue.confidence < 0.75 ||
       alternativeCostTouchedRef.current ||
       alternativeCost.trim().length > 0
@@ -189,7 +168,7 @@ export function EntryForm({
     }
 
     setAlternativeCost(expenseSuggestionValue.alternativeCost.toFixed(2));
-  }, [alternativeCost, expenseSuggestionValue, hasPositiveRealCost]);
+  }, [alternativeCost, expenseSuggestionValue]);
 
   useEffect(() => {
     if (!state.success) {
@@ -392,13 +371,10 @@ export function EntryForm({
               </div>
               </div>
 
-              {expenseSuggestionValue && hasPositiveRealCost ? (
+              {expenseSuggestionValue ? (
                 <div className="mt-4">
                   <ExpenseSuggestionCard
                     suggestion={expenseSuggestionValue}
-                    realCost={realCost}
-                    alternativeCost={alternativeCost}
-                    isAppliedAutomatically={isSuggestionAutoApplied}
                     onApply={() => {
                       alternativeCostTouchedRef.current = false;
                       setAlternativeCost(

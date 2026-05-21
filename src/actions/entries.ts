@@ -964,7 +964,7 @@ export async function getExpenseSuggestion(
     return null;
   }
 
-  if (currentRealCost <= 0) {
+  if (currentRealCost < 0) {
     return null;
   }
 

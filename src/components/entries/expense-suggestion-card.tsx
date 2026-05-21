@@ -10,10 +10,7 @@ import { cn } from "@/lib/utils";
 
 type ExpenseSuggestionCardProps = {
   suggestion: ExpenseSuggestionResult;
-  realCost: string;
-  alternativeCost: string;
   onApply: () => void;
-  isAppliedAutomatically?: boolean;
   className?: string;
 };
 
@@ -23,21 +20,9 @@ function formatSuggestionCost(value: number): string {
 
 export function ExpenseSuggestionCard({
   suggestion,
-  realCost,
-  alternativeCost,
   onApply,
-  isAppliedAutomatically = false,
   className,
 }: ExpenseSuggestionCardProps) {
-  const real = Number(realCost.replace(",", "."));
-  const appliedAlternative = Number(alternativeCost.replace(",", "."));
-  const hasAppliedValue =
-    Number.isFinite(appliedAlternative) &&
-    Math.abs(appliedAlternative - suggestion.alternativeCost) < 0.01;
-  const estimatedSavings = Number.isFinite(real)
-    ? Math.max(0, suggestion.alternativeCost - real)
-    : 0;
-
   return (
     <Card
       className={cn(
@@ -52,48 +37,25 @@ export function ExpenseSuggestionCard({
           </div>
 
           <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-text">
+            <p className="text-sm font-medium tracking-tight text-foreground">
               Alternativa trovata
             </p>
-            <p className="text-sm font-semibold tracking-tight text-foreground">
-              {suggestion.label}
+            <p className="text-sm leading-5 text-muted-text">
+              {suggestion.label} medio
             </p>
             <p className="text-sm leading-5 text-muted-text">
-              {formatSuggestionCost(suggestion.alternativeCost)} (
-              {suggestion.evidenceCount} movimenti simili)
-            </p>
-            <p className="text-sm leading-5 text-success">
-              Risparmio stimato: {formatSuggestionCost(estimatedSavings)}
+              {formatSuggestionCost(suggestion.alternativeCost)}, {suggestion.evidenceCount} movimenti simili
             </p>
           </div>
         </div>
-
-        {isAppliedAutomatically ? (
-          <div className="rounded-2xl border border-premium-accent/20 bg-premium-accent/10 px-3 py-2 text-xs font-medium leading-5 text-premium-accent">
-            Suggerito in base alle tue spese in questa categoria
-          </div>
-        ) : null}
-
-        {!isAppliedAutomatically ? (
-          <p className="text-xs leading-5 text-muted-text">
-            Suggerito in base alle tue spese in questa categoria.
-          </p>
-        ) : null}
-
-        {isAppliedAutomatically || hasAppliedValue ? (
-          <p className="text-sm font-medium text-muted-text">
-            Suggerimento applicato.
-          </p>
-        ) : (
-          <Button
-            type="button"
-            variant="secondary"
-            className="h-10 w-full rounded-2xl"
-            onClick={onApply}
-          >
-            Usa suggerimento
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="secondary"
+          className="h-10 w-full rounded-2xl"
+          onClick={onApply}
+        >
+          Usa suggerimento
+        </Button>
       </CardContent>
     </Card>
   );

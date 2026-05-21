@@ -50,8 +50,7 @@ export function useExpenseSuggestion({
       enabled &&
       categoryId.trim().length > 0 &&
       workspaceId.trim().length > 0 &&
-      Number.isFinite(parsedRealCost) &&
-      parsedRealCost > 0;
+      Number.isFinite(parsedRealCost);
 
     if (!hasRequiredFields) {
       setSuggestion(null);
