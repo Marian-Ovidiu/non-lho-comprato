@@ -80,7 +80,7 @@ export function NotificationPermissionPrompt() {
           aria-hidden="true"
         />
         <p className="min-w-0 flex-1 text-sm text-foreground">
-          Vuoi ricevere notifiche da Non l&apos;ho comprato?
+          Vuoi ricevere un promemoria quando serve?
         </p>
         <Button
           type="button"
@@ -89,7 +89,7 @@ export function NotificationPermissionPrompt() {
           disabled={requesting}
           onClick={() => void handleRequest()}
         >
-          {requesting ? "Attendi…" : "Abilita"}
+          {requesting ? "Attendi…" : "Attiva"}
         </Button>
       </div>
     </div>

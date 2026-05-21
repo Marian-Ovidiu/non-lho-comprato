@@ -215,7 +215,7 @@ export function EntryForm({
 
   const helperText = useMemo(() => {
     if (!hasCategories) {
-      return "Nessuna categoria disponibile al momento.";
+      return "Nessuna categoria disponibile. Usa una categoria predefinita o riprova più tardi.";
     }
 
     return "Compila i campi, poi salviamo il movimento con il risparmio calcolato dal server.";
@@ -286,7 +286,7 @@ export function EntryForm({
                 >
                   <SelectValue
                     placeholder={
-                      hasCategories ? "Seleziona una categoria" : "Nessuna categoria"
+                      hasCategories ? "Seleziona una categoria" : "Categorie non disponibili"
                     }
                   />
                 </SelectTrigger>

@@ -241,10 +241,22 @@ export function EntryList({
             description={
               searchError
                 ? searchError
-                : "Prova un termine diverso o svuota la ricerca."
+                : "Prova con categoria, importo o persona."
             }
-            note="Il filtro usa workspace, titolo, descrizione, categoria, importo e persone già caricate."
+            note="Puoi anche svuotare la ricerca e ripartire da tutti i movimenti."
             icon={<Search className="size-5" aria-hidden="true" />}
+            action={
+              !searchError ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full sm:w-auto"
+                  onClick={() => setSearchValue("")}
+                >
+                  Svuota ricerca
+                </Button>
+              ) : null
+            }
           />
         ) : (
           <EmptyState

@@ -45,8 +45,8 @@ export function HabitList({ habits, categories }: HabitListProps) {
     return (
       <EmptyState
         title="Nessuna abitudine ancora"
-        description="🧭 Crea la prima abitudine ricorrente e il suo costo comparirà qui. Ti basta un minuto."
-        note="☕ Un caffè al bar è il caso perfetto per iniziare."
+        description="Crea la prima abitudine ricorrente e il suo costo comparirà qui."
+        note="Puoi iniziare da una spesa semplice e ripetuta."
         icon={<Repeat2 className="size-5" aria-hidden="true" />}
         action={
           <Button asChild className="w-full sm:w-auto">

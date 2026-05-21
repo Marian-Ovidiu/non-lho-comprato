@@ -13,8 +13,8 @@ type DashboardEmptyStateProps = {
 };
 
 export function DashboardEmptyState({
-  description = "Segna qui il primo risparmio e vedrai il quadro di oggi prendere forma.",
-  note = "Bastano pochi secondi per partire.",
+  description = "Aggiungi un movimento per continuare il ritmo di oggi.",
+  note = "Bastano pochi secondi per iniziare.",
   actionLabel = "Aggiungi movimento",
 }: DashboardEmptyStateProps = {}) {
   return (

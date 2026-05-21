@@ -126,7 +126,7 @@ export function PresetForm({ categories }: PresetFormProps) {
                 aria-invalid={Boolean(state.errors?.categoryId)}
               >
                 <option value="" disabled>
-                  {hasCategories ? "Seleziona una categoria" : "Nessuna categoria"}
+                  {hasCategories ? "Seleziona una categoria" : "Categorie non disponibili"}
                 </option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
@@ -209,5 +209,4 @@ export function PresetForm({ categories }: PresetFormProps) {
     </Card>
   );
 }
-
 

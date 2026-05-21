@@ -193,7 +193,7 @@ export function HabitForm({ categories }: HabitFormProps) {
               <SelectTrigger id="categoryId" className="w-full">
                 <SelectValue
                   placeholder={
-                    hasCategories ? "Seleziona una categoria" : "Nessuna categoria"
+                    hasCategories ? "Seleziona una categoria" : "Categorie non disponibili"
                   }
                 />
               </SelectTrigger>

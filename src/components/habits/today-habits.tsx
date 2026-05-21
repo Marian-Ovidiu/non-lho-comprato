@@ -72,8 +72,8 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
     return (
       <EmptyState
         title="Nessuna abitudine per oggi"
-        description="🧩 Se hai già creato abitudini ma oggi non sono previste, va tutto bene. Se invece vuoi iniziare, aggiungine una qui sotto."
-        note="Le occorrenze di oggi si creano automaticamente quando la pagina si apre."
+        description="Se oggi non sono previste abitudini, va tutto bene. Se vuoi iniziare, aggiungine una qui sotto."
+        note="Le occorrenze di oggi si creano automaticamente."
         icon={<SunMedium className="size-5" aria-hidden="true" />}
         action={
           <Button asChild className="w-full sm:w-auto">

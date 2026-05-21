@@ -4,10 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { CategoryPill } from "@/src/components/shared/category-pill";
-import {
-  WORKSPACE_EMPTY_ENTRIES_DESCRIPTION,
-  WORKSPACE_EMPTY_ENTRIES_TITLE,
-} from "@/src/components/shared/workspace-empty-entries-copy";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import { spacing } from "@/src/lib/spacing";
 
@@ -65,10 +61,10 @@ export function RecentEntries({ entries, description = "Gli ultimi 3 movimenti i
             role="status"
           >
             <p className="text-sm font-semibold text-foreground">
-              {WORKSPACE_EMPTY_ENTRIES_TITLE}
+              Nessuna spesa recente
             </p>
             <p className="mt-1 text-sm leading-5 text-muted-text">
-              {WORKSPACE_EMPTY_ENTRIES_DESCRIPTION}
+              Aggiungi un movimento per vedere qui gli ultimi segnali.
             </p>
           </div>
         ) : null}

@@ -12,9 +12,9 @@ type StatsEmptyStateProps = {
 };
 
 export function StatsEmptyState({
-  title = "Ancora nessun segnale utile",
-  description = "Aggiungi i primi movimenti e qui compariranno le tue direzioni migliori, senza rumore inutile.",
-  note = "Bastano pochi dati per leggere un pattern.",
+  title = "Ancora nessun dato",
+  description = "Aggiungi i primi movimenti e qui compariranno le direzioni più utili.",
+  note = "Bastano pochi dati per iniziare a leggere il mese.",
   actionLabel = "Aggiungi movimento",
 }: StatsEmptyStateProps = {}) {
   return (
