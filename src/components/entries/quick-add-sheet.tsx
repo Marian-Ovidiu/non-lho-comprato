@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import {
   ArrowRight,
@@ -378,6 +378,20 @@ export function QuickAddSheet({
     focusTitleSoon();
   }
 
+  const handlePaidByUserIdChange = useCallback((value: string) => {
+    setDraft((current) => ({
+      ...current,
+      paidByUserId: value,
+    }));
+  }, []);
+
+  const handleBeneficiaryUserIdsChange = useCallback((value: string[]) => {
+    setDraft((current) => ({
+      ...current,
+      beneficiaryUserIds: value,
+    }));
+  }, []);
+
   useEffect(() => {
     if (
       activePreset !== "custom" ||
@@ -685,18 +699,8 @@ export function QuickAddSheet({
                 paidByUserId={draft.paidByUserId}
                 beneficiaryUserIds={draft.beneficiaryUserIds}
                 errors={state.errors}
-                onPaidByUserIdChange={(value) =>
-                  setDraft((current) => ({
-                    ...current,
-                    paidByUserId: value,
-                  }))
-                }
-                onBeneficiaryUserIdsChange={(value) =>
-                  setDraft((current) => ({
-                    ...current,
-                    beneficiaryUserIds: value,
-                  }))
-                }
+                onPaidByUserIdChange={handlePaidByUserIdChange}
+                onBeneficiaryUserIdsChange={handleBeneficiaryUserIdsChange}
               />
             </div>
 
