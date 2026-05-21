@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Check,
   LockKeyhole,
+  Loader2,
   Plus,
   SlidersHorizontal,
   Sparkles,
@@ -266,6 +267,7 @@ export function QuickAddSheet({
       !alternativeCostTouchedRef.current &&
       draft.alternativeCost.trim().length === 0,
   });
+  const showSuggestionLookupState = expenseSuggestion.isLoading;
 
   const fullFormHref = useMemo(() => getSearchHref(draft), [draft]);
 
@@ -696,6 +698,18 @@ export function QuickAddSheet({
                 {state.errors?.alternativeCost ? (
                   <p className="text-sm text-destructive">
                     {state.errors.alternativeCost}
+                  </p>
+                ) : null}
+                {showSuggestionLookupState ? (
+                  <p
+                    className="flex items-center gap-2 text-xs leading-5 text-muted-text"
+                    aria-live="polite"
+                  >
+                    <Loader2
+                      className="size-3.5 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Cerco un suggerimento…
                   </p>
                 ) : null}
               </div>

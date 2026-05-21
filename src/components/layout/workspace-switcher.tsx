@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import {
   Check,
   ChevronDown,
+  Loader2,
   LockKeyhole,
   Users2,
 } from "lucide-react";
@@ -52,14 +53,17 @@ function getWorkspaceSubtitle(workspace: WorkspaceOption) {
 function WorkspaceTrigger({
   workspace,
   interactive,
+  isSwitching = false,
 }: {
   workspace: WorkspaceOption;
   interactive: boolean;
+  isSwitching?: boolean;
 }) {
   return (
     <span
       className={cn(
         "inline-flex min-w-0 max-w-full items-center gap-2 rounded-2xl border border-border/70 bg-background/80 px-2.5 py-2 text-left shadow-sm transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.99]",
+        isSwitching && "opacity-80",
         interactive &&
           "hover:-translate-y-px hover:bg-surface-muted/70 hover:shadow-[0_10px_24px_-18px_rgba(0,0,0,0.55)]",
       )}
@@ -69,6 +73,16 @@ function WorkspaceTrigger({
       <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-text">
         {getWorkspaceLabel(workspace)}
       </span>
+
+      {isSwitching ? (
+        <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-premium-accent/20 bg-premium-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-premium-accent">
+          <Loader2
+            className="size-3 animate-spin motion-reduce:animate-none"
+            aria-hidden="true"
+          />
+          Cambio spazio…
+        </span>
+      ) : null}
 
       {interactive ? (
         <ChevronDown className="size-3.5 shrink-0 text-muted-text" aria-hidden="true" />
@@ -92,6 +106,7 @@ export function WorkspaceSwitcher({
   );
   const [isSwitching, startSwitchTransition] = useTransition();
   const hasMultipleWorkspaces = availableWorkspaces.length > 1;
+  const showSwitchingState = isSwitching && Boolean(switchingWorkspaceId);
 
   function emitWorkspaceSwitchEvent(
     name: "nlc:workspace-switch-start" | "nlc:workspace-switch-end",
@@ -123,9 +138,15 @@ export function WorkspaceSwitcher({
           type="button"
           variant="ghost"
           className="h-auto w-full min-w-0 justify-start rounded-full p-0 hover:bg-transparent"
+          disabled={isSwitching}
+          aria-busy={showSwitchingState}
           aria-label={`Cambia workspace: ${currentWorkspace.name}`}
         >
-          <WorkspaceTrigger workspace={currentWorkspace} interactive />
+          <WorkspaceTrigger
+            workspace={currentWorkspace}
+            interactive
+            isSwitching={showSwitchingState}
+          />
         </Button>
       </DialogTrigger>
 
@@ -234,8 +255,12 @@ export function WorkspaceSwitcher({
                           </Badge>
                         ) : null}
                         {isSubmitting ? (
-                          <span className="text-xs font-medium text-muted-text">
-                            Cambio...
+                          <span className="inline-flex items-center gap-1 rounded-full border border-premium-accent/20 bg-premium-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-premium-accent">
+                            <Loader2
+                              className="size-3 animate-spin motion-reduce:animate-none"
+                              aria-hidden="true"
+                            />
+                            Cambio spazio…
                           </span>
                         ) : isCurrent ? (
                           <Check className="size-4 text-primary" aria-hidden="true" />

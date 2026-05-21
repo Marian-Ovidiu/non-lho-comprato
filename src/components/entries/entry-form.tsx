@@ -3,7 +3,7 @@
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
 
 import { createEntry } from "@/src/actions/entries";
 import { Button } from "@/components/ui/button";
@@ -147,6 +147,7 @@ export function EntryForm({
 
   const hasCategories = categories.length > 0;
   const expenseSuggestionValue = expenseSuggestion.suggestion;
+  const showSuggestionLookupState = expenseSuggestion.isLoading;
   const isSuggestionAutoApplied =
     expenseSuggestionValue !== null &&
     expenseSuggestionValue.confidence >= 0.75 &&
@@ -360,6 +361,18 @@ export function EntryForm({
                   aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
                 <FieldError message={state.errors?.alternativeCost} />
+                {showSuggestionLookupState ? (
+                  <p
+                    className="flex items-center gap-2 text-xs leading-5 text-muted-text"
+                    aria-live="polite"
+                  >
+                    <Loader2
+                      className="size-3.5 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Cerco un suggerimento…
+                  </p>
+                ) : null}
                 {isSuggestionAutoApplied ? (
                   <p className="rounded-2xl border border-premium-accent/20 bg-premium-accent/10 px-3 py-2 text-xs font-medium leading-5 text-premium-accent">
                     Suggerito in base alle tue spese in questa categoria

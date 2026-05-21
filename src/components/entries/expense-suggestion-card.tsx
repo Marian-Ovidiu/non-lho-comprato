@@ -41,7 +41,7 @@ export function ExpenseSuggestionCard({
               Alternativa trovata
             </p>
             <p className="text-sm leading-5 text-muted-text">
-              {suggestion.label} medio
+              {suggestion.label}
             </p>
             <p className="text-sm leading-5 text-muted-text">
               {formatSuggestionCost(suggestion.alternativeCost)}, {suggestion.evidenceCount} movimenti simili
