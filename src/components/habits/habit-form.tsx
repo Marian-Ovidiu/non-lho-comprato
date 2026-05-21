@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { triggerHaptic } from "@/src/lib/haptics";
 
 type CategoryOption = {
   id: string;
@@ -82,6 +83,7 @@ export function HabitForm({ categories }: HabitFormProps) {
       const result = await createHabit(formData);
 
       if (result.success) {
+        triggerHaptic("light");
         formRef.current?.reset();
         setCategoryId("");
         setSelectedDays([]);

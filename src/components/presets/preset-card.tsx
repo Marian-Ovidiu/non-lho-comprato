@@ -17,6 +17,7 @@ import {
 } from "@/src/lib/ui-person";
 import { CategoryPill } from "@/src/components/shared/category-pill";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
+import { triggerHaptic } from "@/src/lib/haptics";
 
 type PresetCardData = {
   id: string;
@@ -96,6 +97,7 @@ export function PresetCard({
       if (result.success) {
         const showedCelebration = tryTrigger(result);
         if (!showedCelebration) {
+          triggerHaptic("light");
           router.refresh();
         }
       }
@@ -235,4 +237,3 @@ export function PresetCard({
     </>
   );
 }
-

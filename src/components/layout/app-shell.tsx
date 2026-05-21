@@ -19,6 +19,7 @@ import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-remind
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import { triggerHaptic } from "@/src/lib/haptics";
 
 export type AppShellWorkspace = {
   id: string;
@@ -157,11 +158,16 @@ export function AppShell({
   const pathname = usePathname();
   const [isWorkspaceSwitching, setIsWorkspaceSwitching] = useState(false);
   const workspaceSwitchEndTimerRef = useRef<number | null>(null);
+  const pendingWorkspaceSwitchIdRef = useRef<string | null>(null);
+  const previousWorkspaceIdRef = useRef(workspace.id);
   useDailyReminderOnOpen();
 
   useEffect(() => {
-    function handleWorkspaceSwitchStart() {
+    function handleWorkspaceSwitchStart(event: Event) {
+      const customEvent = event as CustomEvent<{ workspaceId?: string }>;
+
       setIsWorkspaceSwitching(true);
+      pendingWorkspaceSwitchIdRef.current = customEvent.detail?.workspaceId ?? null;
     }
 
     function handleWorkspaceSwitchEnd() {
@@ -186,9 +192,22 @@ export function AppShell({
         "nlc:workspace-switch-start",
         handleWorkspaceSwitchStart,
       );
-      window.removeEventListener("nlc:workspace-switch-end", handleWorkspaceSwitchEnd);
+    window.removeEventListener("nlc:workspace-switch-end", handleWorkspaceSwitchEnd);
     };
   }, []);
+
+  useEffect(() => {
+    if (
+      pendingWorkspaceSwitchIdRef.current &&
+      previousWorkspaceIdRef.current !== workspace.id &&
+      pendingWorkspaceSwitchIdRef.current === workspace.id
+    ) {
+      triggerHaptic("subtle");
+      pendingWorkspaceSwitchIdRef.current = null;
+    }
+
+    previousWorkspaceIdRef.current = workspace.id;
+  }, [workspace.id]);
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">

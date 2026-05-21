@@ -42,11 +42,27 @@ function PageHeaderSkeleton({
   );
 }
 
-function HudCardSkeleton({ wide = false }: { wide?: boolean }) {
+function HudCardSkeleton({
+  tone = "default",
+}: {
+  tone?: "default" | "success";
+}) {
   return (
-    <Card className={cn("overflow-hidden border-border bg-surface shadow-sm", wide && "col-span-2")}>
-      <CardContent className="space-y-3 p-3.5 sm:p-4">
-        <Skeleton className="h-3 w-24 rounded-full" />
+    <Card
+      className={cn(
+        "overflow-hidden border shadow-sm",
+        tone === "success"
+          ? "border-success/20 bg-success/10"
+          : "border-border bg-surface",
+      )}
+    >
+      <CardContent className="flex min-h-[4.75rem] flex-col justify-between gap-1.5 p-2.5 sm:p-3.5">
+        <Skeleton
+          className={cn(
+            "h-3 w-24 rounded-full",
+            tone === "success" && "bg-success/15",
+          )}
+        />
         <Skeleton className="h-7 w-20 rounded-lg" />
       </CardContent>
     </Card>
@@ -56,9 +72,9 @@ function HudCardSkeleton({ wide = false }: { wide?: boolean }) {
 function StreakHeroSkeleton() {
   return (
     <Card className="overflow-hidden border-border/60 bg-gradient-to-br from-premium-accent/12 via-surface to-surface-muted/70 shadow-sm">
-      <CardContent className="flex min-h-[13rem] flex-col items-center justify-center gap-4 px-5 py-8 text-center sm:min-h-[15rem] sm:px-6">
+      <CardContent className="flex min-h-[13rem] flex-col items-center justify-center gap-3 px-5 py-8 text-center sm:min-h-[15rem] sm:px-6">
         <Skeleton className="size-12 rounded-full bg-premium-accent/20" />
-        <Skeleton className="h-12 w-40 rounded-xl sm:h-14 sm:w-56" />
+        <Skeleton className="h-12 w-44 rounded-xl sm:h-14 sm:w-56" />
         <div className="space-y-2">
           <Skeleton className="h-4 w-44 rounded-full" />
           <Skeleton className="h-4 w-36 rounded-full" />
@@ -346,6 +362,16 @@ function ListPanelSkeleton({ rows = 4 }: { rows?: number }) {
   );
 }
 
+function StatsFilterSkeleton() {
+  return (
+    <div className="flex flex-wrap gap-2">
+      <Skeleton className="h-9 w-20 rounded-full" />
+      <Skeleton className="h-9 w-24 rounded-full" />
+      <Skeleton className="h-9 w-28 rounded-full" />
+    </div>
+  );
+}
+
 function EntrySearchSkeleton() {
   return (
     <div className="space-y-2">
@@ -492,7 +518,7 @@ export function DashboardLoadingSkeleton() {
       <PageHeaderSkeleton chips={3} action />
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <HudCardSkeleton />
+        <HudCardSkeleton tone="success" />
         <HudCardSkeleton />
         <HudCardSkeleton />
         <HudCardSkeleton />
@@ -531,11 +557,7 @@ export function StatsLoadingSkeleton() {
     <main className="space-y-5 sm:space-y-6">
       <PageHeaderSkeleton chips={3} action />
 
-      <div className="flex flex-wrap gap-1.5">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <Skeleton key={index} className="h-7 w-24 rounded-full" />
-        ))}
-      </div>
+      <StatsFilterSkeleton />
 
       <HeroStatsSkeleton />
 

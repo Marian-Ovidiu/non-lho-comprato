@@ -7,6 +7,7 @@ import {
   markStreakCelebrationShownToday,
   shouldShowStreakCelebrationToday,
 } from "@/src/lib/streak-celebration-storage";
+import { triggerHaptic } from "@/src/lib/haptics";
 
 export type StreakCelebrationSource = {
   success: boolean;
@@ -42,6 +43,7 @@ export function useStreakCelebrationTrigger(
     }
 
     markStreakCelebrationShownToday();
+    triggerHaptic("strong");
     setInstanceKey((current) => current + 1);
     setCelebration({
       streakFrom: source.streakFrom,

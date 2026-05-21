@@ -33,6 +33,7 @@ import {
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
+import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 
 type CategoryOption = {
@@ -147,6 +148,9 @@ export function EntryForm({
     }
 
     const showedCelebration = tryTrigger(state);
+    if (!showedCelebration) {
+      triggerHaptic("light");
+    }
 
     successTimerRef.current = window.setTimeout(() => {
       setSuccessStage("closing");

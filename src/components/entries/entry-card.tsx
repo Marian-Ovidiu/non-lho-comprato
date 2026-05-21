@@ -16,6 +16,7 @@ import {
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 import { CategoryPill } from "@/src/components/shared/category-pill";
+import { triggerHaptic } from "@/src/lib/haptics";
 
 type EntryCardProps = {
   entry: {
@@ -135,6 +136,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
         return;
       }
 
+      triggerHaptic("success");
       setIsCollapsing(true);
       collapseTimerRef.current = window.setTimeout(() => {
         setIsRemoved(true);

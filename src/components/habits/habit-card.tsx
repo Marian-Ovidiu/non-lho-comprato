@@ -30,6 +30,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
+import { triggerHaptic } from "@/src/lib/haptics";
 
 type CategoryOption = {
   id: string;
@@ -161,6 +162,7 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
         return;
       }
 
+      triggerHaptic("light");
       setEditMessage(result.message);
       setEditSuccessStage("confirming");
       setMenuOpen(false);
@@ -193,6 +195,7 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
         return;
       }
 
+      triggerHaptic("success");
       setDeleteOpen(false);
       setMenuOpen(false);
       setIsRemoved(true);
