@@ -77,17 +77,15 @@ function getCardValue(card: OverviewCard, overview: StatsOverview): string {
 
 export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
       {cards.map((card, index) => {
         const value = getCardValue(card, overview);
-        const isPrimary = index === 0;
 
         return (
           <Card
             key={card.key}
             className={cn(
               "overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5",
-              isPrimary && "col-span-2 xl:col-span-2",
               card.variant === "highlight"
                 ? "border-success/20 bg-success/10 ring-success/10"
                 : "border-border/60",
