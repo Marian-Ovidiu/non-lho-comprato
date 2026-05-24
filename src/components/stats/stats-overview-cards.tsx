@@ -77,15 +77,15 @@ function getCardValue(card: OverviewCard, overview: StatsOverview): string {
 
 export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
-      {cards.map((card, index) => {
+    <div className="grid auto-rows-fr grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      {cards.map((card) => {
         const value = getCardValue(card, overview);
 
         return (
           <Card
             key={card.key}
             className={cn(
-              "overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5",
+              "h-full overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5",
               card.variant === "highlight"
                 ? "border-success/20 bg-success/10 ring-success/10"
                 : "border-border/60",
@@ -103,13 +103,13 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
                 {card.label}
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-3 pt-0 sm:p-4 sm:pt-0">
+            <CardContent className="flex-1 p-3 pt-0 sm:p-4 sm:pt-0">
               <p
                 className={cn(
                   "leading-none tracking-tight",
                   card.variant === "highlight"
-                    ? "text-2xl font-semibold text-success sm:text-[1.75rem]"
-                    : "text-[1.55rem] font-semibold text-foreground sm:text-[1.65rem]",
+                    ? "text-[1.7rem] font-semibold text-success sm:text-[1.75rem]"
+                    : "text-[1.45rem] font-semibold text-foreground sm:text-[1.65rem]",
                 )}
               >
                 {value}

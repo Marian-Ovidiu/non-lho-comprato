@@ -37,6 +37,67 @@ function formatMonthLabel(value: string): string {
   return value;
 }
 
+function formatPercent(value: number): string {
+  return `${new Intl.NumberFormat("it-IT", {
+    maximumFractionDigits: 0,
+  }).format(value)}%`;
+}
+
+function MobileTrendList({
+  data,
+}: {
+  data: MonthlySavingsChartProps["data"];
+}) {
+  const maxSaved = Math.max(...data.map((item) => item.totalSaved), 0);
+
+  return (
+    <div className="space-y-2 sm:hidden">
+      {data.map((item) => {
+        const width = maxSaved > 0 ? (item.totalSaved / maxSaved) * 100 : 0;
+
+        return (
+          <div
+            key={item.month}
+            className="rounded-2xl border border-border/70 bg-background/70 p-3"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {item.label}
+                </p>
+                <p className="text-xs text-muted-text">
+                  {item.entriesCount} movimenti
+                </p>
+              </div>
+              <p className="shrink-0 text-sm font-semibold text-success">
+                {formatMoney(item.totalSaved)}
+              </p>
+            </div>
+
+            <div className="mt-2 h-2 rounded-full bg-surface-muted">
+              <div
+                className="h-2 rounded-full bg-success"
+                style={{ width: `${width}%` }}
+              />
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-text">
+              <span>Risparmiato</span>
+              <span>
+                {formatPercent(
+                  item.totalAlternativeCost > 0
+                    ? (item.totalSaved / item.totalAlternativeCost) * 100
+                    : 0,
+                )}
+              </span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function MonthlyTooltip({
   active,
   payload,
@@ -83,55 +144,59 @@ export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
         {chartData.length === 0 ? (
           <EmptyChart />
         ) : (
-          <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:p-4">
-            <div className="h-[260px] w-full sm:h-[300px]">
-              <ResponsiveContainer
-                width="100%"
-                height="100%"
-                minWidth={0}
-                minHeight={260}
-                initialDimension={{ width: 0, height: 0 }}
-              >
-                <LineChart
-                  data={chartData}
-                  margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+          <>
+            <MobileTrendList data={chartData} />
+
+            <div className="hidden rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:block sm:p-4">
+              <div className="h-[260px] w-full sm:h-[300px]">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                  minWidth={0}
+                  minHeight={260}
+                  initialDimension={{ width: 0, height: 0 }}
                 >
-                  <CartesianGrid
-                    stroke="var(--border)"
-                    strokeOpacity={0.38}
-                    vertical={false}
-                  />
-                  <XAxis
-                    dataKey="label"
-                    tickLine={false}
-                    axisLine={false}
-                    interval="preserveStartEnd"
-                    minTickGap={16}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                    tickMargin={10}
-                    tickFormatter={formatMonthLabel}
-                  />
-                  <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    width={56}
-                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                    tickFormatter={(value) => formatMoney(Number(value))}
-                  />
-                  <Tooltip content={<MonthlyTooltip />} />
-                  <Line
-                    type="monotone"
-                    dataKey="totalSaved"
-                    stroke="var(--success)"
-                    strokeWidth={2.5}
-                    strokeLinecap="round"
-                    dot={{ r: 2.5, fill: "var(--success)" }}
-                    activeDot={{ r: 4.5 }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid
+                      stroke="var(--border)"
+                      strokeOpacity={0.38}
+                      vertical={false}
+                    />
+                    <XAxis
+                      dataKey="label"
+                      tickLine={false}
+                      axisLine={false}
+                      interval="preserveStartEnd"
+                      minTickGap={16}
+                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                      tickMargin={10}
+                      tickFormatter={formatMonthLabel}
+                    />
+                    <YAxis
+                      tickLine={false}
+                      axisLine={false}
+                      width={56}
+                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                      tickFormatter={(value) => formatMoney(Number(value))}
+                    />
+                    <Tooltip content={<MonthlyTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="totalSaved"
+                      stroke="var(--success)"
+                      strokeWidth={2.5}
+                      strokeLinecap="round"
+                      dot={{ r: 2.5, fill: "var(--success)" }}
+                      activeDot={{ r: 4.5 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </CardContent>
     </Card>

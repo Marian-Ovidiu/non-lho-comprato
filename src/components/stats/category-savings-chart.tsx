@@ -35,6 +35,53 @@ function truncateCategoryLabel(value: string, maxLength = 14) {
   return `${value.slice(0, maxLength - 1)}…`;
 }
 
+function MobileCategoryList({
+  data,
+}: {
+  data: CategorySavingsChartProps["data"];
+}) {
+  const chartData = [...data]
+    .sort((left, right) => right.totalSaved - left.totalSaved)
+    .slice(0, 8);
+  const maxSaved = Math.max(...chartData.map((item) => item.totalSaved), 0);
+
+  return (
+    <div className="space-y-2 sm:hidden">
+      {chartData.map((item) => {
+        const width = maxSaved > 0 ? (item.totalSaved / maxSaved) * 100 : 0;
+
+        return (
+          <div
+            key={item.categoryId}
+            className="rounded-2xl border border-border/70 bg-background/70 p-3"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {item.categoryName}
+                </p>
+                <p className="text-xs text-muted-text">
+                  {item.entriesCount} movimenti
+                </p>
+              </div>
+              <p className="shrink-0 text-sm font-semibold text-success">
+                {formatMoney(item.totalSaved)}
+              </p>
+            </div>
+
+            <div className="mt-2 h-2 rounded-full bg-surface-muted">
+              <div
+                className="h-2 rounded-full bg-success"
+                style={{ width: `${width}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function EmptyChart() {
   return (
     <div className="flex h-[280px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 px-4 text-center text-sm leading-6 text-muted-text sm:h-[320px]">
@@ -89,8 +136,11 @@ export function CategorySavingsChart({ data }: CategorySavingsChartProps) {
         {chartData.length === 0 ? (
           <EmptyChart />
         ) : (
-          <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:p-4">
-            <div className="h-[280px] w-full sm:h-[320px]">
+          <>
+            <MobileCategoryList data={chartData} />
+
+            <div className="hidden rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:block sm:p-4">
+              <div className="h-[280px] w-full sm:h-[320px]">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
@@ -135,7 +185,8 @@ export function CategorySavingsChart({ data }: CategorySavingsChartProps) {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

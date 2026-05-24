@@ -232,7 +232,6 @@ function OverviewCardSkeleton({ primary = false }: { primary?: boolean }) {
     <Card
       className={cn(
         "overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5",
-        primary && "col-span-2 xl:col-span-2",
       )}
     >
       <CardHeader className="space-y-2 p-3 pb-2 sm:p-4 sm:pb-3">
@@ -561,7 +560,7 @@ export function StatsLoadingSkeleton() {
 
       <HeroStatsSkeleton />
 
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      <section className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-2">
         <OverviewCardSkeleton primary />
         <OverviewCardSkeleton />
         <OverviewCardSkeleton />

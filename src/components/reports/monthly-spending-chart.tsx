@@ -67,6 +67,68 @@ function EmptyChart({ label }: { label: string }) {
   );
 }
 
+function MobileSpendingList({
+  users,
+}: {
+  users: MonthlyReportAnalyticsUser[];
+}) {
+  const maxTotal = Math.max(...users.map((user) => user.totalPaid), 0);
+
+  return (
+    <div className="space-y-2 sm:hidden">
+      {users.map((user) => {
+        const width = maxTotal > 0 ? (user.totalPaid / maxTotal) * 100 : 0;
+        const personalWidth =
+          user.totalPaid > 0 ? (user.personalSpend / user.totalPaid) * 100 : 0;
+        const sharedWidth =
+          user.totalPaid > 0 ? (user.sharedSpend / user.totalPaid) * 100 : 0;
+
+        return (
+          <div
+            key={user.userId}
+            className="rounded-2xl border border-border/70 bg-background/70 p-3"
+          >
+            <div className="flex items-baseline justify-between gap-3">
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium text-foreground">
+                  {user.label}
+                </p>
+                <p className="text-xs text-muted-text">
+                  {Math.round(user.sharedPercentage * 100)}% condivisa
+                </p>
+              </div>
+              <p className="shrink-0 text-sm font-semibold text-foreground">
+                {formatMoney(user.totalPaid)}
+              </p>
+            </div>
+
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
+              <div
+                className="flex h-2"
+                style={{ width: `${width}%`, minWidth: width > 0 ? "12px" : 0 }}
+              >
+                <div
+                  className="h-2 bg-primary"
+                  style={{ width: `${personalWidth}%` }}
+                />
+                <div
+                  className="h-2 bg-success"
+                  style={{ width: `${sharedWidth}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-text">
+              <span>Personale {formatMoney(user.personalSpend)}</span>
+              <span>Condivisa {formatMoney(user.sharedSpend)}</span>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function MonthlySpendingChart({
   users,
   selectedCategoryLabel,
@@ -90,8 +152,11 @@ export function MonthlySpendingChart({
         {!hasData ? (
           <EmptyChart label={selectedCategoryLabel} />
         ) : (
-          <div className="rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:p-4">
-            <div className="h-[280px] w-full sm:h-[320px]">
+          <>
+            <MobileSpendingList users={chartData} />
+
+            <div className="hidden rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:block sm:p-4">
+              <div className="h-[280px] w-full sm:h-[320px]">
               <ResponsiveContainer
                 width="100%"
                 height="100%"
@@ -152,7 +217,8 @@ export function MonthlySpendingChart({
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>

@@ -42,7 +42,7 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
+      <div className="grid auto-rows-fr grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-2">
         {[
           {
             label: "Risparmiato",
@@ -92,7 +92,7 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
               </p>
             </CardHeader>
             <CardContent className="flex-1 p-4 pt-0 sm:p-5">
-              <p className="text-2xl font-semibold tracking-tight text-foreground dark:text-foreground sm:text-[1.85rem]">
+              <p className="text-[1.7rem] font-semibold tracking-tight text-foreground dark:text-foreground sm:text-[1.85rem]">
                 {card.value}
               </p>
             </CardContent>
