@@ -42,7 +42,7 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2">
         {[
           {
             label: "Risparmiato",
@@ -73,12 +73,17 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
           <Card
             key={card.label}
             className={
-              index === 0
-                ? "border-success/20 bg-success/10 shadow-sm dark:border-success/30 dark:bg-success/15"
-                : "border-border shadow-sm dark:border-border"
+              [
+                "h-full border-border shadow-sm dark:border-border",
+                index === 0
+                  ? "border-success/20 bg-success/10 dark:border-success/30 dark:bg-success/15"
+                  : "",
+              ]
+                .filter(Boolean)
+                .join(" ")
             }
           >
-            <CardHeader className="space-y-1 p-4 pb-2.5 sm:p-5">
+            <CardHeader className="space-y-1.5 p-4 pb-2 sm:p-5">
               <CardTitle className="text-sm font-medium text-muted-text dark:text-muted-text">
                 {card.label}
               </CardTitle>
@@ -86,7 +91,7 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
                 {card.description}
               </p>
             </CardHeader>
-            <CardContent className="p-4 pt-0 sm:p-5">
+            <CardContent className="flex-1 p-4 pt-0 sm:p-5">
               <p className="text-2xl font-semibold tracking-tight text-foreground dark:text-foreground sm:text-[1.85rem]">
                 {card.value}
               </p>
@@ -97,4 +102,3 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
     </section>
   );
 }
-
