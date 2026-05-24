@@ -3,6 +3,7 @@ import { BarChart3, Download, Layers3, MoonStar, Repeat2 } from "lucide-react";
 
 import { signOutAction } from "@/src/actions/auth";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
+import { AiAnalysisExportCard } from "@/src/components/more/ai-analysis-export-card";
 import { PwaInstallContent } from "@/src/components/pwa/install-button";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { ThemeSelector } from "@/src/components/theme/theme-toggle";
@@ -200,7 +201,7 @@ export default async function MorePage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <ToolCard
             href="/habits"
             label="Abitudini"
@@ -249,7 +250,7 @@ export default async function MorePage() {
           </p>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <Card className="overflow-hidden border-border shadow-sm dark:border-border">
             <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
               <div className="flex items-start gap-3">
@@ -293,6 +294,8 @@ export default async function MorePage() {
               <PwaInstallContent />
             </CardContent>
           </Card>
+
+          <AiAnalysisExportCard />
         </div>
       </section>
     </main>
