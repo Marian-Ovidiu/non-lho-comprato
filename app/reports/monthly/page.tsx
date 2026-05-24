@@ -3,15 +3,13 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 
 import { getAvailableReportMonths, getMonthlyReport } from "@/src/actions/reports";
+import { getCategories } from "@/src/actions/entries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { MonthSelector } from "@/src/components/reports/month-selector";
-import { MonthlyHighlightCard } from "@/src/components/reports/monthly-highlight-card";
-import { MonthlyOverviewCards } from "@/src/components/reports/monthly-overview-cards";
-import { MonthlyRecapCard } from "@/src/components/reports/monthly-recap-card";
-import { PersonSplitCards } from "@/src/components/reports/person-split-cards";
+import { MonthlyAnalyticsPanel } from "@/src/components/reports/monthly-analytics-panel";
 
 type MonthlyReportPageProps = {
   searchParams: Promise<{
@@ -29,6 +27,7 @@ export default async function MonthlyReportPage({
   const resolvedSearchParams = await searchParams;
   const monthParam = getMonthParam(resolvedSearchParams.month);
   const months = await getAvailableReportMonths();
+  const categories = await getCategories();
   const selectedMonth = monthParam ?? months[0]?.value ?? "";
   const [{ report }] = await Promise.all([getMonthlyReport(selectedMonth)]);
 
@@ -36,29 +35,13 @@ export default async function MonthlyReportPage({
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
         title="Report"
-        context="Riepilogo del mese selezionato."
+        context="Riepilogo del mese selezionato con filtro categoria e lettura per persona."
         action={<MonthSelector months={months} selectedMonth={selectedMonth} compact />}
-        chips={[
-          { label: `${report.overview.entriesCount} movimenti`, tone: "default" },
-          { label: `${report.overview.totalSaved} risparmiati`, tone: "success" },
-        ]}
       />
 
       {report.hasData ? (
         <div className="space-y-4">
-          <MonthlyOverviewCards overview={report.overview} />
-
-          <PersonSplitCards
-            primary={report.memberSplit.primary}
-            secondary={report.memberSplit.secondary}
-            shared={report.memberSplit.shared}
-          />
-
-          <MonthlyHighlightCard
-            bestCategory={report.bestCategory}
-            worstCategory={report.worstCategory}
-            biggestSaving={report.biggestSaving}
-          />
+          <MonthlyAnalyticsPanel report={report} categories={categories} />
 
           <section className="space-y-4">
             <div className="space-y-1">
@@ -155,8 +138,6 @@ export default async function MonthlyReportPage({
               </Card>
             </div>
           </section>
-
-          <MonthlyRecapCard recapText={report.recapText} />
         </div>
       ) : (
         <Card className="border-border shadow-sm dark:border-border">

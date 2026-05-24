@@ -73,6 +73,36 @@ export type MonthlyReportBiggestSaving = {
   note: string | null;
 } | null;
 
+export type MonthlyReportCategory = {
+  id: string;
+  name: string;
+  slug: string | null;
+};
+
+export type MonthlyReportEntry = {
+  id: string;
+  title: string;
+  date: string;
+  realCost: number;
+  alternativeCost: number;
+  savedAmount: number;
+  note: string | null;
+  source: string;
+  person: string;
+  paidByUserId: string | null;
+  beneficiaries: Array<{
+    userId: string;
+  }>;
+  category: MonthlyReportCategory;
+};
+
+export type MonthlyReportMember = {
+  userId: string;
+  label: string;
+  name: string | null;
+  email: string | null;
+};
+
 export type MonthlyReportHabitSummary = {
   totalOccurrences: number;
   completed: number;
@@ -96,6 +126,9 @@ export type MonthlyReportStreakSummary = {
 export type MonthlyReportData = {
   month: string;
   label: string;
+  entries: MonthlyReportEntry[];
+  previousMonthEntries: MonthlyReportEntry[];
+  members: MonthlyReportMember[];
   overview: MonthlyReportOverview;
   memberSplit: MonthlyReportMemberSplit;
   bestCategory: MonthlyReportBestCategory;
@@ -221,6 +254,18 @@ function getMonthRangeUtc(monthKey: string): { start: Date; end: Date } {
   return { start, end };
 }
 
+function getPreviousMonthKey(monthKey: string): string {
+  const [yearPart, monthPart] = monthKey.split("-");
+  const year = Number(yearPart);
+  const monthIndex = Number(monthPart) - 1;
+
+  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
+    return monthKey;
+  }
+
+  return getRomeMonthKey(new Date(Date.UTC(year, monthIndex - 1, 1)));
+}
+
 function formatMonthLabel(monthKey: string): string {
   const [yearPart, monthPart] = monthKey.split("-");
   const year = Number(yearPart);
@@ -275,6 +320,46 @@ function ensureSelectedMonthOption(
     },
     ...options,
   ];
+}
+
+function serializeMonthlyReportEntry(entry: {
+  id: string;
+  title: string;
+  date: Date;
+  realCost: unknown;
+  alternativeCost: unknown;
+  savedAmount: unknown;
+  note: string | null;
+  source: string;
+  person: string;
+  paidByUserId: string | null;
+  beneficiaries: Array<{ userId: string }>;
+  category: {
+    id: string;
+    name: string;
+    slug: string | null;
+  };
+}): MonthlyReportEntry {
+  return {
+    id: entry.id,
+    title: entry.title,
+    date: entry.date.toISOString(),
+    realCost: toNumber(entry.realCost),
+    alternativeCost: toNumber(entry.alternativeCost),
+    savedAmount: toNumber(entry.savedAmount),
+    note: entry.note,
+    source: entry.source,
+    person: entry.person,
+    paidByUserId: entry.paidByUserId,
+    beneficiaries: entry.beneficiaries.map((beneficiary) => ({
+      userId: beneficiary.userId,
+    })),
+    category: {
+      id: entry.category.id,
+      name: entry.category.name,
+      slug: entry.category.slug,
+    },
+  };
 }
 
 async function buildEntryWhere(monthKey: string): Promise<Prisma.EntryWhereInput> {
@@ -410,6 +495,14 @@ function buildEmptyReport(
   return {
     month: monthKey,
     label: formatMonthLabel(monthKey),
+    entries: [],
+    previousMonthEntries: [],
+    members: members.map((member) => ({
+      userId: member.userId,
+      label: member.label,
+      name: member.name,
+      email: member.email,
+    })),
     overview: {
       totalRealSpent: 0,
       totalAlternativeCost: 0,
@@ -484,13 +577,15 @@ export async function getMonthlyReport(
   requestedMonth?: string,
 ): Promise<MonthlyReportPageData> {
   const selectedMonth = normalizeMonthKey(requestedMonth);
+  const previousMonth = getPreviousMonthKey(selectedMonth);
 
   try {
     const members = await getCurrentWorkspaceMembers();
     const entryWhere = await buildEntryWhere(selectedMonth);
+    const previousEntryWhere = await buildEntryWhere(previousMonth);
     const habitOccurrenceWhere = await buildHabitOccurrenceWhere(selectedMonth);
 
-    const [monthEntries] = await Promise.all([
+    const [monthEntries, previousMonthEntries] = await Promise.all([
       prisma.entry.findMany({
         where: entryWhere,
         select: {
@@ -501,6 +596,8 @@ export async function getMonthlyReport(
           alternativeCost: true,
           savedAmount: true,
           note: true,
+          source: true,
+          person: true,
           paidByUserId: true,
           beneficiaries: {
             select: {
@@ -509,6 +606,37 @@ export async function getMonthlyReport(
           },
           category: {
             select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
+        orderBy: {
+          date: "asc",
+        },
+      }),
+      prisma.entry.findMany({
+        where: previousEntryWhere,
+        select: {
+          id: true,
+          title: true,
+          date: true,
+          realCost: true,
+          alternativeCost: true,
+          savedAmount: true,
+          note: true,
+          source: true,
+          person: true,
+          paidByUserId: true,
+          beneficiaries: {
+            select: {
+              userId: true,
+            },
+          },
+          category: {
+            select: {
+              id: true,
               name: true,
               slug: true,
             },
@@ -723,6 +851,10 @@ export async function getMonthlyReport(
     const streakSummary = buildStreakSummary(dayTotals);
     const monthLabel = formatMonthLabel(selectedMonth);
     const monthLower = monthLabel.toLowerCase();
+    const serializedMonthEntries = monthEntries.map(serializeMonthlyReportEntry);
+    const serializedPreviousMonthEntries = previousMonthEntries.map(
+      serializeMonthlyReportEntry,
+    );
 
     const recapParts = [
       `A ${monthLower} avete risparmiato ${formatMoney(totalSaved)}.`,
@@ -751,6 +883,14 @@ export async function getMonthlyReport(
         monthKey: selectedMonth,
         monthLabel,
         hasData: true,
+        entries: serializedMonthEntries,
+        previousMonthEntries: serializedPreviousMonthEntries,
+        members: members.map((member) => ({
+          userId: member.userId,
+          label: member.label,
+          name: member.name,
+          email: member.email,
+        })),
         overview: {
           totalRealSpent,
           totalAlternativeCost,

@@ -1,3 +1,5 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
@@ -7,6 +9,7 @@ type CategoryHighlight = {
   totalSaved?: number;
   totalRealSpent?: number;
   entriesCount?: number;
+  categorySlug?: string | null;
 } | null;
 
 type BiggestSaving = {

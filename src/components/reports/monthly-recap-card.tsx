@@ -1,4 +1,6 @@
-﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type MonthlyRecapCardProps = {
   recapText?: string | null;
@@ -25,4 +27,3 @@ export function MonthlyRecapCard({ recapText }: MonthlyRecapCardProps) {
     </Card>
   );
 }
-

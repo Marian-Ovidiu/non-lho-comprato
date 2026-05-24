@@ -1,4 +1,6 @@
-﻿import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+"use client";
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
 
 type MonthlyOverview = {
@@ -95,5 +97,4 @@ export function MonthlyOverviewCards({ overview }: MonthlyOverviewCardsProps) {
     </section>
   );
 }
-
 
