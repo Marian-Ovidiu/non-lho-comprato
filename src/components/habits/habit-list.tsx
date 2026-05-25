@@ -1,11 +1,6 @@
-﻿import Link from "next/link";
-import { Repeat2 } from "lucide-react";
-
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { EmptyState } from "@/src/components/shared/empty-state";
 import { HabitCard } from "@/src/components/habits/habit-card";
-import { spacing } from "@/src/lib/spacing";
 
 type CategoryOption = {
   id: string;
@@ -43,39 +38,30 @@ type HabitListProps = {
 export function HabitList({ habits, categories }: HabitListProps) {
   if (habits.length === 0) {
     return (
-      <EmptyState
-        title="Nessuna abitudine ancora"
-        description="Crea la prima abitudine ricorrente e il suo costo comparirà qui."
-        note="Puoi iniziare da una spesa semplice e ripetuta."
-        icon={<Repeat2 className="size-5" aria-hidden="true" />}
-        action={
-          <Button asChild className="w-full sm:w-auto">
-            <Link href="#nuova-abitudine">Aggiungi abitudine</Link>
-          </Button>
-        }
-      />
+      <div className="flex flex-col items-center gap-3 rounded-[14px] border border-dashed border-border/70 bg-surface-muted/60 px-4 py-8 text-center">
+        <p className="text-sm text-muted-foreground">
+          Nessuna abitudine ancora. Creane una per iniziare a tracciare.
+        </p>
+        <Button asChild variant="outline" size="sm" className="rounded-full">
+          <Link href="#nuova-abitudine">Aggiungi abitudine</Link>
+        </Button>
+      </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden border-border shadow-sm">
-      <CardHeader className={spacing.cardHeader}>
-        <CardTitle>Le tue abitudini</CardTitle>
-        <p className="text-sm text-muted-text">
-          Le regole che hai già impostato, ordinate per nome.
+    <div className="space-y-2.5">
+      <div className="flex items-baseline justify-between px-1">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Tutte le tue abitudini
         </p>
-      </CardHeader>
-
-      <CardContent className={`space-y-4 ${spacing.cardBody}`}>
-        {habits.map((habit, index) => (
-          <HabitCard
-            key={habit.id}
-            habit={habit}
-            categories={categories}
-            showSeparator={index < habits.length - 1}
-          />
-        ))}
-      </CardContent>
-    </Card>
+        <span className="font-num text-[11px]" style={{ color: "var(--text-3)" }}>
+          {habits.length}
+        </span>
+      </div>
+      {habits.map((habit) => (
+        <HabitCard key={habit.id} habit={habit} categories={categories} />
+      ))}
+    </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -108,42 +108,42 @@ export function LoginPanel({
 
   if (compact) {
     return (
-      <div className={cn("space-y-3", className)}>
+      <div className={cn("flex flex-col gap-2.5", className)}>
         {loginError ? (
           <div className="rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm leading-6 text-destructive">
             {loginError}
           </div>
         ) : null}
 
-        <div
-          className={cn(
-            "grid gap-2.5 rounded-3xl border border-border/80 bg-surface/80 p-3 shadow-sm sm:p-4",
-            visibleProviders.length > 1 ? "sm:grid-cols-2" : undefined,
-          )}
-        >
-        {visibleProviders.map((provider) => {
+        {visibleProviders.map((provider, index) => {
           const isPending = pendingProvider === provider.value;
+          const isPrimary = index === 0;
 
           return (
-            <Button
+            <button
               key={provider.value}
               type="button"
-              variant="default"
-              className="h-12 w-full justify-center rounded-2xl px-4"
               onClick={() => handleLogin(provider.value)}
               disabled={Boolean(pendingProvider)}
+              className={cn(
+                "flex h-14 w-full items-center justify-center gap-2 rounded-[18px]",
+                "text-[16px] tracking-[-0.01em] transition-[opacity,transform] duration-150",
+                "active:scale-[0.98] active:opacity-90 disabled:opacity-60",
+                isPrimary
+                  ? "bg-accent font-bold text-accent-foreground"
+                  : "border border-[var(--border-strong)] bg-transparent font-semibold text-foreground",
+              )}
             >
               {isPending ? (
-                <Loader2
-                  className="mr-2 size-4 animate-spin"
-                  aria-hidden="true"
-                />
+                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
               ) : null}
               {provider.label}
-            </Button>
+              {isPrimary && !isPending ? (
+                <ArrowRight className="size-4" aria-hidden="true" />
+              ) : null}
+            </button>
           );
         })}
-        </div>
       </div>
     );
   }

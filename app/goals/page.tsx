@@ -11,41 +11,85 @@ export const dynamic = "force-dynamic";
 
 type Goal = Awaited<ReturnType<typeof getGoalsWithProgress>>[number];
 
-function GoalsSection({
-  title,
-  description,
-  goals,
-}: {
-  title: string;
-  description: string;
-  goals: Goal[];
-}) {
+const goalIdeas = [
+  { emoji: "🇵🇹", name: "Vacanza", target: "900€" },
+  { emoji: "🛟", name: "Emergenza", target: "2.000€" },
+  { emoji: "🚲", name: "Bici", target: "600€" },
+  { emoji: "📷", name: "Corso", target: "300€" },
+] as const;
+
+function EmptyGoalRing() {
+  const size = 120;
+  const stroke = 6;
+  const r = (size - stroke) / 2;
+  const C = 2 * Math.PI * r;
   return (
-    <section className="space-y-4">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <p className="text-sm text-muted-text">{description}</p>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} style={{ transform: "rotate(-90deg)" }}>
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="var(--surface-muted)" strokeWidth={stroke} fill="none" />
+        <circle cx={size / 2} cy={size / 2} r={r} stroke="var(--accent)" strokeWidth={stroke} fill="none"
+          strokeDasharray={C} strokeDashoffset={C} strokeLinecap="round" />
+      </svg>
+      <div style={{
+        position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        fontFamily: "var(--font-geist-mono)", fontSize: 26, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+        color: "var(--text-3)",
+      }}>
+        0
+      </div>
+    </div>
+  );
+}
+
+function GoalsEmptyState() {
+  return (
+    <div className="space-y-5">
+      <div className="flex flex-col items-center gap-5 px-4 py-8 text-center">
+        <EmptyGoalRing />
+        <div className="space-y-2">
+          <p className="font-serif italic text-[22px] leading-[1.35] text-foreground">
+            Un obiettivo dà direzione a quello che tieni.
+          </p>
+          <p className="mx-auto max-w-[280px] text-[13px] leading-[1.55] text-muted-foreground">
+            Una vacanza, un fondo emergenza, un acquisto importante. Ogni movimento ci si avvicina un po&apos;.
+          </p>
+        </div>
       </div>
 
-      {goals.length > 0 ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} />
+      <div className="space-y-2.5">
+        <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Idee per iniziare
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {goalIdeas.map((g) => (
+            <div key={g.name} className="overflow-hidden rounded-[14px] border border-border bg-surface p-3.5">
+              <div style={{ fontSize: 26 }}>{g.emoji}</div>
+              <p className="mt-1.5 text-[14px] font-semibold">{g.name}</p>
+              <p className="font-num text-[12px] text-muted-foreground">{g.target}</p>
+            </div>
           ))}
         </div>
-      ) : (
-        <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-5 text-sm text-muted-text">
-          Nessun obiettivo qui.
-        </p>
-      )}
-    </section>
+        <Link
+          href="#nuovo-obiettivo"
+          className="mt-1 flex h-[52px] w-full items-center justify-center gap-2 rounded-[18px] bg-accent text-[15px] font-bold text-accent-foreground transition-[opacity,transform] duration-150 active:scale-[0.98] active:opacity-90"
+        >
+          Crea il primo obiettivo
+          <Plus className="size-4" aria-hidden="true" />
+        </Link>
+      </div>
+    </div>
   );
 }
 
 export default async function GoalsPage() {
   const goals = await getGoalsWithProgress();
-  const activeGoals = goals.filter((goal) => goal.isActive);
+  const activeGoals = goals
+    .filter((goal) => goal.isActive)
+    .sort((a, b) => b.progressPercent - a.progressPercent);
   const inactiveGoals = goals.filter((goal) => !goal.isActive);
+
+  const heroGoal: Goal | undefined = activeGoals[0];
+  const otherActiveGoals = activeGoals.slice(1);
 
   return (
     <main className="space-y-5 sm:space-y-6">
@@ -72,23 +116,37 @@ export default async function GoalsPage() {
       </section>
 
       {goals.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-6 text-sm leading-6 text-muted-text">
-          Ancora nessun obiettivo. Aggiungi quello che vuoi proteggere.
-        </p>
+        <GoalsEmptyState />
       ) : (
-        <>
-          <GoalsSection
-            title="Obiettivi attivi"
-            description="Quelli che state seguendo adesso."
-            goals={activeGoals}
-          />
+        <div className="space-y-3">
+          {heroGoal ? <GoalCard goal={heroGoal} variant="hero" /> : null}
 
-          <GoalsSection
-            title="Obiettivi in pausa"
-            description="Quelli messi da parte, senza perderli di vista."
-            goals={inactiveGoals}
-          />
-        </>
+          {otherActiveGoals.length > 0 ? (
+            <div className="space-y-2">
+              <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Le altre mete
+              </p>
+              <div className="space-y-2.5">
+                {otherActiveGoals.map((goal) => (
+                  <GoalCard key={goal.id} goal={goal} variant="ring" />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {inactiveGoals.length > 0 ? (
+            <div className="space-y-2">
+              <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                In pausa
+              </p>
+              <div className="space-y-2.5">
+                {inactiveGoals.map((goal) => (
+                  <GoalCard key={goal.id} goal={goal} variant="ring" />
+                ))}
+              </div>
+            </div>
+          ) : null}
+        </div>
       )}
     </main>
   );

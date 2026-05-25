@@ -9,7 +9,6 @@ import {
   updateHabit,
   type HabitDeleteMode,
 } from "@/src/actions/habits";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,11 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { CategoryPill } from "@/src/components/shared/category-pill";
 import { formatMoney } from "@/src/lib/formatters";
 import { triggerHaptic } from "@/src/lib/haptics";
+import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
 type CategoryOption = {
   id: string;
@@ -103,7 +101,7 @@ function getInitialActiveDays(activeDays: unknown): number[] {
     .sort((left, right) => left - right);
 }
 
-export function HabitCard({ habit, categories, showSeparator = false }: HabitCardProps) {
+export function HabitCard({ habit, categories }: HabitCardProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -133,8 +131,12 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
     [selectedDays],
   );
 
+  const emoji = getCategoryEmoji({ slug: habit.category.slug, name: habit.category.name });
+  const freqLabel =
+    activeDayLabels.length > 0 ? activeDayLabels.join(", ") : "Tutti i giorni";
+
   if (isRemoved) {
-    return showSeparator ? <Separator /> : null;
+    return null;
   }
 
   function toggleDay(day: number) {
@@ -219,13 +221,13 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
     <>
       <div
         className={cn(
-          "relative space-y-4",
+          "relative overflow-hidden rounded-[14px] border border-border bg-surface p-4",
           isDeleting && "pointer-events-none opacity-60",
         )}
         aria-busy={isDeleting}
       >
         {isDeleting ? (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-background/55 backdrop-blur-[1px]">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[14px] bg-background/55 backdrop-blur-[1px]">
             <span className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-surface px-3 py-1.5 text-xs font-medium text-foreground shadow-sm">
               <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
               Eliminazione...
@@ -233,22 +235,31 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 space-y-1">
-            <p className="truncate text-lg font-semibold text-foreground">{habit.name}</p>
-            <CategoryPill
-              category={habit.category}
-              className="px-3 py-1 text-[11px]"
-            />
+        <div className="flex items-center gap-3">
+          <div
+            className="flex shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted"
+            style={{ width: 44, height: 44, fontSize: 22 }}
+          >
+            {emoji}
           </div>
 
-          <div className="flex items-start gap-2 sm:text-right">
-            <div>
-              <p className="text-2xl font-semibold tracking-tight text-foreground">
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[15px] font-semibold">{habit.name}</p>
+            <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
+              {freqLabel} · {habit.isActive ? "Attiva" : "In pausa"}
+            </p>
+          </div>
+
+          <div className="flex shrink-0 items-start gap-2">
+            <div className="text-right">
+              <p className="font-num text-[18px] font-semibold text-accent">
                 {formatMoney(habit.amount)}
               </p>
-              <p className="text-xs text-muted-text">
-                {habit.isActive ? "Attiva" : "In pausa"}
+              <p
+                className="text-[10px] uppercase tracking-[0.1em]"
+                style={{ color: "var(--text-3)" }}
+              >
+                per volta
               </p>
             </div>
 
@@ -257,7 +268,7 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
                 type="button"
                 variant="ghost"
                 size="icon-xs"
-                className="rounded-full border border-border/70 bg-background/70 text-muted-text hover:text-foreground"
+                className="rounded-full border border-border/70 bg-background/70 text-muted-foreground hover:text-foreground"
                 aria-label="Azioni abitudine"
                 aria-expanded={menuOpen}
                 aria-haspopup="menu"
@@ -309,26 +320,26 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {activeDayLabels.length > 0 ? (
-            activeDayLabels.map((label) => (
-              <Badge key={label} variant="secondary">
-                {label}
-              </Badge>
-            ))
-          ) : (
-            <Badge variant="outline">Nessun giorno</Badge>
-          )}
-          <Badge variant="outline">
-            {habit.defaultBehavior === "spent"
-              ? "Conta come spesa fatta"
-              : "Comportamento personalizzato"}
-          </Badge>
-          <Badge variant="outline">{habit._count.occurrences} occorrenze</Badge>
+        <div className="mt-3 flex items-center gap-2.5">
+          <div
+            className="flex-1 overflow-hidden rounded-full bg-surface-muted"
+            style={{ height: 4 }}
+          >
+            <div
+              style={{
+                width: habit.isActive ? "100%" : "0%",
+                height: "100%",
+                background: "var(--accent)",
+                borderRadius: 2,
+                transition: "width 0.3s ease",
+              }}
+            />
+          </div>
+          <span className="font-num text-[11px]" style={{ color: "var(--text-3)" }}>
+            {habit._count.occurrences} occorrenze
+          </span>
         </div>
       </div>
-
-      {showSeparator ? <Separator /> : null}
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
@@ -349,7 +360,7 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
                 className={cn(
                   "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
                   editSuccessStage !== "idle"
-                    ? "border-success/20 bg-success/10 text-success"
+                    ? "border-accent/20 bg-accent/10 text-accent"
                     : "border-destructive/20 bg-destructive/10 text-destructive",
                   editSuccessStage !== "idle" && "opacity-100",
                 )}
@@ -445,7 +456,7 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
                       className={cn(
                         "flex cursor-pointer items-center justify-center rounded-2xl border px-3 py-3 text-sm font-medium transition",
                         checked
-                          ? "border-accent bg-accent text-background"
+                          ? "border-accent bg-accent text-accent-foreground"
                           : "border-border bg-surface text-foreground hover:bg-surface-muted",
                       )}
                     >
@@ -510,7 +521,7 @@ export function HabitCard({ habit, categories, showSeparator = false }: HabitCar
               onClick={() => handleDelete("habit_only")}
             >
               <span className="block font-medium">Solo abitudine</span>
-              <span className="mt-1 block text-xs text-muted-text">
+              <span className="mt-1 block text-xs text-muted-foreground">
                 I movimenti restano nel registro, scollegati dall&apos;abitudine.
               </span>
             </Button>

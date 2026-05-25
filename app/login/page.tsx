@@ -5,6 +5,20 @@ import { getAuthenticatedUser } from "@/src/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
+function NlcMark() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="6" stroke="var(--accent)" strokeWidth="1.6" />
+      <path
+        d="M7.5 7.5 L16.5 16.5 M16.5 7.5 L7.5 16.5"
+        stroke="var(--accent)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default async function LoginPage() {
   const authUser = await getAuthenticatedUser();
 
@@ -13,23 +27,44 @@ export default async function LoginPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-[100dvh] w-full max-w-md items-center px-5 py-8 sm:px-6 lg:px-8">
-      <section className="w-full space-y-6 text-center">
-        <div className="space-y-2.5">
-          <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
-            Non l&apos;ho comprato
-          </p>
-          <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl lg:text-[2.5rem] lg:leading-tight">
-            Accedi per sincronizzare i tuoi risparmi.
-          </h1>
-          <p className="mx-auto max-w-sm text-sm leading-6 text-muted-text sm:text-base sm:leading-7">
-            Continua con Google per ritrovare il tuo lavoro su ogni
-            dispositivo.
-          </p>
-        </div>
+    <main className="flex min-h-[100dvh] flex-col bg-background px-6 pb-8 pt-10">
+      {/* Logo */}
+      <div className="flex items-center gap-2.5">
+        <NlcMark />
+        <span className="text-[14px] font-semibold tracking-[0.04em]">
+          Non l&apos;ho comprato
+        </span>
+      </div>
 
-        <LoginPanel compact providers={["google"]} className="mx-auto w-full" />
-      </section>
+      {/* Tagline + heading */}
+      <div className="mb-8 mt-auto">
+        <p className="mb-3.5 font-serif italic text-[18px] text-muted-foreground">
+          traccia i soldi che
+        </p>
+        <h1
+          className="font-bold leading-[0.95] tracking-[-0.045em] text-foreground"
+          style={{ fontSize: 64 }}
+        >
+          <span className="text-accent">non</span> hai
+          <br />
+          speso.
+        </h1>
+        <p className="mt-6 max-w-[280px] text-[16px] leading-[1.5] text-muted-foreground">
+          Ogni volta che eviti un acquisto, lo registri qui. Vedi il quadro di
+          quanto resta nel portafoglio.
+        </p>
+      </div>
+
+      {/* CTA */}
+      <LoginPanel compact providers={["google"]} />
+
+      {/* Trust */}
+      <p
+        className="mt-5 text-center text-[11px] tracking-[0.05em]"
+        style={{ color: "var(--text-3)" }}
+      >
+        Cifratura end-to-end · Niente pubblicità
+      </p>
     </main>
   );
 }

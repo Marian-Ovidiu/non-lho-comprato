@@ -3,7 +3,6 @@
 import Link from "next/link";
 import {
   ArrowDown,
-  Inbox,
   Loader2,
   Search,
   X,
@@ -237,20 +236,20 @@ export function EntryList({
 
         {hasSearchTerm && !isSearching ? (
           <EmptyState
-            title={searchError ? "Ricerca non disponibile" : "Nessun movimento trovato"}
+            title={searchError ? "Ricerca non disponibile." : "Nessun movimento trovato."}
             description={
               searchError
                 ? searchError
                 : "Prova con categoria, importo o persona."
             }
             note="Puoi anche svuotare la ricerca e ripartire da tutti i movimenti."
-            icon={<Search className="size-5" aria-hidden="true" />}
+            icon={<Search className="size-5 opacity-40" aria-hidden="true" />}
             action={
               !searchError ? (
                 <Button
                   type="button"
                   variant="outline"
-                  className="w-full sm:w-auto"
+                  className="rounded-full"
                   onClick={() => setSearchValue("")}
                 >
                   Svuota ricerca
@@ -259,17 +258,56 @@ export function EntryList({
             }
           />
         ) : (
-          <EmptyState
-            title={WORKSPACE_EMPTY_ENTRIES_TITLE}
-            description={WORKSPACE_EMPTY_ENTRIES_DESCRIPTION}
-            note="È il posto giusto per tenere tutto ordinato, senza complicazioni."
-            icon={<Inbox className="size-5" aria-hidden="true" />}
-            action={
-              <Button asChild className="w-full sm:w-auto">
-                <Link href="/entries/new">Aggiungi movimento</Link>
-              </Button>
-            }
-          />
+          <div className="space-y-4">
+            <EmptyState
+              title="Niente ancora."
+              description="Qui appariranno tutti i tuoi movimenti, raggruppati per giorno, con quanto hai tenuto."
+              actionLabel="Aggiungi il primo movimento"
+              actionHref="/entries/new"
+              markSize={96}
+            />
+
+            {/* Example placeholder rows */}
+            <div className="space-y-2">
+              <p className="px-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                Esempio
+              </p>
+              <div
+                className="overflow-hidden rounded-[14px] border border-border bg-surface px-4"
+                style={{ opacity: 0.5, borderStyle: "dashed" }}
+              >
+                {[
+                  { emoji: "☕", name: "Caffè in stazione", sub: "Caffè · ieri", amount: "+4€" },
+                  { emoji: "🛍️", name: "Sneakers in offerta", sub: "Shopping · sab", amount: "+89€" },
+                ].map((row, i, arr) => (
+                  <div
+                    key={row.name}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 12,
+                      padding: "12px 0",
+                      borderBottom: i < arr.length - 1 ? "1px solid var(--border)" : "none",
+                    }}
+                  >
+                    <div
+                      className="flex shrink-0 items-center justify-center rounded-full border border-border bg-surface-muted"
+                      style={{ width: 36, height: 36, fontSize: 18 }}
+                    >
+                      {row.emoji}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <p className="text-[14px] font-medium">{row.name}</p>
+                      <p className="text-[11px] text-muted-foreground">{row.sub}</p>
+                    </div>
+                    <span className="font-num text-[14px]" style={{ color: "var(--text-3)" }}>
+                      {row.amount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );
