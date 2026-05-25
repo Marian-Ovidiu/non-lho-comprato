@@ -1,5 +1,6 @@
 ﻿"use server";
 
+import { subDays } from "date-fns";
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 
@@ -115,6 +116,36 @@ type MonthlySummary = {
 
 type ExpenseSuggestionRequest = ExpenseSuggestionInput;
 
+type DashboardEntryPreview = {
+  id: string;
+  title: string;
+  category: {
+    name: string;
+    slug: string;
+  };
+  date: Date;
+  realCost: unknown;
+  savedAmount: unknown;
+  alternativeCost: unknown;
+  note: string | null;
+};
+
+type DashboardReflectionEntry = {
+  category: {
+    id: string;
+    name: string;
+  };
+  savedAmount: unknown;
+  date: Date;
+};
+
+export type DashboardEntrySnapshot = {
+  entryCount: number;
+  firstEntryDate: Date | null;
+  recentEntries: DashboardEntryPreview[];
+  weekEntries: DashboardReflectionEntry[];
+};
+
 export type EntriesPageResult = {
   entries: SerializableEntry[];
   nextCursor: string | null;
@@ -126,6 +157,7 @@ type EntriesPageOptions = {
   q?: string;
   cursor?: string;
   limit?: number;
+  members?: WorkspaceMemberOption[] | Promise<WorkspaceMemberOption[]>;
 };
 
 function getText(formData: FormData, name: string): string {
@@ -737,9 +769,12 @@ export async function getEntriesPage(
   let workspaceId = "unknown";
 
   try {
+    const membersPromise = options.members
+      ? Promise.resolve(options.members)
+      : getCurrentWorkspaceMembers();
     const [workspaceWhere, members] = await Promise.all([
       getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
-      getCurrentWorkspaceMembers(),
+      membersPromise,
     ]);
 
     workspaceId = workspaceWhere.workspaceId;
@@ -930,6 +965,110 @@ export async function getDashboardSummary(
     totalSaved: Number(summary.totalSaved.toFixed(2)),
     entriesCount: summary.entriesCount,
   };
+}
+
+export async function getDashboardEntrySnapshot(
+  person?: PersonFilterValue,
+): Promise<DashboardEntrySnapshot> {
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere(
+    buildPersonWhere(person),
+  );
+  const weekStart = subDays(new Date(), 7);
+
+  try {
+    const [entryCount, firstEntry, recentEntries, weekEntries] =
+      await Promise.all([
+        prisma.entry.count({
+          where: workspaceWhere,
+        }),
+        prisma.entry.findFirst({
+          where: workspaceWhere,
+          orderBy: [
+            {
+              date: "asc",
+            },
+            {
+              createdAt: "asc",
+            },
+            {
+              id: "asc",
+            },
+          ],
+          select: {
+            date: true,
+          },
+        }),
+        prisma.entry.findMany({
+          where: workspaceWhere,
+          orderBy: [
+            {
+              date: "desc",
+            },
+            {
+              createdAt: "desc",
+            },
+            {
+              id: "desc",
+            },
+          ],
+          take: 3,
+          select: {
+            id: true,
+            title: true,
+            date: true,
+            realCost: true,
+            savedAmount: true,
+            alternativeCost: true,
+            note: true,
+            category: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        }),
+        prisma.entry.findMany({
+          where: {
+            ...workspaceWhere,
+            date: {
+              gte: weekStart,
+            },
+          },
+          orderBy: [
+            {
+              date: "asc",
+            },
+            {
+              createdAt: "asc",
+            },
+            {
+              id: "asc",
+            },
+          ],
+          select: {
+            date: true,
+            savedAmount: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        }),
+      ]);
+
+    return {
+      entryCount,
+      firstEntryDate: firstEntry?.date ?? null,
+      recentEntries,
+      weekEntries,
+    };
+  } catch (error) {
+    console.error("Failed to load dashboard entry snapshot:", error);
+    throw error;
+  }
 }
 
 export async function getCategories() {

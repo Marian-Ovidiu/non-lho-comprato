@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   ArrowDown,
   Loader2,
@@ -14,10 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { EntryCard } from "@/src/components/entries/entry-card";
 import { EmptyState } from "@/src/components/shared/empty-state";
-import {
-  WORKSPACE_EMPTY_ENTRIES_DESCRIPTION,
-  WORKSPACE_EMPTY_ENTRIES_TITLE,
-} from "@/src/components/shared/workspace-empty-entries-copy";
 import { formatMoney } from "@/src/lib/formatters";
 import {
   formatRomeDateLabel,
@@ -125,6 +120,9 @@ export function EntryList({
   const [isLoading, setIsLoading] = useState(false);
   const initialSearchHandledRef = useRef(false);
   const requestIdRef = useRef(0);
+  const initialEntriesRef = useRef(initialEntries);
+  const initialNextCursorRef = useRef(initialNextCursor);
+  const initialHasMoreRef = useRef(initialHasMore);
   const searchTerm = searchValue.trim();
   const hasSearchTerm = searchTerm.length > 0;
 
@@ -141,6 +139,10 @@ export function EntryList({
   useEffect(() => {
     if (!initialSearchHandledRef.current) {
       initialSearchHandledRef.current = true;
+      return;
+    }
+
+    if (debouncedSearchValue === "") {
       return;
     }
 
@@ -223,6 +225,17 @@ export function EntryList({
 
   function handleSearchChange(value: string) {
     setSearchValue(value);
+
+    if (value.trim() === "") {
+      requestIdRef.current += 1;
+      setLoadError(null);
+      setSearchError(null);
+      setIsSearching(false);
+      setEntries(initialEntriesRef.current);
+      setNextCursor(initialNextCursorRef.current);
+      setHasMore(initialHasMoreRef.current);
+      setDebouncedSearchValue("");
+    }
   }
 
   if (entries.length === 0) {

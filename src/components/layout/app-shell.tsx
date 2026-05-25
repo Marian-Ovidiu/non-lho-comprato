@@ -213,9 +213,6 @@ export function AppShell({
         <div className="mx-auto w-full max-w-5xl px-4 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:px-6 sm:pt-[calc(env(safe-area-inset-top)+0.5rem)] lg:px-8">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0 flex-1 space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-text">
-                Spazio attivo
-              </p>
               <WorkspaceSwitcher
                 currentWorkspace={workspace}
                 availableWorkspaces={availableWorkspaces}

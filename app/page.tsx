@@ -26,8 +26,8 @@ import {
   getTodayHabitOccurrences,
 } from "@/src/actions/habits";
 import {
+  getDashboardEntrySnapshot,
   getDashboardSummary,
-  getEntries,
 } from "@/src/actions/entries";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import {
@@ -154,7 +154,14 @@ function getHomeReflection({
   phase,
   monthSaved,
 }: {
-  entries: Awaited<ReturnType<typeof getEntries>>;
+  entries: Array<{
+    category: {
+      id: string;
+      name: string;
+    };
+    savedAmount: unknown;
+    date: string | Date;
+  }>;
   phase: HomePhase;
   monthSaved: number;
 }): HomeReflection {
@@ -514,8 +521,29 @@ export default async function Home({ searchParams }: HomePageProps) {
     totalRealSpentToday: 0,
     entriesTodayCount: 0,
   };
-  let allEntries: Awaited<ReturnType<typeof getEntries>> = [];
-  let recentEntries: Awaited<ReturnType<typeof getEntries>> = [];
+  let entryCount = 0;
+  let firstEntryDate: Date | null = null;
+  let recentEntries: Array<{
+    id: string;
+    title: string;
+    category: {
+      name: string;
+      slug: string | null;
+    };
+    date: Date;
+    realCost: unknown;
+    savedAmount: unknown;
+    alternativeCost: unknown;
+    note: string | null;
+  }> = [];
+  let weekEntries: Array<{
+    category: {
+      id: string;
+      name: string;
+    };
+    savedAmount: unknown;
+    date: Date;
+  }> = [];
   let activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
   let todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
   let pendingHabitsCount = 0;
@@ -531,11 +559,14 @@ export default async function Home({ searchParams }: HomePageProps) {
   let dashboardLoadError: string | null = null;
 
   try {
-    allEntries = await getEntries();
-    recentEntries = allEntries.slice(0, 3);
+    const snapshot = await getDashboardEntrySnapshot();
+    entryCount = snapshot.entryCount;
+    firstEntryDate = snapshot.firstEntryDate;
+    recentEntries = snapshot.recentEntries;
+    weekEntries = snapshot.weekEntries;
   } catch (error) {
     entriesLoadError = formatEntryLoadError(error);
-    console.error("Failed to load entries for dashboard:", error);
+    console.error("Failed to load dashboard entry snapshot:", error);
   }
 
   try {
@@ -570,15 +601,13 @@ export default async function Home({ searchParams }: HomePageProps) {
     console.error("Failed to load dashboard summary:", error);
   }
 
-  const oldestEntry = allEntries.at(-1);
-  const firstEntryDate = oldestEntry ? new Date(oldestEntry.date) : null;
   const homePhase = getHomePhase({
-    entryCount: allEntries.length,
+    entryCount,
     firstEntryDate,
   });
   const hasUtilityPanels = todayHabits.length > 0 || activeGoals.length > 0;
   const homeReflection = getHomeReflection({
-    entries: allEntries,
+    entries: weekEntries,
     phase: homePhase,
     monthSaved,
   });
@@ -671,7 +700,7 @@ export default async function Home({ searchParams }: HomePageProps) {
             tone: "success",
           },
           {
-            label: `${allEntries.length} segnali`,
+            label: `${entryCount} segnali`,
           },
           {
             label: `${formatEuro(monthSaved)} mese`,

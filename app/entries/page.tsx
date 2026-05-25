@@ -12,14 +12,15 @@ import { spacing } from "@/src/lib/spacing";
 export const dynamic = "force-dynamic";
 
 export default async function EntriesPage() {
+  const membersPromise = getCurrentWorkspaceMembers();
   let entriesPage: Awaited<ReturnType<typeof getEntriesPage>> | null = null;
   let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
   let loadError: string | null = null;
 
   try {
     [entriesPage, members] = await Promise.all([
-      getEntriesPage({ limit: 20 }),
-      getCurrentWorkspaceMembers(),
+      getEntriesPage({ limit: 20, members: membersPromise }),
+      membersPromise,
     ]);
   } catch (error) {
     loadError = formatEntryLoadError(error);
