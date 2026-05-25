@@ -1,18 +1,4 @@
-"use client";
-
-import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
-import { spacing } from "@/src/lib/spacing";
 
 type MonthlySavingsChartProps = {
   data: Array<{
@@ -25,180 +11,79 @@ type MonthlySavingsChartProps = {
   }>;
 };
 
-function EmptyChart() {
-  return (
-    <div className="flex h-[260px] items-center justify-center rounded-3xl border border-dashed border-border/70 bg-surface-muted/60 px-4 text-center text-sm leading-6 text-muted-text sm:h-[300px]">
-      Nessun dato mensile ancora disponibile.
-    </div>
-  );
-}
-
-function formatMonthLabel(value: string): string {
-  return value;
-}
-
-function formatPercent(value: number): string {
-  return `${new Intl.NumberFormat("it-IT", {
-    maximumFractionDigits: 0,
-  }).format(value)}%`;
-}
-
-function MobileTrendList({
-  data,
-}: {
-  data: MonthlySavingsChartProps["data"];
-}) {
-  const maxSaved = Math.max(...data.map((item) => item.totalSaved), 0);
-
-  return (
-    <div className="space-y-2 sm:hidden">
-      {data.map((item) => {
-        const width = maxSaved > 0 ? (item.totalSaved / maxSaved) * 100 : 0;
-
-        return (
-          <div
-            key={item.month}
-            className="rounded-2xl border border-border/70 bg-background/70 p-3"
-          >
-            <div className="flex items-baseline justify-between gap-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {item.label}
-                </p>
-                <p className="text-xs text-muted-text">
-                  {item.entriesCount} movimenti
-                </p>
-              </div>
-              <p className="shrink-0 text-sm font-semibold text-success">
-                {formatMoney(item.totalSaved)}
-              </p>
-            </div>
-
-            <div className="mt-2 h-2 rounded-full bg-surface-muted">
-              <div
-                className="h-2 rounded-full bg-success"
-                style={{ width: `${width}%` }}
-              />
-            </div>
-
-            <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-text">
-              <span>Risparmiato</span>
-              <span>
-                {formatPercent(
-                  item.totalAlternativeCost > 0
-                    ? (item.totalSaved / item.totalAlternativeCost) * 100
-                    : 0,
-                )}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-function MonthlyTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean;
-  payload?: Array<{ value?: number }>;
-  label?: string;
-}) {
-  if (!active || !payload?.length) {
-    return null;
-  }
-
-  const saved = payload[0]?.value ?? 0;
-
-  return (
-    <div className="rounded-2xl border border-border/70 bg-popover px-3 py-3 text-popover-foreground shadow-[0_18px_40px_-28px_rgba(0,0,0,0.75)]">
-      <p className="text-sm font-semibold text-popover-foreground">
-        {label ? `Mese: ${label}` : "Mese"}
-      </p>
-      <p className="mt-1 text-sm text-muted-foreground">
-        Risparmiato: <span className="font-semibold">{formatMoney(saved)}</span>
-      </p>
-    </div>
-  );
+function getMonthInitial(label: string): string {
+  return label.charAt(0).toUpperCase();
 }
 
 export function MonthlySavingsChart({ data }: MonthlySavingsChartProps) {
-  const chartData = [...data].sort((left, right) =>
-    left.month.localeCompare(right.month),
-  );
+  const sorted = [...data].sort((a, b) => a.month.localeCompare(b.month));
+  const last12 = sorted.slice(-12);
+  const maxSaved = Math.max(...last12.map((m) => m.totalSaved), 1);
+  const activeMonth = last12.at(-1)?.month;
 
   return (
-    <Card className="overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5">
-      <CardHeader className={spacing.cardHeader}>
-        <CardTitle className="text-base font-semibold tracking-tight text-foreground">
-          Direzione nel tempo
-        </CardTitle>
-        <p className="text-sm leading-6 text-muted-text">
-          Come si sta muovendo il risparmio mese per mese.
+    <div className="overflow-hidden rounded-[14px] border border-border bg-surface p-[18px]">
+      <div className="mb-3.5 flex items-baseline justify-between">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+          Ultimi 12 mesi
         </p>
-      </CardHeader>
-      <CardContent className={`pt-3 ${spacing.cardBody}`}>
-        {chartData.length === 0 ? (
-          <EmptyChart />
-        ) : (
-          <>
-            <MobileTrendList data={chartData} />
+        <span className="font-num text-[11px]" style={{ color: "var(--text-3)" }}>
+          max {formatMoney(maxSaved)}
+        </span>
+      </div>
 
-            <div className="hidden rounded-3xl border border-border/60 bg-surface-muted/55 p-3 sm:block sm:p-4">
-              <div className="h-[260px] w-full sm:h-[300px]">
-                <ResponsiveContainer
-                  width="100%"
-                  height="100%"
-                  minWidth={0}
-                  minHeight={260}
-                  initialDimension={{ width: 0, height: 0 }}
+      {last12.length === 0 ? (
+        <div className="flex h-[132px] items-center justify-center rounded-2xl border border-dashed border-border/70 bg-surface-muted/60 text-sm text-muted-foreground">
+          Nessun dato mensile ancora disponibile.
+        </div>
+      ) : (
+        <>
+          {/* Bar chart */}
+          <div className="flex h-[132px] items-end gap-1.5">
+            {last12.map((m) => {
+              const isActive = m.month === activeMonth;
+              const heightPct = maxSaved > 0 ? (m.totalSaved / maxSaved) * 100 : 0;
+              return (
+                <div
+                  key={m.month}
+                  className="flex flex-1 flex-col items-center gap-1.5"
                 >
-                  <LineChart
-                    data={chartData}
-                    margin={{ top: 8, right: 8, left: 0, bottom: 0 }}
+                  <div
+                    className="w-full rounded-[4px]"
+                    style={{
+                      height: `${Math.max(heightPct, 3)}%`,
+                      background: isActive ? "var(--accent)" : "var(--surface-muted)",
+                      minHeight: 4,
+                    }}
+                    title={`${m.label}: ${formatMoney(m.totalSaved)}`}
+                  />
+                  <span
+                    className="text-[10px] leading-none"
+                    style={{
+                      color: isActive ? "var(--foreground)" : "var(--text-3)",
+                      fontWeight: isActive ? 600 : 400,
+                    }}
                   >
-                    <CartesianGrid
-                      stroke="var(--border)"
-                      strokeOpacity={0.38}
-                      vertical={false}
-                    />
-                    <XAxis
-                      dataKey="label"
-                      tickLine={false}
-                      axisLine={false}
-                      interval="preserveStartEnd"
-                      minTickGap={16}
-                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                      tickMargin={10}
-                      tickFormatter={formatMonthLabel}
-                    />
-                    <YAxis
-                      tickLine={false}
-                      axisLine={false}
-                      width={56}
-                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                      tickFormatter={(value) => formatMoney(Number(value))}
-                    />
-                    <Tooltip content={<MonthlyTooltip />} />
-                    <Line
-                      type="monotone"
-                      dataKey="totalSaved"
-                      stroke="var(--success)"
-                      strokeWidth={2.5}
-                      strokeLinecap="round"
-                      dot={{ r: 2.5, fill: "var(--success)" }}
-                      activeDot={{ r: 4.5 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
+                    {getMonthInitial(m.label)}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Summary row for current month */}
+          {last12.at(-1) ? (
+            <div className="mt-4 flex items-center gap-3 border-t border-border pt-3 text-xs text-muted-foreground">
+              <span className="font-num font-semibold text-accent">
+                {formatMoney(last12.at(-1)!.totalSaved)}
+              </span>
+              <span>{last12.at(-1)!.label}</span>
+              <span>·</span>
+              <span>{last12.at(-1)!.entriesCount} movimenti</span>
             </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
+          ) : null}
+        </>
+      )}
+    </div>
   );
 }

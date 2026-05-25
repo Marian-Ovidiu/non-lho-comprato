@@ -1,6 +1,5 @@
 import { getCategories } from "@/src/actions/entries";
 import { EntryForm } from "@/src/components/entries/entry-form";
-import { PageHeader } from "@/src/components/layout/page-header";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import {
   getDefaultBeneficiaryUserIds,
@@ -11,7 +10,6 @@ import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceUiContext,
 } from "@/src/lib/workspace-context";
-import { spacing } from "@/src/lib/spacing";
 
 export const dynamic = "force-dynamic";
 
@@ -82,34 +80,20 @@ export default async function NewEntryPage({
   }
 
   return (
-    <main className={spacing.pageStack}>
-      <PageHeader
-        backHref="/entries"
-        title="Nuovo movimento"
-        context={`Salva in ${workspace.name}.`}
-        chips={[
-          {
-            label: workspace.isShared ? "Condiviso" : "Privato",
-            tone: workspace.isShared ? "premium" : "default",
-          },
-        ]}
-      />
-
-      <EntryForm
-        categories={categories}
-        members={members}
-        currentUserId={currentUser.id}
-        workspaceId={workspace.id}
-        initialValues={{
-          title,
-          categoryId,
-          realCost,
-          alternativeCost,
-          paidByUserId,
-          beneficiaryUserIds: resolvedBeneficiaryUserIds,
-          date,
-        }}
-      />
-    </main>
+    <EntryForm
+      categories={categories}
+      members={members}
+      currentUserId={currentUser.id}
+      workspaceId={workspace.id}
+      initialValues={{
+        title,
+        categoryId,
+        realCost,
+        alternativeCost,
+        paidByUserId,
+        beneficiaryUserIds: resolvedBeneficiaryUserIds,
+        date,
+      }}
+    />
   );
 }

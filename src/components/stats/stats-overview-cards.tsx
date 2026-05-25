@@ -85,19 +85,17 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
           <Card
             key={card.key}
             className={cn(
-              "h-full overflow-hidden border-border/60 bg-surface/85 shadow-none ring-1 ring-white/5",
+              "h-full overflow-hidden shadow-none",
               card.variant === "highlight"
-                ? "border-success/20 bg-success/10 ring-success/10"
-                : "border-border/60",
+                ? "border-accent/20 bg-accent/10 ring-1 ring-accent/10"
+                : "border-border/60 bg-surface/85 ring-1 ring-white/5",
             )}
           >
             <CardHeader className="space-y-1 p-3 pb-2 sm:p-4 sm:pb-3">
               <CardTitle
                 className={cn(
                   "text-[10px] font-medium uppercase tracking-[0.18em]",
-                  card.variant === "highlight"
-                    ? "text-success/90"
-                    : "text-muted-text",
+                  card.variant === "highlight" ? "text-accent/90" : "text-muted-foreground",
                 )}
               >
                 {card.label}
@@ -106,9 +104,9 @@ export function StatsOverviewCards({ overview }: StatsOverviewCardsProps) {
             <CardContent className="flex-1 p-3 pt-0 sm:p-4 sm:pt-0">
               <p
                 className={cn(
-                  "leading-none tracking-tight",
+                  "font-num leading-none tracking-tight",
                   card.variant === "highlight"
-                    ? "text-[1.7rem] font-semibold text-success sm:text-[1.75rem]"
+                    ? "text-[1.7rem] font-semibold text-accent sm:text-[1.75rem]"
                     : "text-[1.45rem] font-semibold text-foreground sm:text-[1.65rem]",
                 )}
               >
