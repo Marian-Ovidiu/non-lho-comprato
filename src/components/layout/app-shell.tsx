@@ -15,7 +15,7 @@ import type { LucideIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
+import { MobileTabBar } from "@/src/components/layout/mobile-tab-bar";
 import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-reminder-on-open";
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
@@ -35,7 +35,7 @@ export type AppShellAuth = {
 };
 
 const primaryNavItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", label: "Oggi", icon: Home },
   { href: "/entries", label: "Movimenti", icon: List },
   { href: "/goals", label: "Obiettivi", icon: Target },
   { href: "/stats", label: "Statistiche", icon: BarChart3 },
@@ -79,8 +79,8 @@ function NavButton({
           ? "h-12 flex-col gap-1 rounded-2xl px-1 text-[10px] font-medium transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:translate-y-0 active:scale-[0.99]"
           : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4 transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:translate-y-0 active:scale-[0.99]",
         active
-          ? "bg-primary/12 text-primary ring-1 ring-primary/20 shadow-sm hover:bg-primary/12"
-          : "text-muted-text hover:bg-surface-muted/60 hover:text-foreground",
+          ? "bg-accent/10 text-accent ring-1 ring-accent/20 shadow-sm hover:bg-accent/10"
+          : "text-muted-foreground hover:bg-surface-muted/60 hover:text-foreground",
       )}
     >
       <Link
@@ -270,50 +270,11 @@ export function AppShell({
         {children}
       </div>
 
-      <nav
-        aria-label="Navigazione principale"
-        className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[calc(env(safe-area-inset-bottom)+0.85rem)] md:hidden"
-      >
-        <div className="mx-auto max-w-[24rem] rounded-[1.9rem] border border-border/70 bg-surface/86 px-2.5 pb-2.5 pt-3 shadow-[0_24px_60px_rgba(0,0,0,0.22)] backdrop-blur supports-[backdrop-filter]:bg-surface/80">
-          <div className="grid grid-cols-5 items-end gap-1.5">
-            <NavButton
-              href={primaryNavItems[0].href}
-              label={primaryNavItems[0].label}
-              icon={primaryNavItems[0].icon}
-              active={isActivePath(pathname, primaryNavItems[0].href)}
-              mobile
-            />
-            <NavButton
-              href={primaryNavItems[1].href}
-              label={primaryNavItems[1].label}
-              icon={primaryNavItems[1].icon}
-              active={isActivePath(pathname, primaryNavItems[1].href)}
-              mobile
-            />
-            <div className="flex justify-center">
-              <QuickAddSheet
-                workspace={workspace}
-                members={workspaceMembers}
-                currentUserId={currentUserId}
-              />
-            </div>
-            <NavButton
-              href={primaryNavItems[3].href}
-              label={primaryNavItems[3].label}
-              icon={primaryNavItems[3].icon}
-              active={isActivePath(pathname, primaryNavItems[3].href)}
-              mobile
-            />
-            <NavButton
-              href={primaryNavItems[4].href}
-              label={primaryNavItems[4].label}
-              icon={primaryNavItems[4].icon}
-              active={isActivePath(pathname, primaryNavItems[4].href)}
-              mobile
-            />
-          </div>
-        </div>
-      </nav>
+      <MobileTabBar
+        workspace={workspace}
+        members={workspaceMembers}
+        currentUserId={currentUserId}
+      />
     </div>
   );
 }

@@ -151,17 +151,17 @@ export function EntryCard({ entry, members }: EntryCardProps) {
 
   const savedTone =
     savedAmount > 0
-      ? "text-success"
+      ? "text-accent"
       : savedAmount < 0
         ? "text-destructive"
         : "text-foreground";
 
   const spentSurface =
     savedAmount > 0
-      ? "border-success/15 bg-success/8"
+      ? "border-accent/15 bg-accent/5"
       : savedAmount < 0
         ? "border-destructive/15 bg-destructive/8"
-        : "border-border/70 bg-surface-muted/80";
+        : "border-border bg-surface-muted";
 
   return (
     <div
@@ -191,7 +191,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
         <CardContent className="space-y-3 p-4 sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-2">
-            <h2 className="truncate text-base font-semibold tracking-tight text-foreground sm:text-[1.05rem]">
+            <h2 className="truncate text-[15px] font-medium tracking-[-0.01em] text-foreground">
               {entry.title}
             </h2>
             <div className="flex flex-wrap items-center gap-2">
@@ -206,7 +206,7 @@ export function EntryCard({ entry, members }: EntryCardProps) {
           </div>
 
           <div className="flex shrink-0 items-start gap-1.5">
-            <p className={cn("text-lg font-semibold tracking-tight sm:text-xl", savedTone)}>
+            <p className={cn("font-num text-[15px] font-semibold tracking-[-0.02em]", savedTone)}>
               {formatSignedMoney(entry.savedAmount)}
             </p>
 
@@ -271,19 +271,19 @@ export function EntryCard({ entry, members }: EntryCardProps) {
 
         <div className="grid grid-cols-2 gap-2">
           <div className={cn("rounded-2xl border px-3 py-2", spentSurface)}>
-            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Speso
             </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">
+            <p className="font-num mt-1 text-sm font-semibold text-foreground">
               {formatMoney(entry.realCost)}
             </p>
           </div>
 
           <div className={cn("rounded-2xl border px-3 py-2", spentSurface)}>
-            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-text">
+            <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
               Avresti speso
             </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">
+            <p className="font-num mt-1 text-sm font-semibold text-foreground">
               {formatMoney(entry.alternativeCost)}
             </p>
           </div>

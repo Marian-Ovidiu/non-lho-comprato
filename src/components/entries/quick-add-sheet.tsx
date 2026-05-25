@@ -431,7 +431,8 @@ export function QuickAddSheet({
         <Button
           variant="default"
           size="icon"
-          className="size-12 -mt-4 rounded-full border border-premium-accent/30 bg-primary text-primary-foreground shadow-lg transition-[transform,background-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] hover:-translate-y-px hover:bg-primary-hover active:translate-y-0 active:scale-[0.975] active:opacity-95"
+          className="size-[52px] rounded-full bg-accent text-accent-foreground transition-[transform,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.95] active:opacity-90"
+          style={{ boxShadow: "0 8px 24px rgba(212,255,58,0.18)" }}
           onClick={() => trackPostHogEvent("quick_add_opened")}
         >
           <Plus className="size-5" aria-hidden="true" />
