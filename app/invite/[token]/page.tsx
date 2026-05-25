@@ -87,22 +87,25 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
     );
   }
 
-  const currentEmail = normalizeInviteEmail(authUser.email ?? "");
-  if (!currentEmail || currentEmail !== invite.invitedEmail) {
-    return (
-      <main className="space-y-5 sm:space-y-6">
-        <PageHeader
-          title="Invito non disponibile"
-          context="Apri questo link con l'account a cui è stato inviato."
-        />
+  const isOpen = invite.invitedEmail === "open";
+  if (!isOpen) {
+    const currentEmail = normalizeInviteEmail(authUser.email ?? "");
+    if (!currentEmail || currentEmail !== invite.invitedEmail) {
+      return (
+        <main className="space-y-5 sm:space-y-6">
+          <PageHeader
+            title="Invito non disponibile"
+            context="Apri questo link con l'account a cui è stato inviato."
+          />
 
-        <Card className="overflow-hidden border-border/80 bg-surface/80 shadow-sm">
-          <CardContent className="p-4 text-sm leading-6 text-muted-text">
-            Questo invito è collegato a un altro indirizzo email.
-          </CardContent>
-        </Card>
-      </main>
-    );
+          <Card className="overflow-hidden border-border/80 bg-surface/80 shadow-sm">
+            <CardContent className="p-4 text-sm leading-6 text-muted-text">
+              Questo invito è collegato a un altro indirizzo email.
+            </CardContent>
+          </Card>
+        </main>
+      );
+    }
   }
 
   const alreadyAccepted = Boolean(invite.acceptedAt);

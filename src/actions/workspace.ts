@@ -87,9 +87,11 @@ type GenerateOpenInviteResult = {
 export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResult> {
   try {
     const user = await getCurrentUser();
+    const workspaceId = await (await import("@/src/lib/workspace-context")).getCurrentWorkspaceId();
 
-    const workspace = await prisma.workspace.findFirst({
+    const workspace = await prisma.workspace.findUnique({
       where: {
+        id: workspaceId,
         OR: [
           { ownerUserId: user.id },
           { members: { some: { userId: user.id } } },

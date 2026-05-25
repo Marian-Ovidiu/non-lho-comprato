@@ -148,8 +148,7 @@ export const getCurrentWorkspace = cache(async () => {
     if (
       selectedWorkspaceId &&
       workspace.id !== selectedWorkspaceId &&
-      (resolutionPath === "cookie:fallback-empty-to-production" ||
-        resolutionPath.startsWith("cookie:ignored-not-member"))
+      resolutionPath.startsWith("cookie:ignored-not-member")
     ) {
       try {
         const cookieStore = await cookies();

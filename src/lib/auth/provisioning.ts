@@ -592,20 +592,6 @@ export async function resolveActiveWorkspaceForUser({
     );
 
     if (selectedWorkspace) {
-      if (productionWorkspace && selectedWorkspace.id !== productionId) {
-        const [selectedEntries, productionEntries] = await Promise.all([
-          countWorkspaceEntries(selectedWorkspace.id),
-          countWorkspaceEntries(productionId),
-        ]);
-
-        if (selectedEntries === 0 && productionEntries > 0) {
-          return {
-            workspace: productionWorkspace,
-            resolutionPath: "cookie:fallback-empty-to-production",
-          };
-        }
-      }
-
       return {
         workspace: selectedWorkspace,
         resolutionPath: "cookie:selected",
