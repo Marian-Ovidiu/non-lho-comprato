@@ -90,7 +90,7 @@ export function CreateWorkspaceForm() {
                 {copied ? <Check className="size-4 text-accent" aria-hidden="true" /> : <Copy className="size-4" aria-hidden="true" />}
                 {copied ? "Copiato" : "Copia"}
               </button>
-              {typeof navigator !== "undefined" && navigator.share ? (
+              {typeof navigator !== "undefined" && "share" in navigator ? (
                 <button
                   type="button"
                   onClick={shareLink}

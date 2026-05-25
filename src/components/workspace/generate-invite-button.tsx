@@ -73,7 +73,7 @@ export function GenerateInviteButton() {
             {copied ? <Check className="mr-1.5 size-3.5 text-accent" aria-hidden="true" /> : <Copy className="mr-1.5 size-3.5" aria-hidden="true" />}
             {copied ? "Copiato" : "Copia link"}
           </Button>
-          {typeof navigator !== "undefined" && navigator.share ? (
+          {typeof navigator !== "undefined" && "share" in navigator ? (
             <Button
               type="button"
               variant="outline"
