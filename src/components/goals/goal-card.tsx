@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { deleteGoal, toggleGoalActive } from "@/src/actions/goals";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
+import { AnimatedNumber } from "@/src/components/shared/animated-number";
 import { getGoalEmoji } from "@/src/lib/visual-cues";
 import {
   getGoalScopeLabel,
@@ -180,9 +181,12 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
         </p>
 
         <div className="mb-3.5 flex items-baseline gap-1.5">
-          <span className="font-num font-semibold text-accent leading-none" style={{ fontSize: 38 }}>
-            {formatMoney(goal.progressAmount)}
-          </span>
+          <AnimatedNumber
+            value={goal.progressAmount}
+            format={formatMoney}
+            className="font-num font-semibold text-accent leading-none"
+            style={{ fontSize: 38 }}
+          />
           <span className="font-num text-lg text-muted-foreground">
             / {formatMoney(goal.targetAmount)}
           </span>

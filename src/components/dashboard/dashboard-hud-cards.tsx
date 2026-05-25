@@ -1,4 +1,7 @@
+"use client";
+
 import { formatMoney } from "@/src/lib/formatters";
+import { AnimatedNumber } from "@/src/components/shared/animated-number";
 
 type DashboardHudCardsProps = {
   totalSavedToday: number;
@@ -9,12 +12,14 @@ type DashboardHudCardsProps = {
 function HudCard({
   label,
   value,
+  format,
   sub,
   accent = false,
   delay = 0,
 }: {
   label: string;
-  value: string;
+  value: number;
+  format: (n: number) => string;
   sub?: string;
   accent?: boolean;
   delay?: number;
@@ -37,7 +42,7 @@ function HudCard({
         ) : null}
       </div>
       <p className="font-num text-[2rem] font-semibold leading-none">
-        {value}
+        <AnimatedNumber value={value} format={format} />
       </p>
       {sub ? (
         <p className="text-xs leading-none opacity-65">{sub}</p>
@@ -62,14 +67,16 @@ export function DashboardHudCards({
     <div className="grid grid-cols-2 gap-2.5">
       <HudCard
         label="Oggi"
-        value={formatMoney(totalSavedToday)}
+        value={totalSavedToday}
+        format={formatMoney}
         sub={todaySub}
         accent
         delay={0}
       />
       <HudCard
         label="Questo mese"
-        value={formatMoney(totalSavedMonth)}
+        value={totalSavedMonth}
+        format={formatMoney}
         delay={60}
       />
     </div>

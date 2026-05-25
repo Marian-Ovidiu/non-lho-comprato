@@ -1,3 +1,7 @@
+"use client";
+
+import { AnimatedNumber } from "@/src/components/shared/animated-number";
+
 const WEEK_LABELS = ["L", "M", "M", "G", "V", "S", "D"];
 
 type StreakHeroCardProps = {
@@ -93,12 +97,11 @@ export function StreakHeroCard({ currentStreak }: StreakHeroCardProps) {
             Streak
           </p>
           <div className="mt-1.5 flex items-baseline gap-2">
-            <span
-              className="nlc-pop font-num font-bold leading-none"
+            <AnimatedNumber
+              value={currentStreak}
+              className="font-num font-bold leading-none"
               style={{ fontSize: 64, letterSpacing: "-0.05em" }}
-            >
-              {currentStreak}
-            </span>
+            />
             <span className="text-base text-muted-foreground">giorni</span>
           </div>
           <StreakDescription streak={currentStreak} />
