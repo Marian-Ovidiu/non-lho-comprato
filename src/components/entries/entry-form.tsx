@@ -67,6 +67,14 @@ function rawToCents(raw: string): number {
   return isNaN(n) ? 0 : Math.round(n * 100);
 }
 
+function normalizeMoneyInput(value: string): string {
+  return value
+    .replace(/[^\d,.]/g, "")
+    .replace(".", ",")
+    .replace(/(,.*),/g, "$1")
+    .replace(/^0+(\d)/, "$1");
+}
+
 function formatDisplayValue(raw: string): string {
   if (!raw) return "0,00";
   if (!raw.includes(",")) {
@@ -131,6 +139,13 @@ export function EntryForm({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [note, setNote] = useState("");
   const [date, setDate] = useState(initialValues?.date ?? getTodayLocal());
+  const [realCostInput, setRealCostInput] = useState<string>(() => {
+    const raw = initialValues?.realCost;
+    if (!raw) return "0";
+    const n = parseFloat(raw.replace(",", "."));
+    if (isNaN(n) || n <= 0) return "0";
+    return n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  });
 
   const [rawInput, setRawInput] = useState<string>(() => {
     const raw = initialValues?.alternativeCost ?? initialValues?.realCost;
@@ -170,7 +185,6 @@ export function EntryForm({
   useEffect(() => {
     if (!state.success) {
       didHandleSuccessRef.current = false;
-      setSuccessStage("idle");
       return;
     }
     if (didHandleSuccessRef.current) return;
@@ -197,6 +211,8 @@ export function EntryForm({
 
   const hasAmount = rawToCents(rawInput) > 0;
   const canSubmit = hasAmount && title.trim().length > 0 && categories.length > 0 && members.length > 0 && !pending;
+  const realCostValue = (rawToCents(realCostInput) / 100).toFixed(2);
+  const alternativeCostValue = (rawToCents(rawInput) / 100).toFixed(2);
 
   return (
     <>
@@ -211,8 +227,8 @@ export function EntryForm({
         )}
       >
         {/* Hidden form fields */}
-        <input type="hidden" name="realCost" value="0" />
-        <input type="hidden" name="alternativeCost" value={(rawToCents(rawInput) / 100).toFixed(2)} />
+        <input type="hidden" name="realCost" value={realCostValue} />
+        <input type="hidden" name="alternativeCost" value={alternativeCostValue} />
         <input type="hidden" name="title" value={title} />
         <input type="hidden" name="categoryId" value={categoryId} />
         <input type="hidden" name="paidByUserId" value={paidByUserId} />
@@ -272,7 +288,7 @@ export function EntryForm({
           ) : (
             <>
               <p className="font-serif italic text-sm text-muted-foreground">
-                non ho comprato per
+                quanto avrei speso
               </p>
               <div className="mt-3 flex items-baseline justify-center gap-2">
                 <span
@@ -284,7 +300,7 @@ export function EntryForm({
                 <span className="font-num text-[30px] font-medium text-muted-foreground">€</span>
               </div>
               <p className="mt-2.5 text-[13px] text-muted-foreground">
-                tenuti nel portafoglio
+                usa il tastierino o correggi il campo sotto
               </p>
             </>
           )}
@@ -334,6 +350,48 @@ export function EntryForm({
               autoComplete="off"
               className="w-full bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground/40"
             />
+          </div>
+        </div>
+
+        <div className="px-5 pb-4">
+          <div className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2">
+            <label className="space-y-1.5">
+              <span className="block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Speso davvero
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={realCostInput}
+                onChange={(event) => setRealCostInput(normalizeMoneyInput(event.target.value))}
+                placeholder="0,00"
+                className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 font-num text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+                aria-invalid={Boolean(state.errors?.realCost)}
+              />
+              {state.errors?.realCost ? (
+                <span className="block text-xs text-destructive">{state.errors.realCost}</span>
+              ) : null}
+            </label>
+
+            <label className="space-y-1.5">
+              <span className="block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Quanto avresti speso
+              </span>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={rawInput}
+                onChange={(event) => setRawInput(normalizeMoneyInput(event.target.value))}
+                placeholder="18,00"
+                className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 font-num text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+                aria-invalid={Boolean(state.errors?.alternativeCost)}
+              />
+              {state.errors?.alternativeCost ? (
+                <span className="block text-xs text-destructive">
+                  {state.errors.alternativeCost}
+                </span>
+              ) : null}
+            </label>
           </div>
         </div>
 

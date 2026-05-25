@@ -1060,8 +1060,7 @@ export async function createEntry(
     members,
   );
 
-  const normalizedAlternativeCost =
-    realCost.value > 0 ? alternativeCost.value : 0;
+  const normalizedAlternativeCost = alternativeCost.value;
   const savedAmount = calculateSavedAmount(
     realCost.value,
     normalizedAlternativeCost,
@@ -1221,8 +1220,7 @@ export async function updateEntry(
     members,
   );
 
-  const normalizedAlternativeCost =
-    realCost.value > 0 ? alternativeCost.value : 0;
+  const normalizedAlternativeCost = alternativeCost.value;
   const savedAmount = calculateSavedAmount(
     realCost.value,
     normalizedAlternativeCost,

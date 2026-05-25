@@ -31,7 +31,7 @@ export function calculateSavedAmount(
     return 0;
   }
 
-  if (real <= 0) {
+  if (real < 0 || alternative < 0) {
     return 0;
   }
 
@@ -49,11 +49,11 @@ export function calculateSavedPercentage(
     return 0;
   }
 
-  if (real <= 0) {
+  if (real < 0) {
     return 0;
   }
 
-  if (alternative === 0) {
+  if (alternative <= 0) {
     return 0;
   }
 
