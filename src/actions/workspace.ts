@@ -18,7 +18,7 @@ import {
   hashInviteToken,
 } from "@/src/lib/workspace-invites";
 
-export const OPEN_INVITE_SENTINEL = "open";
+const OPEN_INVITE_SENTINEL = "open";
 
 type CreateWorkspaceResult = {
   success: boolean;
