@@ -109,14 +109,14 @@ function getGreeting() {
   );
 
   if (hour < 12) {
-    return "Buongiorno, Marian 👋";
+    return "Buongiorno, Marian";
   }
 
   if (hour < 18) {
-    return "Buon pomeriggio, Marian 👋";
+    return "Buon pomeriggio, Marian";
   }
 
-  return "Buonasera, Marian 👋";
+  return "Buonasera, Marian";
 }
 
 function getHomePhase({
@@ -659,8 +659,9 @@ export default async function Home({ searchParams }: HomePageProps) {
       />
 
       <PageHeader
-        title={getGreeting()}
-        context={headerContext}
+        eyebrow={getGreeting()}
+        title="Hai tenuto"
+        serifWord="qualcosa oggi."
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Nuovo movimento</Link>

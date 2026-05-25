@@ -50,8 +50,9 @@ export default async function GoalsPage() {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
-        title="Obiettivi"
-        context={`${activeGoals.length} attivi • ${inactiveGoals.length} in pausa`}
+        eyebrow="Obiettivi"
+        title="Le tue mete"
+        serifWord="aperte."
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="#nuovo-obiettivo">

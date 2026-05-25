@@ -29,8 +29,9 @@ export default async function EntriesPage() {
   return (
     <main className={spacing.pageStack}>
       <PageHeader
+        eyebrow="Movimenti"
         title="Movimenti"
-        context="Cronologia di ciò che hai speso e di ciò che hai evitato."
+        serifWord="nel registro."
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Aggiungi movimento</Link>
@@ -38,7 +39,6 @@ export default async function EntriesPage() {
         }
         chips={[
           { label: "Ultimi 20", tone: "default" },
-          { label: "Ultimi movimenti", tone: "premium" },
         ]}
       />
 

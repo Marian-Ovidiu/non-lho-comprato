@@ -42,8 +42,9 @@ export default async function HabitsPage() {
   return (
     <main className={spacing.pageStack}>
       <PageHeader
+        eyebrow="Abitudini"
         title="Abitudini"
-        context={`${todayOccurrences.length} attive oggi`}
+        serifWord="di oggi."
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="#nuova-abitudine">

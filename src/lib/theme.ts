@@ -32,7 +32,7 @@ export function getThemeBootstrapScript() {
     const preference =
       storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
         ? storedTheme
-        : "system";
+        : "dark";
     const theme = preference === "system"
       ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       : preference;

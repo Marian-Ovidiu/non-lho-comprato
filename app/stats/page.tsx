@@ -170,8 +170,9 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     return (
       <main className={spacing.pageStack}>
         <PageHeader
+          eyebrow="Stats"
           title="Statistiche"
-          context="Appena inizi a registrare movimenti, qui compariranno segnali utili e letture del mese."
+          serifWord="in numeri."
           action={
             <Button asChild className="h-10 rounded-2xl px-4">
               <Link href="/entries/new">Aggiungi movimento</Link>
@@ -200,8 +201,9 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       <PostHogEventOnMount eventName="stats_viewed" />
 
       <PageHeader
+        eyebrow="Stats"
         title="Statistiche"
-        context={heroSummary}
+        serifWord="in numeri."
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Aggiungi movimento</Link>

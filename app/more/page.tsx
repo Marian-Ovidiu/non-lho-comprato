@@ -96,10 +96,11 @@ export default async function MorePage() {
   return (
     <main className="space-y-5 sm:space-y-6">
       <PageHeader
+        eyebrow="Profilo"
         title="Altro"
-        context="Profilo, workspace e strumenti rapidi."
+        serifWord="e impostazioni."
         chips={[
-          { label: "Profilo", tone: "premium" },
+          { label: "Profilo", tone: "warm" },
           { label: "App", tone: "default" },
         ]}
       />
