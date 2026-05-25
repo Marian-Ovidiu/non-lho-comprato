@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -8,16 +9,22 @@ import { ArrowRight, ChevronDown, Loader2 } from "lucide-react";
 
 import { createEntry } from "@/src/actions/entries";
 import { cn } from "@/lib/utils";
-import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
-import {
-  getDefaultBeneficiaryUserIds,
-  getDefaultPaidByUserId,
-  type WorkspaceMemberOption,
-} from "@/src/lib/workspace-members";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 import { getCategoryEmoji } from "@/src/lib/visual-cues";
+
+const EntryPeopleFields = dynamic(
+  () =>
+    import("@/src/components/entries/entry-people-fields").then(
+      (module) => module.EntryPeopleFields,
+    ),
+  {
+    ssr: false,
+    loading: () => null,
+  },
+);
 
 type CategoryOption = {
   id: string;
@@ -40,8 +47,8 @@ type FormState = {
 type EntryFormProps = {
   categories: CategoryOption[];
   members: WorkspaceMemberOption[];
-  currentUserId: string;
-  workspaceId: string;
+  initialPaidByUserId: string;
+  initialBeneficiaryUserIds: string[];
   initialValues?: {
     title?: string;
     categoryId?: string;
@@ -117,7 +124,8 @@ function Numpad({ onKey }: { onKey: (key: string) => void }) {
 export function EntryForm({
   categories,
   members,
-  currentUserId,
+  initialPaidByUserId,
+  initialBeneficiaryUserIds,
   initialValues,
 }: EntryFormProps) {
   const router = useRouter();
@@ -126,16 +134,18 @@ export function EntryForm({
   const redirectTimerRef = useRef<number | null>(null);
   const successTimerRef = useRef<number | null>(null);
 
-  const initialPaidByUserId =
-    initialValues?.paidByUserId ?? getDefaultPaidByUserId(members, currentUserId);
-  const initialBeneficiaryUserIds =
-    initialValues?.beneficiaryUserIds ?? getDefaultBeneficiaryUserIds(members, initialPaidByUserId);
+  const resolvedInitialPaidByUserId =
+    initialValues?.paidByUserId ?? initialPaidByUserId;
+  const resolvedInitialBeneficiaryUserIds =
+    initialValues?.beneficiaryUserIds ?? initialBeneficiaryUserIds;
 
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">("idle");
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? "");
-  const [paidByUserId, setPaidByUserId] = useState(initialPaidByUserId);
-  const [beneficiaryUserIds, setBeneficiaryUserIds] = useState(initialBeneficiaryUserIds);
+  const [paidByUserId, setPaidByUserId] = useState(resolvedInitialPaidByUserId);
+  const [beneficiaryUserIds, setBeneficiaryUserIds] = useState(
+    resolvedInitialBeneficiaryUserIds,
+  );
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [note, setNote] = useState("");
   const [date, setDate] = useState(initialValues?.date ?? getTodayLocal());

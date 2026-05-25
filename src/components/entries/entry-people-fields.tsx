@@ -14,7 +14,6 @@ import { cn } from "@/lib/utils";
 import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
-  getWorkspaceMemberLabel,
   sortWorkspaceMembers,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
@@ -140,7 +139,7 @@ export function EntryPeopleFields({
           <SelectContent>
             {sortedMembers.map((member) => (
               <SelectItem key={member.userId} value={member.userId}>
-                {getWorkspaceMemberLabel(member)}
+                {member.label}
               </SelectItem>
             ))}
           </SelectContent>
@@ -163,7 +162,6 @@ export function EntryPeopleFields({
         <div className={cn("grid gap-2", gridClass)}>
           {sortedMembers.map((member) => {
             const id = `beneficiary-${member.userId}`;
-            const displayLabel = getWorkspaceMemberLabel(member);
 
             return (
               <div key={member.userId} className="min-w-0">
@@ -187,7 +185,7 @@ export function EntryPeopleFields({
                     "peer-checked:border-foreground/15 peer-checked:bg-foreground peer-checked:text-background peer-checked:shadow-[0_8px_18px_-14px_rgba(0,0,0,0.6)]",
                   )}
                 >
-                  <span className="truncate">{displayLabel}</span>
+                  <span className="truncate">{member.label}</span>
                 </Label>
               </div>
             );

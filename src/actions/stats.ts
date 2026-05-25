@@ -11,6 +11,7 @@ import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
 } from "@/src/lib/workspace-context";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type StatsOverview = {
   totalRealSpent: number;
@@ -76,6 +77,29 @@ export type WorkspaceMemberSpendingStatsItem = {
 
 type DecimalLike = {
   toString?: () => string;
+};
+
+type StatsEntryRow = {
+  id: string;
+  title: string;
+  date: Date;
+  realCost: unknown;
+  alternativeCost: unknown;
+  savedAmount: unknown;
+  source: "manual" | "habit";
+  categoryId: string;
+  category: {
+    name: string;
+    slug: string;
+  };
+};
+
+type StatsPageData = {
+  overview: StatsOverview;
+  monthlyStats: MonthlyStatsItem[];
+  categoryStats: CategoryStatsItem[];
+  topSavings: TopSavingsItem[];
+  habitStats: HabitStatsItem[];
 };
 
 function round2(value: number): number {
@@ -185,6 +209,343 @@ function emptyOverview(): StatsOverview {
     entriesCount: 0,
     averageSavedPerEntry: 0,
     savingRatePercent: 0,
+  };
+}
+
+async function buildStatsEntryWhere(
+  memberUserId: string | undefined,
+  members: WorkspaceMemberOption[],
+): Promise<Prisma.EntryWhereInput> {
+  return {
+    ...buildWorkspaceMemberEntryWhere(memberUserId, members),
+    ...(await getCurrentWorkspaceScopedWhere()),
+  };
+}
+
+async function buildStatsHabitOccurrenceWhere(
+  memberUserId: string | undefined,
+  members: WorkspaceMemberOption[],
+): Promise<Prisma.HabitOccurrenceWhereInput> {
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+
+  if (!memberUserId) {
+    return {
+      habit: {
+        is: workspaceWhere,
+      },
+    };
+  }
+
+  return {
+    habit: {
+      is: workspaceWhere,
+    },
+    entry: {
+      is: await getCurrentWorkspaceScopedWhere(
+        buildWorkspaceMemberEntryWhere(memberUserId, members),
+      ),
+    },
+  };
+}
+
+function getStatsFromEntries(
+  entries: StatsEntryRow[],
+): Pick<StatsPageData, "overview" | "monthlyStats" | "categoryStats" | "topSavings"> {
+  if (entries.length === 0) {
+    return {
+      overview: emptyOverview(),
+      monthlyStats: [],
+      categoryStats: [],
+      topSavings: [],
+    };
+  }
+
+  const overview = emptyOverview();
+  const monthlyGrouped = new Map<
+    string,
+    {
+      totalRealSpent: number;
+      totalAlternativeCost: number;
+      totalSaved: number;
+      entriesCount: number;
+    }
+  >();
+  const categoryGrouped = new Map<
+    string,
+    {
+      categoryName: string;
+      categorySlug: string;
+      totalRealSpent: number;
+      totalAlternativeCost: number;
+      totalSaved: number;
+      entriesCount: number;
+    }
+  >();
+  const topSavings: TopSavingsItem[] = [];
+
+  for (const entry of entries) {
+    const realCost = toNumber(entry.realCost);
+    const alternativeCost = toNumber(entry.alternativeCost);
+    const savedAmount = toNumber(entry.savedAmount);
+
+    overview.totalRealSpent = round2(overview.totalRealSpent + realCost);
+    overview.totalAlternativeCost = round2(
+      overview.totalAlternativeCost + alternativeCost,
+    );
+    overview.totalSaved = round2(overview.totalSaved + savedAmount);
+    overview.entriesCount += 1;
+
+    const monthKey = getMonthKey(entry.date);
+    const monthlyCurrent = monthlyGrouped.get(monthKey) ?? {
+      totalRealSpent: 0,
+      totalAlternativeCost: 0,
+      totalSaved: 0,
+      entriesCount: 0,
+    };
+
+    monthlyCurrent.totalRealSpent = round2(
+      monthlyCurrent.totalRealSpent + realCost,
+    );
+    monthlyCurrent.totalAlternativeCost = round2(
+      monthlyCurrent.totalAlternativeCost + alternativeCost,
+    );
+    monthlyCurrent.totalSaved = round2(monthlyCurrent.totalSaved + savedAmount);
+    monthlyCurrent.entriesCount += 1;
+    monthlyGrouped.set(monthKey, monthlyCurrent);
+
+    const categoryCurrent = categoryGrouped.get(entry.categoryId) ?? {
+      categoryName: entry.category.name,
+      categorySlug: entry.category.slug,
+      totalRealSpent: 0,
+      totalAlternativeCost: 0,
+      totalSaved: 0,
+      entriesCount: 0,
+    };
+
+    categoryCurrent.totalRealSpent = round2(
+      categoryCurrent.totalRealSpent + realCost,
+    );
+    categoryCurrent.totalAlternativeCost = round2(
+      categoryCurrent.totalAlternativeCost + alternativeCost,
+    );
+    categoryCurrent.totalSaved = round2(categoryCurrent.totalSaved + savedAmount);
+    categoryCurrent.entriesCount += 1;
+    categoryGrouped.set(entry.categoryId, categoryCurrent);
+
+    if (savedAmount > 0) {
+      topSavings.push({
+        id: entry.id,
+        title: entry.title,
+        categoryName: entry.category.name,
+        date: entry.date,
+        realCost,
+        alternativeCost,
+        savedAmount,
+        source: entry.source,
+      });
+    }
+  }
+
+  const monthlyStats = Array.from(monthlyGrouped.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([month, totals]) => ({
+      month,
+      label: getMonthLabelFromKey(month),
+      totalRealSpent: totals.totalRealSpent,
+      totalAlternativeCost: totals.totalAlternativeCost,
+      totalSaved: totals.totalSaved,
+      entriesCount: totals.entriesCount,
+    }));
+
+  const categoryStats = Array.from(categoryGrouped.entries())
+    .map(([categoryId, totals]) => ({
+      categoryId,
+      categoryName: totals.categoryName,
+      categorySlug: totals.categorySlug,
+      totalRealSpent: totals.totalRealSpent,
+      totalAlternativeCost: totals.totalAlternativeCost,
+      totalSaved: totals.totalSaved,
+      entriesCount: totals.entriesCount,
+      averageSaved:
+        totals.entriesCount === 0
+          ? 0
+          : round2(totals.totalSaved / totals.entriesCount),
+    }))
+    .sort((left, right) => right.totalSaved - left.totalSaved);
+
+  topSavings.sort(
+    (left, right) =>
+      right.savedAmount - left.savedAmount ||
+      right.date.getTime() - left.date.getTime(),
+  );
+
+  return {
+    overview: {
+      ...overview,
+      averageSavedPerEntry:
+        overview.entriesCount === 0
+          ? 0
+          : round2(overview.totalSaved / overview.entriesCount),
+      savingRatePercent:
+        overview.totalAlternativeCost === 0
+          ? 0
+          : round2((overview.totalSaved / overview.totalAlternativeCost) * 100),
+    },
+    monthlyStats,
+    categoryStats,
+    topSavings: topSavings.slice(0, 10),
+  };
+}
+
+async function getHabitStatsFromMembers(
+  memberUserId: string | undefined,
+  members: WorkspaceMemberOption[],
+): Promise<HabitStatsItem[]> {
+  try {
+    const occurrences = await prisma.habitOccurrence.findMany({
+      where: await buildStatsHabitOccurrenceWhere(memberUserId, members),
+      select: {
+        status: true,
+        habit: {
+          select: {
+            id: true,
+            name: true,
+            amount: true,
+            category: {
+              select: {
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (occurrences.length === 0) {
+      return [];
+    }
+
+    const grouped = new Map<
+      string,
+      {
+        habitName: string;
+        categoryName: string;
+        amount: number;
+        totalOccurrences: number;
+        spentCount: number;
+        avoidedCount: number;
+        skippedCount: number;
+        pendingCount: number;
+        totalSaved: number;
+      }
+    >();
+
+    for (const occurrence of occurrences) {
+      const habitId = occurrence.habit.id;
+      const current = grouped.get(habitId) ?? {
+        habitName: occurrence.habit.name,
+        categoryName: occurrence.habit.category.name,
+        amount: toNumber(occurrence.habit.amount),
+        totalOccurrences: 0,
+        spentCount: 0,
+        avoidedCount: 0,
+        skippedCount: 0,
+        pendingCount: 0,
+        totalSaved: 0,
+      };
+
+      current.totalOccurrences += 1;
+
+      switch (occurrence.status) {
+        case "spent":
+          current.spentCount += 1;
+          break;
+        case "avoided":
+          current.avoidedCount += 1;
+          break;
+        case "skipped":
+          current.skippedCount += 1;
+          break;
+        default:
+          current.pendingCount += 1;
+          break;
+      }
+
+      if (occurrence.status === "avoided") {
+        current.totalSaved = round2(current.totalSaved + current.amount);
+      }
+
+      grouped.set(habitId, current);
+    }
+
+    return Array.from(grouped.entries())
+      .map(([habitId, totals]) => {
+        const considered = totals.avoidedCount + totals.spentCount;
+        return {
+          habitId,
+          habitName: totals.habitName,
+          categoryName: totals.categoryName,
+          amount: totals.amount,
+          totalOccurrences: totals.totalOccurrences,
+          spentCount: totals.spentCount,
+          avoidedCount: totals.avoidedCount,
+          skippedCount: totals.skippedCount,
+          pendingCount: totals.pendingCount,
+          totalSaved: totals.totalSaved,
+          disciplineRatePercent:
+            considered === 0
+              ? 0
+              : round2((totals.avoidedCount / considered) * 100),
+        };
+      })
+      .sort((left, right) => right.totalSaved - left.totalSaved);
+  } catch (error) {
+    console.error("Failed to load habit stats:", error);
+    return [];
+  }
+}
+
+export async function getStatsPageData(
+  memberUserId?: string,
+  members?: WorkspaceMemberOption[],
+): Promise<StatsPageData> {
+  const workspaceMembers = members ?? (await getCurrentWorkspaceMembers());
+  const [entryWhere, habitStats] = await Promise.all([
+    buildStatsEntryWhere(memberUserId, workspaceMembers),
+    getHabitStatsFromMembers(memberUserId, workspaceMembers),
+  ]);
+
+  const entries = await prisma.entry.findMany({
+    where: entryWhere,
+    orderBy: {
+      date: "asc",
+    },
+    select: {
+      id: true,
+      title: true,
+      date: true,
+      realCost: true,
+      alternativeCost: true,
+      savedAmount: true,
+      source: true,
+      categoryId: true,
+      category: {
+        select: {
+          name: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  const entryStats = getStatsFromEntries(entries);
+
+  return {
+    overview: entryStats.overview,
+    monthlyStats: entryStats.monthlyStats,
+    categoryStats: entryStats.categoryStats,
+    topSavings: entryStats.topSavings,
+    habitStats,
   };
 }
 

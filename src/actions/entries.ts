@@ -107,6 +107,33 @@ type SerializableEntry = {
   };
 };
 
+type SerializableEntryEdit = {
+  id: string;
+  title: string;
+  categoryId: string;
+  realCost: number;
+  alternativeCost: number;
+  date: string;
+  note: string | null;
+  source: string;
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
+};
+
+type EntryEditRecord = {
+  id: string;
+  title: string;
+  categoryId: string;
+  realCost: unknown;
+  alternativeCost: unknown;
+  date: Date;
+  note: string | null;
+  source: string;
+  paidByUserId: string | null;
+  workspaceId: string | null;
+  beneficiaries: { userId: string }[];
+};
+
 type MonthlySummary = {
   totalRealSpent: number;
   totalAlternativeCost: number;
@@ -816,7 +843,7 @@ export async function getEntriesPage(
 
 export async function getEntryById(
   entryId: string,
-): Promise<SerializableEntry | null> {
+): Promise<SerializableEntryEdit | null> {
   const id = entryId.trim();
 
   if (!id) {
@@ -830,31 +857,14 @@ export async function getEntryById(
       categoryId: true,
       realCost: true,
       alternativeCost: true,
-      savedAmount: true,
       date: true,
       note: true,
       source: true,
-      person: true,
-      paidBy: true,
       paidByUserId: true,
-      habitOccurrenceId: true,
-      createdAt: true,
-      updatedAt: true,
       workspaceId: true,
-      category: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          color: true,
-          icon: true,
-        },
-      },
     } as const;
 
-    let entry:
-      | (EntryWithCategory & { workspaceId: string | null })
-      | null = null;
+    let entry: EntryEditRecord | null = null;
 
     try {
       entry = await prisma.entry.findUnique({
@@ -898,7 +908,20 @@ export async function getEntryById(
     await requireWorkspaceAccessForRecord(entry, "Movimento");
 
     const members = await getCurrentWorkspaceMembers();
-    return serializeEntry(entry, members);
+    const people = resolveEntryPeopleFromRecord(entry, members);
+
+    return {
+      id: entry.id,
+      title: entry.title,
+      categoryId: entry.categoryId,
+      realCost: toNumber(entry.realCost),
+      alternativeCost: toNumber(entry.alternativeCost),
+      date: entry.date.toISOString(),
+      note: entry.note,
+      source: entry.source,
+      paidByUserId: people.paidByUserId,
+      beneficiaryUserIds: people.beneficiaryUserIds,
+    };
   } catch (error) {
     logEntryLoadError("getEntryById", error, { entryId: id });
     throw error;

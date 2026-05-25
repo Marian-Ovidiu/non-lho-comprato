@@ -1,12 +1,6 @@
 import Link from "next/link";
 
-import {
-  getCategoryStats,
-  getHabitStats,
-  getMonthlyStats,
-  getStatsOverview,
-  getTopSavings,
-} from "@/src/actions/stats";
+import { getStatsPageData } from "@/src/actions/stats";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
@@ -32,7 +26,9 @@ type StatsPageProps = {
   }>;
 };
 
-function getMonthDirection(monthlyStats: Awaited<ReturnType<typeof getMonthlyStats>>) {
+function getMonthDirection(
+  monthlyStats: Awaited<ReturnType<typeof getStatsPageData>>["monthlyStats"],
+) {
   const sortedStats = [...monthlyStats].sort((left, right) =>
     left.month.localeCompare(right.month),
   );
@@ -73,7 +69,7 @@ function getMonthDirection(monthlyStats: Awaited<ReturnType<typeof getMonthlySta
 }
 
 function getStrongestHabit(
-  habitStats: Awaited<ReturnType<typeof getHabitStats>>,
+  habitStats: Awaited<ReturnType<typeof getStatsPageData>>["habitStats"],
 ) {
   const sortedHabits = [...habitStats].sort(
     (left, right) =>
@@ -133,14 +129,8 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     (await searchParams).person,
     members,
   );
-  const [overview, monthlyStats, categoryStats, topSavings, habitStats] =
-    await Promise.all([
-      getStatsOverview(memberUserId),
-      getMonthlyStats(memberUserId),
-      getCategoryStats(memberUserId),
-      getTopSavings(memberUserId),
-      getHabitStats(memberUserId),
-    ]);
+  const { overview, monthlyStats, categoryStats, topSavings, habitStats } =
+    await getStatsPageData(memberUserId, members);
 
   const isCompletelyEmpty =
     overview.entriesCount === 0 && habitStats.length === 0;

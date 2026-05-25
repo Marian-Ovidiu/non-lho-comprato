@@ -8,7 +8,6 @@ import {
 import {
   getCurrentUser,
   getCurrentWorkspaceMembers,
-  getCurrentWorkspaceUiContext,
 } from "@/src/lib/workspace-context";
 
 export const dynamic = "force-dynamic";
@@ -40,9 +39,8 @@ export default async function NewEntryPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   type CategoryOption = Awaited<ReturnType<typeof getCategories>>[number];
-  const [categoriesResult, workspace, members, currentUser] = await Promise.all([
+  const [categoriesResult, members, currentUser] = await Promise.all([
     getCategories().catch(() => [] as CategoryOption[]),
-    getCurrentWorkspaceUiContext(),
     getCurrentWorkspaceMembers(),
     getCurrentUser(),
   ]);
@@ -83,15 +81,13 @@ export default async function NewEntryPage({
     <EntryForm
       categories={categories}
       members={members}
-      currentUserId={currentUser.id}
-      workspaceId={workspace.id}
+      initialPaidByUserId={paidByUserId}
+      initialBeneficiaryUserIds={resolvedBeneficiaryUserIds}
       initialValues={{
         title,
         categoryId,
         realCost,
         alternativeCost,
-        paidByUserId,
-        beneficiaryUserIds: resolvedBeneficiaryUserIds,
         date,
       }}
     />
