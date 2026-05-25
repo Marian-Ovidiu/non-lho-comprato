@@ -39,6 +39,7 @@ import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { getCategoryIdentity } from "@/src/lib/category-identity";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
 import { ExpenseSuggestionCard } from "@/src/components/entries/expense-suggestion-card";
+import { getCurrentWorkspaceMembersAction } from "@/src/actions/workspace";
 import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
@@ -200,7 +201,6 @@ function getSearchHref(draft: QuickAddDraft) {
 export function QuickAddSheet({
   categories,
   workspace,
-  members,
   currentUserId,
 }: {
   categories?: CategoryOption[];
@@ -210,24 +210,26 @@ export function QuickAddSheet({
     kind: "private" | "shared";
     isShared: boolean;
   };
-  members: WorkspaceMemberOption[];
   currentUserId: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
+  const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
+  const [membersLoading, setMembersLoading] = useState(true);
   const [draft, setDraft] = useState<QuickAddDraft>(() =>
-    getInitialDraft(members, currentUserId),
+    getInitialDraft([], currentUserId),
   );
   const firstPresetRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const didHandleSuccessRef = useRef(false);
+  const hasDraftBeenEditedRef = useRef(false);
   const closeTimerRef = useRef<number | null>(null);
   const refreshTimerRef = useRef<number | null>(null);
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
-  const alternativeCostTouchedRef = useRef(false);
+  const [alternativeCostTouched, setAlternativeCostTouched] = useState(false);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
   });
@@ -250,6 +252,20 @@ export function QuickAddSheet({
     () => new Map(presets.map((preset) => [preset.id, preset])),
     [],
   );
+  const activeMembers = useMemo(
+    () =>
+      members.length > 0
+        ? members
+        : [
+            {
+              userId: currentUserId,
+              name: null,
+              email: null,
+              label: "",
+            },
+          ],
+    [currentUserId, members],
+  );
   const [state, formAction, pending] = useActionState(
     async (_previousState: QuickAddState, formData: FormData) => {
       return createEntry(formData);
@@ -264,7 +280,7 @@ export function QuickAddSheet({
     paidByUserId: draft.paidByUserId,
     beneficiaryUserIds: draft.beneficiaryUserIds,
     enabled:
-      !alternativeCostTouchedRef.current &&
+      !alternativeCostTouched &&
       draft.alternativeCost.trim().length === 0,
   });
   const showSuggestionLookupState = expenseSuggestion.isLoading;
@@ -272,8 +288,43 @@ export function QuickAddSheet({
   const fullFormHref = useMemo(() => getSearchHref(draft), [draft]);
 
   useEffect(() => {
+    let active = true;
+
+    async function loadMembers() {
+      try {
+        const loadedMembers = await getCurrentWorkspaceMembersAction();
+
+        if (!active) {
+          return;
+        }
+
+        setMembers(loadedMembers);
+      } finally {
+        if (active) {
+          setMembersLoading(false);
+        }
+      }
+    }
+
+    void loadMembers();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (membersLoading || hasDraftBeenEditedRef.current) {
+      return;
+    }
+
+    setDraft(getInitialDraft(activeMembers, currentUserId));
+  }, [activeMembers, currentUserId, membersLoading]);
+
+  useEffect(() => {
     if (!state.success) {
       didHandleSuccessRef.current = false;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSuccessStage("idle");
       return;
     }
@@ -311,13 +362,14 @@ export function QuickAddSheet({
     refreshTimerRef.current = window.setTimeout(() => {
       setOpen(false);
       setActivePreset(null);
-      setDraft(getInitialDraft(members, currentUserId));
+      hasDraftBeenEditedRef.current = false;
+      setDraft(getInitialDraft(activeMembers, currentUserId));
 
       if (!showedCelebration) {
         router.refresh();
       }
     }, 240);
-  }, [currentUserId, members, router, state, tryTrigger]);
+  }, [activeMembers, currentUserId, router, state, tryTrigger]);
 
   useEffect(() => {
     return () => {
@@ -354,11 +406,12 @@ export function QuickAddSheet({
       return;
     }
 
+    hasDraftBeenEditedRef.current = true;
     setActivePreset(preset.id);
-    const paidByUserId = getDefaultPaidByUserId(members, currentUserId);
+    const paidByUserId = getDefaultPaidByUserId(activeMembers, currentUserId);
     const beneficiaryUserIds = preset.shared
-      ? members.map((member) => member.userId)
-      : getDefaultBeneficiaryUserIds(members, paidByUserId);
+      ? activeMembers.map((member) => member.userId)
+      : getDefaultBeneficiaryUserIds(activeMembers, paidByUserId);
 
     setDraft({
       title: preset.title,
@@ -373,13 +426,15 @@ export function QuickAddSheet({
   }
 
   function personalize() {
+    hasDraftBeenEditedRef.current = true;
     setActivePreset("custom");
-    alternativeCostTouchedRef.current = false;
-    setDraft(getInitialDraft(members, currentUserId));
+    setAlternativeCostTouched(false);
+    setDraft(getInitialDraft(activeMembers, currentUserId));
     focusTitleSoon();
   }
 
   const handlePaidByUserIdChange = useCallback((value: string) => {
+    hasDraftBeenEditedRef.current = true;
     setDraft((current) => ({
       ...current,
       paidByUserId: value,
@@ -387,6 +442,7 @@ export function QuickAddSheet({
   }, []);
 
   const handleBeneficiaryUserIdsChange = useCallback((value: string[]) => {
+    hasDraftBeenEditedRef.current = true;
     setDraft((current) => ({
       ...current,
       beneficiaryUserIds: value,
@@ -397,12 +453,13 @@ export function QuickAddSheet({
     if (
       !expenseSuggestion.suggestion ||
       expenseSuggestion.suggestion.confidence < 0.75 ||
-      alternativeCostTouchedRef.current ||
+      alternativeCostTouched ||
       draft.alternativeCost.trim().length > 0
     ) {
       return;
     }
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDraft((current) => ({
       ...current,
       alternativeCost: expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
@@ -410,6 +467,7 @@ export function QuickAddSheet({
   }, [
     draft.alternativeCost,
     expenseSuggestion.suggestion,
+    alternativeCostTouched,
   ]);
 
   return (
@@ -422,8 +480,9 @@ export function QuickAddSheet({
 
         if (!nextOpen) {
           setActivePreset(null);
-          alternativeCostTouchedRef.current = false;
-          setDraft(getInitialDraft(members, currentUserId));
+          setAlternativeCostTouched(false);
+          hasDraftBeenEditedRef.current = false;
+          setDraft(getInitialDraft(activeMembers, currentUserId));
         }
       }}
     >
@@ -601,12 +660,13 @@ export function QuickAddSheet({
                   ref={titleRef}
                   name="title"
                   value={draft.title}
-                  onChange={(event) =>
+                  onChange={(event) => {
+                    hasDraftBeenEditedRef.current = true;
                     setDraft((current) => ({
                       ...current,
                       title: event.target.value,
-                    }))
-                  }
+                    }));
+                  }}
                   placeholder="Caffè evitato"
                   autoComplete="off"
                   aria-invalid={Boolean(state.errors?.title)}
@@ -622,12 +682,13 @@ export function QuickAddSheet({
                   <Select
                     name="categoryId"
                     value={draft.categoryId}
-                    onValueChange={(value) =>
+                    onValueChange={(value) => {
+                      hasDraftBeenEditedRef.current = true;
                       setDraft((current) => ({
                         ...current,
                         categoryId: value,
-                      }))
-                    }
+                      }));
+                    }}
                   >
                     <SelectTrigger
                       id="quick-category"
@@ -661,12 +722,13 @@ export function QuickAddSheet({
                     min="0"
                     step="0.01"
                     value={draft.realCost}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      hasDraftBeenEditedRef.current = true;
                       setDraft((current) => ({
                         ...current,
                         realCost: event.target.value,
-                      }))
-                    }
+                      }));
+                    }}
                     placeholder="2.00"
                     aria-invalid={Boolean(state.errors?.realCost)}
                   />
@@ -687,7 +749,8 @@ export function QuickAddSheet({
                   step="0.01"
                   value={draft.alternativeCost}
                   onChange={(event) => {
-                    alternativeCostTouchedRef.current = true;
+                    hasDraftBeenEditedRef.current = true;
+                    setAlternativeCostTouched(true);
                     setDraft((current) => ({
                       ...current,
                       alternativeCost: event.target.value,
@@ -720,7 +783,8 @@ export function QuickAddSheet({
                   className="mt-4"
                   suggestion={expenseSuggestion.suggestion}
                   onApply={() => {
-                    alternativeCostTouchedRef.current = false;
+                    hasDraftBeenEditedRef.current = true;
+                    setAlternativeCostTouched(false);
                     setDraft((current) => ({
                       ...current,
                       alternativeCost:
@@ -730,15 +794,21 @@ export function QuickAddSheet({
                 />
               ) : null}
 
-              <EntryPeopleFields
-                key={`${draft.paidByUserId}:${draft.beneficiaryUserIds.join(",")}`}
-                members={members}
-                paidByUserId={draft.paidByUserId}
-                beneficiaryUserIds={draft.beneficiaryUserIds}
-                errors={state.errors}
-                onPaidByUserIdChange={handlePaidByUserIdChange}
-                onBeneficiaryUserIdsChange={handleBeneficiaryUserIdsChange}
-              />
+              {membersLoading ? (
+                <p className="text-xs leading-5 text-muted-text" aria-live="polite">
+                  Carico i membri del workspace…
+                </p>
+              ) : (
+                <EntryPeopleFields
+                  key={`${draft.paidByUserId}:${draft.beneficiaryUserIds.join(",")}`}
+                  members={activeMembers}
+                  paidByUserId={draft.paidByUserId}
+                  beneficiaryUserIds={draft.beneficiaryUserIds}
+                  errors={state.errors}
+                  onPaidByUserIdChange={handlePaidByUserIdChange}
+                  onBeneficiaryUserIdsChange={handleBeneficiaryUserIdsChange}
+                />
+              )}
             </div>
 
             <div className="mt-4 flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row">
@@ -747,7 +817,8 @@ export function QuickAddSheet({
                 className="h-11 w-full px-5 sm:flex-1"
                 disabled={
                   pending ||
-                  members.length === 0 ||
+                  membersLoading ||
+                  activeMembers.length === 0 ||
                   !draft.title.trim() ||
                   !draft.categoryId.trim() ||
                   !draft.alternativeCost.trim()

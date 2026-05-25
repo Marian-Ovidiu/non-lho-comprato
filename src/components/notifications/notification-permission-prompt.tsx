@@ -16,22 +16,15 @@ export function NotificationPermissionPrompt() {
   const [requesting, setRequesting] = useState(false);
 
   useEffect(() => {
-    if (!isNotificationSupported()) {
-      return;
-    }
-
-    if (Notification.permission === "default" && hasInteracted) {
-      setVisible(true);
-    }
-  }, [hasInteracted]);
-
-  useEffect(() => {
     if (hasInteracted) {
       return;
     }
 
     const markInteracted = () => {
       setHasInteracted(true);
+      if (isNotificationSupported() && Notification.permission === "default") {
+        setVisible(true);
+      }
     };
 
     window.addEventListener("pointerdown", markInteracted, { once: true });

@@ -659,6 +659,7 @@ export default async function Home({ searchParams }: HomePageProps) {
         eyebrow={getGreeting(authenticatedUser.name)}
         title="Hai tenuto"
         serifWord="qualcosa oggi."
+        context={headerContext}
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
             <Link href="/entries/new">Nuovo movimento</Link>

@@ -135,10 +135,6 @@ export function HabitCard({ habit, categories }: HabitCardProps) {
   const freqLabel =
     activeDayLabels.length > 0 ? activeDayLabels.join(", ") : "Tutti i giorni";
 
-  if (isRemoved) {
-    return null;
-  }
-
   function toggleDay(day: number) {
     setSelectedDays((current) =>
       current.includes(day)
@@ -216,6 +212,10 @@ export function HabitCard({ habit, categories }: HabitCardProps) {
       }
     };
   }, []);
+
+  if (isRemoved) {
+    return null;
+  }
 
   return (
     <>

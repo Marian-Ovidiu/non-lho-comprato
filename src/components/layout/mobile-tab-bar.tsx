@@ -7,7 +7,6 @@ import type { LucideIcon } from "lucide-react";
 
 import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
 import type { AppShellWorkspace } from "@/src/components/layout/app-shell";
-import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { triggerHaptic } from "@/src/lib/haptics";
 
 const mobileNavItems = [
@@ -51,11 +50,10 @@ function TabItem({
 
 type MobileTabBarProps = {
   workspace: AppShellWorkspace;
-  members: WorkspaceMemberOption[];
   currentUserId: string;
 };
 
-export function MobileTabBar({ workspace, members, currentUserId }: MobileTabBarProps) {
+export function MobileTabBar({ workspace, currentUserId }: MobileTabBarProps) {
   const pathname = usePathname();
   const [left1, left2, right1, right2] = mobileNavItems;
 
@@ -92,7 +90,6 @@ export function MobileTabBar({ workspace, members, currentUserId }: MobileTabBar
         <div className="flex flex-1 items-center justify-center">
           <QuickAddSheet
             workspace={workspace}
-            members={members}
             currentUserId={currentUserId}
           />
         </div>

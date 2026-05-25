@@ -19,7 +19,6 @@ import { MobileTabBar } from "@/src/components/layout/mobile-tab-bar";
 import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-reminder-on-open";
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
-import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { triggerHaptic } from "@/src/lib/haptics";
 
 export type AppShellWorkspace = {
@@ -145,14 +144,12 @@ export function AppShell({
   children,
   workspace,
   availableWorkspaces,
-  workspaceMembers,
   currentUserId,
   auth,
 }: {
   children: React.ReactNode;
   workspace: AppShellWorkspace;
   availableWorkspaces: AppShellWorkspace[];
-  workspaceMembers: WorkspaceMemberOption[];
   currentUserId: string;
   auth: AppShellAuth;
 }) {
@@ -272,7 +269,6 @@ export function AppShell({
 
       <MobileTabBar
         workspace={workspace}
-        members={workspaceMembers}
         currentUserId={currentUserId}
       />
     </div>

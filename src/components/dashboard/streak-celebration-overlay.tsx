@@ -46,10 +46,13 @@ export function StreakCelebrationOverlay({
   const exitTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    setMounted(true);
+    const frame = window.requestAnimationFrame(() => {
+      setMounted(true);
+    });
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
+      window.cancelAnimationFrame(frame);
       document.body.style.overflow = previousOverflow;
     };
   }, []);
@@ -61,29 +64,32 @@ export function StreakCelebrationOverlay({
   }, [mounted]);
 
   useEffect(() => {
-    setDisplayedStreak(streakFrom);
-    setDidPop(false);
+    const startFrame = window.requestAnimationFrame(() => {
+      setDisplayedStreak(streakFrom);
+      setDidPop(false);
 
-    if (streakFrom === streakTo) {
-      setDisplayedStreak(streakTo);
-      return;
-    }
-
-    const start = performance.now();
-
-    const tick = (now: number) => {
-      const progress = Math.min(1, (now - start) / COUNT_UP_MS);
-      setDisplayedStreak(Math.round(streakFrom + (streakTo - streakFrom) * progress));
-
-      if (progress < 1) {
-        window.requestAnimationFrame(tick);
-      } else {
-        setDidPop(true);
+      if (streakFrom === streakTo) {
+        setDisplayedStreak(streakTo);
+        return;
       }
-    };
 
-    const frame = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(frame);
+      const start = performance.now();
+
+      const tick = (now: number) => {
+        const progress = Math.min(1, (now - start) / COUNT_UP_MS);
+        setDisplayedStreak(Math.round(streakFrom + (streakTo - streakFrom) * progress));
+
+        if (progress < 1) {
+          window.requestAnimationFrame(tick);
+        } else {
+          setDidPop(true);
+        }
+      };
+
+      window.requestAnimationFrame(tick);
+    });
+
+    return () => window.cancelAnimationFrame(startFrame);
   }, [streakFrom, streakTo]);
 
   useEffect(() => {

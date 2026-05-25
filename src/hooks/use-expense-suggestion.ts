@@ -34,24 +34,23 @@ export function useExpenseSuggestion({
   const [isLoading, setIsLoading] = useState(false);
   const requestIdRef = useRef(0);
   const lastSignatureRef = useRef<string | null>(null);
+  const parsedRealCost = parseMoney(realCost);
+  const hasRequiredFields =
+    enabled &&
+    categoryId.trim().length > 0 &&
+    workspaceId.trim().length > 0 &&
+    Number.isFinite(parsedRealCost);
+  const resolvedSuggestion = hasRequiredFields ? suggestion : null;
+  const resolvedIsLoading = hasRequiredFields ? isLoading : false;
 
   useEffect(() => {
-    const parsedRealCost = parseMoney(realCost);
     const signature = [
       categoryId.trim(),
       workspaceId.trim(),
       Number.isFinite(parsedRealCost) ? parsedRealCost.toFixed(2) : "",
     ].join("|");
 
-    const hasRequiredFields =
-      enabled &&
-      categoryId.trim().length > 0 &&
-      workspaceId.trim().length > 0 &&
-      Number.isFinite(parsedRealCost);
-
     if (!hasRequiredFields) {
-      setSuggestion(null);
-      setIsLoading(false);
       lastSignatureRef.current = null;
       return;
     }
@@ -99,12 +98,16 @@ export function useExpenseSuggestion({
   }, [
     categoryId,
     enabled,
-    realCost,
+    parsedRealCost,
+    hasRequiredFields,
+    title,
+    paidByUserId,
+    beneficiaryUserIds,
     workspaceId,
   ]);
 
   return {
-    suggestion,
-    isLoading,
+    suggestion: resolvedSuggestion,
+    isLoading: resolvedIsLoading,
   };
 }

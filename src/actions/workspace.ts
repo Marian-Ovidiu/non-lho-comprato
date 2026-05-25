@@ -8,7 +8,10 @@ import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
-import { getCurrentUser } from "@/src/lib/workspace-context";
+import {
+  getCurrentUser,
+  getCurrentWorkspaceMembers,
+} from "@/src/lib/workspace-context";
 import {
   buildAbsoluteAppUrl,
   generateInviteToken,
@@ -75,6 +78,10 @@ export async function createWorkspaceAction(
     console.error("Failed to create workspace:", error);
     return { success: false, message: "Non riesco a creare lo workspace adesso. Riprova." };
   }
+}
+
+export async function getCurrentWorkspaceMembersAction() {
+  return getCurrentWorkspaceMembers();
 }
 
 type GenerateOpenInviteResult = {
