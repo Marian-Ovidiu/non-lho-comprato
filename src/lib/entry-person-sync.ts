@@ -5,7 +5,10 @@ import {
   isSecondaryMemberUserId,
   type WorkspaceMemberSlots,
 } from "@/src/lib/member-slots";
-import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import {
+  getHabitTargetUserIds,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 
 function userIdToPaidByPerson(
   userId: string,
@@ -45,5 +48,37 @@ export function syncEntryPersonColumns(
   return {
     person: beneficiaryUserIdsToPerson(beneficiaryUserIds, slots),
     paidBy: userIdToPaidByPerson(paidByUserId, slots),
+  };
+}
+
+export function syncHabitEntryPersonColumns(input: {
+  targetScope?: string | null;
+  targetUserId?: string | null;
+  currentUserId: string;
+  members: WorkspaceMemberOption[];
+}): {
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
+  person: Person;
+  paidBy: Person;
+} {
+  const beneficiaryUserIds = getHabitTargetUserIds({
+    targetScope: input.targetScope,
+    targetUserId: input.targetUserId,
+    members: input.members,
+    currentUserId: input.currentUserId,
+  });
+  const resolvedBeneficiaryUserIds =
+    beneficiaryUserIds.length > 0 ? beneficiaryUserIds : [input.currentUserId];
+  const personColumns = syncEntryPersonColumns(
+    input.currentUserId,
+    resolvedBeneficiaryUserIds,
+    input.members,
+  );
+
+  return {
+    paidByUserId: input.currentUserId,
+    beneficiaryUserIds: resolvedBeneficiaryUserIds,
+    ...personColumns,
   };
 }

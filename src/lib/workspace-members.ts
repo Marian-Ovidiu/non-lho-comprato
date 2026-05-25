@@ -5,6 +5,8 @@ export type WorkspaceMemberOption = {
   email: string | null;
 };
 
+export type HabitTargetScope = "self" | "shared";
+
 const LEGACY_MARIAN_USER_ID = "legacy-marian";
 const LEGACY_MARTINA_USER_ID = "legacy-martina";
 
@@ -75,6 +77,110 @@ export function getDefaultBeneficiaryUserIds(
   }
 
   return [fallback];
+}
+
+export function isHabitTargetScope(
+  value?: string | null,
+): value is HabitTargetScope {
+  return value === "self" || value === "shared";
+}
+
+export function normalizeHabitTargetScope(
+  value?: string | null,
+): HabitTargetScope {
+  return isHabitTargetScope(value) ? value : "self";
+}
+
+export function getDefaultHabitTargetUserId(
+  members: WorkspaceMemberOption[],
+  currentUserId?: string | null,
+): string {
+  if (currentUserId && members.some((member) => member.userId === currentUserId)) {
+    return currentUserId;
+  }
+
+  return sortWorkspaceMembers(members)[0]?.userId ?? currentUserId ?? "";
+}
+
+export function getHabitTargetUserIds(input: {
+  targetScope?: string | null;
+  targetUserId?: string | null;
+  members: WorkspaceMemberOption[];
+  currentUserId?: string | null;
+}): string[] {
+  const targetScope = normalizeHabitTargetScope(input.targetScope);
+  const memberIds = new Set(input.members.map((member) => member.userId));
+
+  if (targetScope === "shared") {
+    return input.members.map((member) => member.userId);
+  }
+
+  const targetUserId = input.targetUserId?.trim() ?? "";
+
+  if (targetUserId && memberIds.has(targetUserId)) {
+    return [targetUserId];
+  }
+
+  const fallbackUserId = getDefaultHabitTargetUserId(
+    input.members,
+    input.currentUserId,
+  );
+
+  return fallbackUserId ? [fallbackUserId] : [];
+}
+
+export function getHabitTargetLabel(
+  input: {
+    targetScope?: string | null;
+    targetUserId?: string | null;
+  },
+  members: WorkspaceMemberOption[],
+): string {
+  const targetScope = normalizeHabitTargetScope(input.targetScope);
+
+  if (targetScope === "shared") {
+    return "Condivisa";
+  }
+
+  const targetUserId = input.targetUserId?.trim() ?? "";
+  if (!targetUserId) {
+    return "Solo io";
+  }
+
+  const member = members.find((item) => item.userId === targetUserId);
+  return member?.label ?? "Solo io";
+}
+
+export function getHabitTargetDisplayLabel(input: {
+  targetScope?: string | null;
+  targetUserId?: string | null;
+  currentUserId?: string | null;
+  members: WorkspaceMemberOption[];
+}): string {
+  const targetScope = normalizeHabitTargetScope(input.targetScope);
+
+  if (targetScope === "shared") {
+    return "Condivisa";
+  }
+
+  const targetUserId = input.targetUserId?.trim() ?? "";
+  if (!targetUserId || targetUserId === input.currentUserId) {
+    return "Solo io";
+  }
+
+  const member = input.members.find((item) => item.userId === targetUserId);
+  return member?.label ?? "Solo io";
+}
+
+export function getHabitTargetOptionLabel(
+  member: WorkspaceMemberOption,
+  currentUserId?: string | null,
+): string {
+  if (currentUserId && member.userId === currentUserId) {
+    return "Solo io";
+  }
+
+  return member.label;
 }
 
 export function resolveEntryPeopleFromRecord(

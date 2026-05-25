@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HabitCard } from "@/src/components/habits/habit-card";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type CategoryOption = {
   id: string;
@@ -12,6 +13,9 @@ type CategoryOption = {
 
 type HabitListProps = {
   categories: CategoryOption[];
+  members: WorkspaceMemberOption[];
+  currentUserId: string;
+  workspaceKind: "private" | "shared";
   habits: Array<{
     id: string;
     name: string;
@@ -20,6 +24,10 @@ type HabitListProps = {
     activeDays: unknown;
     isActive: boolean;
     defaultBehavior: string;
+    targetScope: string;
+    targetUserId: string | null;
+    reminderEnabled: boolean;
+    reminderTime: string | null;
     createdAt: Date;
     updatedAt: Date;
     category: {
@@ -35,7 +43,13 @@ type HabitListProps = {
   }>;
 };
 
-export function HabitList({ habits, categories }: HabitListProps) {
+export function HabitList({
+  habits,
+  categories,
+  members,
+  currentUserId,
+  workspaceKind,
+}: HabitListProps) {
   if (habits.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-[14px] border border-dashed border-border/70 bg-surface-muted/60 px-4 py-8 text-center">
@@ -60,7 +74,14 @@ export function HabitList({ habits, categories }: HabitListProps) {
         </span>
       </div>
       {habits.map((habit) => (
-        <HabitCard key={habit.id} habit={habit} categories={categories} />
+        <HabitCard
+          key={habit.id}
+          habit={habit}
+          categories={categories}
+          members={members}
+          currentUserId={currentUserId}
+          workspaceKind={workspaceKind}
+        />
       ))}
     </div>
   );

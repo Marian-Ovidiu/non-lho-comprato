@@ -73,7 +73,7 @@ export function NotificationPermissionPrompt() {
           aria-hidden="true"
         />
         <p className="min-w-0 flex-1 text-sm text-foreground">
-          Vuoi ricevere un promemoria quando serve?
+          Attiva le notifiche per i promemoria quando l&apos;app è aperta o installata.
         </p>
         <Button
           type="button"
@@ -82,7 +82,7 @@ export function NotificationPermissionPrompt() {
           disabled={requesting}
           onClick={() => void handleRequest()}
         >
-          {requesting ? "Attendi…" : "Attiva"}
+          {requesting ? "Attendi…" : "Consenti"}
         </Button>
       </div>
     </div>

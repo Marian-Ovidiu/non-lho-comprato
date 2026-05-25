@@ -118,11 +118,17 @@ model Habit {
   activeDays      Json
   isActive        Boolean           @default(true)
   defaultBehavior String            @default("spent")
+  targetScope     String            @default("self")
+  targetUserId    String?
+  targetUser      User?             @relation("HabitTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
+  reminderEnabled Boolean           @default(false)
+  reminderTime    String?
   occurrences     HabitOccurrence[]
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   @@index([workspaceId])
+  @@index([targetUserId])
 }
 
 model HabitOccurrence {
@@ -184,6 +190,7 @@ model User {
   createdEntries       Entry[]             @relation("EntryCreatedBy")
   paidEntries          Entry[]             @relation("EntryPaidBy")
   beneficiaryEntries   EntryBeneficiary[]
+  targetHabits         Habit[]             @relation("HabitTargetUser")
 }
 
 model Workspace {

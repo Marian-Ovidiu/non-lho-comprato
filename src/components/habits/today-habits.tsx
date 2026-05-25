@@ -20,6 +20,10 @@ type TodayHabitsProps = {
       activeDays: unknown;
       isActive: boolean;
       defaultBehavior: string;
+      targetScope: string;
+      targetUserId: string | null;
+      reminderEnabled: boolean;
+      reminderTime: string | null;
       createdAt: Date;
       updatedAt: Date;
       category: {
@@ -96,6 +100,9 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                 <p className="truncate text-[15px] font-medium">{occurrence.habit.name}</p>
                 <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
                   {occurrence.habit.category.name} · {formatMoney(occurrence.habit.amount)}
+                </p>
+                <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
+                  {occurrence.habit.targetScope === "shared" ? "Per: Condivisa" : "Per: Solo io"}
                 </p>
               </div>
               <HabitOccurrenceActions

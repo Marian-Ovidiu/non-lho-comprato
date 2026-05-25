@@ -11,8 +11,14 @@ import { getCategories } from "@/src/actions/entries";
 import { HabitForm } from "@/src/components/habits/habit-form";
 import { HabitList } from "@/src/components/habits/habit-list";
 import { TodayHabits } from "@/src/components/habits/today-habits";
+import { HabitReminderBanner } from "@/src/components/notifications/habit-reminder-banner";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import {
+  getCurrentUser,
+  getCurrentWorkspace,
+  getCurrentWorkspaceMembers,
+} from "@/src/lib/workspace-context";
 import { Button } from "@/components/ui/button";
 import { spacing } from "@/src/lib/spacing";
 
@@ -22,11 +28,15 @@ export default async function HabitsPage() {
   await finalizeOldPendingOccurrences();
   await ensureTodayHabitOccurrences();
 
-  const [habits, todayOccurrences, categories] = await Promise.all([
-    getHabits(),
-    getTodayHabitOccurrences(),
-    getCategories(),
-  ]);
+  const [workspace, currentUser, members, habits, todayOccurrences, categories] =
+    await Promise.all([
+      getCurrentWorkspace(),
+      getCurrentUser(),
+      getCurrentWorkspaceMembers(),
+      getHabits(),
+      getTodayHabitOccurrences(),
+      getCategories(),
+    ]);
 
   const categoryOptions =
     categories.length > 0
@@ -59,16 +69,29 @@ export default async function HabitsPage() {
         ]}
       />
 
+      <HabitReminderBanner occurrences={todayOccurrences} />
+
       <section id="oggi" className="space-y-4">
         <TodayHabits occurrences={todayOccurrences} />
       </section>
 
       <section id="nuova-abitudine" className="space-y-4">
-        <HabitForm categories={categoryOptions} />
+        <HabitForm
+          categories={categoryOptions}
+          members={members}
+          currentUserId={currentUser.id}
+          workspaceKind={workspace.kind}
+        />
       </section>
 
       <section id="le-tue-abitudini" className="space-y-4">
-        <HabitList habits={habits} categories={categoryOptions} />
+        <HabitList
+          habits={habits}
+          categories={categoryOptions}
+          members={members}
+          currentUserId={currentUser.id}
+          workspaceKind={workspace.kind}
+        />
       </section>
     </main>
   );

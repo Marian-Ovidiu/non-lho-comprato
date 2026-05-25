@@ -29,6 +29,11 @@ import { cn } from "@/lib/utils";
 import { formatMoney } from "@/src/lib/formatters";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { getCategoryEmoji } from "@/src/lib/visual-cues";
+import { HabitScopeReminderFields } from "@/src/components/habits/habit-scope-reminder-fields";
+import {
+  getHabitTargetDisplayLabel,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 
 type CategoryOption = {
   id: string;
@@ -47,6 +52,10 @@ type HabitCardProps = {
     activeDays: unknown;
     isActive: boolean;
     defaultBehavior: string;
+    targetScope: string;
+    targetUserId: string | null;
+    reminderEnabled: boolean;
+    reminderTime: string | null;
     category: {
       id: string;
       name: string;
@@ -59,6 +68,9 @@ type HabitCardProps = {
     };
   };
   categories: CategoryOption[];
+  members: WorkspaceMemberOption[];
+  currentUserId: string;
+  workspaceKind: "private" | "shared";
   showSeparator?: boolean;
 };
 
@@ -101,7 +113,13 @@ function getInitialActiveDays(activeDays: unknown): number[] {
     .sort((left, right) => left - right);
 }
 
-export function HabitCard({ habit, categories }: HabitCardProps) {
+export function HabitCard({
+  habit,
+  categories,
+  members,
+  currentUserId,
+  workspaceKind,
+}: HabitCardProps) {
   const router = useRouter();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -117,6 +135,7 @@ export function HabitCard({ habit, categories }: HabitCardProps) {
   const [editSuccessStage, setEditSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
+  const [scopeFieldsKey, setScopeFieldsKey] = useState(0);
   const [isEditing, startEditTransition] = useTransition();
   const [isDeleting, startDeleteTransition] = useTransition();
   const refreshTimerRef = useRef<number | null>(null);
@@ -134,6 +153,17 @@ export function HabitCard({ habit, categories }: HabitCardProps) {
   const emoji = getCategoryEmoji({ slug: habit.category.slug, name: habit.category.name });
   const freqLabel =
     activeDayLabels.length > 0 ? activeDayLabels.join(", ") : "Tutti i giorni";
+  const targetLabel = getHabitTargetDisplayLabel(
+    {
+      targetScope: habit.targetScope,
+      targetUserId: habit.targetUserId,
+      currentUserId,
+      members,
+    },
+  );
+  const reminderLabel = habit.reminderEnabled
+    ? `Promemoria ${habit.reminderTime ?? "09:30"}`
+    : "Promemoria off";
 
   function toggleDay(day: number) {
     setSelectedDays((current) =>
@@ -248,6 +278,9 @@ export function HabitCard({ habit, categories }: HabitCardProps) {
             <p className="text-[11px]" style={{ color: "var(--text-3)" }}>
               {freqLabel} · {habit.isActive ? "Attiva" : "In pausa"}
             </p>
+            <p className="truncate text-[11px]" style={{ color: "var(--text-3)" }}>
+              {targetLabel} · {reminderLabel}
+            </p>
           </div>
 
           <div className="flex shrink-0 items-start gap-2">
@@ -294,6 +327,7 @@ export function HabitCard({ habit, categories }: HabitCardProps) {
                       setSelectedDays(getInitialActiveDays(habit.activeDays));
                       setEditErrors({});
                       setEditMessage("");
+                      setScopeFieldsKey((current) => current + 1);
                       setEditOpen(true);
                       setMenuOpen(false);
                     }}
@@ -441,6 +475,21 @@ export function HabitCard({ habit, categories }: HabitCardProps) {
                 </Select>
               </div>
             </div>
+
+            <HabitScopeReminderFields
+              key={scopeFieldsKey}
+              members={members}
+              workspaceKind={workspaceKind}
+              currentUserId={currentUserId}
+              initialTargetScope={habit.targetScope === "shared" ? "shared" : "self"}
+              initialTargetUserId={habit.targetUserId}
+              initialReminderEnabled={habit.reminderEnabled}
+              initialReminderTime={habit.reminderTime}
+              errors={editErrors}
+              disabled={isEditing}
+              idPrefix={`habit-${habit.id}`}
+              compact
+            />
 
             <div className="space-y-3">
               <Label>Giorni</Label>

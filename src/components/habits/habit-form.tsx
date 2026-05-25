@@ -25,6 +25,8 @@ import {
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { spacing } from "@/src/lib/spacing";
+import { HabitScopeReminderFields } from "@/src/components/habits/habit-scope-reminder-fields";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type CategoryOption = {
   id: string;
@@ -42,6 +44,9 @@ type FormState = {
 
 type HabitFormProps = {
   categories: CategoryOption[];
+  members: WorkspaceMemberOption[];
+  currentUserId: string;
+  workspaceKind: "private" | "shared";
 };
 
 const initialState: FormState = {
@@ -68,7 +73,12 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-sm text-destructive">{message}</p>;
 }
 
-export function HabitForm({ categories }: HabitFormProps) {
+export function HabitForm({
+  categories,
+  members,
+  currentUserId,
+  workspaceKind,
+}: HabitFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const refreshTimerRef = useRef<number | null>(null);
@@ -80,6 +90,11 @@ export function HabitForm({ categories }: HabitFormProps) {
   const defaultSelectedDays = [1, 2, 3, 4, 5];
   const [categoryId, setCategoryId] = useState(defaultCategoryId);
   const [selectedDays, setSelectedDays] = useState<number[]>(defaultSelectedDays);
+  const defaultTargetUserId =
+    members.find((member) => member.userId === currentUserId)?.userId ??
+    members[0]?.userId ??
+    currentUserId;
+  const [scopeFieldsKey, setScopeFieldsKey] = useState(0);
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
@@ -93,6 +108,7 @@ export function HabitForm({ categories }: HabitFormProps) {
         formRef.current?.reset();
         setCategoryId(defaultCategoryId);
         setSelectedDays(defaultSelectedDays);
+        setScopeFieldsKey((current) => current + 1);
         setSuccessStage("confirming");
 
         if (refreshTimerRef.current) {
@@ -245,6 +261,21 @@ export function HabitForm({ categories }: HabitFormProps) {
               <input type="hidden" name="defaultBehavior" value="spent" />
             </div>
           </div>
+
+          <HabitScopeReminderFields
+            key={scopeFieldsKey}
+            members={members}
+            workspaceKind={workspaceKind}
+            currentUserId={currentUserId}
+            initialTargetScope="self"
+            initialTargetUserId={defaultTargetUserId}
+            initialReminderEnabled={false}
+            initialReminderTime="09:30"
+            errors={state.errors}
+            disabled={pending}
+            idPrefix="habit-create"
+            compact
+          />
 
           <div className="space-y-3">
             <div className="space-y-1">

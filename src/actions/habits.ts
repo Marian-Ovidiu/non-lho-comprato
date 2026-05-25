@@ -7,7 +7,7 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
-import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
+import { syncHabitEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
@@ -15,7 +15,11 @@ import {
   getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
-import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import {
+  getDefaultHabitTargetUserId,
+  normalizeHabitTargetScope,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 
 type HabitActionResult = {
   success: boolean;
@@ -40,6 +44,10 @@ type HabitListItem = {
   activeDays: unknown;
   isActive: boolean;
   defaultBehavior: string;
+  targetScope: string;
+  targetUserId: string | null;
+  reminderEnabled: boolean;
+  reminderTime: string | null;
   createdAt: Date;
   updatedAt: Date;
   category: {
@@ -69,6 +77,10 @@ type TodayHabitOccurrence = {
     activeDays: unknown;
     isActive: boolean;
     defaultBehavior: string;
+    targetScope: string;
+    targetUserId: string | null;
+    reminderEnabled: boolean;
+    reminderTime: string | null;
     createdAt: Date;
     updatedAt: Date;
     category: {
@@ -96,6 +108,8 @@ type OccurrenceWithHabit = {
     name: string;
     categoryId: string;
     amount: unknown;
+    targetScope: string;
+    targetUserId: string | null;
   };
 };
 
@@ -234,6 +248,49 @@ function parseBoolean(value: string): boolean {
   return value === "1" || value === "true" || value === "on";
 }
 
+function parseCheckbox(value: string): boolean {
+  return value === "1" || value === "true" || value === "on";
+}
+
+function parseReminderTime(value: string): {
+  value: string | null;
+  error?: string;
+} {
+  const raw = value.trim();
+
+  if (!raw) {
+    return { value: null };
+  }
+
+  const match = raw.match(/^(\d{2}):(\d{2})$/);
+  if (!match) {
+    return {
+      value: null,
+      error: "Inserisci un orario valido nel formato HH:mm",
+    };
+  }
+
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+
+  if (hours > 23 || minutes > 59) {
+    return {
+      value: null,
+      error: "Inserisci un orario valido nel formato HH:mm",
+    };
+  }
+
+  return { value: raw };
+}
+
+function getOptionalFormText(formData: FormData, name: string): string | null {
+  if (!formData.has(name)) {
+    return null;
+  }
+
+  return getText(formData, name);
+}
+
 async function resolveCategory(categoryId: string, workspaceId: string) {
   let category = await prisma.category.findFirst({
     where: await getCurrentWorkspaceScopedWhere({
@@ -287,18 +344,19 @@ function buildEntryDataForOccurrence(
   },
 ) {
   const amount = Number(occurrence.habit.amount);
-  const beneficiaryUserIds = [context.currentUserId];
-  const personFields = syncEntryPersonColumns(
-    context.currentUserId,
-    beneficiaryUserIds,
-    context.members,
-  );
+  const { person, paidBy, paidByUserId, beneficiaryUserIds } =
+    syncHabitEntryPersonColumns({
+      targetScope: occurrence.habit.targetScope,
+      targetUserId: occurrence.habit.targetUserId,
+      members: context.members,
+      currentUserId: context.currentUserId,
+    });
   const sharedFields = {
     workspaceId: context.workspaceId,
     createdByUserId: context.currentUserId,
-    paidByUserId: context.currentUserId,
-    paidBy: personFields.paidBy,
-    person: personFields.person,
+    paidByUserId,
+    paidBy,
+    person,
     beneficiaries: {
       create: beneficiaryUserIds.map((userId) => ({ userId })),
     },
@@ -449,6 +507,17 @@ export async function createHabit(
   const categoryId = getText(formData, "categoryId");
   const amount = getMoney(formData, "amount");
   const activeDays = parseActiveDays(formData);
+  const targetScopeInput = getOptionalFormText(formData, "targetScope");
+  const targetUserIdInput = getOptionalFormText(formData, "targetUserId");
+  const reminderEnabledInput = getOptionalFormText(formData, "reminderEnabled");
+  const reminderTimeInput = getOptionalFormText(formData, "reminderTime");
+  const targetScope = normalizeHabitTargetScope(targetScopeInput);
+  const reminderEnabled =
+    reminderEnabledInput === null ? false : parseCheckbox(reminderEnabledInput);
+  const reminderTime =
+    reminderEnabled && reminderTimeInput !== null
+      ? parseReminderTime(reminderTimeInput)
+      : { value: null as string | null };
 
   if (!name) {
     errors.name = "Il nome è obbligatorio";
@@ -466,6 +535,25 @@ export async function createHabit(
     errors.activeDays = activeDays.error;
   }
 
+  if (targetScopeInput !== null && !targetScopeInput) {
+    errors.targetScope = "Seleziona per chi vale l'abitudine";
+  } else if (
+    targetScopeInput !== null &&
+    targetScopeInput !== "self" &&
+    targetScopeInput !== "shared"
+  ) {
+    errors.targetScope = "Seleziona per chi vale l'abitudine";
+  }
+
+  if (
+    reminderEnabled &&
+    (reminderTimeInput === null || !reminderTimeInput.trim())
+  ) {
+    errors.reminderTime = "Seleziona un orario per il promemoria";
+  } else if (reminderEnabled && reminderTime.error) {
+    errors.reminderTime = reminderTime.error;
+  }
+
   if (Object.keys(errors).length > 0) {
     return {
       success: false,
@@ -475,7 +563,11 @@ export async function createHabit(
   }
 
   try {
-    const workspaceId = await getCurrentWorkspaceId();
+    const [workspaceId, currentUser, members] = await Promise.all([
+      getCurrentWorkspaceId(),
+      getCurrentUser(),
+      getCurrentWorkspaceMembers(),
+    ]);
     const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
@@ -484,6 +576,28 @@ export async function createHabit(
         message: "Controlla i campi evidenziati",
         errors: {
           categoryId: "Seleziona una categoria valida",
+        },
+      };
+    }
+
+    const resolvedTargetUserId =
+      targetScope === "shared"
+        ? null
+        : targetUserIdInput !== null
+          ? targetUserIdInput || getDefaultHabitTargetUserId(members, currentUser.id)
+          : getDefaultHabitTargetUserId(members, currentUser.id);
+
+    if (
+      targetScope === "self" &&
+      targetUserIdInput !== null &&
+      targetUserIdInput &&
+      !members.some((member) => member.userId === targetUserIdInput)
+    ) {
+      return {
+        success: false,
+        message: "Controlla i campi evidenziati",
+        errors: {
+          targetUserId: "Seleziona un utente valido",
         },
       };
     }
@@ -497,6 +611,10 @@ export async function createHabit(
         activeDays: activeDays.value,
         isActive: true,
         defaultBehavior: "spent",
+        targetScope,
+        targetUserId: resolvedTargetUserId,
+        reminderEnabled,
+        reminderTime: reminderEnabled ? reminderTime.value : null,
       },
     });
 
@@ -633,6 +751,10 @@ export async function updateHabit(
   const amount = getMoney(formData, "amount");
   const activeDays = parseActiveDays(formData);
   const isActive = parseBoolean(getText(formData, "isActive"));
+  const targetScopeInput = getOptionalFormText(formData, "targetScope");
+  const targetUserIdInput = getOptionalFormText(formData, "targetUserId");
+  const reminderEnabledInput = getOptionalFormText(formData, "reminderEnabled");
+  const reminderTimeInput = getOptionalFormText(formData, "reminderTime");
 
   if (!name) {
     errors.name = "Il nome è obbligatorio";
@@ -664,6 +786,10 @@ export async function updateHabit(
       select: {
         id: true,
         workspaceId: true,
+        targetScope: true,
+        targetUserId: true,
+        reminderEnabled: true,
+        reminderTime: true,
       },
     });
 
@@ -676,7 +802,11 @@ export async function updateHabit(
 
     await requireWorkspaceAccessForRecord(existingHabit, "Abitudine");
 
-    const workspaceId = await getCurrentWorkspaceId();
+    const [workspaceId, currentUser, members] = await Promise.all([
+      getCurrentWorkspaceId(),
+      getCurrentUser(),
+      getCurrentWorkspaceMembers(),
+    ]);
     const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
@@ -689,6 +819,59 @@ export async function updateHabit(
       };
     }
 
+    const nextTargetScope = normalizeHabitTargetScope(
+      targetScopeInput ?? existingHabit.targetScope,
+    );
+    const nextTargetUserId =
+      nextTargetScope === "shared"
+        ? null
+        : targetUserIdInput !== null
+          ? targetUserIdInput || getDefaultHabitTargetUserId(members, currentUser.id)
+          : existingHabit.targetUserId ?? getDefaultHabitTargetUserId(members, currentUser.id);
+    const nextReminderEnabled =
+      reminderEnabledInput !== null
+        ? parseCheckbox(reminderEnabledInput)
+        : existingHabit.reminderEnabled;
+    const nextReminderTimeInput =
+      reminderTimeInput !== null ? reminderTimeInput : existingHabit.reminderTime;
+    const nextReminderTime =
+      nextReminderEnabled && nextReminderTimeInput !== null
+        ? parseReminderTime(nextReminderTimeInput)
+        : { value: null as string | null };
+
+    if (
+      targetScopeInput !== null &&
+      targetScopeInput !== "self" &&
+      targetScopeInput !== "shared"
+    ) {
+      errors.targetScope = "Seleziona per chi vale l'abitudine";
+    }
+
+    if (
+      nextTargetScope === "self" &&
+      nextTargetUserId &&
+      !members.some((member) => member.userId === nextTargetUserId)
+    ) {
+      errors.targetUserId = "Seleziona un utente valido";
+    }
+
+    if (
+      nextReminderEnabled &&
+      (nextReminderTimeInput === null || !nextReminderTimeInput.trim())
+    ) {
+      errors.reminderTime = "Seleziona un orario per il promemoria";
+    } else if (nextReminderEnabled && nextReminderTime.error) {
+      errors.reminderTime = nextReminderTime.error;
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return {
+        success: false,
+        message: "Controlla i campi evidenziati",
+        errors,
+      };
+    }
+
     await prisma.habit.update({
       where: { id },
       data: {
@@ -697,6 +880,10 @@ export async function updateHabit(
         amount: toDecimalString(amount.value),
         activeDays: activeDays.value,
         isActive,
+        targetScope: nextTargetScope,
+        targetUserId: nextTargetUserId,
+        reminderEnabled: nextReminderEnabled,
+        reminderTime: nextReminderEnabled ? nextReminderTime.value : null,
       },
     });
 
@@ -741,7 +928,20 @@ export async function getHabits(): Promise<HabitListItem[]> {
       orderBy: {
         name: "asc",
       },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        categoryId: true,
+        amount: true,
+        activeDays: true,
+        isActive: true,
+        defaultBehavior: true,
+        targetScope: true,
+        targetUserId: true,
+        reminderEnabled: true,
+        reminderTime: true,
+        createdAt: true,
+        updatedAt: true,
         category: true,
         _count: {
           select: {
@@ -828,9 +1028,28 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
       orderBy: {
         createdAt: "asc",
       },
-      include: {
+      select: {
+        id: true,
+        habitId: true,
+        date: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
         habit: {
-          include: {
+          select: {
+            id: true,
+            name: true,
+            categoryId: true,
+            amount: true,
+            activeDays: true,
+            isActive: true,
+            defaultBehavior: true,
+            targetScope: true,
+            targetUserId: true,
+            reminderEnabled: true,
+            reminderTime: true,
+            createdAt: true,
+            updatedAt: true,
             category: true,
           },
         },
@@ -883,6 +1102,8 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
             categoryId: true,
             amount: true,
             defaultBehavior: true,
+            targetScope: true,
+            targetUserId: true,
           },
         },
       },
@@ -924,6 +1145,8 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
                 name: occurrence.habit.name,
                 categoryId: occurrence.habit.categoryId,
                 amount: occurrence.habit.amount,
+                targetScope: occurrence.habit.targetScope,
+                targetUserId: occurrence.habit.targetUserId,
               },
             },
             "spent",
