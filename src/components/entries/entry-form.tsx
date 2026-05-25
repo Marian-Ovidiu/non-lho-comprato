@@ -61,15 +61,26 @@ function getTodayLocal() {
   return format(new Date(), "yyyy-MM-dd");
 }
 
-function formatCents(cents: number): string {
-  return (cents / 100).toLocaleString("it-IT", {
+function rawToCents(raw: string): number {
+  if (!raw) return 0;
+  const n = parseFloat(raw.replace(",", "."));
+  return isNaN(n) ? 0 : Math.round(n * 100);
+}
+
+function formatDisplayValue(raw: string): string {
+  if (!raw) return "0,00";
+  if (!raw.includes(",")) {
+    return parseInt(raw, 10).toLocaleString("it-IT");
+  }
+  const [intPart, decPart = ""] = raw.split(",");
+  return `${parseInt(intPart || "0", 10).toLocaleString("it-IT")},${decPart}`;
+}
+
+function formatButtonValue(raw: string): string {
+  return (rawToCents(raw) / 100).toLocaleString("it-IT", {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-}
-
-function centsToDecimalStr(cents: number): string {
-  return (cents / 100).toFixed(2);
 }
 
 function Numpad({ onKey }: { onKey: (key: string) => void }) {
@@ -121,13 +132,12 @@ export function EntryForm({
   const [note, setNote] = useState("");
   const [date, setDate] = useState(initialValues?.date ?? getTodayLocal());
 
-  const [numpadCents, setNumpadCents] = useState(() => {
+  const [rawInput, setRawInput] = useState<string>(() => {
     const raw = initialValues?.alternativeCost ?? initialValues?.realCost;
-    if (raw) {
-      const n = Math.round(parseFloat(raw.replace(",", ".")) * 100);
-      return isNaN(n) ? 0 : n;
-    }
-    return 0;
+    if (!raw) return "";
+    const n = parseFloat(raw.replace(",", "."));
+    if (isNaN(n) || n <= 0) return "";
+    return n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   });
 
   const redirect = useCallback((path: string) => router.replace(path), [router]);
@@ -140,12 +150,20 @@ export function EntryForm({
 
   function handleNumpadKey(key: string) {
     triggerHaptic("subtle");
-    setNumpadCents((prev) => {
-      if (key === "⌫") return Math.floor(prev / 10);
-      if (key === ",") return prev;
-      const digit = parseInt(key, 10);
-      if (prev >= 99999) return prev;
-      return prev * 10 + digit;
+    setRawInput((prev) => {
+      if (key === "⌫") return prev.slice(0, -1);
+      if (key === ",") {
+        if (prev.includes(",")) return prev;
+        return (prev || "0") + ",";
+      }
+      if (prev.includes(",")) {
+        const decPart = prev.split(",")[1] ?? "";
+        if (decPart.length >= 2) return prev;
+      } else {
+        if (prev.length >= 7) return prev;
+        if (prev === "0") return key === "0" ? prev : key;
+      }
+      return prev + key;
     });
   }
 
@@ -177,8 +195,7 @@ export function EntryForm({
     };
   }, []);
 
-  const formattedAmount = formatCents(numpadCents);
-  const hasAmount = numpadCents > 0;
+  const hasAmount = rawToCents(rawInput) > 0;
   const canSubmit = hasAmount && title.trim().length > 0 && categories.length > 0 && members.length > 0 && !pending;
 
   return (
@@ -195,7 +212,7 @@ export function EntryForm({
       >
         {/* Hidden form fields */}
         <input type="hidden" name="realCost" value="0" />
-        <input type="hidden" name="alternativeCost" value={centsToDecimalStr(numpadCents)} />
+        <input type="hidden" name="alternativeCost" value={(rawToCents(rawInput) / 100).toFixed(2)} />
         <input type="hidden" name="title" value={title} />
         <input type="hidden" name="categoryId" value={categoryId} />
         <input type="hidden" name="paidByUserId" value={paidByUserId} />
@@ -236,7 +253,7 @@ export function EntryForm({
               className="font-num font-semibold leading-none text-accent"
               style={{ fontSize: 88, letterSpacing: "-0.06em" }}
             >
-              {formattedAmount}
+              {formatDisplayValue(rawInput)}
             </span>
             <span className="font-num text-[30px] font-medium text-muted-foreground">€</span>
           </div>
@@ -320,7 +337,7 @@ export function EntryForm({
               </>
             ) : (
               <>
-                {hasAmount ? `Aggiungi ${formattedAmount}€ ai segnali` : "Inserisci un importo"}
+                {hasAmount ? `Aggiungi ${formatButtonValue(rawInput)}€ ai segnali` : "Inserisci un importo"}
                 {hasAmount ? <ArrowRight className="size-4" aria-hidden="true" /> : null}
               </>
             )}

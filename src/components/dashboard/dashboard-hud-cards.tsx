@@ -27,7 +27,7 @@ function HudCard({
   return (
     <div
       style={{ animationDelay: `${delay}ms` }}
-      className={`dashboard-card-reveal flex flex-col gap-2.5 rounded-xl p-4 motion-reduce:animate-none${
+      className={`dashboard-card-reveal flex flex-col gap-2.5 overflow-hidden rounded-xl p-4 motion-reduce:animate-none${
         accent
           ? " bg-accent text-accent-foreground"
           : " border border-border bg-surface text-foreground"

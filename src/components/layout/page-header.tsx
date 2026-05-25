@@ -47,7 +47,7 @@ export function PageHeader({
           </p>
         ) : null}
 
-        <div className={`flex items-end gap-4${!hasChips && action ? " justify-between" : ""}`}>
+        <div className={`flex items-center gap-4${!hasChips && action ? " justify-between" : ""}`}>
           <div className="min-w-0">
             {backHref ? (
               <Link
@@ -72,17 +72,18 @@ export function PageHeader({
                 ) : null}
               </h1>
             )}
-            {context ? (
-              <p className="mt-1.5 max-w-2xl text-sm leading-5 text-muted-foreground">
-                {context}
-              </p>
-            ) : null}
           </div>
 
           {!hasChips && action ? (
             <div className="shrink-0">{action}</div>
           ) : null}
         </div>
+
+        {context ? (
+          <p className="max-w-2xl text-sm leading-5 text-muted-foreground">
+            {context}
+          </p>
+        ) : null}
 
         {hasChips ? (
           <div className="flex flex-wrap items-center gap-2">
