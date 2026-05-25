@@ -182,9 +182,9 @@ export function EntryForm({
     if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
     const showedCelebration = tryTrigger(state);
     if (!showedCelebration) triggerHaptic("light");
-    successTimerRef.current = window.setTimeout(() => setSuccessStage("closing"), 120);
+    successTimerRef.current = window.setTimeout(() => setSuccessStage("closing"), 1400);
     if (!showedCelebration) {
-      redirectTimerRef.current = window.setTimeout(() => redirect("/"), 320);
+      redirectTimerRef.current = window.setTimeout(() => redirect("/"), 1800);
     }
   }, [redirect, state, tryTrigger]);
 
@@ -245,21 +245,49 @@ export function EntryForm({
 
         {/* Amount display */}
         <div className="px-5 pb-7 pt-1 text-center">
-          <p className="font-serif italic text-sm text-muted-foreground">
-            non ho comprato per
-          </p>
-          <div className="mt-3 flex items-baseline justify-center gap-2">
-            <span
-              className="font-num font-semibold leading-none text-accent"
-              style={{ fontSize: 88, letterSpacing: "-0.06em" }}
-            >
-              {formatDisplayValue(rawInput)}
-            </span>
-            <span className="font-num text-[30px] font-medium text-muted-foreground">€</span>
-          </div>
-          <p className="mt-2.5 text-[13px] text-muted-foreground">
-            tenuti nel portafoglio
-          </p>
+          {successStage !== "idle" ? (
+            <div className="flex flex-col items-center gap-4 py-4">
+              <div
+                className="flex items-center justify-center rounded-full bg-accent text-accent-foreground"
+                style={{ width: 56, height: 56, fontSize: 26 }}
+                aria-hidden="true"
+              >
+                ✓
+              </div>
+              <div>
+                <div className="flex items-baseline justify-center gap-2">
+                  <span
+                    className="font-num font-semibold leading-none text-accent"
+                    style={{ fontSize: 72, letterSpacing: "-0.06em" }}
+                  >
+                    {formatButtonValue(rawInput)}
+                  </span>
+                  <span className="font-num text-[26px] font-medium text-muted-foreground">€</span>
+                </div>
+                <p className="mt-2 text-[15px] font-semibold text-foreground">
+                  Aggiunto al portafoglio
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="font-serif italic text-sm text-muted-foreground">
+                non ho comprato per
+              </p>
+              <div className="mt-3 flex items-baseline justify-center gap-2">
+                <span
+                  className="font-num font-semibold leading-none text-accent"
+                  style={{ fontSize: 88, letterSpacing: "-0.06em" }}
+                >
+                  {formatDisplayValue(rawInput)}
+                </span>
+                <span className="font-num text-[30px] font-medium text-muted-foreground">€</span>
+              </div>
+              <p className="mt-2.5 text-[13px] text-muted-foreground">
+                tenuti nel portafoglio
+              </p>
+            </>
+          )}
         </div>
 
         {/* Category picker */}

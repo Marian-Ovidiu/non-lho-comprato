@@ -8,6 +8,7 @@ import type { LucideIcon } from "lucide-react";
 import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
 import type { AppShellWorkspace } from "@/src/components/layout/app-shell";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import { triggerHaptic } from "@/src/lib/haptics";
 
 const mobileNavItems = [
   { href: "/", label: "Oggi", icon: Home },
@@ -38,6 +39,7 @@ function TabItem({
       href={href}
       prefetch
       aria-current={active ? "page" : undefined}
+      onClick={() => !active && triggerHaptic("subtle")}
       className="flex flex-1 flex-col items-center justify-center gap-[3px] transition-opacity duration-150 active:opacity-70"
       style={{ color: active ? "var(--foreground)" : "var(--text-3)" }}
     >

@@ -581,6 +581,47 @@ export function StatsLoadingSkeleton() {
   );
 }
 
+export function GoalsLoadingSkeleton() {
+  return (
+    <main className="space-y-5 sm:space-y-6">
+      <PageHeaderSkeleton chips={2} action />
+
+      {/* Hero goal card */}
+      <Skeleton className="h-[200px] w-full rounded-[14px]" />
+
+      {/* Ring goal list */}
+      <div className="space-y-2.5">
+        {[1, 2].map((i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3.5 rounded-[14px] border border-border bg-surface p-4"
+          >
+            <Skeleton className="size-14 shrink-0 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-36 rounded-lg" />
+              <Skeleton className="h-3 w-24 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </main>
+  );
+}
+
+export function MoreLoadingSkeleton() {
+  return (
+    <main className="space-y-5 sm:space-y-6">
+      <PageHeaderSkeleton chips={0} action={false} />
+
+      <div className="space-y-2.5">
+        {[1, 2, 3, 4].map((i) => (
+          <Skeleton key={i} className="h-14 w-full rounded-[14px]" />
+        ))}
+      </div>
+    </main>
+  );
+}
+
 export function HabitsLoadingSkeleton() {
   return (
     <main className="space-y-5 sm:space-y-6">
