@@ -699,7 +699,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       <DashboardHudCards
         totalSavedToday={todaySummary.totalSavedToday}
         totalSavedMonth={monthSaved}
-        entriesCount={allEntries.length}
+        entriesTodayCount={todaySummary.entriesTodayCount}
       />
 
       <StreakHeroCard currentStreak={currentStreak} />

@@ -1,79 +1,77 @@
-import { Card } from "@/components/ui/card";
-import { getGlobalStreak } from "@/src/actions/streaks";
 import { formatMoney } from "@/src/lib/formatters";
-import { spacing } from "@/src/lib/spacing";
 
 type DashboardHudCardsProps = {
   totalSavedToday: number;
   totalSavedMonth: number;
-  entriesCount: number;
+  entriesTodayCount: number;
 };
 
 function HudCard({
   label,
   value,
-  tone = "default",
+  sub,
+  accent = false,
   delay = 0,
 }: {
   label: string;
   value: string;
-  tone?: "default" | "success";
+  sub?: string;
+  accent?: boolean;
   delay?: number;
 }) {
   return (
-    <Card
+    <div
       style={{ animationDelay: `${delay}ms` }}
-      className={
-        tone === "success"
-          ? "dashboard-card-reveal overflow-hidden border-success/20 bg-success/10 shadow-sm motion-reduce:animate-none"
-          : "dashboard-card-reveal overflow-hidden border-border bg-surface shadow-sm motion-reduce:animate-none"
-      }
+      className={`dashboard-card-reveal flex flex-col gap-2.5 rounded-xl p-4 motion-reduce:animate-none${
+        accent
+          ? " bg-accent text-accent-foreground"
+          : " border border-border bg-surface text-foreground"
+      }`}
     >
-      <div className={`flex h-full min-h-[4.75rem] flex-col justify-between gap-2 ${spacing.cardBodyCompact}`}>
-        <p
-          className={
-            tone === "success"
-              ? "text-[11px] font-medium uppercase tracking-[0.16em] text-success/90"
-              : "text-[11px] font-medium uppercase tracking-[0.16em] text-muted-text"
-          }
-        >
+      <div className="flex items-center justify-between">
+        <p className="text-[11px] font-medium uppercase tracking-[0.12em] opacity-70">
           {label}
         </p>
-        <p
-          className={
-            tone === "success"
-              ? "text-[1.6rem] font-semibold tracking-tight text-success sm:text-[1.75rem]"
-              : "text-[1.6rem] font-semibold tracking-tight text-foreground sm:text-[1.75rem]"
-          }
-        >
-          {value}
-        </p>
+        {accent ? (
+          <span className="size-1.5 rounded-full bg-current opacity-40" aria-hidden="true" />
+        ) : null}
       </div>
-    </Card>
+      <p className="font-num text-[2rem] font-semibold leading-none">
+        {value}
+      </p>
+      {sub ? (
+        <p className="text-xs leading-none opacity-65">{sub}</p>
+      ) : null}
+    </div>
   );
 }
 
-export async function DashboardHudCards({
+export function DashboardHudCards({
   totalSavedToday,
   totalSavedMonth,
-  entriesCount,
+  entriesTodayCount,
 }: DashboardHudCardsProps) {
-  const { currentStreak } = await getGlobalStreak();
+  const todaySub =
+    entriesTodayCount === 0
+      ? "nessun movimento"
+      : entriesTodayCount === 1
+        ? "1 movimento"
+        : `${entriesTodayCount} movimenti`;
 
   return (
-    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2.5">
       <HudCard
         label="Oggi"
         value={formatMoney(totalSavedToday)}
-        tone="success"
+        sub={todaySub}
+        accent
         delay={0}
       />
-
-      <HudCard label="Questo mese" value={formatMoney(totalSavedMonth)} delay={60} />
-
-      <HudCard label="Segnali totali" value={String(entriesCount)} delay={120} />
-
-      <HudCard label="Giorni consecutivi" value={String(currentStreak)} delay={180} />
+      <HudCard
+        label="Questo mese"
+        value={formatMoney(totalSavedMonth)}
+        delay={60}
+      />
     </div>
   );
 }
