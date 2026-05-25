@@ -6,7 +6,6 @@ import { Check, Copy, Loader2, Share2 } from "lucide-react";
 import { useState } from "react";
 
 import { createWorkspaceAction, generateOpenInviteAction } from "@/src/actions/workspace";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type CreateState = {

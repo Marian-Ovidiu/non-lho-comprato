@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
@@ -158,17 +158,6 @@ function RecentEntriesSkeleton() {
   );
 }
 
-function SearchSkeleton() {
-  return (
-    <div className="space-y-2">
-      <div className="relative">
-        <Skeleton className="h-11 w-full rounded-2xl" />
-      </div>
-      <Skeleton className="h-3 w-40 rounded-full" />
-    </div>
-  );
-}
-
 function EntryCardSkeleton() {
   return (
     <Card className="overflow-hidden border-border/80 shadow-sm">
@@ -227,7 +216,7 @@ function DayGroupSkeleton({ entries = 3 }: { entries?: number }) {
   );
 }
 
-function OverviewCardSkeleton({ primary = false }: { primary?: boolean }) {
+function OverviewCardSkeleton() {
   return (
     <Card
       className={cn(
@@ -561,7 +550,7 @@ export function StatsLoadingSkeleton() {
       <HeroStatsSkeleton />
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-2 lg:grid-cols-2">
-        <OverviewCardSkeleton primary />
+        <OverviewCardSkeleton />
         <OverviewCardSkeleton />
         <OverviewCardSkeleton />
         <OverviewCardSkeleton />

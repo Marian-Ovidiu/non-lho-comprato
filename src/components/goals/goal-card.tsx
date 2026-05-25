@@ -4,7 +4,6 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { deleteGoal, toggleGoalActive } from "@/src/actions/goals";
-import { Button } from "@/components/ui/button";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import { AnimatedNumber } from "@/src/components/shared/animated-number";
 import { getGoalEmoji } from "@/src/lib/visual-cues";

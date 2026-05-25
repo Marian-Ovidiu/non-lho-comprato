@@ -22,6 +22,16 @@ function getSearchValue(
   return value;
 }
 
+function getSafeReturnTo(value: string | string[] | undefined): string {
+  const returnTo = getSearchValue(value);
+
+  if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+    return returnTo;
+  }
+
+  return "/";
+}
+
 function getSearchUserIds(
   value: string | string[] | undefined,
   members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
@@ -53,6 +63,7 @@ export default async function NewEntryPage({
   const realCost = getSearchValue(query.realCost)?.trim();
   const alternativeCost = getSearchValue(query.alternativeCost)?.trim();
   const date = getSearchValue(query.date)?.trim();
+  const returnTo = getSafeReturnTo(query.returnTo);
   const paidByUserIdRaw = getSearchValue(query.paidByUserId);
   const paidByUserId =
     paidByUserIdRaw && members.some((member) => member.userId === paidByUserIdRaw)
@@ -83,6 +94,7 @@ export default async function NewEntryPage({
       members={members}
       initialPaidByUserId={paidByUserId}
       initialBeneficiaryUserIds={resolvedBeneficiaryUserIds}
+      returnTo={returnTo}
       initialValues={{
         title,
         categoryId,

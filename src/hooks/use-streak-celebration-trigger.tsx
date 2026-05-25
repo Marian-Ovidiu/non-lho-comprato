@@ -21,7 +21,7 @@ type UseStreakCelebrationTriggerOptions = {
 };
 
 export function useStreakCelebrationTrigger(
-  options: UseStreakCelebrationTriggerOptions = {},
+  { onComplete }: UseStreakCelebrationTriggerOptions = {},
 ) {
   const [celebration, setCelebration] = useState<{
     streakFrom: number;
@@ -54,8 +54,8 @@ export function useStreakCelebrationTrigger(
 
   const closeCelebration = useCallback(() => {
     setCelebration(null);
-    options.onComplete?.();
-  }, [options.onComplete]);
+    onComplete?.();
+  }, [onComplete]);
 
   const overlay =
     celebration !== null ? (

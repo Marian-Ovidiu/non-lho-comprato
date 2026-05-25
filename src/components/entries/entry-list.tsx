@@ -41,6 +41,7 @@ type EntryListProps = {
   initialNextCursor: string | null;
   initialHasMore: boolean;
   members: WorkspaceMemberOption[];
+  newEntryHref: string;
 };
 
 type DayGroup = {
@@ -108,6 +109,7 @@ export function EntryList({
   initialNextCursor,
   initialHasMore,
   members,
+  newEntryHref,
 }: EntryListProps) {
   const [entries, setEntries] = useState(initialEntries);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
@@ -276,7 +278,7 @@ export function EntryList({
               title="Niente ancora."
               description="Qui appariranno tutti i tuoi movimenti, raggruppati per giorno, con quanto hai tenuto."
               actionLabel="Aggiungi il primo movimento"
-              actionHref="/entries/new"
+              actionHref={newEntryHref}
               markSize={96}
             />
 

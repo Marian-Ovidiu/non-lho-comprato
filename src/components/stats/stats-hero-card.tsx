@@ -1,5 +1,3 @@
-import { formatMoney } from "@/src/lib/formatters";
-
 type StatsHeroCardProps = {
   totalSaved: number;
   summary: string;

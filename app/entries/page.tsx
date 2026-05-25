@@ -11,6 +11,8 @@ import { spacing } from "@/src/lib/spacing";
 
 export const dynamic = "force-dynamic";
 
+const newEntryHref = "/entries/new?returnTo=%2Fentries";
+
 export default async function EntriesPage() {
   const membersPromise = getCurrentWorkspaceMembers();
   let entriesPage: Awaited<ReturnType<typeof getEntriesPage>> | null = null;
@@ -35,7 +37,7 @@ export default async function EntriesPage() {
         serifWord="nel registro."
         action={
           <Button asChild className="h-10 rounded-2xl px-4">
-            <Link href="/entries/new">Aggiungi movimento</Link>
+            <Link href={newEntryHref}>Aggiungi movimento</Link>
           </Button>
         }
         chips={[
@@ -55,6 +57,7 @@ export default async function EntriesPage() {
         initialNextCursor={entriesPage?.nextCursor ?? null}
         initialHasMore={entriesPage?.hasMore ?? false}
         members={members}
+        newEntryHref={newEntryHref}
       />
     </main>
   );

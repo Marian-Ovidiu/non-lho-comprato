@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { format } from "date-fns";
 import {
@@ -163,7 +163,7 @@ function getMoneyValue(amount: number) {
   return amount.toFixed(2);
 }
 
-function getSearchHref(draft: QuickAddDraft) {
+function getSearchHref(draft: QuickAddDraft, returnTo?: string) {
   const params = new URLSearchParams();
 
   if (draft.title.trim()) {
@@ -194,6 +194,10 @@ function getSearchHref(draft: QuickAddDraft) {
     params.set("date", draft.date);
   }
 
+  if (returnTo && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+    params.set("returnTo", returnTo);
+  }
+
   const query = params.toString();
   return query ? `/entries/new?${query}` : "/entries/new";
 }
@@ -213,6 +217,7 @@ export function QuickAddSheet({
   currentUserId: string;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
@@ -285,7 +290,7 @@ export function QuickAddSheet({
   });
   const showSuggestionLookupState = expenseSuggestion.isLoading;
 
-  const fullFormHref = useMemo(() => getSearchHref(draft), [draft]);
+  const fullFormHref = useMemo(() => getSearchHref(draft, pathname), [draft, pathname]);
 
   useEffect(() => {
     let active = true;

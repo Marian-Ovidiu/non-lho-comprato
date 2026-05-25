@@ -49,6 +49,7 @@ type EntryFormProps = {
   members: WorkspaceMemberOption[];
   initialPaidByUserId: string;
   initialBeneficiaryUserIds: string[];
+  returnTo: string;
   initialValues?: {
     title?: string;
     categoryId?: string;
@@ -126,6 +127,7 @@ export function EntryForm({
   members,
   initialPaidByUserId,
   initialBeneficiaryUserIds,
+  returnTo,
   initialValues,
 }: EntryFormProps) {
   const router = useRouter();
@@ -165,8 +167,8 @@ export function EntryForm({
     return n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
   });
 
-  const redirect = useCallback((path: string) => router.replace(path), [router]);
-  const { tryTrigger, overlay } = useStreakCelebrationTrigger({ onComplete: () => redirect("/") });
+  const redirect = useCallback(() => router.replace(returnTo), [router, returnTo]);
+  const { tryTrigger, overlay } = useStreakCelebrationTrigger({ onComplete: redirect });
 
   const [state, formAction, pending] = useActionState(
     async (_prev: FormState, formData: FormData) => createEntry(formData),
@@ -208,7 +210,7 @@ export function EntryForm({
     if (!showedCelebration) triggerHaptic("light");
     successTimerRef.current = window.setTimeout(() => setSuccessStage("closing"), 1400);
     if (!showedCelebration) {
-      redirectTimerRef.current = window.setTimeout(() => redirect("/"), 1800);
+      redirectTimerRef.current = window.setTimeout(redirect, 1800);
     }
   }, [redirect, state, tryTrigger]);
 
@@ -251,7 +253,7 @@ export function EntryForm({
         {/* Sheet header */}
         <div className="flex items-center justify-between px-5 pb-4 pt-5">
           <Link
-            href="/entries"
+            href={returnTo}
             className="text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Annulla
@@ -264,7 +266,11 @@ export function EntryForm({
 
         {/* Error banner */}
         {state.message && !state.success ? (
-          <div className="mx-5 mb-3 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          <div
+            className="mx-5 mb-3 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+            role="alert"
+            aria-live="polite"
+          >
             {state.message}
           </div>
         ) : null}
@@ -359,9 +365,19 @@ export function EntryForm({
               placeholder="Caffè in stazione"
               autoComplete="off"
               className="w-full bg-transparent text-[16px] text-foreground outline-none placeholder:text-muted-foreground/40"
+              aria-invalid={Boolean(state.errors?.title)}
             />
+            {state.errors?.title ? (
+              <p className="mt-2 text-sm text-destructive">{state.errors.title}</p>
+            ) : null}
           </div>
         </div>
+
+        {state.errors?.categoryId ? (
+          <div className="px-5 pb-2">
+            <p className="text-sm text-destructive">{state.errors.categoryId}</p>
+          </div>
+        ) : null}
 
         <div className="px-5 pb-4">
           <div className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2">
