@@ -3,12 +3,12 @@ import { BarChart3, Download, Layers3, MoonStar, Plus, Repeat2, UserRoundCog, Us
 
 import { signOutAction } from "@/src/actions/auth";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
-import { AiAnalysisExportCard } from "@/src/components/more/ai-analysis-export-card";
-import { PwaInstallContent } from "@/src/components/pwa/install-button";
+import { AiAnalysisExportCard } from "@/src/components/more/ai-analysis-export-card-lazy";
+import { PwaInstallContent } from "@/src/components/pwa/install-content-lazy";
 import { PageHeader } from "@/src/components/layout/page-header";
-import { ThemeSelector } from "@/src/components/theme/theme-toggle";
-import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button";
-import { JoinWorkspaceForm } from "@/src/components/workspace/join-workspace-form";
+import { ThemeSelector } from "@/src/components/theme/theme-selector-lazy";
+import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button-lazy";
+import { JoinWorkspaceForm } from "@/src/components/workspace/join-workspace-form-lazy";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -70,14 +70,13 @@ function ToolCard({
 }
 
 export default async function MorePage() {
-  const authUser = await getAuthenticatedUser();
-  let workspace = null as Awaited<ReturnType<typeof getCurrentWorkspace>> | null;
-
-  try {
-    workspace = await getCurrentWorkspace();
-  } catch {
-    workspace = null;
-  }
+  const [authUser, workspaceResult] = await Promise.all([
+    getAuthenticatedUser(),
+    getCurrentWorkspace().catch(() => null),
+  ]);
+  const workspace = workspaceResult as
+    | Awaited<ReturnType<typeof getCurrentWorkspace>>
+    | null;
 
   const profileLabel = authUser?.name ?? authUser?.email ?? "Account";
   const workspaceLabel = workspace

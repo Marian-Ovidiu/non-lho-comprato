@@ -2,7 +2,10 @@ export const dynamic = "force-dynamic";
 
 import Link from "next/link";
 
-import { getAvailableReportMonths, getMonthlyReport } from "@/src/actions/reports";
+import {
+  getAvailableReportMonths,
+  getMonthlyReport,
+} from "@/src/actions/reports";
 import { getCategories } from "@/src/actions/entries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,10 +29,12 @@ export default async function MonthlyReportPage({
 }: MonthlyReportPageProps) {
   const resolvedSearchParams = await searchParams;
   const monthParam = getMonthParam(resolvedSearchParams.month);
-  const months = await getAvailableReportMonths();
-  const categories = await getCategories();
+  const [months, categories] = await Promise.all([
+    getAvailableReportMonths(),
+    getCategories(),
+  ]);
   const selectedMonth = monthParam ?? months[0]?.value ?? "";
-  const [{ report }] = await Promise.all([getMonthlyReport(selectedMonth)]);
+  const { report } = await getMonthlyReport(selectedMonth, months);
 
   return (
     <main className="space-y-5 sm:space-y-6">

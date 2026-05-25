@@ -2,10 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { buildPersonWhere } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 import {
-  LEGACY_PERSON_VALUES,
   isSharedPerson,
   normalizeLegacyPerson,
   type LegacyPersonValue,
@@ -223,9 +221,18 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
-    const [goals, allSaved] = await Promise.all([
+    const [goals, savedByPerson] = await Promise.all([
       prisma.goal.findMany({
         where: workspaceWhere,
+        select: {
+          id: true,
+          title: true,
+          targetAmount: true,
+          emoji: true,
+          person: true,
+          isActive: true,
+          createdAt: true,
+        },
         orderBy: [
           {
             isActive: "desc",
@@ -235,35 +242,26 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
           },
         ],
       }),
-      prisma.entry.aggregate({
+      prisma.entry.groupBy({
         where: workspaceWhere,
-        _sum: {
-          savedAmount: true,
-        },
+        by: ["person"],
+        _sum: { savedAmount: true },
       }),
     ]);
 
-    const personTotals = await Promise.all(
-      LEGACY_PERSON_VALUES.map(async (person) => ({
-        person,
-        total: await prisma.entry.aggregate({
-          where: await getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
-          _sum: {
-            savedAmount: true,
-          },
-        }),
-      })),
-    );
-
     const totals: Record<LegacyPersonValue, number> & { all: number } = {
-      all: round2(toNumber(allSaved._sum.savedAmount)),
+      all: 0,
       MARIAN: 0,
       MARTINA: 0,
       TUTTI: 0,
     };
 
-    for (const { person, total } of personTotals) {
-      totals[person] = round2(toNumber(total._sum.savedAmount));
+    for (const row of savedByPerson) {
+      const savedAmount = round2(toNumber(row._sum.savedAmount));
+      if (row.person) {
+        totals[row.person] = savedAmount;
+      }
+      totals.all = round2(totals.all + savedAmount);
     }
 
     return goals.map((goal) => {

@@ -575,6 +575,7 @@ export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOpti
 
 export async function getMonthlyReport(
   requestedMonth?: string,
+  availableMonths?: MonthlyReportMonthOption[],
 ): Promise<MonthlyReportPageData> {
   const selectedMonth = normalizeMonthKey(requestedMonth);
   const previousMonth = getPreviousMonthKey(selectedMonth);
@@ -648,8 +649,12 @@ export async function getMonthlyReport(
       }),
     ]);
 
-    const availableMonths = await getAvailableReportMonths();
-    const monthOptions = ensureSelectedMonthOption(availableMonths, selectedMonth);
+    const resolvedAvailableMonths =
+      availableMonths ?? (await getAvailableReportMonths());
+    const monthOptions = ensureSelectedMonthOption(
+      resolvedAvailableMonths,
+      selectedMonth,
+    );
 
     const monthOccurrences = await prisma.habitOccurrence.findMany({
       where: habitOccurrenceWhere,
