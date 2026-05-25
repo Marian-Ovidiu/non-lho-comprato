@@ -99,7 +99,7 @@ function getFirstSearchParamValue(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
 }
 
-function getGreeting() {
+function getGreeting(name?: string | null) {
   const hour = Number(
     new Intl.DateTimeFormat("it-IT", {
       hour: "numeric",
@@ -108,15 +108,12 @@ function getGreeting() {
     }).format(new Date()),
   );
 
-  if (hour < 12) {
-    return "Buongiorno, Marian";
-  }
+  const firstName = name?.trim().split(" ")[0] ?? null;
+  const suffix = firstName ? `, ${firstName}` : "";
 
-  if (hour < 18) {
-    return "Buon pomeriggio, Marian";
-  }
-
-  return "Buonasera, Marian";
+  if (hour < 12) return `Buongiorno${suffix}`;
+  if (hour < 18) return `Buon pomeriggio${suffix}`;
+  return `Buonasera${suffix}`;
 }
 
 function getHomePhase({
@@ -659,7 +656,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       />
 
       <PageHeader
-        eyebrow={getGreeting()}
+        eyebrow={getGreeting(authenticatedUser.name)}
         title="Hai tenuto"
         serifWord="qualcosa oggi."
         action={

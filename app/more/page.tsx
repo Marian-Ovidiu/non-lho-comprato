@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Download, Layers3, MoonStar, Repeat2 } from "lucide-react";
+import { BarChart3, Download, Layers3, MoonStar, Plus, Repeat2, Users } from "lucide-react";
 
 import { signOutAction } from "@/src/actions/auth";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
@@ -7,6 +7,8 @@ import { AiAnalysisExportCard } from "@/src/components/more/ai-analysis-export-c
 import { PwaInstallContent } from "@/src/components/pwa/install-button";
 import { PageHeader } from "@/src/components/layout/page-header";
 import { ThemeSelector } from "@/src/components/theme/theme-toggle";
+import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button";
+import { JoinWorkspaceForm } from "@/src/components/workspace/join-workspace-form";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -145,14 +147,6 @@ export default async function MorePage() {
               </div>
 
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-10 w-full rounded-2xl px-4 sm:w-auto"
-                >
-                  <Link href="/invite">Invita una persona</Link>
-                </Button>
-
                 <form action={signOutAction}>
                   <Button
                     type="submit"
@@ -190,6 +184,86 @@ export default async function MorePage() {
             </CardContent>
           </Card>
         )}
+      </section>
+
+      <section className="space-y-4">
+        <div className="space-y-1">
+          <h2 className="text-lg font-semibold text-foreground dark:text-foreground">
+            Workspace
+          </h2>
+          <p className="text-sm text-muted-text dark:text-muted-text">
+            Invita persone o unisciti a uno spazio condiviso.
+          </p>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {workspace ? (
+            <Card className="overflow-hidden border-border shadow-sm dark:border-border">
+              <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
+                <div className="flex items-start gap-3">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
+                    <Users className="size-5" aria-hidden="true" />
+                  </div>
+                  <div className="min-w-0 space-y-1">
+                    <CardTitle className="text-base text-foreground dark:text-foreground">
+                      Invita
+                    </CardTitle>
+                    <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
+                      Genera un link per far entrare qualcuno nel workspace.
+                    </p>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
+                <GenerateInviteButton />
+              </CardContent>
+            </Card>
+          ) : null}
+
+          <Card className="overflow-hidden border-border shadow-sm dark:border-border">
+            <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
+                  <Plus className="size-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-base text-foreground dark:text-foreground">
+                    Crea workspace
+                  </CardTitle>
+                  <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
+                    Crea uno spazio condiviso e invita persone con un link.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
+              <Button asChild className="h-10 w-full rounded-2xl px-4">
+                <Link href="/workspace/new">Crea workspace</Link>
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="overflow-hidden border-border shadow-sm dark:border-border">
+            <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
+                  <Users className="size-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-base text-foreground dark:text-foreground">
+                    Unisciti
+                  </CardTitle>
+                  <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
+                    Incolla un link ricevuto da un altro utente.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
+              <JoinWorkspaceForm />
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       <section className="space-y-4">
