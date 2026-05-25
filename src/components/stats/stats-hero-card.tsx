@@ -1,12 +1,6 @@
 type StatsHeroCardProps = {
   totalSaved: number;
   summary: string;
-  insights: Array<{
-    label: string;
-    value: string;
-    detail?: string;
-    tone?: "default" | "success" | "premium";
-  }>;
 };
 
 export function StatsHeroCard({ totalSaved, summary }: StatsHeroCardProps) {

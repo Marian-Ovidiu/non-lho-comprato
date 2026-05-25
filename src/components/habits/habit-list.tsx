@@ -40,10 +40,10 @@ export function HabitList({ habits, categories }: HabitListProps) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-[14px] border border-dashed border-border/70 bg-surface-muted/60 px-4 py-8 text-center">
         <p className="text-sm text-muted-foreground">
-          Nessuna abitudine ancora. Creane una per iniziare a tracciare.
+          Nessuna abitudine ancora. Creane una e comparirà qui nei giorni scelti.
         </p>
         <Button asChild variant="outline" size="sm" className="rounded-full">
-          <Link href="#nuova-abitudine">Aggiungi abitudine</Link>
+          <Link href="#nuova-abitudine">Crea abitudine</Link>
         </Button>
       </div>
     );

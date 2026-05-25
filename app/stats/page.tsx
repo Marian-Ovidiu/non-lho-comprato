@@ -11,6 +11,7 @@ import { MonthlySavingsChart } from "@/src/components/stats/monthly-savings-char
 import { PersonFilter } from "@/src/components/shared/person-filter";
 import { StatsEmptyState } from "@/src/components/stats/stats-empty-state";
 import { StatsHeroCard } from "@/src/components/stats/stats-hero-card";
+import { StatsInsights } from "@/src/components/stats/stats-insights";
 import { StatsOverviewCards } from "@/src/components/stats/stats-overview-cards";
 import { TopSavingsList } from "@/src/components/stats/top-savings-list";
 import { formatMoney } from "@/src/lib/formatters";
@@ -68,33 +69,6 @@ function getMonthDirection(
   };
 }
 
-function getStrongestHabit(
-  habitStats: Awaited<ReturnType<typeof getStatsPageData>>["habitStats"],
-) {
-  const sortedHabits = [...habitStats].sort(
-    (left, right) =>
-      right.disciplineRatePercent - left.disciplineRatePercent ||
-      right.totalOccurrences - left.totalOccurrences ||
-      right.totalSaved - left.totalSaved,
-  );
-
-  const strongestHabit = sortedHabits[0];
-
-  if (!strongestHabit) {
-    return {
-      label: "Abitudine più solida",
-      value: "In costruzione",
-      detail: "Appena inizierai a usare le abitudini, qui comparirà il segnale più forte.",
-    };
-  }
-
-  return {
-    label: "Abitudine più solida",
-    value: strongestHabit.habitName,
-    detail: `${strongestHabit.disciplineRatePercent.toFixed(1)}% evitati su ${strongestHabit.totalOccurrences} occorrenze.`,
-  };
-}
-
 function getStatsSummary({
   totalSaved,
   bestCategoryName,
@@ -129,7 +103,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     (await searchParams).person,
     members,
   );
-  const { overview, monthlyStats, categoryStats, topSavings, habitStats } =
+  const { overview, monthlyStats, categoryStats, topSavings, habitStats, insights } =
     await getStatsPageData(memberUserId, members);
 
   const isCompletelyEmpty =
@@ -138,7 +112,6 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   const bestCategory = categoryStats[0] ?? null;
   const biggestSaving = topSavings[0] ?? null;
   const monthDirection = getMonthDirection(monthlyStats);
-  const strongestHabit = getStrongestHabit(habitStats);
   const heroSummary = getStatsSummary({
     totalSaved: overview.totalSaved,
     bestCategoryName: bestCategory?.categoryName,
@@ -216,24 +189,9 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       <StatsHeroCard
         totalSaved={overview.totalSaved}
         summary={heroSummary}
-        insights={[
-          {
-            label: "Dove rende di più",
-            value: bestCategory?.categoryName ?? "Ancora da leggere",
-            detail: bestCategory
-              ? `${formatMoney(bestCategory.totalSaved)} protetti qui.`
-              : "Le categorie più forti appariranno qui.",
-            tone: "success",
-          },
-          strongestHabit,
-          {
-            label: monthDirection.label,
-            value: monthDirection.value,
-            detail: monthDirection.detail,
-            tone: "premium",
-          },
-        ]}
       />
+
+      <StatsInsights insights={insights} />
 
       <StatsOverviewCards overview={overview} />
 

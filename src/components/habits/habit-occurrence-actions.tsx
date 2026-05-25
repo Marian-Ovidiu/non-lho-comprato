@@ -118,7 +118,7 @@ export function HabitOccurrenceActions({
             whiteSpace: "nowrap",
           }}
         >
-          Fatta
+          Spesa
         </div>
       );
     }
@@ -143,53 +143,61 @@ export function HabitOccurrenceActions({
     }
 
     return (
-      <div style={{ display: "flex", gap: 6 }} aria-busy={loading}>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => runAction(markHabitOccurrenceSpent, "spent")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "7px 12px",
-            borderRadius: 999,
-            border: "1px solid var(--border-strong)",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "var(--muted-foreground)",
-            cursor: "pointer",
-            background: "transparent",
-          }}
-        >
-          {pendingStatus === "spent" ? (
-            <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" aria-hidden="true" />
-          ) : null}
-          Presa
-        </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => runAction(markHabitOccurrenceAvoided, "avoided")}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 4,
-            padding: "7px 12px",
-            borderRadius: 999,
-            border: "1px solid var(--foreground)",
-            fontSize: 12,
-            fontWeight: 600,
-            color: "var(--foreground)",
-            cursor: "pointer",
-            background: "transparent",
-          }}
-        >
-          {pendingStatus === "avoided" ? (
-            <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" aria-hidden="true" />
-          ) : null}
-          Evitala
-        </button>
+      <div className="flex flex-col items-end gap-1.5">
+        <div style={{ display: "flex", gap: 6 }} aria-busy={loading}>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => runAction(markHabitOccurrenceSpent, "spent")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "7px 12px",
+              borderRadius: 999,
+              border: "1px solid var(--border-strong)",
+              fontSize: 12,
+              fontWeight: 500,
+              color: "var(--muted-foreground)",
+              cursor: "pointer",
+              background: "transparent",
+            }}
+          >
+            {pendingStatus === "spent" ? (
+              <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" aria-hidden="true" />
+            ) : null}
+            Spesa
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={() => runAction(markHabitOccurrenceAvoided, "avoided")}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              padding: "7px 12px",
+              borderRadius: 999,
+              border: "1px solid var(--foreground)",
+              fontSize: 12,
+              fontWeight: 600,
+              color: "var(--foreground)",
+              cursor: "pointer",
+              background: "transparent",
+            }}
+          >
+            {pendingStatus === "avoided" ? (
+              <Loader2 style={{ width: 11, height: 11 }} className="animate-spin" aria-hidden="true" />
+            ) : null}
+            Evitata
+          </button>
+        </div>
+
+        {currentStatus === "pending" ? (
+          <p className="max-w-[17rem] text-right text-[11px] leading-4 text-muted-text">
+            Se non la segni oggi, domani verrà chiusa come spesa.
+          </p>
+        ) : null}
       </div>
     );
   }
@@ -224,7 +232,7 @@ export function HabitOccurrenceActions({
           variant={currentStatus === "spent" ? "default" : "outline"}
           onClick={() => runAction(markHabitOccurrenceSpent, "spent")}
         >
-          {getButtonLabel("L'ho fatto", "spent")}
+          {getButtonLabel("Segna spesa", "spent")}
         </Button>
         <Button
           type="button"
@@ -233,7 +241,7 @@ export function HabitOccurrenceActions({
           variant={currentStatus === "avoided" ? "default" : "outline"}
           onClick={() => runAction(markHabitOccurrenceAvoided, "avoided")}
         >
-          {getButtonLabel("Evitato", "avoided")}
+          {getButtonLabel("Segna evitata", "avoided")}
         </Button>
         <Button
           type="button"
@@ -266,7 +274,13 @@ export function HabitOccurrenceActions({
             {feedback?.message ??
               (pendingStatus
                 ? "Aggiornamento in corso..."
-                : "Scegli come trattare questa abitudine di oggi.")}
+                : currentStatus === "pending"
+                  ? "Scegli se è una spesa, un evitamento o un salto."
+                  : currentStatus === "spent"
+                    ? "Questa abitudine è già conteggiata come spesa."
+                    : currentStatus === "avoided"
+                      ? "Questa abitudine è già conteggiata come evitata."
+                      : "Questa abitudine è stata saltata manualmente.")}
           </span>
         </span>
       </p>

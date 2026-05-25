@@ -6,6 +6,7 @@ import {
   aggregateMemberSpendingStats,
   type MemberSpendingEntry,
 } from "@/src/lib/member-spending-stats";
+import { formatMoney } from "@/src/lib/formatters";
 import { prisma } from "@/src/lib/prisma";
 import {
   getCurrentWorkspaceMembers,
@@ -53,6 +54,16 @@ type TopSavingsItem = {
   source: "manual" | "habit";
 };
 
+type StatsInsightTone = "default" | "success" | "premium" | "warning";
+
+export type StatsInsight = {
+  id: string;
+  label: string;
+  value: string;
+  detail: string;
+  tone: StatsInsightTone;
+};
+
 type HabitStatsItem = {
   habitId: string;
   habitName: string;
@@ -94,12 +105,22 @@ type StatsEntryRow = {
   };
 };
 
+type StatsMonthlyCategoryRow = {
+  categoryName: string;
+  categorySlug: string;
+  totalRealSpent: number;
+  totalAlternativeCost: number;
+  totalSaved: number;
+  entriesCount: number;
+};
+
 type StatsPageData = {
   overview: StatsOverview;
   monthlyStats: MonthlyStatsItem[];
   categoryStats: CategoryStatsItem[];
   topSavings: TopSavingsItem[];
   habitStats: HabitStatsItem[];
+  insights: StatsInsight[];
 };
 
 function round2(value: number): number {
@@ -212,6 +233,229 @@ function emptyOverview(): StatsOverview {
   };
 }
 
+function formatSignedMoney(value: number): string {
+  const normalized = formatMoney(Math.abs(value));
+  if (value > 0) {
+    return `+${normalized}`;
+  }
+
+  if (value < 0) {
+    return `-${normalized}`;
+  }
+
+  return normalized;
+}
+
+function getCategoryTotals(
+  grouped: Map<string, StatsMonthlyCategoryRow>,
+  categoryId: string,
+): StatsMonthlyCategoryRow | null {
+  return grouped.get(categoryId) ?? null;
+}
+
+function buildSavingCategoryInsight(
+  monthlyStats: MonthlyStatsItem[],
+  monthlyCategoryGrouped: Map<string, Map<string, StatsMonthlyCategoryRow>>,
+  categoryStats: CategoryStatsItem[],
+): StatsInsight {
+  const latestMonth = monthlyStats.at(-1);
+
+  if (!latestMonth) {
+    return {
+      id: "best-savings-category",
+      label: "Dove rende di più",
+      value: "In costruzione",
+      detail:
+        "Appena ci saranno movimenti, qui comparirà la categoria che protegge di più il budget.",
+      tone: "default",
+    };
+  }
+
+  const latestCategories = monthlyCategoryGrouped.get(latestMonth.month);
+  if (!latestCategories || latestCategories.size === 0) {
+    const fallback = categoryStats[0];
+
+    return {
+      id: "best-savings-category",
+      label: "Dove rende di più",
+      value: fallback?.categoryName ?? "In costruzione",
+      detail: fallback
+        ? `${formatMoney(fallback.totalSaved)} tenuti finora in questa categoria.`
+        : "Appena compariranno dati, qui vedrai la categoria più forte.",
+      tone: "success",
+    };
+  }
+
+  const currentCategory = [...latestCategories.entries()]
+    .map(([categoryId, totals]) => ({ categoryId, ...totals }))
+    .sort(
+      (left, right) =>
+        right.totalSaved - left.totalSaved ||
+        right.entriesCount - left.entriesCount ||
+        left.categoryName.localeCompare(right.categoryName, "it"),
+    )[0];
+
+  const previousMonth = monthlyStats.at(-2);
+  const previousCategory = previousMonth
+    ? getCategoryTotals(
+        monthlyCategoryGrouped.get(previousMonth.month) ?? new Map(),
+        currentCategory.categoryId,
+      )
+    : null;
+  const monthPart = `nel mese di ${latestMonth.label}`;
+
+  if (previousCategory) {
+    const delta = round2(currentCategory.totalSaved - previousCategory.totalSaved);
+    const deltaLabel =
+      delta === 0 ? "in linea con il mese scorso" : `${formatSignedMoney(delta)} rispetto al mese scorso`;
+
+    return {
+      id: "best-savings-category",
+      label: "Dove rende di più",
+      value: currentCategory.categoryName,
+      detail: `${formatMoney(currentCategory.totalSaved)} tenuti ${monthPart}. ${deltaLabel}.`,
+      tone: "success",
+    };
+  }
+
+  return {
+    id: "best-savings-category",
+    label: "Dove rende di più",
+    value: currentCategory.categoryName,
+    detail: `${formatMoney(currentCategory.totalSaved)} tenuti ${monthPart}.`,
+    tone: "success",
+  };
+}
+
+function buildDeteriorationInsight(
+  monthlyStats: MonthlyStatsItem[],
+  monthlyCategoryGrouped: Map<string, Map<string, StatsMonthlyCategoryRow>>,
+): StatsInsight {
+  const latestMonth = monthlyStats.at(-1);
+  const previousMonth = monthlyStats.at(-2);
+
+  if (!latestMonth || !previousMonth) {
+    return {
+      id: "month-trend",
+      label: "Da tenere d'occhio",
+      value: "Confronto non ancora disponibile",
+      detail:
+        "Serve almeno un secondo mese con dati per leggere cosa sta andando peggio.",
+      tone: "default",
+    };
+  }
+
+  const currentCategories = monthlyCategoryGrouped.get(latestMonth.month) ?? new Map();
+  const previousCategories = monthlyCategoryGrouped.get(previousMonth.month) ?? new Map();
+  let worstCategory: {
+    categoryName: string;
+    currentSaved: number;
+    previousSaved: number;
+    deltaSaved: number;
+  } | null = null;
+
+  for (const [categoryId, currentTotals] of currentCategories.entries()) {
+    const previousTotals = previousCategories.get(categoryId) ?? null;
+    const previousSaved = previousTotals?.totalSaved ?? 0;
+    const deltaSaved = round2(currentTotals.totalSaved - previousSaved);
+
+    if (deltaSaved >= 0) {
+      continue;
+    }
+
+    if (
+      !worstCategory ||
+      deltaSaved < worstCategory.deltaSaved ||
+      (deltaSaved === worstCategory.deltaSaved &&
+        currentTotals.categoryName.localeCompare(worstCategory.categoryName, "it") < 0)
+    ) {
+      worstCategory = {
+        categoryName: currentTotals.categoryName,
+        currentSaved: currentTotals.totalSaved,
+        previousSaved,
+        deltaSaved,
+      };
+    }
+  }
+
+  if (worstCategory) {
+    return {
+      id: "month-trend",
+      label: "Da tenere d'occhio",
+      value: worstCategory.categoryName,
+      detail: `${formatMoney(Math.abs(worstCategory.deltaSaved))} in meno rispetto al mese scorso in questa categoria.`,
+      tone: "warning",
+    };
+  }
+
+  const currentMonth = latestMonth;
+  const previousRealSpent = previousMonth.totalRealSpent;
+  const currentRealSpent = currentMonth.totalRealSpent;
+  const realSpentDelta = round2(currentRealSpent - previousRealSpent);
+
+  if (realSpentDelta > 0) {
+    return {
+      id: "month-trend",
+      label: "Da tenere d'occhio",
+      value: "Spesa reale in salita",
+      detail: `${formatMoney(realSpentDelta)} in più rispetto al mese scorso.`,
+      tone: "warning",
+    };
+  }
+
+  const savedDelta = round2(currentMonth.totalSaved - previousMonth.totalSaved);
+  if (savedDelta < 0) {
+    return {
+      id: "month-trend",
+      label: "Da tenere d'occhio",
+      value: "Risparmio in calo",
+      detail: `${formatMoney(Math.abs(savedDelta))} in meno rispetto al mese scorso.`,
+      tone: "warning",
+    };
+  }
+
+  return {
+    id: "month-trend",
+    label: "Da tenere d'occhio",
+    value: "Nessun calo netto",
+    detail:
+      "Il mese non mostra un peggioramento netto rispetto al precedente.",
+    tone: "success",
+  };
+}
+
+function buildHabitInsight(habitStats: HabitStatsItem[]): StatsInsight {
+  if (habitStats.length === 0) {
+    return {
+      id: "best-habit",
+      label: "Abitudine più incisiva",
+      value: "In costruzione",
+      detail:
+        "Appena inizierai a registrare le abitudini, qui comparirà il loro impatto economico.",
+      tone: "premium",
+    };
+  }
+
+  const strongestHabit = [...habitStats].sort(
+    (left, right) =>
+      right.totalSaved - left.totalSaved ||
+      right.disciplineRatePercent - left.disciplineRatePercent ||
+      right.totalOccurrences - left.totalOccurrences ||
+      left.habitName.localeCompare(right.habitName, "it"),
+  )[0];
+
+  return {
+    id: "best-habit",
+    label: "Abitudine più incisiva",
+    value: strongestHabit.habitName,
+    detail:
+      strongestHabit.totalSaved > 0
+        ? `${formatMoney(strongestHabit.totalSaved)} evitati su ${strongestHabit.totalOccurrences} occorrenze, con ${strongestHabit.disciplineRatePercent.toFixed(1)}% di evitati.`
+        : `Ancora nessun risparmio evitato: ${strongestHabit.totalOccurrences} occorrenze registrate.`,
+    tone: "premium",
+  };
+}
+
 async function buildStatsEntryWhere(
   memberUserId: string | undefined,
   members: WorkspaceMemberOption[],
@@ -250,13 +494,17 @@ async function buildStatsHabitOccurrenceWhere(
 
 function getStatsFromEntries(
   entries: StatsEntryRow[],
-): Pick<StatsPageData, "overview" | "monthlyStats" | "categoryStats" | "topSavings"> {
+): Pick<
+  StatsPageData,
+  "overview" | "monthlyStats" | "categoryStats" | "topSavings" | "insights"
+> {
   if (entries.length === 0) {
     return {
       overview: emptyOverview(),
       monthlyStats: [],
       categoryStats: [],
       topSavings: [],
+      insights: [],
     };
   }
 
@@ -280,6 +528,10 @@ function getStatsFromEntries(
       totalSaved: number;
       entriesCount: number;
     }
+  >();
+  const monthlyCategoryGrouped = new Map<
+    string,
+    Map<string, StatsMonthlyCategoryRow>
   >();
   const topSavings: TopSavingsItem[] = [];
 
@@ -312,6 +564,31 @@ function getStatsFromEntries(
     monthlyCurrent.totalSaved = round2(monthlyCurrent.totalSaved + savedAmount);
     monthlyCurrent.entriesCount += 1;
     monthlyGrouped.set(monthKey, monthlyCurrent);
+
+    const monthlyCategoryCurrent =
+      monthlyCategoryGrouped.get(monthKey) ??
+      new Map<string, StatsMonthlyCategoryRow>();
+    const monthlyCategoryTotals = monthlyCategoryCurrent.get(entry.categoryId) ?? {
+      categoryName: entry.category.name,
+      categorySlug: entry.category.slug,
+      totalRealSpent: 0,
+      totalAlternativeCost: 0,
+      totalSaved: 0,
+      entriesCount: 0,
+    };
+
+    monthlyCategoryTotals.totalRealSpent = round2(
+      monthlyCategoryTotals.totalRealSpent + realCost,
+    );
+    monthlyCategoryTotals.totalAlternativeCost = round2(
+      monthlyCategoryTotals.totalAlternativeCost + alternativeCost,
+    );
+    monthlyCategoryTotals.totalSaved = round2(
+      monthlyCategoryTotals.totalSaved + savedAmount,
+    );
+    monthlyCategoryTotals.entriesCount += 1;
+    monthlyCategoryCurrent.set(entry.categoryId, monthlyCategoryTotals);
+    monthlyCategoryGrouped.set(monthKey, monthlyCategoryCurrent);
 
     const categoryCurrent = categoryGrouped.get(entry.categoryId) ?? {
       categoryName: entry.category.name,
@@ -379,6 +656,11 @@ function getStatsFromEntries(
       right.date.getTime() - left.date.getTime(),
   );
 
+  const insights = [
+    buildSavingCategoryInsight(monthlyStats, monthlyCategoryGrouped, categoryStats),
+    buildDeteriorationInsight(monthlyStats, monthlyCategoryGrouped),
+  ];
+
   return {
     overview: {
       ...overview,
@@ -394,6 +676,7 @@ function getStatsFromEntries(
     monthlyStats,
     categoryStats,
     topSavings: topSavings.slice(0, 10),
+    insights,
   };
 }
 
@@ -539,6 +822,8 @@ export async function getStatsPageData(
   });
 
   const entryStats = getStatsFromEntries(entries);
+  const habitInsight = buildHabitInsight(habitStats);
+  const insights = [...entryStats.insights, habitInsight].slice(0, 3);
 
   return {
     overview: entryStats.overview,
@@ -546,6 +831,7 @@ export async function getStatsPageData(
     categoryStats: entryStats.categoryStats,
     topSavings: entryStats.topSavings,
     habitStats,
+    insights,
   };
 }
 

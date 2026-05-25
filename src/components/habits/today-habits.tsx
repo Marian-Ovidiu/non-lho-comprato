@@ -45,9 +45,11 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
   if (occurrences.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-[14px] border border-dashed border-border/70 bg-surface-muted/60 px-4 py-8 text-center">
-        <p className="text-sm text-muted-foreground">Nessuna abitudine prevista per oggi.</p>
+        <p className="text-sm text-muted-foreground">
+          Nessuna abitudine attiva per oggi. Quando ne crei una, la vedrai qui.
+        </p>
         <Button asChild variant="outline" size="sm" className="rounded-full">
-          <Link href="#nuova-abitudine">Crea un&apos;abitudine</Link>
+          <Link href="#nuova-abitudine">Nuova abitudine</Link>
         </Button>
       </div>
     );

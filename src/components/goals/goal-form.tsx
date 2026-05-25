@@ -15,12 +15,16 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getGoalScopeOptions } from "@/src/lib/ui-person";
+import { getGoalScopeOptions, type LegacyPersonValue } from "@/src/lib/ui-person";
 
 type FormState = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
+};
+
+type GoalFormProps = {
+  defaultPerson?: "" | LegacyPersonValue;
 };
 
 const initialState: FormState = {
@@ -37,7 +41,7 @@ function FieldError({ message }: { message?: string }) {
   return <p className="text-sm text-destructive">{message}</p>;
 }
 
-export function GoalForm() {
+export function GoalForm({ defaultPerson = "" }: GoalFormProps) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -134,7 +138,7 @@ export function GoalForm() {
               <select
                 id="person"
                 name="person"
-                defaultValue=""
+                defaultValue={defaultPerson}
                 className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40"
                 aria-invalid={Boolean(state.errors?.person)}
               >
@@ -144,12 +148,19 @@ export function GoalForm() {
                   </option>
                 ))}
               </select>
+              <p className="text-xs text-muted-text">
+                In un workspace condiviso partiamo da una meta condivisa; negli altri casi
+                resta globale.
+              </p>
               <FieldError message={state.errors?.person} />
             </div>
           </div>
         </CardContent>
 
         <CardFooter className="justify-end border-t border-border bg-surface-muted/50 p-4 sm:p-5">
+          <p className="mr-auto hidden text-xs text-muted-text sm:block">
+            Gli obiettivi partono attivi.
+          </p>
           <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
             {pending ? "Creazione..." : "Crea obiettivo"}
           </Button>
@@ -158,5 +169,3 @@ export function GoalForm() {
     </Card>
   );
 }
-
-

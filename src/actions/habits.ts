@@ -449,7 +449,6 @@ export async function createHabit(
   const categoryId = getText(formData, "categoryId");
   const amount = getMoney(formData, "amount");
   const activeDays = parseActiveDays(formData);
-  const isActive = parseBoolean(getText(formData, "isActive"));
 
   if (!name) {
     errors.name = "Il nome è obbligatorio";
@@ -496,7 +495,7 @@ export async function createHabit(
         categoryId: category.id,
         amount: toDecimalString(amount.value),
         activeDays: activeDays.value,
-        isActive,
+        isActive: true,
         defaultBehavior: "spent",
       },
     });

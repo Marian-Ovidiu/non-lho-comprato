@@ -198,6 +198,7 @@ export async function createGoal(
         targetAmount: toDecimalString(targetAmount.value),
         emoji: emoji || null,
         person: person.value,
+        isActive: true,
       },
     });
 

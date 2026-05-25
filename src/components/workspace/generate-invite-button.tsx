@@ -58,11 +58,14 @@ export function GenerateInviteButton() {
 
   if (inviteUrl) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-3" aria-live="polite">
         <div className="overflow-hidden rounded-2xl border border-border bg-surface-muted px-4 py-3">
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+            Link pronto
+          </p>
           <p className="break-all font-num text-[12px] text-foreground">{inviteUrl}</p>
         </div>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+        {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
         <div className="flex gap-2">
           <Button
             type="button"
@@ -99,7 +102,7 @@ export function GenerateInviteButton() {
 
   return (
     <div className="space-y-2">
-      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="text-sm text-destructive" role="alert">{error}</p> : null}
       <Button
         type="button"
         className="h-10 w-full rounded-2xl px-4"

@@ -73,8 +73,13 @@ export function HabitForm({ categories }: HabitFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const refreshTimerRef = useRef<number | null>(null);
   const successTimerRef = useRef<number | null>(null);
-  const [categoryId, setCategoryId] = useState("");
-  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const defaultCategoryId =
+    categories.find((category) => category.slug === "altro")?.id ??
+    categories[0]?.id ??
+    "";
+  const defaultSelectedDays = [1, 2, 3, 4, 5];
+  const [categoryId, setCategoryId] = useState(defaultCategoryId);
+  const [selectedDays, setSelectedDays] = useState<number[]>(defaultSelectedDays);
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
@@ -86,8 +91,8 @@ export function HabitForm({ categories }: HabitFormProps) {
       if (result.success) {
         triggerHaptic("light");
         formRef.current?.reset();
-        setCategoryId("");
-        setSelectedDays([]);
+        setCategoryId(defaultCategoryId);
+        setSelectedDays(defaultSelectedDays);
         setSuccessStage("confirming");
 
         if (refreshTimerRef.current) {
@@ -205,6 +210,10 @@ export function HabitForm({ categories }: HabitFormProps) {
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-text">
+              Di default partiamo da Altro, così puoi salvare più in fretta e cambiare
+              etichetta dopo.
+            </p>
             <FieldError message={state.errors?.categoryId} />
           </div>
 
@@ -229,6 +238,9 @@ export function HabitForm({ categories }: HabitFormProps) {
                 <p className="text-sm font-medium text-foreground">
                   Conta come spesa fatta
                 </p>
+                <p className="text-xs text-muted-text">
+                  La lasci attiva e, se non la chiudi, finisce nel registro come spesa.
+                </p>
               </div>
               <input type="hidden" name="defaultBehavior" value="spent" />
             </div>
@@ -237,6 +249,10 @@ export function HabitForm({ categories }: HabitFormProps) {
           <div className="space-y-3">
             <div className="space-y-1">
               <Label>Giorni</Label>
+              <p className="text-xs text-muted-text">
+                Partiamo dai feriali: è il default più rapido da sistemare, poi puoi
+                allargarlo.
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">

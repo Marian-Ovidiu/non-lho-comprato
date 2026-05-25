@@ -5,6 +5,7 @@ import { getGoalsWithProgress } from "@/src/actions/goals";
 import { GoalCard } from "@/src/components/goals/goal-card";
 import { GoalForm } from "@/src/components/goals/goal-form";
 import { PageHeader } from "@/src/components/layout/page-header";
+import { getCurrentWorkspace } from "@/src/lib/workspace-context";
 import { Button } from "@/components/ui/button";
 
 export const dynamic = "force-dynamic";
@@ -82,11 +83,15 @@ function GoalsEmptyState() {
 }
 
 export default async function GoalsPage() {
-  const goals = await getGoalsWithProgress();
+  const [goals, workspace] = await Promise.all([
+    getGoalsWithProgress(),
+    getCurrentWorkspace().catch(() => null),
+  ]);
   const activeGoals = goals
     .filter((goal) => goal.isActive)
     .sort((a, b) => b.progressPercent - a.progressPercent);
   const inactiveGoals = goals.filter((goal) => !goal.isActive);
+  const defaultPerson = workspace?.kind === "shared" ? "TUTTI" : "";
 
   const heroGoal: Goal | undefined = activeGoals[0];
   const otherActiveGoals = activeGoals.slice(1);
@@ -112,7 +117,7 @@ export default async function GoalsPage() {
       />
 
       <section id="nuovo-obiettivo">
-        <GoalForm />
+        <GoalForm defaultPerson={defaultPerson} />
       </section>
 
       {goals.length === 0 ? (
@@ -120,6 +125,13 @@ export default async function GoalsPage() {
       ) : (
         <div className="space-y-3">
           {heroGoal ? <GoalCard goal={heroGoal} variant="hero" /> : null}
+
+          {goals.length > 0 && activeGoals.length === 0 ? (
+            <div className="rounded-[14px] border border-dashed border-border/70 bg-surface-muted/60 px-4 py-3 text-sm text-muted-foreground">
+              Nessun obiettivo attivo al momento. Riattivane uno per far tornare il
+              progresso in primo piano.
+            </div>
+          ) : null}
 
           {otherActiveGoals.length > 0 ? (
             <div className="space-y-2">

@@ -37,6 +37,26 @@ function getProgressWidth(progressPercent: number) {
   return Math.min(Math.max(progressPercent, 0), 100);
 }
 
+function getGoalStatusLabel(goal: GoalCardProps["goal"]) {
+  if (goal.isCompleted) {
+    return "Raggiunto";
+  }
+
+  return goal.isActive ? "Attivo" : "In pausa";
+}
+
+function getStatusClass(goal: GoalCardProps["goal"]) {
+  if (goal.isCompleted) {
+    return "border-accent/20 bg-accent/10 text-accent";
+  }
+
+  if (!goal.isActive) {
+    return "border-border bg-surface-muted text-muted-foreground";
+  }
+
+  return "border-success/20 bg-success/10 text-success";
+}
+
 function GoalRing({
   pct,
   size = 56,
@@ -99,6 +119,8 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
   const [isPending, startTransition] = useTransition();
   const progressWidth = getProgressWidth(goal.progressPercent);
   const emoji = getGoalEmoji(goal.emoji);
+  const statusLabel = getGoalStatusLabel(goal);
+  const statusClass = getStatusClass(goal);
 
   function handleToggleActive() {
     startTransition(async () => {
@@ -216,11 +238,9 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
 
         <div className="mt-4 flex items-center justify-between border-t border-border pt-3">
           {actionButtons}
-          {goal.isCompleted ? (
-            <span className="rounded-full bg-accent/20 px-2.5 py-1 text-[11px] font-semibold text-accent">
-              Completato
-            </span>
-          ) : null}
+          <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${statusClass}`}>
+            {statusLabel}
+          </span>
         </div>
       </div>
     );
@@ -228,7 +248,7 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
 
   if (variant === "ring") {
     const pct = goal.progressPercent / 100;
-    const ringColor = goal.isCompleted ? "var(--accent)" : "var(--accent)";
+    const ringColor = goal.isActive || goal.isCompleted ? "var(--accent)" : "var(--muted-foreground)";
 
     return (
       <div className="flex items-center gap-3.5 overflow-hidden rounded-[14px] border border-border bg-surface p-4">
@@ -243,8 +263,13 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
             {formatMoney(goal.progressAmount)}{" "}
             <span style={{ color: "var(--text-3)" }}>/ {formatMoney(goal.targetAmount)}</span>
             {" · "}
-            {goal.isActive ? "Attivo" : "In pausa"}
+            {statusLabel}
           </div>
+          {!goal.isCompleted && goal.progressAmount === 0 ? (
+            <p className="mt-1 text-[11px] leading-4 text-muted-text">
+              Nessun risparmio registrato ancora.
+            </p>
+          ) : null}
           <div className="mt-2">{actionButtons}</div>
         </div>
       </div>
@@ -256,7 +281,9 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
       className={
         goal.isCompleted
           ? "overflow-hidden rounded-[14px] border border-accent/20 bg-accent/10 p-5"
-          : "overflow-hidden rounded-[14px] border border-border bg-surface p-5"
+          : goal.isActive
+            ? "overflow-hidden rounded-[14px] border border-border bg-surface p-5"
+            : "overflow-hidden rounded-[14px] border border-border bg-surface-muted/60 p-5"
       }
     >
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -265,8 +292,7 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
             {emoji} {goal.title}
           </p>
           <p className="text-[12px] text-muted-foreground">
-            {getGoalScopeLabel(goal.person)} · {goal.isActive ? "Attivo" : "In pausa"}
-            {goal.isCompleted ? " · Completato" : ""}
+            {getGoalScopeLabel(goal.person)} · {statusLabel}
           </p>
         </div>
         <div className="shrink-0 text-right">
@@ -287,6 +313,12 @@ export function GoalCard({ goal, variant = "full" }: GoalCardProps) {
           />
         </div>
       </div>
+
+      {!goal.isCompleted && goal.progressAmount === 0 ? (
+        <p className="mb-3 text-[11px] leading-4 text-muted-text">
+          Nessun risparmio registrato ancora.
+        </p>
+      ) : null}
 
       <div className="grid gap-2 text-[12px] sm:grid-cols-3">
         <div className="rounded-xl bg-surface-muted px-3 py-2">

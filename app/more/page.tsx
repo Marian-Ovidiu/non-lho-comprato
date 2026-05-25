@@ -3,6 +3,7 @@ import { BarChart3, Download, Layers3, MoonStar, Plus, Repeat2, UserRoundCog, Us
 
 import { signOutAction } from "@/src/actions/auth";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
+import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 import { AiAnalysisExportCard } from "@/src/components/more/ai-analysis-export-card-lazy";
 import { PwaInstallContent } from "@/src/components/pwa/install-content-lazy";
 import { PageHeader } from "@/src/components/layout/page-header";
@@ -13,6 +14,43 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
+
+type WorkspaceNextStep = {
+  title: string;
+  description: string;
+  actionLabel: string;
+  href: string;
+  icon: typeof Plus | typeof Users;
+};
+
+function getWorkspaceNextStep(
+  workspace: Awaited<ReturnType<typeof getCurrentWorkspace>>,
+  memberCount: number,
+): WorkspaceNextStep | null {
+  if (workspace.kind === "private") {
+    return {
+      title: "Workspace privato",
+      description:
+        "Se vuoi lavorare con altre persone, il prossimo passo utile è creare uno spazio condiviso.",
+      actionLabel: "Crea workspace condiviso",
+      href: "/workspace/new",
+      icon: Plus,
+    };
+  }
+
+  if (memberCount <= 2) {
+    return {
+      title: "Workspace quasi vuoto",
+      description:
+        "Siete ancora in pochi. Invita almeno un'altra persona per iniziare a condividere i movimenti.",
+      actionLabel: "Invita persone",
+      href: "/workspace/members",
+      icon: Users,
+    };
+  }
+
+  return null;
+}
 
 type ToolCardProps = {
   href?: string;
@@ -70,9 +108,10 @@ function ToolCard({
 }
 
 export default async function MorePage() {
-  const [authUser, workspaceResult] = await Promise.all([
+  const [authUser, workspaceResult, members] = await Promise.all([
     getAuthenticatedUser(),
     getCurrentWorkspace().catch(() => null),
+    getCurrentWorkspaceMembers().catch(() => []),
   ]);
   const workspace = workspaceResult as
     | Awaited<ReturnType<typeof getCurrentWorkspace>>
@@ -93,6 +132,9 @@ export default async function MorePage() {
         .join("")
         .toUpperCase()
     : "NL";
+  const workspaceNextStep = workspace
+    ? getWorkspaceNextStep(workspace, members.length)
+    : null;
 
   return (
     <main className="space-y-5 sm:space-y-6">
@@ -195,6 +237,34 @@ export default async function MorePage() {
           </p>
         </div>
 
+        {workspaceNextStep ? (
+          <Card className="overflow-hidden border-accent/20 bg-accent/8 shadow-sm dark:border-border">
+            <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
+              <div className="flex items-start gap-3">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
+                  <workspaceNextStep.icon className="size-5" aria-hidden="true" />
+                </div>
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-base text-foreground dark:text-foreground">
+                    {workspaceNextStep.title}
+                  </CardTitle>
+                  <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
+                    {workspaceNextStep.description}
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
+              <Button asChild className="h-10 w-full rounded-2xl px-4">
+                <Link href={workspaceNextStep.href}>
+                  {workspaceNextStep.actionLabel}
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ) : null}
+
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {workspace ? (
             <Card className="overflow-hidden border-border shadow-sm dark:border-border">
@@ -203,17 +273,17 @@ export default async function MorePage() {
                   <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
                     <Users className="size-5" aria-hidden="true" />
                   </div>
-                  <div className="min-w-0 space-y-1">
-                    <CardTitle className="text-base text-foreground dark:text-foreground">
-                      Invita
-                    </CardTitle>
-                    <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
-                      Genera un link per far entrare qualcuno nel workspace.
-                    </p>
-                  </div>
+                <div className="min-w-0 space-y-1">
+                  <CardTitle className="text-base text-foreground dark:text-foreground">
+                    Invita
+                  </CardTitle>
+                  <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
+                    Genera un link per far entrare qualcuno nel workspace.
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
+              </div>
+            </CardHeader>
+            <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
                 <GenerateInviteButton />
               </CardContent>
             </Card>
@@ -263,7 +333,7 @@ export default async function MorePage() {
                     Unisciti
                   </CardTitle>
                   <p className="text-sm leading-6 text-muted-text dark:text-muted-text">
-                    Incolla un link ricevuto da un altro utente.
+                    Incolla un link o un codice ricevuto da un altro utente.
                   </p>
                 </div>
               </div>
