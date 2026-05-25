@@ -561,30 +561,7 @@ export async function resolveActiveWorkspaceForUser({
   selectedWorkspaceId?: string | null;
   accessibleWorkspaces: WorkspaceRecord[];
 }): Promise<{ workspace: WorkspaceRecord; resolutionPath: string }> {
-  const productionId = getLegacyWorkspaceId();
-  const productionWorkspace = accessibleWorkspaces.find(
-    (workspace) => workspace.id === productionId,
-  );
-
-  const legacyMapping = getLegacyAuthMapping(email);
-
-  if (legacyMapping) {
-    const legacyWorkspace = accessibleWorkspaces.find(
-      (workspace) => workspace.id === legacyMapping.workspaceId,
-    );
-
-    if (legacyWorkspace) {
-      return {
-        workspace: legacyWorkspace,
-        resolutionPath: "legacy-email:accessible",
-      };
-    }
-
-    return {
-      workspace: await ensureLegacyWorkspaceForUser(userId),
-      resolutionPath: "legacy-email:ensure",
-    };
-  }
+  let ignoredSelectedWorkspace = false;
 
   if (selectedWorkspaceId) {
     const selectedWorkspace = accessibleWorkspaces.find(
@@ -598,18 +575,37 @@ export async function resolveActiveWorkspaceForUser({
       };
     }
 
-    return resolveDefaultWorkspaceForUser(
-      userId,
-      email,
-      accessibleWorkspaces,
-      "cookie:ignored-not-member",
+    ignoredSelectedWorkspace = true;
+  }
+
+  const legacyMapping = getLegacyAuthMapping(email);
+
+  if (legacyMapping) {
+    const legacyWorkspace = accessibleWorkspaces.find(
+      (workspace) => workspace.id === legacyMapping.workspaceId,
     );
+
+    if (legacyWorkspace) {
+      return {
+        workspace: legacyWorkspace,
+        resolutionPath: ignoredSelectedWorkspace
+          ? "cookie:ignored-not-member:legacy-email:accessible"
+          : "legacy-email:accessible",
+      };
+    }
+
+    return {
+      workspace: await ensureLegacyWorkspaceForUser(userId),
+      resolutionPath: ignoredSelectedWorkspace
+        ? "cookie:ignored-not-member:legacy-email:ensure"
+        : "legacy-email:ensure",
+    };
   }
 
   return resolveDefaultWorkspaceForUser(
     userId,
     email,
     accessibleWorkspaces,
-    "accessible:fallback",
+    ignoredSelectedWorkspace ? "cookie:ignored-not-member" : "accessible:fallback",
   );
 }

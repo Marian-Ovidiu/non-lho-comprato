@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 
 import { prisma } from "@/src/lib/prisma";
 import {
@@ -221,12 +220,13 @@ export async function joinByLinkAction(
   }
 }
 
-export async function switchWorkspaceAction(formData: FormData) {
+export async function switchWorkspaceAction(
+  formData: FormData,
+): Promise<{ success: boolean }> {
   const workspaceId = String(formData.get("workspaceId") ?? "").trim();
-  const returnTo = String(formData.get("returnTo") ?? "/").trim() || "/";
 
   if (!workspaceId) {
-    redirect(returnTo);
+    return { success: false };
   }
 
   const user = await getCurrentUser();
@@ -234,29 +234,18 @@ export async function switchWorkspaceAction(formData: FormData) {
     where: {
       id: workspaceId,
       OR: [
-        {
-          ownerUserId: user.id,
-        },
-        {
-          members: {
-            some: {
-              userId: user.id,
-            },
-          },
-        },
+        { ownerUserId: user.id },
+        { members: { some: { userId: user.id } } },
       ],
     },
-    select: {
-      id: true,
-    },
+    select: { id: true },
   });
 
   if (!workspace) {
-    redirect(returnTo);
+    return { success: false };
   }
 
   const cookieStore = await cookies();
-
   cookieStore.set(
     WORKSPACE_SELECTION_COOKIE,
     workspace.id,
@@ -264,7 +253,56 @@ export async function switchWorkspaceAction(formData: FormData) {
   );
 
   revalidatePath("/", "layout");
-  revalidatePath(returnTo);
 
-  redirect(returnTo);
+  return { success: true };
+}
+
+type RemoveMemberResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function removeWorkspaceMemberAction(
+  targetUserId: string,
+): Promise<RemoveMemberResult> {
+  if (!targetUserId) {
+    return { success: false, message: "Utente non specificato." };
+  }
+
+  try {
+    const { getCurrentWorkspaceId } = await import("@/src/lib/workspace-context");
+    const user = await getCurrentUser();
+    const workspaceId = await getCurrentWorkspaceId();
+
+    const membership = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId: user.id } },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      return { success: false, message: "Non sei membro di questo workspace." };
+    }
+
+    const targetMembership = await prisma.workspaceMember.findUnique({
+      where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
+      select: { id: true },
+    });
+
+    if (!targetMembership) {
+      return { success: false, message: "Membro non trovato." };
+    }
+
+    await prisma.workspaceMember.delete({
+      where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
+    });
+
+    revalidatePath("/", "layout");
+    revalidatePath("/more");
+    revalidatePath("/workspace/members");
+
+    return { success: true, message: "Membro rimosso." };
+  } catch (error) {
+    console.error("Failed to remove workspace member:", error);
+    return { success: false, message: "Non riesco a rimuovere il membro adesso. Riprova." };
+  }
 }

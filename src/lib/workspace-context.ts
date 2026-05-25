@@ -13,7 +13,6 @@ import {
   getAccessibleWorkspacesForCurrentUser,
 } from "@/src/lib/auth/session";
 
-const LEGACY_CURRENT_USER_ID = "legacy-marian";
 const LEGACY_CURRENT_WORKSPACE_ID = "legacy-marian-martina";
 
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
@@ -36,6 +35,15 @@ export type WorkspaceShellContext = {
   currentWorkspace: CurrentWorkspaceUiContext;
   availableWorkspaces: WorkspaceShellOption[];
   hasMultipleWorkspaces: boolean;
+};
+
+export type CurrentWorkspaceMemberDetail = {
+  userId: string;
+  name: string | null;
+  email: string | null;
+  role: "owner" | "member";
+  joinedAt: Date;
+  isCurrentUser: boolean;
 };
 
 type WorkspaceScopedRecord = {
@@ -107,6 +115,41 @@ export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberOptio
       }),
     })),
   );
+}
+
+export async function getCurrentWorkspaceMemberDetails(): Promise<
+  CurrentWorkspaceMemberDetail[]
+> {
+  const [workspaceId, currentUser] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentUser(),
+  ]);
+
+  const memberships = await prisma.workspaceMember.findMany({
+    where: { workspaceId },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: [
+      { role: "asc" },
+      { createdAt: "asc" },
+    ],
+  });
+
+  return memberships.map((membership) => ({
+    userId: membership.userId,
+    name: membership.user.name,
+    email: membership.user.email,
+    role: membership.role,
+    joinedAt: membership.createdAt,
+    isCurrentUser: membership.userId === currentUser.id,
+  }));
 }
 
 export async function getCurrentWorkspaceScopedWhere<

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, Download, Layers3, MoonStar, Plus, Repeat2, Users } from "lucide-react";
+import { BarChart3, Download, Layers3, MoonStar, Plus, Repeat2, UserRoundCog, Users } from "lucide-react";
 
 import { signOutAction } from "@/src/actions/auth";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
@@ -218,6 +218,16 @@ export default async function MorePage() {
                 <GenerateInviteButton />
               </CardContent>
             </Card>
+          ) : null}
+
+          {workspace ? (
+            <ToolCard
+              href="/workspace/members"
+              label="Partecipanti"
+              description="Vedi, invita o rimuovi persone dal workspace"
+              icon={UserRoundCog}
+              actionLabel="Gestisci partecipanti"
+            />
           ) : null}
 
           <Card className="overflow-hidden border-border shadow-sm dark:border-border">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
   ChevronDown,
@@ -99,6 +99,7 @@ export function WorkspaceSwitcher({
   availableWorkspaces: WorkspaceOption[];
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
   const [switchingWorkspaceId, setSwitchingWorkspaceId] = useState<string | null>(
@@ -210,7 +211,12 @@ export function WorkspaceSwitcher({
                         }
 
                         try {
-                          await switchWorkspaceAction(formData);
+                          const result = await switchWorkspaceAction(formData);
+
+                          if (result.success) {
+                            router.replace(returnTo, { scroll: false });
+                            router.refresh();
+                          }
                         } finally {
                           emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
                         }
