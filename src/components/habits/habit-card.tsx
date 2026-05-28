@@ -48,7 +48,7 @@ type HabitCardProps = {
     id: string;
     name: string;
     categoryId: string;
-    amount: unknown;
+    amount: number;
     activeDays: unknown;
     isActive: boolean;
     defaultBehavior: string;

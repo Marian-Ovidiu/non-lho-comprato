@@ -40,7 +40,7 @@ type HabitListItem = {
   id: string;
   name: string;
   categoryId: string;
-  amount: unknown;
+  amount: number;
   activeDays: unknown;
   isActive: boolean;
   defaultBehavior: string;
@@ -48,8 +48,8 @@ type HabitListItem = {
   targetUserId: string | null;
   reminderEnabled: boolean;
   reminderTime: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   category: {
     id: string;
     name: string;
@@ -65,15 +65,15 @@ type HabitListItem = {
 type TodayHabitOccurrence = {
   id: string;
   habitId: string;
-  date: Date;
+  date: string;
   status: HabitStatus;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
   habit: {
     id: string;
     name: string;
     categoryId: string;
-    amount: unknown;
+    amount: number;
     activeDays: unknown;
     isActive: boolean;
     defaultBehavior: string;
@@ -81,8 +81,8 @@ type TodayHabitOccurrence = {
     targetUserId: string | null;
     reminderEnabled: boolean;
     reminderTime: string | null;
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     category: {
       id: string;
       name: string;
@@ -94,12 +94,115 @@ type TodayHabitOccurrence = {
   entry: {
     id: string;
     title: string;
-    realCost: unknown;
-    alternativeCost: unknown;
-    savedAmount: unknown;
+    realCost: number;
+    alternativeCost: number;
+    savedAmount: number;
     source: string;
   } | null;
 };
+
+function toNumber(value: unknown): number {
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : 0;
+  }
+
+  if (typeof value === "string") {
+    const parsed = Number(value.replace(",", "."));
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+
+  if (value && typeof value === "object") {
+    const decimal = value as { toString?: () => string };
+
+    if (typeof decimal.toString === "function") {
+      const parsed = Number(decimal.toString().replace(",", "."));
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+  }
+
+  return 0;
+}
+
+function serializeHabitListItem(
+  habit: Omit<HabitListItem, "amount" | "createdAt" | "updatedAt"> & {
+    amount: unknown;
+    createdAt: Date;
+    updatedAt: Date;
+  },
+): HabitListItem {
+  return {
+    ...habit,
+    amount: toNumber(habit.amount),
+    createdAt: habit.createdAt.toISOString(),
+    updatedAt: habit.updatedAt.toISOString(),
+  };
+}
+
+function serializeTodayHabitOccurrence(
+  occurrence: {
+    id: string;
+    habitId: string;
+    date: Date;
+    status: HabitStatus;
+    createdAt: Date;
+    updatedAt: Date;
+    habit: {
+      id: string;
+      name: string;
+      categoryId: string;
+      amount: unknown;
+      activeDays: unknown;
+      isActive: boolean;
+      defaultBehavior: string;
+      targetScope: string;
+      targetUserId: string | null;
+      reminderEnabled: boolean;
+      reminderTime: string | null;
+      createdAt: Date;
+      updatedAt: Date;
+      category: {
+        id: string;
+        name: string;
+        slug: string;
+        color: string | null;
+        icon: string | null;
+      };
+    };
+    entry: {
+      id: string;
+      title: string;
+      realCost: unknown;
+      alternativeCost: unknown;
+      savedAmount: unknown;
+      source: string;
+    } | null;
+  },
+): TodayHabitOccurrence {
+  return {
+    id: occurrence.id,
+    habitId: occurrence.habitId,
+    date: occurrence.date.toISOString(),
+    status: occurrence.status,
+    createdAt: occurrence.createdAt.toISOString(),
+    updatedAt: occurrence.updatedAt.toISOString(),
+    habit: {
+      ...occurrence.habit,
+      amount: toNumber(occurrence.habit.amount),
+      createdAt: occurrence.habit.createdAt.toISOString(),
+      updatedAt: occurrence.habit.updatedAt.toISOString(),
+    },
+    entry: occurrence.entry
+      ? {
+          id: occurrence.entry.id,
+          title: occurrence.entry.title,
+          realCost: toNumber(occurrence.entry.realCost),
+          alternativeCost: toNumber(occurrence.entry.alternativeCost),
+          savedAmount: toNumber(occurrence.entry.savedAmount),
+          source: occurrence.entry.source,
+        }
+      : null,
+  };
+}
 
 type OccurrenceWithHabit = {
   id: string;
@@ -923,7 +1026,7 @@ export async function getHabits(): Promise<HabitListItem[]> {
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
-    return await prisma.habit.findMany({
+    const habits = await prisma.habit.findMany({
       where: workspaceWhere,
       orderBy: {
         name: "asc",
@@ -950,6 +1053,8 @@ export async function getHabits(): Promise<HabitListItem[]> {
         },
       },
     });
+
+    return habits.map(serializeHabitListItem);
   } catch (error) {
     console.warn("Failed to load habits:", error);
     return [];
@@ -1015,7 +1120,7 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
-    return await prisma.habitOccurrence.findMany({
+    const occurrences = await prisma.habitOccurrence.findMany({
       where: {
         date: {
           gte: todayStart,
@@ -1056,6 +1161,8 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
         entry: true,
       },
     });
+
+    return occurrences.map(serializeTodayHabitOccurrence);
   } catch (error) {
     console.warn("Failed to load today habit occurrences:", error);
     return [];

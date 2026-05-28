@@ -8,15 +8,15 @@ type TodayHabitsProps = {
   occurrences: Array<{
     id: string;
     habitId: string;
-    date: Date;
+    date: string;
     status: "pending" | "spent" | "avoided" | "skipped";
-    createdAt: Date;
-    updatedAt: Date;
+    createdAt: string;
+    updatedAt: string;
     habit: {
       id: string;
       name: string;
       categoryId: string;
-      amount: unknown;
+      amount: number;
       activeDays: unknown;
       isActive: boolean;
       defaultBehavior: string;
@@ -24,8 +24,8 @@ type TodayHabitsProps = {
       targetUserId: string | null;
       reminderEnabled: boolean;
       reminderTime: string | null;
-      createdAt: Date;
-      updatedAt: Date;
+      createdAt: string;
+      updatedAt: string;
       category: {
         id: string;
         name: string;
@@ -37,9 +37,9 @@ type TodayHabitsProps = {
     entry: {
       id: string;
       title: string;
-      realCost: unknown;
-      alternativeCost: unknown;
-      savedAmount: unknown;
+      realCost: number;
+      alternativeCost: number;
+      savedAmount: number;
       source: string;
     } | null;
   }>;
