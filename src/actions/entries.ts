@@ -1101,6 +1101,13 @@ export async function getCategories() {
       orderBy: {
         name: "asc",
       },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        color: true,
+        icon: true,
+      },
     });
 
     return mergeCategoryOptions(categories);

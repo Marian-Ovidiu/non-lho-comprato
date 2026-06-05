@@ -13,7 +13,7 @@ import { HabitList } from "@/src/components/habits/habit-list";
 import { TodayHabits } from "@/src/components/habits/today-habits";
 import { HabitReminderBanner } from "@/src/components/notifications/habit-reminder-banner";
 import { PageHeader } from "@/src/components/layout/page-header";
-import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { DEFAULT_CATEGORIES, toCategoryOption } from "@/src/lib/categories";
 import {
   getCurrentUser,
   getCurrentWorkspace,
@@ -40,7 +40,7 @@ export default async function HabitsPage() {
 
   const categoryOptions =
     categories.length > 0
-      ? categories
+      ? categories.map(toCategoryOption)
       : DEFAULT_CATEGORIES.map((category) => ({
           id: category.slug,
           name: category.name,

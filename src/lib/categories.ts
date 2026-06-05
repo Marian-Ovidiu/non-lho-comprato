@@ -38,8 +38,30 @@ export type CategoryOption = {
   icon: string | null;
 };
 
+export function toCategoryOption(
+  category: CategoryOption & {
+    workspaceId?: string | null;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+  },
+): CategoryOption {
+  return {
+    id: category.id,
+    name: category.name,
+    slug: category.slug,
+    color: category.color,
+    icon: category.icon,
+  };
+}
+
 export function mergeCategoryOptions(
-  dbCategories: CategoryOption[],
+  dbCategories: Array<
+    CategoryOption & {
+      workspaceId?: string | null;
+      createdAt?: Date | string;
+      updatedAt?: Date | string;
+    }
+  >,
 ): CategoryOption[] {
   const bySlug = new Map<string, CategoryOption>();
 
@@ -54,7 +76,7 @@ export function mergeCategoryOptions(
   }
 
   for (const category of dbCategories) {
-    bySlug.set(category.slug, category);
+    bySlug.set(category.slug, toCategoryOption(category));
   }
 
   return Array.from(bySlug.values()).sort((left, right) =>
