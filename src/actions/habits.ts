@@ -36,6 +36,23 @@ type SyncResult = {
 
 type HabitStatus = "pending" | "spent" | "avoided" | "skipped";
 
+const habitCategorySelect = {
+  id: true,
+  name: true,
+  slug: true,
+  color: true,
+  icon: true,
+} as const;
+
+const habitOccurrenceEntrySelect = {
+  id: true,
+  title: true,
+  realCost: true,
+  alternativeCost: true,
+  savedAmount: true,
+  source: true,
+} as const;
+
 type HabitListItem = {
   id: string;
   name: string;
@@ -1045,7 +1062,9 @@ export async function getHabits(): Promise<HabitListItem[]> {
         reminderTime: true,
         createdAt: true,
         updatedAt: true,
-        category: true,
+        category: {
+          select: habitCategorySelect,
+        },
         _count: {
           select: {
             occurrences: true,
@@ -1155,10 +1174,14 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
             reminderTime: true,
             createdAt: true,
             updatedAt: true,
-            category: true,
+            category: {
+              select: habitCategorySelect,
+            },
           },
         },
-        entry: true,
+        entry: {
+          select: habitOccurrenceEntrySelect,
+        },
       },
     });
 
