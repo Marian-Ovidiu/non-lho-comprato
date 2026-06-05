@@ -521,7 +521,7 @@ export function QuickAddSheet({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "left-1/2 top-auto bottom-0 w-[calc(100%-0.75rem)] max-w-none -translate-x-1/2 translate-y-0 rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
+          "inset-x-3 top-auto bottom-0 w-auto max-w-none translate-x-0 translate-y-0 overflow-x-hidden rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4 sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
         )}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
@@ -530,13 +530,13 @@ export function QuickAddSheet({
       >
         <div
           className={cn(
-            "max-h-[88vh] overflow-y-auto overscroll-contain transition-[opacity,transform,filter] duration-200 ease-out",
+            "max-h-[88vh] min-w-0 overflow-x-hidden overflow-y-auto overscroll-contain transition-[opacity,transform,filter] duration-200 ease-out",
             successStage === "closing" && "opacity-0 translate-y-1 blur-[1px]",
           )}
         >
           <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-1">
+            <div className="flex min-w-0 items-start justify-between gap-4">
+              <div className="min-w-0 flex-1 space-y-1">
                 <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
                   Aggiunta rapida
                 </p>
@@ -578,7 +578,7 @@ export function QuickAddSheet({
             </div>
           </div>
 
-          <div className="grid gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
+          <div className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
             {presets.map((preset, index) => {
               const isActive = activePreset === preset.id;
               const presetIdentity = getCategoryIdentity({
@@ -649,11 +649,14 @@ export function QuickAddSheet({
             </button>
           </div>
 
-          <form action={formAction} className="border-t border-border/70 px-4 py-4 sm:px-6">
+          <form
+            action={formAction}
+            className="min-w-0 border-t border-border/70 px-4 py-4 sm:px-6"
+          >
             <input type="hidden" name="date" value={draft.date} />
             <input type="hidden" name="alternativeCost" value={resolvedAlternativeCost} />
 
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               {state.message ? (
                 <div
                   className={cn(
@@ -696,8 +699,8 @@ export function QuickAddSheet({
                 ) : null}
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-[1.15fr_0.85fr]">
-                <div className="space-y-2">
+              <div className="grid min-w-0 gap-3 sm:grid-cols-[1.15fr_0.85fr]">
+                <div className="min-w-0 space-y-2">
                   <Label htmlFor="quick-category">Categoria</Label>
                   <Select
                     name="categoryId"
@@ -712,7 +715,7 @@ export function QuickAddSheet({
                   >
                     <SelectTrigger
                       id="quick-category"
-                      className="w-full"
+                      className="w-full min-w-0"
                       aria-invalid={Boolean(state.errors?.categoryId)}
                     >
                       <SelectValue placeholder="Categoria" />
@@ -732,7 +735,7 @@ export function QuickAddSheet({
                   ) : null}
                 </div>
 
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                   <Label htmlFor="quick-realCost">Quanto hai speso</Label>
                   <Input
                     id="quick-realCost"
@@ -758,7 +761,7 @@ export function QuickAddSheet({
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="min-w-0 space-y-2">
                 <Label>Data</Label>
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -784,26 +787,27 @@ export function QuickAddSheet({
                     Ieri
                   </Button>
                 </div>
-                <Input
-                  id="quick-date"
-                  type="date"
-                  value={draft.date}
-                  onChange={(event) => {
-                    hasDraftBeenEditedRef.current = true;
-                    setDraft((current) => ({
-                      ...current,
-                      date: event.target.value,
-                    }));
-                  }}
-                />
+                <div className="min-w-0 overflow-hidden">
+                  <Input
+                    id="quick-date"
+                    type="date"
+                    value={draft.date}
+                    onChange={(event) => {
+                      hasDraftBeenEditedRef.current = true;
+                      setDraft((current) => ({
+                        ...current,
+                        date: event.target.value,
+                      }));
+                    }}
+                    className="w-full min-w-0 max-w-full"
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Button
+              <div className="min-w-0 space-y-2">
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="h-auto px-0 text-muted-text hover:bg-transparent hover:text-foreground"
+                  className="w-full text-left text-[13px] text-muted-text transition-colors hover:text-foreground"
                   onClick={() => {
                     setSavingsModeEnabled((current) => {
                       if (current) {
@@ -821,7 +825,7 @@ export function QuickAddSheet({
                   {savingsModeEnabled
                     ? "Nascondi risparmio"
                     : "Ho risparmiato qualcosa?"}
-                </Button>
+                </button>
 
                 {savingsModeEnabled ? (
                   <>
