@@ -69,30 +69,45 @@ function getStorageKey(dateKey: string): string {
   return `${STORAGE_PREFIX}${dateKey}`;
 }
 
-function readActiveIds(dateKey: string): string[] {
+function readActiveIdsSnapshot(dateKey: string): string {
   if (typeof window === "undefined") {
-    return [];
+    return "";
   }
 
   const raw = window.localStorage.getItem(getStorageKey(dateKey));
   if (!raw) {
-    return [];
+    return "";
   }
 
   try {
     const parsed = JSON.parse(raw) as unknown;
     if (!Array.isArray(parsed)) {
-      return [];
+      return "";
     }
 
-    return parsed.filter((value): value is string => typeof value === "string");
+    return parsed
+      .filter((value): value is string => typeof value === "string")
+      .join("|");
   } catch {
+    return "";
+  }
+}
+
+function parseActiveIdsSnapshot(snapshot: string): string[] {
+  if (!snapshot) {
     return [];
   }
+
+  return snapshot.split("|").filter(Boolean);
 }
 
 function writeActiveIds(dateKey: string, ids: string[]) {
   if (typeof window === "undefined") {
+    return;
+  }
+
+  const nextSnapshot = ids.join("|");
+  if (readActiveIdsSnapshot(dateKey) === nextSnapshot) {
     return;
   }
 
@@ -186,12 +201,13 @@ export function HabitReminderBanner({ occurrences }: HabitReminderBannerProps) {
       .filter((occurrence) => !wasAcknowledged(occurrence.id, dateKey));
   }, [dateKey, nowMinutes, occurrences]);
 
-  const activeReminderIds = useSyncExternalStore(
+  const activeReminderSnapshot = useSyncExternalStore(
     subscribe,
-    () => readActiveIds(dateKey),
-    () => [],
+    () => readActiveIdsSnapshot(dateKey),
+    () => "",
   );
-  const activeReminderKey = activeReminderIds.join("|");
+  const activeReminderIds = parseActiveIdsSnapshot(activeReminderSnapshot);
+  const activeReminderKey = activeReminderSnapshot;
 
   useEffect(() => {
     if (dueReminders.length === 0) {
