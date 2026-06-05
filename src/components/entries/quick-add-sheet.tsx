@@ -7,13 +7,13 @@ import { format } from "date-fns";
 import {
   ArrowRight,
   Check,
+  ChevronLeft,
   LockKeyhole,
   Loader2,
   Plus,
   SlidersHorizontal,
   Sparkles,
   Users2,
-  X,
 } from "lucide-react";
 
 import { createEntry } from "@/src/actions/entries";
@@ -49,6 +49,7 @@ import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-
 import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
+import { shiftRomeDateKey } from "@/src/lib/rome-dates";
 
 type CategoryOption = {
   id: string;
@@ -234,6 +235,7 @@ export function QuickAddSheet({
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
+  const [savingsModeEnabled, setSavingsModeEnabled] = useState(false);
   const [alternativeCostTouched, setAlternativeCostTouched] = useState(false);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
@@ -285,10 +287,17 @@ export function QuickAddSheet({
     paidByUserId: draft.paidByUserId,
     beneficiaryUserIds: draft.beneficiaryUserIds,
     enabled:
+      !savingsModeEnabled &&
       !alternativeCostTouched &&
-      draft.alternativeCost.trim().length === 0,
+      draft.realCost.trim().length > 0,
   });
   const showSuggestionLookupState = expenseSuggestion.isLoading;
+  const todayKey = getTodayLocal();
+  const yesterdayKey = shiftRomeDateKey(todayKey, -1);
+  const resolvedAlternativeCost =
+    savingsModeEnabled && draft.alternativeCost.trim()
+      ? draft.alternativeCost
+      : draft.realCost;
 
   const fullFormHref = useMemo(() => getSearchHref(draft, pathname), [draft, pathname]);
 
@@ -421,18 +430,21 @@ export function QuickAddSheet({
     setDraft({
       title: preset.title,
       categoryId: resolveCategoryId(preset.categorySlug),
-      realCost: "",
+      realCost: "0.00",
       alternativeCost: getMoneyValue(preset.amount),
       paidByUserId,
       beneficiaryUserIds,
       date: getTodayLocal(),
     });
+    setSavingsModeEnabled(true);
+    setAlternativeCostTouched(true);
     focusTitleSoon();
   }
 
   function personalize() {
     hasDraftBeenEditedRef.current = true;
     setActivePreset("custom");
+    setSavingsModeEnabled(false);
     setAlternativeCostTouched(false);
     setDraft(getInitialDraft(activeMembers, currentUserId));
     focusTitleSoon();
@@ -458,20 +470,21 @@ export function QuickAddSheet({
     if (
       !expenseSuggestion.suggestion ||
       expenseSuggestion.suggestion.confidence < 0.75 ||
-      alternativeCostTouched ||
-      draft.alternativeCost.trim().length > 0
+      savingsModeEnabled ||
+      alternativeCostTouched
     ) {
       return;
     }
 
     // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSavingsModeEnabled(true);
     setDraft((current) => ({
       ...current,
       alternativeCost: expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
     }));
   }, [
-    draft.alternativeCost,
     expenseSuggestion.suggestion,
+    savingsModeEnabled,
     alternativeCostTouched,
   ]);
 
@@ -485,6 +498,7 @@ export function QuickAddSheet({
 
         if (!nextOpen) {
           setActivePreset(null);
+          setSavingsModeEnabled(false);
           setAlternativeCostTouched(false);
           hasDraftBeenEditedRef.current = false;
           setDraft(getInitialDraft(activeMembers, currentUserId));
@@ -554,12 +568,12 @@ export function QuickAddSheet({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
-                className="shrink-0 rounded-full text-muted-text hover:bg-surface-muted hover:text-foreground"
+                size="sm"
+                className="shrink-0 gap-1 rounded-full px-2 text-foreground hover:bg-surface-muted"
                 onClick={() => setOpen(false)}
-                aria-label="Chiudi"
               >
-                <X className="size-4" aria-hidden="true" />
+                <ChevronLeft className="size-4" aria-hidden="true" />
+                Chiudi
               </Button>
             </div>
           </div>
@@ -637,6 +651,7 @@ export function QuickAddSheet({
 
           <form action={formAction} className="border-t border-border/70 px-4 py-4 sm:px-6">
             <input type="hidden" name="date" value={draft.date} />
+            <input type="hidden" name="alternativeCost" value={resolvedAlternativeCost} />
 
             <div className="space-y-4">
               {state.message ? (
@@ -718,7 +733,7 @@ export function QuickAddSheet({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="quick-realCost">Speso davvero</Label>
+                  <Label htmlFor="quick-realCost">Quanto hai speso</Label>
                   <Input
                     id="quick-realCost"
                     name="realCost"
@@ -744,30 +759,97 @@ export function QuickAddSheet({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="quick-alternativeCost">Quanto avresti speso</Label>
+                <Label>Data</Label>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={draft.date === todayKey ? "default" : "outline"}
+                    onClick={() => {
+                      hasDraftBeenEditedRef.current = true;
+                      setDraft((current) => ({ ...current, date: todayKey }));
+                    }}
+                  >
+                    Oggi
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant={draft.date === yesterdayKey ? "default" : "outline"}
+                    onClick={() => {
+                      hasDraftBeenEditedRef.current = true;
+                      setDraft((current) => ({ ...current, date: yesterdayKey }));
+                    }}
+                  >
+                    Ieri
+                  </Button>
+                </div>
                 <Input
-                  id="quick-alternativeCost"
-                  name="alternativeCost"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={draft.alternativeCost}
+                  id="quick-date"
+                  type="date"
+                  value={draft.date}
                   onChange={(event) => {
                     hasDraftBeenEditedRef.current = true;
-                    setAlternativeCostTouched(true);
                     setDraft((current) => ({
                       ...current,
-                      alternativeCost: event.target.value,
+                      date: event.target.value,
                     }));
                   }}
-                  placeholder="4.00"
-                  aria-invalid={Boolean(state.errors?.alternativeCost)}
                 />
-                {state.errors?.alternativeCost ? (
-                  <p className="text-sm text-destructive">
-                    {state.errors.alternativeCost}
-                  </p>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto px-0 text-muted-text hover:bg-transparent hover:text-foreground"
+                  onClick={() => {
+                    setSavingsModeEnabled((current) => {
+                      if (current) {
+                        return false;
+                      }
+
+                      setDraft((prev) => ({
+                        ...prev,
+                        alternativeCost: prev.alternativeCost || prev.realCost,
+                      }));
+                      return true;
+                    });
+                  }}
+                >
+                  {savingsModeEnabled
+                    ? "Nascondi risparmio"
+                    : "Ho risparmiato qualcosa?"}
+                </Button>
+
+                {savingsModeEnabled ? (
+                  <>
+                    <Label htmlFor="quick-alternativeCost">Quanto avresti speso</Label>
+                    <Input
+                      id="quick-alternativeCost"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={draft.alternativeCost}
+                      onChange={(event) => {
+                        hasDraftBeenEditedRef.current = true;
+                        setAlternativeCostTouched(true);
+                        setDraft((current) => ({
+                          ...current,
+                          alternativeCost: event.target.value,
+                        }));
+                      }}
+                      placeholder="4.00"
+                      aria-invalid={Boolean(state.errors?.alternativeCost)}
+                    />
+                    {state.errors?.alternativeCost ? (
+                      <p className="text-sm text-destructive">
+                        {state.errors.alternativeCost}
+                      </p>
+                    ) : null}
+                  </>
                 ) : null}
                 {showSuggestionLookupState ? (
                   <p
@@ -789,6 +871,7 @@ export function QuickAddSheet({
                   suggestion={expenseSuggestion.suggestion}
                   onApply={() => {
                     hasDraftBeenEditedRef.current = true;
+                    setSavingsModeEnabled(true);
                     setAlternativeCostTouched(false);
                     setDraft((current) => ({
                       ...current,
@@ -826,7 +909,7 @@ export function QuickAddSheet({
                   activeMembers.length === 0 ||
                   !draft.title.trim() ||
                   !draft.categoryId.trim() ||
-                  !draft.alternativeCost.trim()
+                  !draft.realCost.trim()
                 }
               >
                 {pending ? "Salvataggio..." : "Salva"}

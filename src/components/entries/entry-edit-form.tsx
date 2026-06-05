@@ -1,7 +1,9 @@
 ﻿"use client";
 
-import { useActionState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ChevronLeft } from "lucide-react";
 
 import { updateEntry } from "@/src/actions/entries";
 import { Button } from "@/components/ui/button";
@@ -100,6 +102,12 @@ export function EntryEditForm({ entry, categories, members }: EntryEditFormProps
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
+  const [showSavingsField, setShowSavingsField] = useState(
+    entry.alternativeCost !== entry.realCost,
+  );
+  const [realCost, setRealCost] = useState(entry.realCost.toFixed(2));
+  const [alternativeCost, setAlternativeCost] = useState(entry.alternativeCost.toFixed(2));
+  const resolvedAlternativeCost = showSavingsField ? alternativeCost : realCost;
   const redirect = useCallback((path: string) => router.replace(path), [router]);
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) => {
@@ -139,7 +147,20 @@ export function EntryEditForm({ entry, categories, members }: EntryEditFormProps
 
   return (
     <Card className="mx-auto w-full max-w-2xl overflow-hidden border-border shadow-sm">
-      <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
+      <CardHeader className="space-y-3 p-5 pb-0 sm:p-6">
+        <div className="flex items-center justify-between gap-3">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="h-9 gap-1 rounded-full px-2 text-foreground hover:bg-surface-muted"
+          >
+            <Link href="/entries">
+              <ChevronLeft className="size-4" aria-hidden="true" />
+              Indietro
+            </Link>
+          </Button>
+        </div>
         <CardTitle>Modifica movimento</CardTitle>
         <CardDescription className="max-w-xl leading-6">
           {helperText}
@@ -147,6 +168,7 @@ export function EntryEditForm({ entry, categories, members }: EntryEditFormProps
       </CardHeader>
 
       <form ref={formRef} action={formAction}>
+        <input type="hidden" name="alternativeCost" value={resolvedAlternativeCost} />
         <CardContent className="space-y-6 p-5 sm:p-6">
           {state.message ? (
             <div
@@ -203,9 +225,9 @@ export function EntryEditForm({ entry, categories, members }: EntryEditFormProps
           </div>
 
           <div className="rounded-3xl border border-border bg-surface-muted p-4 sm:p-5">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="realCost">Quanto hai speso davvero</Label>
+                <Label htmlFor="realCost">Quanto hai speso</Label>
                 <Input
                   id="realCost"
                   name="realCost"
@@ -214,27 +236,49 @@ export function EntryEditForm({ entry, categories, members }: EntryEditFormProps
                   min="0"
                   step="0.01"
                   placeholder="2.00"
-                  defaultValue={entry.realCost.toFixed(2)}
+                  value={realCost}
+                  onChange={(event) => setRealCost(event.target.value)}
                   aria-invalid={Boolean(state.errors?.realCost)}
                 />
                 <FieldError message={state.errors?.realCost} />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="alternativeCost">Quanto avresti speso</Label>
-                <Input
-                  id="alternativeCost"
-                  name="alternativeCost"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  placeholder="18.00"
-                  defaultValue={entry.alternativeCost.toFixed(2)}
-                  aria-invalid={Boolean(state.errors?.alternativeCost)}
-                />
-                <FieldError message={state.errors?.alternativeCost} />
-              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-auto px-0 text-muted-foreground hover:bg-transparent hover:text-foreground"
+                onClick={() => {
+                  setShowSavingsField((current) => {
+                    if (current) {
+                      return false;
+                    }
+
+                    setAlternativeCost((prev) => prev || realCost);
+                    return true;
+                  });
+                }}
+              >
+                {showSavingsField ? "Nascondi risparmio" : "Ho risparmiato qualcosa?"}
+              </Button>
+
+              {showSavingsField ? (
+                <div className="space-y-2">
+                  <Label htmlFor="alternativeCost">Quanto avresti speso</Label>
+                  <Input
+                    id="alternativeCost"
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.01"
+                    placeholder="18.00"
+                    value={alternativeCost}
+                    onChange={(event) => setAlternativeCost(event.target.value)}
+                    aria-invalid={Boolean(state.errors?.alternativeCost)}
+                  />
+                  <FieldError message={state.errors?.alternativeCost} />
+                </div>
+              ) : null}
             </div>
           </div>
 

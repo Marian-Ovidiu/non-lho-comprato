@@ -216,6 +216,23 @@ function getMoney(formData: FormData, name: string): {
   return { value };
 }
 
+function resolveAlternativeCost(
+  formData: FormData,
+  realCost: { value: number; error?: string },
+): { value: number; error?: string } {
+  const raw = getText(formData, "alternativeCost");
+
+  if (!raw) {
+    if (realCost.error) {
+      return { value: Number.NaN };
+    }
+
+    return { value: realCost.value };
+  }
+
+  return getMoney(formData, "alternativeCost");
+}
+
 function toDecimalString(value: number): string {
   return value.toFixed(2);
 }
@@ -1171,7 +1188,7 @@ export async function createEntry(
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
   const realCost = getMoney(formData, "realCost");
-  const alternativeCost = getMoney(formData, "alternativeCost");
+  const alternativeCost = resolveAlternativeCost(formData, realCost);
   let members: WorkspaceMemberOption[] = [];
 
   try {
@@ -1331,7 +1348,7 @@ export async function updateEntry(
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
   const realCost = getMoney(formData, "realCost");
-  const alternativeCost = getMoney(formData, "alternativeCost");
+  const alternativeCost = resolveAlternativeCost(formData, realCost);
   let members: WorkspaceMemberOption[] = [];
 
   try {

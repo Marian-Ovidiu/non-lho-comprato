@@ -39,12 +39,18 @@ function MobileCategoryList({
   const chartData = [...data]
     .sort((left, right) => right.totalSaved - left.totalSaved)
     .slice(0, 8);
-  const maxSaved = Math.max(...chartData.map((item) => item.totalSaved), 0);
+  const maxMetric = Math.max(
+    ...chartData.flatMap((item) => [item.totalRealSpent, item.totalSaved]),
+    0,
+  );
 
   return (
     <div className="space-y-2 sm:hidden">
       {chartData.map((item) => {
-        const width = maxSaved > 0 ? (item.totalSaved / maxSaved) * 100 : 0;
+        const spentWidth =
+          maxMetric > 0 ? (item.totalRealSpent / maxMetric) * 100 : 0;
+        const savedWidth =
+          maxMetric > 0 ? (item.totalSaved / maxMetric) * 100 : 0;
 
         return (
           <div
@@ -57,7 +63,7 @@ function MobileCategoryList({
                   {item.categoryName}
                 </p>
                 <p className="text-xs text-muted-text">
-                  {item.entriesCount} movimenti
+                  {formatMoney(item.totalRealSpent)} spesi · {item.entriesCount} movimenti
                 </p>
               </div>
               <p className="shrink-0 text-sm font-semibold text-success">
@@ -65,11 +71,23 @@ function MobileCategoryList({
               </p>
             </div>
 
-            <div className="mt-2 h-2 rounded-full bg-surface-muted">
-              <div
-                className="h-2 rounded-full bg-success"
-                style={{ width: `${width}%` }}
-              />
+            <div className="mt-2 space-y-1">
+              <div className="h-1.5 rounded-full bg-surface-muted">
+                <div
+                  className="h-1.5 rounded-full bg-muted-foreground/70"
+                  style={{
+                    width: `${Math.max(spentWidth, item.totalRealSpent > 0 ? 4 : 0)}%`,
+                  }}
+                />
+              </div>
+              <div className="h-1.5 rounded-full bg-surface-muted">
+                <div
+                  className="h-1.5 rounded-full bg-success"
+                  style={{
+                    width: `${Math.max(savedWidth, item.totalSaved > 0 ? 4 : 0)}%`,
+                  }}
+                />
+              </div>
             </div>
           </div>
         );
@@ -120,7 +138,7 @@ export function CategorySavingsChart({ data }: CategorySavingsChartProps) {
           Categorie che contano
         </CardTitle>
         <p className="text-sm leading-6 text-muted-text">
-          Le categorie che ti stanno lasciando più soldi in tasca.
+          Spese e risparmi per categoria, leggibili anche da mobile.
         </p>
       </CardHeader>
       <CardContent className={`pt-3 ${spacing.cardBody}`}>

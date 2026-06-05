@@ -5,8 +5,9 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
-import { ArrowRight, ChevronDown, Loader2 } from "lucide-react";
+import { ArrowRight, ChevronDown, ChevronLeft, Loader2 } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { createEntry } from "@/src/actions/entries";
 import { cn } from "@/lib/utils";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
@@ -67,6 +68,18 @@ const NUMPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ",", "0", "⌫
 
 function getTodayLocal() {
   return format(new Date(), "yyyy-MM-dd");
+}
+
+function parseMoneyString(raw: string | undefined): number {
+  if (!raw) return Number.NaN;
+  const n = parseFloat(raw.replace(",", "."));
+  return Number.isFinite(n) ? n : Number.NaN;
+}
+
+function moneyStringToInput(raw: string | undefined): string {
+  const n = parseMoneyString(raw);
+  if (!Number.isFinite(n) || n <= 0) return "";
+  return n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 }
 
 function rawToCents(raw: string): number {
@@ -141,6 +154,15 @@ export function EntryForm({
   const resolvedInitialBeneficiaryUserIds =
     initialValues?.beneficiaryUserIds ?? initialBeneficiaryUserIds;
 
+  const initialReal = parseMoneyString(initialValues?.realCost);
+  const initialAlt = parseMoneyString(
+    initialValues?.alternativeCost ?? initialValues?.realCost,
+  );
+  const initialSavingsMode =
+    Number.isFinite(initialReal) &&
+    Number.isFinite(initialAlt) &&
+    initialAlt !== initialReal;
+
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">("idle");
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? "");
@@ -149,23 +171,17 @@ export function EntryForm({
     resolvedInitialBeneficiaryUserIds,
   );
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showSavingsField, setShowSavingsField] = useState(initialSavingsMode);
   const [note, setNote] = useState("");
   const [date, setDate] = useState(initialValues?.date ?? getTodayLocal());
-  const [realCostInput, setRealCostInput] = useState<string>(() => {
-    const raw = initialValues?.realCost;
-    if (!raw) return "0";
-    const n = parseFloat(raw.replace(",", "."));
-    if (isNaN(n) || n <= 0) return "0";
-    return n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  });
-
-  const [rawInput, setRawInput] = useState<string>(() => {
-    const raw = initialValues?.alternativeCost ?? initialValues?.realCost;
-    if (!raw) return "";
-    const n = parseFloat(raw.replace(",", "."));
-    if (isNaN(n) || n <= 0) return "";
-    return n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-  });
+  const [amountInput, setAmountInput] = useState(() =>
+    moneyStringToInput(initialValues?.realCost),
+  );
+  const [alternativeInput, setAlternativeInput] = useState(() =>
+    initialSavingsMode
+      ? moneyStringToInput(initialValues?.alternativeCost)
+      : moneyStringToInput(initialValues?.realCost),
+  );
 
   const redirect = useCallback(() => router.replace(returnTo), [router, returnTo]);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({ onComplete: redirect });
@@ -177,7 +193,7 @@ export function EntryForm({
 
   function handleNumpadKey(key: string) {
     triggerHaptic("subtle");
-    setRawInput((prev) => {
+    setAmountInput((prev) => {
       if (key === "⌫") return prev.slice(0, -1);
       if (key === ",") {
         if (prev.includes(",")) return prev;
@@ -221,10 +237,20 @@ export function EntryForm({
     };
   }, []);
 
-  const hasAmount = rawToCents(rawInput) > 0;
-  const canSubmit = hasAmount && title.trim().length > 0 && categories.length > 0 && members.length > 0 && !pending;
-  const realCostValue = (rawToCents(realCostInput) / 100).toFixed(2);
-  const alternativeCostValue = (rawToCents(rawInput) / 100).toFixed(2);
+  const realCents = rawToCents(amountInput);
+  const alternativeCents = showSavingsField
+    ? rawToCents(alternativeInput)
+    : realCents;
+  const hasAmount =
+    realCents > 0 || (showSavingsField && alternativeCents > realCents);
+  const canSubmit =
+    hasAmount &&
+    title.trim().length > 0 &&
+    categories.length > 0 &&
+    members.length > 0 &&
+    !pending;
+  const realCostValue = (realCents / 100).toFixed(2);
+  const alternativeCostValue = (alternativeCents / 100).toFixed(2);
 
   return (
     <>
@@ -238,7 +264,6 @@ export function EntryForm({
           successStage === "closing" && "translate-y-1 opacity-0 blur-[1px]",
         )}
       >
-        {/* Hidden form fields */}
         <input type="hidden" name="realCost" value={realCostValue} />
         <input type="hidden" name="alternativeCost" value={alternativeCostValue} />
         <input type="hidden" name="title" value={title} />
@@ -250,21 +275,24 @@ export function EntryForm({
         <input type="hidden" name="date" value={date} />
         {note.trim() ? <input type="hidden" name="note" value={note} /> : null}
 
-        {/* Sheet header */}
-        <div className="flex items-center justify-between px-5 pb-4 pt-5">
-          <Link
-            href={returnTo}
-            className="text-[15px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+        <div className="flex items-center justify-between px-4 pb-4 pt-5">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="h-9 gap-1 rounded-full px-2 text-foreground hover:bg-surface-muted"
           >
-            Annulla
-          </Link>
+            <Link href={returnTo}>
+              <ChevronLeft className="size-4" aria-hidden="true" />
+              Indietro
+            </Link>
+          </Button>
           <span className="text-[13px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
             Nuovo segnale
           </span>
-          <div className="w-[60px]" />
+          <div className="w-[88px]" />
         </div>
 
-        {/* Error banner */}
         {state.message && !state.success ? (
           <div
             className="mx-5 mb-3 rounded-2xl border border-destructive/20 bg-destructive/10 px-4 py-3 text-sm text-destructive"
@@ -275,7 +303,6 @@ export function EntryForm({
           </div>
         ) : null}
 
-        {/* Amount display */}
         <div className="px-5 pb-7 pt-1 text-center">
           {successStage !== "idle" ? (
             <div className="flex flex-col items-center gap-4 py-4">
@@ -292,7 +319,7 @@ export function EntryForm({
                     className="font-num font-semibold leading-none text-accent"
                     style={{ fontSize: 72, letterSpacing: "-0.06em" }}
                   >
-                    {formatButtonValue(rawInput)}
+                    {formatButtonValue(amountInput)}
                   </span>
                   <span className="font-num text-[26px] font-medium text-muted-foreground">€</span>
                 </div>
@@ -304,25 +331,24 @@ export function EntryForm({
           ) : (
             <>
               <p className="font-serif italic text-sm text-muted-foreground">
-                quanto avrei speso
+                quanto hai speso
               </p>
               <div className="mt-3 flex items-baseline justify-center gap-2">
                 <span
                   className="font-num font-semibold leading-none text-accent"
                   style={{ fontSize: 88, letterSpacing: "-0.06em" }}
                 >
-                  {formatDisplayValue(rawInput)}
+                  {formatDisplayValue(amountInput)}
                 </span>
                 <span className="font-num text-[30px] font-medium text-muted-foreground">€</span>
               </div>
               <p className="mt-2.5 text-[13px] text-muted-foreground">
-                usa il tastierino o correggi il campo sotto
+                usa il tastierino sotto
               </p>
             </>
           )}
         </div>
 
-        {/* Category picker */}
         <div className="pb-4">
           <p className="mb-2.5 px-5 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
             Categoria
@@ -352,7 +378,6 @@ export function EntryForm({
           </div>
         </div>
 
-        {/* Title input */}
         <div className="px-5 pb-4">
           <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3.5">
             <p className="mb-1 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
@@ -379,56 +404,70 @@ export function EntryForm({
           </div>
         ) : null}
 
-        <div className="px-5 pb-4">
-          <div className="grid gap-3 rounded-2xl border border-border bg-surface p-4 sm:grid-cols-2">
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                Speso davvero
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={realCostInput}
-                onChange={(event) => setRealCostInput(normalizeMoneyInput(event.target.value))}
-                placeholder="0,00"
-                className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 font-num text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
-                aria-invalid={Boolean(state.errors?.realCost)}
-              />
-              {state.errors?.realCost ? (
-                <span className="block text-xs text-destructive">{state.errors.realCost}</span>
-              ) : null}
-            </label>
-
-            <label className="space-y-1.5">
-              <span className="block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
-                Quanto avresti speso
-              </span>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={rawInput}
-                onChange={(event) => setRawInput(normalizeMoneyInput(event.target.value))}
-                placeholder="18,00"
-                className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 font-num text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
-                aria-invalid={Boolean(state.errors?.alternativeCost)}
-              />
-              {state.errors?.alternativeCost ? (
-                <span className="block text-xs text-destructive">
-                  {state.errors.alternativeCost}
-                </span>
-              ) : null}
-            </label>
+        {state.errors?.realCost ? (
+          <div className="px-5 pb-2">
+            <p className="text-sm text-destructive">{state.errors.realCost}</p>
           </div>
+        ) : null}
+
+        <div className="px-5 pb-4">
+          <button
+            type="button"
+            onClick={() => {
+              setShowSavingsField((current) => {
+                if (current) {
+                  return false;
+                }
+
+                setAlternativeInput((prev) => prev || amountInput);
+                return true;
+              });
+            }}
+            className="flex w-full items-center justify-center gap-1.5 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
+          >
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform duration-200",
+                showSavingsField && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
+            {showSavingsField ? "Nascondi risparmio" : "Ho risparmiato qualcosa?"}
+          </button>
+
+          {showSavingsField ? (
+            <div className="mt-3 rounded-2xl border border-border bg-surface p-4">
+              <label className="space-y-1.5">
+                <span className="block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                  Quanto avresti speso
+                </span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={alternativeInput}
+                  onChange={(event) =>
+                    setAlternativeInput(normalizeMoneyInput(event.target.value))
+                  }
+                  placeholder="18,00"
+                  className="h-11 w-full rounded-xl border border-border bg-surface-muted px-3 font-num text-sm text-foreground outline-none placeholder:text-muted-foreground/40"
+                  aria-invalid={Boolean(state.errors?.alternativeCost)}
+                />
+                {state.errors?.alternativeCost ? (
+                  <span className="block text-xs text-destructive">
+                    {state.errors.alternativeCost}
+                  </span>
+                ) : null}
+              </label>
+            </div>
+          ) : null}
         </div>
 
         <div className="flex-1" />
 
-        {/* Numpad */}
         <div className="px-3 pb-3">
           <Numpad onKey={handleNumpadKey} />
         </div>
 
-        {/* CTA + advanced */}
         <div className="px-4 pb-[calc(env(safe-area-inset-bottom)+7.5rem)]">
           <button
             type="submit"
@@ -449,13 +488,14 @@ export function EntryForm({
               </>
             ) : (
               <>
-                {hasAmount ? `Aggiungi ${formatButtonValue(rawInput)}€ ai segnali` : "Inserisci un importo"}
+                {hasAmount
+                  ? `Aggiungi ${formatButtonValue(amountInput)}€ ai segnali`
+                  : "Inserisci un importo"}
                 {hasAmount ? <ArrowRight className="size-4" aria-hidden="true" /> : null}
               </>
             )}
           </button>
 
-          {/* Advanced options */}
           <button
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
