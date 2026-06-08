@@ -19,8 +19,6 @@ import {
 } from "@/src/lib/daily-spending-comparison";
 import { getRomeMonthKey } from "@/src/lib/rome-dates";
 
-export type { DailySpendingComparison };
-
 type StatsOverview = {
   totalRealSpent: number;
   totalAlternativeCost: number;
