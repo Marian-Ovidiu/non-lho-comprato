@@ -5,6 +5,7 @@ import { AppShell } from "@/src/components/layout/app-shell";
 import { PostHogNavigationTracker } from "@/src/components/analytics/posthog-navigation-tracker";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { SplashGate } from "@/src/components/splash/splash-gate";
+import { ThemeProvider } from "@/src/components/theme/theme-provider";
 import { getSplashBootstrapScript, SPLASH_SHELL_ID } from "@/src/lib/splash";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
@@ -71,7 +72,8 @@ export default async function RootLayout({
           <img src="/logo-euro.png" alt="" width={168} height={168} decoding="sync" />
         </div>
         <script dangerouslySetInnerHTML={{ __html: getSplashBootstrapScript() }} />
-        <SplashGate>
+        <ThemeProvider>
+          <SplashGate>
           <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />
           {authenticatedUser && workspaceShell ? (
             <AppShell
@@ -89,7 +91,8 @@ export default async function RootLayout({
             children
           )}
           <RegisterSW />
-        </SplashGate>
+          </SplashGate>
+        </ThemeProvider>
       </body>
     </html>
   );

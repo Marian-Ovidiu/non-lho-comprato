@@ -1,3 +1,5 @@
+import { applyStoredTheme } from "@/src/lib/theme";
+
 export const SPLASH_BACKGROUND = "#15331e";
 export const SPLASH_SEEN_KEY = "nlc-splash-seen";
 export const SPLASH_PENDING_CLASS = "nlc-splash-pending";
@@ -21,4 +23,5 @@ export function clearSplashBootstrapShell() {
 
   document.documentElement.classList.remove(SPLASH_PENDING_CLASS);
   document.getElementById(SPLASH_SHELL_ID)?.remove();
+  applyStoredTheme();
 }

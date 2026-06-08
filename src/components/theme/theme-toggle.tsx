@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import {
   applyTheme,
   getSystemTheme,
+  readThemePreference,
   resolveTheme,
   THEME_STORAGE_KEY,
   type ThemePreference,
@@ -24,16 +25,9 @@ const options: Array<{
 ];
 
 export function ThemeSelector() {
-  const [preference, setPreference] = useState<ThemePreference>(() => {
-    if (typeof window === "undefined") {
-      return "system";
-    }
-
-    const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
-      ? storedTheme
-      : "system";
-  });
+  const [preference, setPreference] = useState<ThemePreference>(() =>
+    readThemePreference(),
+  );
   const [systemTheme, setSystemTheme] = useState<"light" | "dark">(() =>
     getSystemTheme(),
   );
@@ -41,9 +35,7 @@ export function ThemeSelector() {
   useEffect(() => {
     const resolvedTheme = resolveTheme(preference);
     applyTheme(resolvedTheme);
-    if (window.localStorage.getItem(THEME_STORAGE_KEY) !== preference) {
-      window.localStorage.setItem(THEME_STORAGE_KEY, preference);
-    }
+    window.localStorage.setItem(THEME_STORAGE_KEY, preference);
   }, [preference]);
 
   useEffect(() => {
@@ -78,6 +70,7 @@ export function ThemeSelector() {
       applyTheme(nextTheme);
     };
 
+    handleChange();
     media.addEventListener("change", handleChange);
     return () => media.removeEventListener("change", handleChange);
   }, [preference]);
