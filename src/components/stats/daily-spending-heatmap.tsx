@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
 
 import { cn } from "@/lib/utils";
 import type {
@@ -14,6 +15,14 @@ type DailySpendingHeatmapProps = {
 };
 
 const WEEKDAY_LABELS = ["L", "M", "M", "G", "V", "S", "D"];
+const VIEWPORT_MARGIN = 12;
+const TOOLTIP_GAP = 8;
+
+type TooltipPosition = {
+  top: number;
+  left: number;
+  ready: boolean;
+};
 
 function formatSignedMoney(value: number): string {
   const normalized = formatMoney(Math.abs(value));
@@ -89,24 +98,93 @@ function buildCalendarGrid(days: DailySpendingCell[]): Array<DailySpendingCell |
   return grid;
 }
 
+function clampTooltipPosition(
+  anchor: HTMLElement,
+  tooltip: HTMLElement,
+): TooltipPosition {
+  const anchorRect = anchor.getBoundingClientRect();
+  const tooltipRect = tooltip.getBoundingClientRect();
+  const maxLeft = window.innerWidth - tooltipRect.width - VIEWPORT_MARGIN;
+  const maxTop = window.innerHeight - tooltipRect.height - VIEWPORT_MARGIN;
+
+  let top = anchorRect.bottom + TOOLTIP_GAP;
+  let left = anchorRect.left + anchorRect.width / 2 - tooltipRect.width / 2;
+
+  if (top > maxTop) {
+    top = anchorRect.top - tooltipRect.height - TOOLTIP_GAP;
+  }
+
+  if (top < VIEWPORT_MARGIN) {
+    top = VIEWPORT_MARGIN;
+  }
+
+  left = Math.max(VIEWPORT_MARGIN, Math.min(left, maxLeft));
+
+  return { top, left, ready: true };
+}
+
 function DayTooltip({
+  anchorRef,
   cell,
   previousCell,
   previousAbbrev,
 }: {
+  anchorRef: RefObject<HTMLButtonElement | null>;
   cell: DailySpendingCell;
   previousCell: DailySpendingCell | null | undefined;
   previousAbbrev: string;
 }) {
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [position, setPosition] = useState<TooltipPosition>({
+    top: 0,
+    left: 0,
+    ready: false,
+  });
+
   const delta =
     previousCell?.dateKey != null
       ? cell.totalRealSpent - previousCell.totalRealSpent
       : null;
 
-  return (
+  const updatePosition = () => {
+    const anchor = anchorRef.current;
+    const tooltip = tooltipRef.current;
+    if (!anchor || !tooltip) return;
+
+    setPosition(clampTooltipPosition(anchor, tooltip));
+  };
+
+  useLayoutEffect(() => {
+    updatePosition();
+  }, [anchorRef, cell.dateKey, previousCell?.dateKey, previousAbbrev]);
+
+  useEffect(() => {
+    const handleLayoutChange = () => {
+      updatePosition();
+    };
+
+    window.addEventListener("resize", handleLayoutChange);
+    window.addEventListener("scroll", handleLayoutChange, true);
+
+    return () => {
+      window.removeEventListener("resize", handleLayoutChange);
+      window.removeEventListener("scroll", handleLayoutChange, true);
+    };
+  }, [anchorRef, cell.dateKey, previousCell?.dateKey, previousAbbrev]);
+
+  const tooltip = (
     <div
-      className="absolute left-1/2 top-full z-30 mt-2 w-max max-w-[min(12rem,calc(100vw-3rem))] -translate-x-1/2 rounded-xl border border-border/80 bg-popover px-3 py-2.5 text-left shadow-[0_12px_30px_-18px_rgba(0,0,0,0.55)]"
+      ref={tooltipRef}
+      data-day-tooltip
       role="tooltip"
+      style={{
+        position: "fixed",
+        top: position.top,
+        left: position.left,
+        visibility: position.ready ? "visible" : "hidden",
+        zIndex: 60,
+      }}
+      className="w-max max-w-[min(12rem,calc(100vw-1.5rem))] rounded-xl border border-border/80 bg-popover px-3 py-2.5 text-left shadow-[0_12px_30px_-18px_rgba(0,0,0,0.55)]"
     >
       <p className="font-num text-sm font-semibold text-popover-foreground">
         {formatMoney(cell.totalRealSpent)}
@@ -139,6 +217,8 @@ function DayTooltip({
       ) : null}
     </div>
   );
+
+  return createPortal(tooltip, document.body);
 }
 
 function DayCell({
@@ -156,6 +236,8 @@ function DayCell({
   isSelected: boolean;
   onToggle: () => void;
 }) {
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
   if (!cell.dateKey) {
     return <div aria-hidden="true" className="aspect-square min-h-11" />;
   }
@@ -166,6 +248,7 @@ function DayCell({
   return (
     <div className="relative" data-day-cell>
       <button
+        ref={buttonRef}
         type="button"
         disabled={!interactive}
         aria-expanded={isSelected}
@@ -197,6 +280,7 @@ function DayCell({
       </button>
       {isSelected && interactive ? (
         <DayTooltip
+          anchorRef={buttonRef}
           cell={cell}
           previousCell={previousCell}
           previousAbbrev={previousAbbrev}
@@ -223,8 +307,9 @@ export function DailySpendingHeatmap({ data }: DailySpendingHeatmapProps) {
 
     const handlePointerDown = (event: MouseEvent | TouchEvent) => {
       const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (containerRef.current?.contains(target)) return;
+      if (!(target instanceof Element)) return;
+      if (target.closest("[data-day-cell]")) return;
+      if (target.closest("[data-day-tooltip]")) return;
       setSelectedDateKey(null);
     };
 
@@ -246,7 +331,7 @@ export function DailySpendingHeatmap({ data }: DailySpendingHeatmapProps) {
   return (
     <div
       ref={containerRef}
-      className="overflow-hidden rounded-[14px] border border-border bg-surface p-[18px]"
+      className="rounded-[14px] border border-border bg-surface p-[18px]"
     >
       <div className="mb-3 space-y-0.5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
