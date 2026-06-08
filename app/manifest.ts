@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const PWA_SPLASH_COLOR = "#09090b";
+const PWA_THEME_COLOR = "#1b3a2f";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -12,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
     display: "fullscreen",
     display_override: ["fullscreen", "standalone"],
     orientation: "portrait",
-    background_color: PWA_SPLASH_COLOR,
-    theme_color: PWA_SPLASH_COLOR,
+    background_color: PWA_THEME_COLOR,
+    theme_color: PWA_THEME_COLOR,
     icons: [
       {
         src: "/icons/icon-192.png",

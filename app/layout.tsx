@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { AppShell } from "@/src/components/layout/app-shell";
 import { PostHogNavigationTracker } from "@/src/components/analytics/posthog-navigation-tracker";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
+import { SplashGate } from "@/src/components/splash/splash-gate";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
@@ -38,7 +39,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f4f1ea" },
+    { media: "(prefers-color-scheme: light)", color: "#1b3a2f" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },
   ],
   width: "device-width",
@@ -64,23 +65,25 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body className="min-h-[100dvh] flex flex-col bg-background text-foreground">
-        <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />
-        {authenticatedUser && workspaceShell ? (
-          <AppShell
-            workspace={workspaceShell.currentWorkspace}
-            availableWorkspaces={workspaceShell.availableWorkspaces}
-            currentUserId={authenticatedUser.id}
-            auth={{
-              isAuthenticated: true,
-              userLabel: authenticatedUser.name ?? authenticatedUser.email ?? null,
-            }}
-          >
-            {children}
-          </AppShell>
-        ) : (
-          children
-        )}
-        <RegisterSW />
+        <SplashGate>
+          <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />
+          {authenticatedUser && workspaceShell ? (
+            <AppShell
+              workspace={workspaceShell.currentWorkspace}
+              availableWorkspaces={workspaceShell.availableWorkspaces}
+              currentUserId={authenticatedUser.id}
+              auth={{
+                isAuthenticated: true,
+                userLabel: authenticatedUser.name ?? authenticatedUser.email ?? null,
+              }}
+            >
+              {children}
+            </AppShell>
+          ) : (
+            children
+          )}
+          <RegisterSW />
+        </SplashGate>
       </body>
     </html>
   );
