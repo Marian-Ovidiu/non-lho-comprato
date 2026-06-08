@@ -347,6 +347,31 @@
   0%, 100% { transform: translateY(0) scale(1); }
   50%      { transform: translateY(-1px) scale(1.04); }
 }
+
+/* Splash bootstrap: static shell before React hydrates (see src/lib/splash.ts) */
+html.nlc-splash-pending,
+html.nlc-splash-pending body {
+  background: #15331e !important;
+  overflow: hidden;
+}
+
+#nlc-splash-shell {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: #15331e;
+}
+
+#nlc-splash-shell img {
+  width: 168px;
+  height: 168px;
+  border-radius: 40px;
+  object-fit: cover;
+  transform: scale(1.08);
+}
 .nlc-flame { animation: nlc-flame 1.6s ease-in-out infinite; }
 
 @keyframes nlc-pop {

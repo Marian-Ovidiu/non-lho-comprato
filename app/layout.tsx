@@ -5,6 +5,7 @@ import { AppShell } from "@/src/components/layout/app-shell";
 import { PostHogNavigationTracker } from "@/src/components/analytics/posthog-navigation-tracker";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { SplashGate } from "@/src/components/splash/splash-gate";
+import { getSplashBootstrapScript, SPLASH_SHELL_ID } from "@/src/lib/splash";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
@@ -39,8 +40,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#1b3a2f" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
+    { media: "(prefers-color-scheme: light)", color: "#15331e" },
+    { media: "(prefers-color-scheme: dark)", color: "#15331e" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -65,6 +66,11 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body className="min-h-[100dvh] flex flex-col bg-background text-foreground">
+        <div id={SPLASH_SHELL_ID} aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logo-euro.png" alt="" width={168} height={168} decoding="sync" />
+        </div>
+        <script dangerouslySetInnerHTML={{ __html: getSplashBootstrapScript() }} />
         <SplashGate>
           <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />
           {authenticatedUser && workspaceShell ? (

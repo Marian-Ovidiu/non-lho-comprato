@@ -1,28 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { AppSplash } from "@/src/components/splash/app-splash";
+import { SPLASH_SEEN_KEY } from "@/src/lib/splash";
 
 type SplashGateProps = {
   children: React.ReactNode;
 };
 
-export function SplashGate({ children }: SplashGateProps) {
-  const [show, setShow] = useState(false);
+function shouldShowSplash() {
+  if (typeof window === "undefined") {
+    return false;
+  }
 
-  useEffect(() => {
-    setShow(!sessionStorage.getItem("nlc-splash-seen"));
-  }, []);
+  return !sessionStorage.getItem(SPLASH_SEEN_KEY);
+}
+
+export function SplashGate({ children }: SplashGateProps) {
+  const [show, setShow] = useState(shouldShowSplash);
 
   return (
     <>
       {children}
       {show ? (
         <AppSplash
-          minDuration={2200}
+          minDuration={2700}
           onDone={() => {
-            sessionStorage.setItem("nlc-splash-seen", "1");
+            sessionStorage.setItem(SPLASH_SEEN_KEY, "1");
             setShow(false);
           }}
         />

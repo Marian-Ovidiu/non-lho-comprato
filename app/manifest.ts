@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const PWA_THEME_COLOR = "#1b3a2f";
+const PWA_THEME_COLOR = "#15331e";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
