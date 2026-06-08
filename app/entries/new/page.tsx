@@ -1,5 +1,5 @@
 import { getCategories } from "@/src/actions/entries";
-import { EntryForm } from "@/src/components/entries/entry-form";
+import { CraftedEntryForm } from "@/src/components/entries/crafted-entry-form";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import {
   getDefaultBeneficiaryUserIds,
@@ -89,7 +89,7 @@ export default async function NewEntryPage({
   }
 
   return (
-    <EntryForm
+    <CraftedEntryForm
       categories={categories}
       members={members}
       initialPaidByUserId={paidByUserId}

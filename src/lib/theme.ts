@@ -15,7 +15,7 @@ export function getSystemTheme(): ResolvedTheme {
 
 export function readThemePreference(): ThemePreference {
   if (typeof window === "undefined") {
-    return "system";
+    return "dark";
   }
 
   const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -28,7 +28,7 @@ export function readThemePreference(): ThemePreference {
     return storedTheme;
   }
 
-  return "system";
+  return "dark";
 }
 
 export function resolveTheme(preference: ThemePreference): ResolvedTheme {
@@ -58,7 +58,7 @@ export function getThemeBootstrapScript() {
     const preference =
       storedTheme === "light" || storedTheme === "dark" || storedTheme === "system"
         ? storedTheme
-        : "system";
+        : "dark";
     const theme = preference === "system"
       ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
       : preference;

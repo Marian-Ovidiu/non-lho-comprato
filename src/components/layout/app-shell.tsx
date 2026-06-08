@@ -3,19 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import {
-  BarChart3,
-  Home,
-  List,
-  Loader2,
-  MoreHorizontal,
-  Target,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
+import { Rule } from "@/components/crafted";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { MobileTabBar } from "@/src/components/layout/mobile-tab-bar";
+import { CraftedBottomBar } from "@/src/components/layout/crafted-bottom-bar";
+import { CraftedMasthead } from "@/src/components/layout/crafted-masthead";
 import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-reminder-on-open";
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
@@ -33,15 +27,13 @@ export type AppShellAuth = {
   userLabel?: string | null;
 };
 
-const primaryNavItems = [
-  { href: "/", label: "Oggi", icon: Home },
-  { href: "/entries", label: "Movimenti", icon: List },
-  { href: "/goals", label: "Obiettivi", icon: Target },
-  { href: "/stats", label: "Statistiche", icon: BarChart3 },
-  { href: "/more", label: "Altro", icon: MoreHorizontal },
+const desktopNavItems = [
+  { href: "/", label: "Oggi" },
+  { href: "/entries", label: "Movimenti" },
+  { href: "/goals", label: "Obiettivi" },
+  { href: "/stats", label: "Statistiche" },
+  { href: "/more", label: "Altro" },
 ] as const;
-
-const desktopNavItems = primaryNavItems;
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") {
@@ -55,49 +47,30 @@ function isActivePath(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-function NavButton({
+function DesktopNavLink({
   href,
   label,
-  icon: Icon,
   active,
-  mobile = false,
 }: {
   href: string;
   label: string;
-  icon: LucideIcon;
   active: boolean;
-  mobile?: boolean;
 }) {
   return (
-    <Button
-      asChild
-      variant="ghost"
-      size="sm"
+    <Link
+      href={href}
+      prefetch
+      aria-current={active ? "page" : undefined}
+      onClick={() => !active && triggerHaptic("subtle")}
       className={cn(
-        mobile
-          ? "h-12 flex-col gap-1 rounded-2xl px-1 text-[10px] font-medium transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:translate-y-0 active:scale-[0.99]"
-          : "min-w-fit shrink-0 justify-start gap-2 rounded-full px-4 transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:translate-y-0 active:scale-[0.99]",
+        "whitespace-nowrap border-b-[1.5px] pb-2 text-sm transition-colors",
         active
-          ? "bg-accent/10 text-accent ring-1 ring-accent/20 shadow-sm hover:bg-accent/10"
-          : "text-muted-foreground hover:bg-surface-muted/60 hover:text-foreground",
+          ? "border-accent font-semibold text-foreground"
+          : "border-transparent font-[450] text-ink-3 hover:text-muted-foreground",
       )}
     >
-      <Link
-        href={href}
-        prefetch
-        aria-current={active ? "page" : undefined}
-      >
-        <Icon
-          className={cn(
-            "size-4 transition-transform duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
-            mobile && "size-5",
-            active && "scale-[1.06]",
-          )}
-          aria-hidden="true"
-        />
-        <span className="leading-none">{label}</span>
-      </Link>
-    </Button>
+      {label}
+    </Link>
   );
 }
 
@@ -117,7 +90,7 @@ function AccountButton({
 
   if (!isAuthenticated) {
     return (
-      <Button asChild variant="outline" size="sm" className="h-9 rounded-full px-3">
+      <Button asChild variant="outline" size="sm" className="h-8 rounded-full px-3 text-xs">
         <Link href="/login">Accedi</Link>
       </Button>
     );
@@ -128,13 +101,12 @@ function AccountButton({
       asChild
       variant="ghost"
       size="sm"
-      className="h-9 gap-2 rounded-full border border-border/70 bg-background/60 px-3 text-foreground transition-[transform,background-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] hover:bg-surface-muted/70"
+      className="h-8 rounded-full px-2 text-foreground hover:bg-surface-muted/60"
     >
       <Link href="/more" aria-label="Apri profilo">
-        <span className="inline-flex size-6 items-center justify-center rounded-full border border-border bg-surface text-[10px] font-semibold text-foreground">
+        <span className="inline-flex size-6 items-center justify-center rounded-full border border-line text-[10px] font-semibold">
           {initials}
         </span>
-        <span className="hidden sm:inline">Profilo</span>
       </Link>
     </Button>
   );
@@ -190,7 +162,7 @@ export function AppShell({
         "nlc:workspace-switch-start",
         handleWorkspaceSwitchStart,
       );
-    window.removeEventListener("nlc:workspace-switch-end", handleWorkspaceSwitchEnd);
+      window.removeEventListener("nlc:workspace-switch-end", handleWorkspaceSwitchEnd);
     };
   }, []);
 
@@ -209,9 +181,22 @@ export function AppShell({
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
-      <header className="sticky top-0 z-30 border-b border-border bg-surface/84 backdrop-blur supports-[backdrop-filter]:bg-surface/78">
-        <div className="mx-auto w-full max-w-5xl px-4 py-2 pt-[calc(env(safe-area-inset-top)+0.5rem)] sm:px-6 sm:pt-[calc(env(safe-area-inset-top)+0.5rem)] lg:px-8">
-          <div className="flex items-center justify-between gap-3">
+      <header className="sticky top-0 z-30 bg-background">
+        <div className="mx-auto w-full max-w-5xl">
+          <CraftedMasthead
+            trailing={
+              <div className="hidden items-center gap-1 sm:flex">
+                <InstallButton compact />
+                <AccountButton
+                  isAuthenticated={auth.isAuthenticated}
+                  userLabel={auth.userLabel}
+                />
+              </div>
+            }
+          />
+          <Rule />
+
+          <div className="flex items-center justify-between gap-3 px-5 py-2.5">
             <div className="min-w-0 flex-1 space-y-1">
               <WorkspaceSwitcher
                 currentWorkspace={workspace}
@@ -219,7 +204,7 @@ export function AppShell({
               />
               {isWorkspaceSwitching ? (
                 <p
-                  className="inline-flex items-center gap-1 rounded-full border border-premium-accent/20 bg-premium-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-premium-accent"
+                  className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.16em] text-accent"
                   aria-live="polite"
                 >
                   <Loader2
@@ -231,7 +216,7 @@ export function AppShell({
               ) : null}
             </div>
 
-            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+            <div className="flex shrink-0 items-center gap-1 sm:hidden">
               <InstallButton compact />
               <AccountButton
                 isAuthenticated={auth.isAuthenticated}
@@ -240,23 +225,27 @@ export function AppShell({
             </div>
           </div>
 
-          <nav aria-label="Navigazione desktop" className="mt-2 hidden gap-2 md:flex">
+          <nav
+            aria-label="Navigazione desktop"
+            className="hidden gap-5 overflow-x-auto px-5 pb-3 md:flex"
+          >
             {desktopNavItems.map((item) => (
-              <NavButton
+              <DesktopNavLink
                 key={item.href}
                 href={item.href}
                 label={item.label}
-                icon={item.icon}
                 active={isActivePath(pathname, item.href)}
               />
             ))}
           </nav>
+
+          <Rule />
         </div>
       </header>
 
       <div
         className={cn(
-          "mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+8rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8",
+          "mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8",
           "transition-[opacity,filter] duration-150 ease-out motion-reduce:transition-none",
           isWorkspaceSwitching && "pointer-events-none opacity-75 blur-[0.5px]",
         )}
@@ -264,10 +253,7 @@ export function AppShell({
         {children}
       </div>
 
-      <MobileTabBar
-        workspace={workspace}
-        currentUserId={currentUserId}
-      />
+      <CraftedBottomBar workspace={workspace} currentUserId={currentUserId} />
     </div>
   );
 }

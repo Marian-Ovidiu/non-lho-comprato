@@ -1,7 +1,8 @@
-import { LoginPanel } from "@/src/components/auth/login-panel";
+import { Label, Mono, Rule } from "@/components/crafted";
+import { CraftedInviteLoginShell } from "@/src/components/invites/crafted-invite-login-shell";
+import { CraftedInviteMessage } from "@/src/components/invites/crafted-invite-message";
 import { InviteAcceptancePanel } from "@/src/components/invites/invite-acceptance-panel";
-import { PageHeader } from "@/src/components/layout/page-header";
-import { Card, CardContent } from "@/components/ui/card";
+import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import {
   getWorkspaceInviteByTokenHash,
@@ -24,17 +25,12 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
 
   if (!invite) {
     return (
-      <main className="space-y-5 sm:space-y-6">
-        <PageHeader
+      <main className="pb-6">
+        <CraftedInviteMessage
           title="Invito non disponibile"
           context="Questo link non è più valido."
+          message="Chiedi un nuovo link a chi ti ha invitato."
         />
-
-        <Card className="overflow-hidden border-border/80 bg-surface/80 shadow-sm">
-          <CardContent className="p-4 text-sm leading-6 text-muted-text">
-            Chiedi un nuovo link a chi ti ha invitato.
-          </CardContent>
-        </Card>
       </main>
     );
   }
@@ -43,45 +39,35 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
 
   if (!authUser) {
     return (
-      <main className="mx-auto flex min-h-[100dvh] w-full max-w-md items-center px-5 py-8 sm:px-6 lg:px-8">
-        <section className="w-full space-y-5">
-          <PageHeader
-            title="Invito condiviso"
-            context="Accedi per aprire l'invito con l'account giusto."
-          />
-          <LoginPanel
-            compact
-            providers={["google"]}
-            className="mx-auto w-full"
-            redirectPath={`/invite/${token}`}
-            title="Accedi per accettare"
-            description="Entra con Google e torna qui per completare l'invito."
-          />
-        </section>
-      </main>
+      <CraftedInviteLoginShell
+        redirectPath={`/invite/${token}`}
+        title="Invito condiviso"
+        description="Accedi per aprire l'invito con l'account giusto."
+        panelTitle="Accedi per accettare"
+        panelDescription="Entra con Google e torna qui per completare l'invito."
+      />
     );
   }
 
   if (invite.expiresAt.getTime() < now.getTime()) {
     return (
-      <main className="space-y-5 sm:space-y-6">
-        <PageHeader title="Invito non disponibile" context="Questo link è scaduto." />
-
-        <Card className="overflow-hidden border-border/80 bg-surface/80 shadow-sm">
-          <CardContent className="p-4 text-sm leading-6 text-muted-text">
-            Chiedi un nuovo link a chi ti ha invitato.
-          </CardContent>
-        </Card>
+      <main className="pb-6">
+        <CraftedInviteMessage
+          title="Invito non disponibile"
+          context="Questo link è scaduto."
+          message="Chiedi un nuovo link a chi ti ha invitato."
+        />
       </main>
     );
   }
 
   if (!invite.workspace) {
     return (
-      <main className="space-y-5 sm:space-y-6">
-        <PageHeader
+      <main className="pb-6">
+        <CraftedInviteMessage
           title="Invito non disponibile"
           context="Lo spazio collegato a questo invito non è più disponibile."
+          message="Chiedi un nuovo link a chi ti ha invitato."
         />
       </main>
     );
@@ -92,17 +78,12 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
     const currentEmail = normalizeInviteEmail(authUser.email ?? "");
     if (!currentEmail || currentEmail !== invite.invitedEmail) {
       return (
-        <main className="space-y-5 sm:space-y-6">
-          <PageHeader
+        <main className="pb-6">
+          <CraftedInviteMessage
             title="Invito non disponibile"
             context="Apri questo link con l'account a cui è stato inviato."
+            message="Questo invito è collegato a un altro indirizzo email."
           />
-
-          <Card className="overflow-hidden border-border/80 bg-surface/80 shadow-sm">
-            <CardContent className="p-4 text-sm leading-6 text-muted-text">
-              Questo invito è collegato a un altro indirizzo email.
-            </CardContent>
-          </Card>
         </main>
       );
     }
@@ -111,8 +92,8 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
   const alreadyAccepted = Boolean(invite.acceptedAt);
 
   return (
-    <main className="space-y-5 sm:space-y-6">
-      <PageHeader
+    <main className="pb-6">
+      <CraftedSubpageHeader
         backHref="/"
         title="Invito condiviso"
         context={
@@ -120,18 +101,14 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
             ? "Questo spazio è già stato accettato. Puoi aprirlo subito."
             : "Stai per entrare in uno spazio condiviso."
         }
-        chips={[
-          {
-            label: invite.workspace.kind === "shared" ? "Condiviso" : "Privato",
-            tone: "premium",
-          },
-        ]}
+        meta={
+          <Mono className="shrink-0 text-[11px] text-ink-3">
+            {invite.workspace.kind === "shared" ? "Condiviso" : "Privato"}
+          </Mono>
+        }
       />
-
-      <InviteAcceptancePanel
-        token={token}
-        workspaceNameHint={invite.workspace.name}
-      />
+      <Rule />
+      <InviteAcceptancePanel token={token} workspaceNameHint={invite.workspace.name} />
     </main>
   );
 }

@@ -41,8 +41,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#15331e" },
-    { media: "(prefers-color-scheme: dark)", color: "#15331e" },
+    { media: "(prefers-color-scheme: light)", color: "#0a0a09" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a09" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -60,7 +60,7 @@ export default async function RootLayout({
   return (
     <html
       lang="it"
-      className={`${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
+      className={`dark ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

@@ -1,22 +1,27 @@
 export const dynamic = "force-dynamic";
 
-import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { redirect } from "next/navigation";
-import { PageHeader } from "@/src/components/layout/page-header";
+
+import { Rule } from "@/components/crafted";
+import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { CreateWorkspaceForm } from "@/src/components/workspace/create-workspace-form";
+import { getAuthenticatedUser } from "@/src/lib/auth/session";
 
 export default async function NewWorkspacePage() {
   const user = await getAuthenticatedUser();
   if (!user) redirect("/login");
 
   return (
-    <main className="space-y-5 sm:space-y-6">
-      <PageHeader
+    <main className="pb-6">
+      <CraftedSubpageHeader
         backHref="/more"
         title="Nuovo workspace"
         context="Crea uno spazio condiviso con un nome. Poi potrai invitare persone con un link."
       />
-      <CreateWorkspaceForm />
+      <Rule />
+      <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+        <CreateWorkspaceForm />
+      </section>
     </main>
   );
 }

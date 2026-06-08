@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 
+import { CraftedOnboardingScreen } from "@/src/components/onboarding/crafted-onboarding-screen";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +14,5 @@ export default async function OnboardingPage() {
 
   await getCurrentWorkspace();
 
-  // Workspace provisioning is complete here; the app continues on the home route.
-  redirect("/?welcome=1");
+  return <CraftedOnboardingScreen />;
 }

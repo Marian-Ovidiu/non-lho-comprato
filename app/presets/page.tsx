@@ -2,35 +2,31 @@ export const dynamic = "force-dynamic";
 
 import { getCategories } from "@/src/actions/entries";
 import { getPresets } from "@/src/actions/presets";
-import { PageHeader } from "@/src/components/layout/page-header";
-import { PresetForm } from "@/src/components/presets/preset-form";
-import { PresetGrid } from "@/src/components/presets/preset-grid";
+import { Label, Rule } from "@/components/crafted";
+import { CraftedPresetForm } from "@/src/components/presets/crafted-preset-form";
+import { CraftedPresetList } from "@/src/components/presets/crafted-preset-list";
 
 export default async function PresetsPage() {
   const [categories, presets] = await Promise.all([getCategories(), getPresets()]);
 
   return (
-    <main className="space-y-5 sm:space-y-6">
-      <PageHeader
-        title="Azioni rapide"
-        context="Salva modelli ricorrenti per creare movimenti in un tocco."
-        chips={[
-          { label: `${presets.length} salvati`, tone: "success" },
-          { label: `${categories.length} categorie`, tone: "default" },
-        ]}
-      />
+    <main className="pb-6">
+      <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+        <Label className="mb-2 block">Preset rapidi</Label>
+        <p className="mb-6 text-sm text-ink-3">
+          Salva modelli ricorrenti per creare movimenti in un tocco.
+        </p>
+        <CraftedPresetForm categories={categories} />
+      </section>
 
-      <PresetForm categories={categories} />
+      <Rule />
 
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold text-foreground">Preset salvati</h2>
-          <p className="text-sm text-muted-text">
-            I modelli più recenti, pronti da usare o eliminare.
-          </p>
+      <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+        <div className="mb-4 flex items-baseline justify-between gap-3">
+          <Label>Preset salvati</Label>
+          <span className="font-num text-[11px] text-ink-3">{presets.length}</span>
         </div>
-
-        <PresetGrid presets={presets} />
+        <CraftedPresetList presets={presets} />
       </section>
     </main>
   );

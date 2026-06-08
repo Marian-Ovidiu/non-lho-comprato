@@ -1,5 +1,5 @@
-import { DashboardLoadingSkeleton } from "@/src/components/loading/page-skeletons";
+import { CraftedDashboardLoadingSkeleton } from "@/src/components/loading/crafted-page-skeletons";
 
 export default function Loading() {
-  return <DashboardLoadingSkeleton />;
+  return <CraftedDashboardLoadingSkeleton />;
 }

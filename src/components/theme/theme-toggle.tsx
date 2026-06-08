@@ -24,7 +24,7 @@ const options: Array<{
   { value: "dark", label: "Scuro", icon: MoonStar },
 ];
 
-export function ThemeSelector() {
+export function ThemeSelector({ variant = "default" }: { variant?: "default" | "crafted" }) {
   const [preference, setPreference] = useState<ThemePreference>(() =>
     readThemePreference(),
   );
@@ -80,39 +80,69 @@ export function ThemeSelector() {
   }, [preference]);
 
   return (
-    <div className="space-y-3">
-      <div
-        role="group"
-        aria-label="Tema"
-        className="grid grid-cols-3 rounded-2xl border border-border bg-surface p-1 shadow-sm"
+    <div className={cn("space-y-3", variant === "crafted" && "space-y-2")}>
+      {variant === "crafted" ? (
+        <div role="group" aria-label="Tema" className="flex gap-5">
+          {options.map((option) => {
+            const active = preference === option.value;
+
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setPreference(option.value)}
+                aria-pressed={active}
+                className={cn(
+                  "border-b-[1.5px] pb-2 text-[13px] transition-colors",
+                  active
+                    ? "border-accent font-semibold text-foreground"
+                    : "border-transparent font-[450] text-ink-3 hover:text-foreground",
+                )}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div
+          role="group"
+          aria-label="Tema"
+          className="grid grid-cols-3 rounded-2xl border border-border bg-surface p-1 shadow-sm"
+        >
+          {options.map((option) => {
+            const Icon = option.icon;
+            const active = preference === option.value;
+
+            return (
+              <Button
+                key={option.value}
+                type="button"
+                variant={active ? "default" : "ghost"}
+                size="sm"
+                className={cn(
+                  "h-10 rounded-xl px-2 text-xs font-medium transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
+                  active
+                    ? "bg-accent text-background hover:bg-accent/90"
+                    : "text-muted-text hover:text-foreground",
+                )}
+                onClick={() => setPreference(option.value)}
+                aria-pressed={active}
+              >
+                <Icon className="size-3.5" aria-hidden="true" />
+                <span className="leading-none">{option.label}</span>
+              </Button>
+            );
+          })}
+        </div>
+      )}
+
+      <p
+        className={cn(
+          "text-xs leading-5 text-muted-text",
+          variant === "crafted" && "text-ink-3",
+        )}
       >
-        {options.map((option) => {
-          const Icon = option.icon;
-          const active = preference === option.value;
-
-          return (
-            <Button
-              key={option.value}
-              type="button"
-              variant={active ? "default" : "ghost"}
-              size="sm"
-              className={cn(
-                "h-10 rounded-xl px-2 text-xs font-medium transition-[transform,background-color,border-color,color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
-                active
-                  ? "bg-accent text-background hover:bg-accent/90"
-                  : "text-muted-text hover:text-foreground",
-              )}
-              onClick={() => setPreference(option.value)}
-              aria-pressed={active}
-            >
-              <Icon className="size-3.5" aria-hidden="true" />
-              <span className="leading-none">{option.label}</span>
-            </Button>
-          );
-        })}
-      </div>
-
-      <p className="text-xs leading-5 text-muted-text">
         Selezione attuale: {selectedLabel}
         {preference === "system"
           ? ` (${systemTheme === "dark" ? "Scuro" : "Chiaro"} di sistema)`

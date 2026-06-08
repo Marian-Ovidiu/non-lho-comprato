@@ -207,6 +207,7 @@ export function QuickAddSheet({
   categories,
   workspace,
   currentUserId,
+  triggerVariant = "default",
 }: {
   categories?: CategoryOption[];
   workspace: {
@@ -216,6 +217,7 @@ export function QuickAddSheet({
     isShared: boolean;
   };
   currentUserId: string;
+  triggerVariant?: "default" | "crafted";
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -507,13 +509,25 @@ export function QuickAddSheet({
     >
       <DialogTrigger asChild>
         <Button
-          variant="default"
+          variant={triggerVariant === "crafted" ? "ghost" : "default"}
           size="icon"
-          className="size-[52px] rounded-full bg-accent text-accent-foreground transition-[transform,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.95] active:opacity-90"
-          style={{ boxShadow: "0 8px 24px rgba(212,255,58,0.18)" }}
+          className={
+            triggerVariant === "crafted"
+              ? "size-[38px] rounded-full border-[1.5px] border-accent bg-transparent text-accent transition-opacity active:opacity-70"
+              : "size-[52px] rounded-full bg-accent text-accent-foreground transition-[transform,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.95] active:opacity-90"
+          }
+          style={
+            triggerVariant === "crafted"
+              ? undefined
+              : { boxShadow: "0 8px 24px rgba(212,255,58,0.18)" }
+          }
           onClick={() => trackPostHogEvent("quick_add_opened")}
         >
-          <Plus className="size-5" aria-hidden="true" />
+          <Plus
+            className={triggerVariant === "crafted" ? "size-4" : "size-5"}
+            strokeWidth={triggerVariant === "crafted" ? 2 : undefined}
+            aria-hidden="true"
+          />
           <span className="sr-only">Nuovo movimento</span>
         </Button>
       </DialogTrigger>

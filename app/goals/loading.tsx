@@ -1,5 +1,5 @@
-import { GoalsLoadingSkeleton } from "@/src/components/loading/page-skeletons";
+import { CraftedGoalsLoadingSkeleton } from "@/src/components/loading/crafted-page-skeletons";
 
 export default function Loading() {
-  return <GoalsLoadingSkeleton />;
+  return <CraftedGoalsLoadingSkeleton />;
 }

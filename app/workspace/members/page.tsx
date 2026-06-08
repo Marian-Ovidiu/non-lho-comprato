@@ -1,13 +1,11 @@
-import { Users } from "lucide-react";
-
-import { PageHeader } from "@/src/components/layout/page-header";
+import { Label, Mono, Rule } from "@/components/crafted";
+import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button";
 import { RemoveWorkspaceMemberButton } from "@/src/components/workspace/remove-workspace-member-button";
 import {
   getCurrentWorkspace,
   getCurrentWorkspaceMemberDetails,
 } from "@/src/lib/workspace-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
@@ -36,95 +34,73 @@ export default async function WorkspaceMembersPage() {
   ]);
 
   return (
-    <main className="space-y-5 sm:space-y-6">
-      <PageHeader
+    <main className="pb-6">
+      <CraftedSubpageHeader
+        backHref="/more"
         eyebrow="Workspace"
         title="Partecipanti"
-        context={`Persone presenti in ${workspace.name}. Rimuovere una persona toglie l'accesso al workspace, ma non cancella i movimenti già creati o collegati a quell'utente.`}
-        backHref="/more"
-        chips={[
-          { label: workspace.kind === "shared" ? "Condiviso" : "Privato", tone: "warm" },
-          { label: `${members.length} partecipanti`, tone: "default" },
-        ]}
+        context="Persone presenti in questo spazio. Rimuovere qualcuno toglie l'accesso, ma non cancella i movimenti già creati."
+        meta={
+          <Mono className="shrink-0 text-[11px] text-ink-3">
+            {workspace.kind === "shared" ? "Condiviso" : "Privato"} · {members.length}
+          </Mono>
+        }
       />
 
-      <section className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
-        <Card className="overflow-hidden border-border shadow-sm">
-          <CardHeader className="space-y-1 p-4 pb-0 sm:p-5">
-            <CardTitle className="text-base text-foreground">
-              Dentro questo workspace
-            </CardTitle>
-            <p className="text-sm leading-6 text-muted-text">
-              Chi è in lista può vedere e usare questo spazio.
-            </p>
-          </CardHeader>
+      <Rule />
 
-          <CardContent className="space-y-3 p-4 sm:p-5">
-            {members.map((member) => {
-              const label = getMemberDisplayName(member);
-              const initials = getInitials(label) || "U";
+      <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+        <Label className="mb-4 block">In questo workspace</Label>
+        <div>
+          {members.map((member, index) => {
+            const label = getMemberDisplayName(member);
+            const initials = getInitials(label) || "U";
 
-              return (
-                <div
-                  key={member.userId}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between"
-                >
+            return (
+              <div key={member.userId}>
+                <div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl border border-border bg-surface text-xs font-semibold text-foreground">
+                    <div className="flex size-9 shrink-0 items-center justify-center border border-line text-[11px] font-semibold text-foreground">
                       {initials}
                     </div>
-
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <p className="truncate text-sm font-semibold text-foreground">
-                          {label}
-                        </p>
+                        <p className="truncate text-[15px] font-[450]">{label}</p>
                         {member.isCurrentUser ? (
-                          <span className="rounded-full border border-accent/20 bg-accent/8 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
+                          <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-accent">
                             Tu
                           </span>
                         ) : null}
-                        <span className="rounded-full border border-border bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.14em] text-muted-text">
+                        <span className="text-[10px] font-medium uppercase tracking-[0.14em] text-ink-3">
                           {member.role === "owner" ? "Owner" : "Membro"}
                         </span>
                       </div>
                       {member.email ? (
-                        <p className="truncate text-sm text-muted-text">{member.email}</p>
+                        <p className="truncate text-xs text-ink-3">{member.email}</p>
                       ) : null}
                     </div>
                   </div>
-
                   <RemoveWorkspaceMemberButton
                     userId={member.userId}
                     label={label}
                     isCurrentUser={member.isCurrentUser}
                   />
                 </div>
-              );
-            })}
-          </CardContent>
-        </Card>
+                {index < members.length - 1 ? <Rule soft /> : null}
+              </div>
+            );
+          })}
+        </div>
+      </section>
 
-        <Card className="h-fit overflow-hidden border-border shadow-sm">
-          <CardHeader className="space-y-3 p-4 pb-0 sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-accent text-background dark:bg-surface dark:text-foreground">
-                <Users className="size-5" aria-hidden="true" />
-              </div>
-              <div className="min-w-0 space-y-1">
-                <CardTitle className="text-base text-foreground">
-                  Aggiungi persone
-                </CardTitle>
-                <p className="text-sm leading-6 text-muted-text">
-                  Genera un link e mandalo a chi deve entrare.
-                </p>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-4 pt-4 sm:p-5 sm:pt-4">
-            <GenerateInviteButton />
-          </CardContent>
-        </Card>
+      <Rule />
+
+      <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+        <Label className="mb-2 block">Aggiungi persone</Label>
+        <p className="mb-5 text-sm text-ink-3">
+          Genera un link e mandalo a chi deve entrare nel workspace.
+        </p>
+        <GenerateInviteButton />
       </section>
     </main>
   );

@@ -1,5 +1,5 @@
-import { StatsLoadingSkeleton } from "@/src/components/loading/page-skeletons";
+import { CraftedStatsLoadingSkeleton } from "@/src/components/loading/crafted-page-skeletons";
 
 export default function Loading() {
-  return <StatsLoadingSkeleton />;
+  return <CraftedStatsLoadingSkeleton />;
 }
