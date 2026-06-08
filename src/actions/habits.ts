@@ -243,6 +243,16 @@ function tryRevalidatePaths() {
   }
 }
 
+function revalidateHabitOccurrencePaths() {
+  for (const path of ["/habits", "/"]) {
+    try {
+      revalidatePath(path);
+    } catch (error) {
+      console.warn(`Failed to revalidate ${path}:`, error);
+    }
+  }
+}
+
 function getText(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim() : "";
@@ -532,6 +542,16 @@ async function syncOccurrenceStatus(
   status: Exclude<HabitStatus, "pending">,
 ): Promise<HabitActionResult> {
   const id = occurrenceId.trim();
+  const startedAt = performance.now();
+  const logStep = (label: string) => {
+    if (process.env.NODE_ENV === "production") {
+      return;
+    }
+
+    console.info(
+      `[perf] habits/syncOccurrenceStatus/${label} ${Math.round(performance.now() - startedAt)}ms`,
+    );
+  };
 
   if (!id) {
     return {
@@ -547,6 +567,7 @@ async function syncOccurrenceStatus(
         habit: true,
       },
     });
+    logStep("load-occurrence");
 
     if (!occurrence) {
       return {
@@ -556,6 +577,7 @@ async function syncOccurrenceStatus(
     }
 
     await requireWorkspaceAccessForRecord(occurrence, "Occorrenza abitudine");
+    logStep("access-check");
 
     const [currentUser, workspaceId, members, workspaceWhere] = await Promise.all([
       getCurrentUser(),
@@ -563,6 +585,7 @@ async function syncOccurrenceStatus(
       getCurrentWorkspaceMembers(),
       getCurrentWorkspaceScopedWhere(),
     ]);
+    logStep("workspace-context");
 
     await prisma.$transaction(async (tx) => {
       await tx.habitOccurrence.update({
@@ -597,8 +620,10 @@ async function syncOccurrenceStatus(
         create: entryData,
       });
     });
+    logStep("transaction");
 
-    tryRevalidatePaths();
+    revalidateHabitOccurrencePaths();
+    logStep("revalidate");
 
     return {
       success: true,

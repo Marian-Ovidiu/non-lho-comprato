@@ -1,51 +1,58 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { HabitOccurrenceActions } from "@/src/components/habits/habit-occurrence-actions";
 import { formatMoney } from "@/src/lib/formatters";
 import { getCategoryEmoji } from "@/src/lib/visual-cues";
 
-type TodayHabitsProps = {
-  occurrences: Array<{
+type TodayHabitOccurrence = {
+  id: string;
+  habitId: string;
+  date: string;
+  status: "pending" | "spent" | "avoided" | "skipped";
+  createdAt: string;
+  updatedAt: string;
+  habit: {
     id: string;
-    habitId: string;
-    date: string;
-    status: "pending" | "spent" | "avoided" | "skipped";
+    name: string;
+    categoryId: string;
+    amount: number;
+    activeDays: unknown;
+    isActive: boolean;
+    defaultBehavior: string;
+    targetScope: string;
+    targetUserId: string | null;
+    reminderEnabled: boolean;
+    reminderTime: string | null;
     createdAt: string;
     updatedAt: string;
-    habit: {
+    category: {
       id: string;
       name: string;
-      categoryId: string;
-      amount: number;
-      activeDays: unknown;
-      isActive: boolean;
-      defaultBehavior: string;
-      targetScope: string;
-      targetUserId: string | null;
-      reminderEnabled: boolean;
-      reminderTime: string | null;
-      createdAt: string;
-      updatedAt: string;
-      category: {
-        id: string;
-        name: string;
-        slug: string;
-        color: string | null;
-        icon: string | null;
-      };
+      slug: string;
+      color: string | null;
+      icon: string | null;
     };
-    entry: {
-      id: string;
-      title: string;
-      realCost: number;
-      alternativeCost: number;
-      savedAmount: number;
-      source: string;
-    } | null;
-  }>;
+  };
+  entry: {
+    id: string;
+    title: string;
+    realCost: number;
+    alternativeCost: number;
+    savedAmount: number;
+    source: string;
+  } | null;
 };
 
-export function TodayHabits({ occurrences }: TodayHabitsProps) {
+type TodayHabitsProps = {
+  occurrences: TodayHabitOccurrence[];
+};
+
+export function TodayHabits({ occurrences: initialOccurrences }: TodayHabitsProps) {
+  const [occurrences, setOccurrences] = useState(initialOccurrences);
+
   if (occurrences.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 rounded-[14px] border border-dashed border-border/70 bg-surface-muted/60 px-4 py-8 text-center">
@@ -60,6 +67,19 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
   }
 
   const avoided = occurrences.filter((o) => o.status === "avoided").length;
+
+  function handleStatusChange(
+    occurrenceId: string,
+    nextStatus: "spent" | "avoided" | "skipped",
+  ) {
+    setOccurrences((current) =>
+      current.map((occurrence) =>
+        occurrence.id === occurrenceId
+          ? { ...occurrence, status: nextStatus }
+          : occurrence,
+      ),
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-[14px] border border-border bg-surface">
@@ -109,6 +129,9 @@ export function TodayHabits({ occurrences }: TodayHabitsProps) {
                 occurrenceId={occurrence.id}
                 currentStatus={occurrence.status}
                 compact
+                onStatusChange={(nextStatus) =>
+                  handleStatusChange(occurrence.id, nextStatus)
+                }
               />
             </div>
           );

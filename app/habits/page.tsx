@@ -25,7 +25,7 @@ import { spacing } from "@/src/lib/spacing";
 export const dynamic = "force-dynamic";
 
 export default async function HabitsPage() {
-  await finalizeOldPendingOccurrences();
+  void finalizeOldPendingOccurrences();
   await ensureTodayHabitOccurrences();
 
   const [workspace, currentUser, members, habits, todayOccurrences, categories] =

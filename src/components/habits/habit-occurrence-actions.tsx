@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 
 import {
@@ -17,6 +16,7 @@ type HabitOccurrenceActionsProps = {
   occurrenceId: string;
   currentStatus: "pending" | "spent" | "avoided" | "skipped";
   compact?: boolean;
+  onStatusChange?: (status: "spent" | "avoided" | "skipped") => void;
 };
 
 type FeedbackState =
@@ -32,8 +32,8 @@ export function HabitOccurrenceActions({
   occurrenceId,
   currentStatus,
   compact = false,
+  onStatusChange,
 }: HabitOccurrenceActionsProps) {
-  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingStatus, setPendingStatus] = useState<ActionStatus | null>(null);
   const [feedback, setFeedback] = useState<FeedbackState>(null);
@@ -51,29 +51,26 @@ export function HabitOccurrenceActions({
     triggerHaptic("subtle");
 
     startTransition(async () => {
-      let shouldClearPending = true;
-
       try {
         const result = await action(occurrenceId);
 
-        setFeedback({
-          kind: result.success ? "success" : "error",
-          message: result.message,
-        });
-
         if (!result.success) {
+          setFeedback({
+            kind: "error",
+            message: result.message,
+          });
+          setPendingStatus(null);
           return;
         }
 
-        shouldClearPending = false;
-        window.setTimeout(() => {
-          setPendingStatus(null);
-          router.refresh();
-        }, 400);
-      } finally {
-        if (shouldClearPending) {
-          setPendingStatus(null);
-        }
+        onStatusChange?.(nextStatus);
+        setPendingStatus(null);
+      } catch {
+        setFeedback({
+          kind: "error",
+          message: "Non riesco ad aggiornare l'abitudine adesso. Riprova tra poco.",
+        });
+        setPendingStatus(null);
       }
     });
   }
@@ -196,6 +193,12 @@ export function HabitOccurrenceActions({
         {currentStatus === "pending" ? (
           <p className="max-w-[17rem] text-right text-[11px] leading-4 text-muted-text">
             Se non la segni oggi, domani verrà chiusa come spesa.
+          </p>
+        ) : null}
+
+        {feedback?.kind === "error" ? (
+          <p className="max-w-[17rem] text-right text-[11px] leading-4 text-destructive">
+            {feedback.message}
           </p>
         ) : null}
       </div>
