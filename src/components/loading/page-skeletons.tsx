@@ -277,27 +277,22 @@ function DailySpendingHeatmapSkeleton() {
       <div className="mb-3.5 space-y-2">
         <Skeleton className="h-3 w-36 rounded-full" />
         <Skeleton className="h-4 w-56 max-w-full rounded-lg" />
+        <Skeleton className="h-3 w-48 max-w-full rounded-full" />
       </div>
-      <div className="space-y-2">
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-3 w-7 shrink-0 rounded-full" />
-          <div className="flex gap-0.5">
-            {Array.from({ length: 31 }).map((_, index) => (
-              <Skeleton key={index} className="size-3 shrink-0 rounded-[2px]" />
-            ))}
+      <div className="space-y-5">
+        {[1, 2].map((row) => (
+          <div key={row} className="space-y-2.5">
+            <Skeleton className="h-4 w-24 rounded-lg" />
+            <div className="grid grid-cols-7 gap-1.5">
+              {Array.from({ length: 35 }).map((_, index) => (
+                <Skeleton key={index} className="aspect-square min-h-10 rounded-lg" />
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Skeleton className="h-3 w-7 shrink-0 rounded-full" />
-          <div className="flex gap-0.5">
-            {Array.from({ length: 31 }).map((_, index) => (
-              <Skeleton key={index} className="size-3 shrink-0 rounded-[2px]" />
-            ))}
-          </div>
-        </div>
+        ))}
       </div>
       <div className="mt-4 flex justify-end border-t border-border pt-3">
-        <Skeleton className="h-3 w-40 rounded-full" />
+        <Skeleton className="h-5 w-48 rounded-full" />
       </div>
     </div>
   );
