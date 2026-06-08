@@ -72,6 +72,16 @@ export function getRomeDateKey(date: Date): string {
   )}-${String(parts.day).padStart(2, "0")}`;
 }
 
+export function getRomeMonthKey(date: Date): string {
+  const dateKey = getRomeDateKey(date);
+
+  if (!dateKey) {
+    return "";
+  }
+
+  return dateKey.slice(0, 7);
+}
+
 export function getRomeDayRangeForDate(date: Date): { start: Date; end: Date } {
   const parts = getRomeDateParts(date);
   const start = getRomeMidnightUtc(parts);

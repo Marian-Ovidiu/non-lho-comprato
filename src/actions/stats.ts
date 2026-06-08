@@ -13,6 +13,13 @@ import {
   getCurrentWorkspaceScopedWhere,
 } from "@/src/lib/workspace-context";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import {
+  buildDailySpendingComparison,
+  type DailySpendingComparison,
+} from "@/src/lib/daily-spending-comparison";
+import { getRomeMonthKey } from "@/src/lib/rome-dates";
+
+export type { DailySpendingComparison };
 
 type StatsOverview = {
   totalRealSpent: number;
@@ -121,6 +128,7 @@ type StatsPageData = {
   topSavings: TopSavingsItem[];
   habitStats: HabitStatsItem[];
   insights: StatsInsight[];
+  dailySpendingComparison: DailySpendingComparison;
 };
 
 function round2(value: number): number {
@@ -192,12 +200,6 @@ async function buildHabitOccurrenceWhere(
       ),
     },
   };
-}
-
-function getMonthKey(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  return `${year}-${month}`;
 }
 
 function formatMonthLabel(year: number, monthIndex: number): string {
@@ -547,7 +549,7 @@ function getStatsFromEntries(
     overview.totalSaved = round2(overview.totalSaved + savedAmount);
     overview.entriesCount += 1;
 
-    const monthKey = getMonthKey(entry.date);
+    const monthKey = getRomeMonthKey(entry.date);
     const monthlyCurrent = monthlyGrouped.get(monthKey) ?? {
       totalRealSpent: 0,
       totalAlternativeCost: 0,
@@ -824,6 +826,12 @@ export async function getStatsPageData(
   const entryStats = getStatsFromEntries(entries);
   const habitInsight = buildHabitInsight(habitStats);
   const insights = [...entryStats.insights, habitInsight].slice(0, 3);
+  const dailySpendingComparison = buildDailySpendingComparison(
+    entries.map((entry) => ({
+      date: entry.date,
+      realCost: entry.realCost,
+    })),
+  );
 
   return {
     overview: entryStats.overview,
@@ -832,6 +840,7 @@ export async function getStatsPageData(
     topSavings: entryStats.topSavings,
     habitStats,
     insights,
+    dailySpendingComparison,
   };
 }
 
@@ -908,7 +917,7 @@ export async function getMonthlyStats(
     >();
 
     for (const entry of entries) {
-      const monthKey = getMonthKey(entry.date);
+      const monthKey = getRomeMonthKey(entry.date);
       const current = grouped.get(monthKey) ?? {
         totalRealSpent: 0,
         totalAlternativeCost: 0,

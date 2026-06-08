@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
 import { CategorySavingsChart } from "@/src/components/stats/category-savings-chart";
 import { CategoryStatsList } from "@/src/components/stats/category-stats-list";
+import { DailySpendingHeatmap } from "@/src/components/stats/daily-spending-heatmap";
 import { HabitStatsList } from "@/src/components/stats/habit-stats-list";
 import { MonthlySavingsChart } from "@/src/components/stats/monthly-savings-chart";
 import { PersonFilter } from "@/src/components/shared/person-filter";
@@ -103,7 +104,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     (await searchParams).person,
     members,
   );
-  const { overview, monthlyStats, categoryStats, topSavings, habitStats, insights } =
+  const { overview, monthlyStats, categoryStats, topSavings, habitStats, insights, dailySpendingComparison } =
     await getStatsPageData(memberUserId, members);
 
   const isCompletelyEmpty =
@@ -194,6 +195,10 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       <StatsInsights insights={insights} />
 
       <StatsOverviewCards overview={overview} />
+
+      <section aria-label="Confronto spesa giornaliera">
+        <DailySpendingHeatmap data={dailySpendingComparison} />
+      </section>
 
       <section aria-label="Grafici" className="grid gap-4">
         <MonthlySavingsChart data={monthlyChartData} />
