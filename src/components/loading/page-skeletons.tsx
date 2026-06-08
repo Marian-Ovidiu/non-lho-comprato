@@ -274,26 +274,16 @@ function HeroStatsSkeleton() {
 function DailySpendingHeatmapSkeleton() {
   return (
     <div className="overflow-hidden rounded-[14px] border border-border bg-surface p-[18px]">
-      <div className="mb-3.5 space-y-2">
-        <Skeleton className="h-3 w-36 rounded-full" />
-        <Skeleton className="h-4 w-56 max-w-full rounded-lg" />
-        <Skeleton className="h-3 w-48 max-w-full rounded-full" />
+      <div className="mb-3 space-y-2">
+        <Skeleton className="h-3 w-28 rounded-full" />
+        <Skeleton className="h-4 w-48 max-w-full rounded-lg" />
       </div>
-      <div className="space-y-5">
-        {[1, 2].map((row) => (
-          <div key={row} className="space-y-2.5">
-            <Skeleton className="h-4 w-24 rounded-lg" />
-            <div className="grid grid-cols-7 gap-1.5">
-              {Array.from({ length: 35 }).map((_, index) => (
-                <Skeleton key={index} className="aspect-square min-h-10 rounded-lg" />
-              ))}
-            </div>
-          </div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {Array.from({ length: 35 }).map((_, index) => (
+          <Skeleton key={index} className="aspect-square min-h-11 rounded-xl" />
         ))}
       </div>
-      <div className="mt-4 flex justify-end border-t border-border pt-3">
-        <Skeleton className="h-5 w-48 rounded-full" />
-      </div>
+      <Skeleton className="mt-3 h-3 w-56 max-w-full rounded-full" />
     </div>
   );
 }
