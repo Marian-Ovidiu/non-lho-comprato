@@ -855,7 +855,11 @@ export async function getEntriesPage(
       cursor: cursor ?? null,
       limit,
     });
-    throw error;
+    return {
+      entries: [],
+      nextCursor: null,
+      hasMore: false,
+    };
   }
 }
 

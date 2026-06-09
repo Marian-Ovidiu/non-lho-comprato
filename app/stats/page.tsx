@@ -21,13 +21,20 @@ type StatsPageProps = {
 };
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
-  const members = await getCurrentWorkspaceMembers();
+  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
+  let loadError: string | null = null;
+
+  try {
+    members = await getCurrentWorkspaceMembers();
+  } catch (error) {
+    loadError = formatEntryLoadError(error);
+    console.error("Failed to load stats workspace members:", error);
+  }
+
   const memberUserId = getWorkspaceMemberFilter(
     (await searchParams).person,
     members,
   );
-
-  let loadError: string | null = null;
   let overview: StatsOverview = {
     entriesCount: 0,
     totalRealSpent: 0,

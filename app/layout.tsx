@@ -66,7 +66,16 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const authenticatedUser = await getAuthenticatedUser();
-  const workspaceShell = authenticatedUser ? await getWorkspaceShellContext() : null;
+  let workspaceShell: Awaited<ReturnType<typeof getWorkspaceShellContext>> | null =
+    null;
+
+  if (authenticatedUser) {
+    try {
+      workspaceShell = await getWorkspaceShellContext();
+    } catch (error) {
+      console.error("Failed to load workspace shell context:", error);
+    }
+  }
 
   return (
     <html
