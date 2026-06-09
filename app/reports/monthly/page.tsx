@@ -9,6 +9,8 @@ import { Label } from "@/components/crafted";
 import { MonthlyAnalyticsPanel } from "@/src/components/reports/monthly-analytics-panel";
 import { CraftedMonthlyReportExtras } from "@/src/components/reports/crafted-monthly-report-extras";
 import { CraftedMonthlyReportHeader } from "@/src/components/reports/crafted-monthly-report-header";
+import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
+import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 
 type MonthlyReportPageProps = {
   searchParams: Promise<{
@@ -25,12 +27,37 @@ export default async function MonthlyReportPage({
 }: MonthlyReportPageProps) {
   const resolvedSearchParams = await searchParams;
   const monthParam = getMonthParam(resolvedSearchParams.month);
-  const [months, categories] = await Promise.all([
-    getAvailableReportMonths(),
-    getCategories(),
-  ]);
-  const selectedMonth = monthParam ?? months[0]?.value ?? "";
-  const { report } = await getMonthlyReport(selectedMonth, months);
+
+  let loadError: string | null = null;
+  let months: Awaited<ReturnType<typeof getAvailableReportMonths>> = [];
+  let categories: Awaited<ReturnType<typeof getCategories>> = [];
+  let report: Awaited<ReturnType<typeof getMonthlyReport>>["report"] | null = null;
+  let selectedMonth = monthParam ?? "";
+
+  try {
+    [months, categories] = await Promise.all([
+      getAvailableReportMonths(),
+      getCategories(),
+    ]);
+    selectedMonth = monthParam ?? months[0]?.value ?? "";
+    ({ report } = await getMonthlyReport(selectedMonth, months));
+  } catch (error) {
+    loadError = formatEntryLoadError(error);
+    console.error("Failed to load monthly report page:", error);
+  }
+
+  if (loadError || !report) {
+    return (
+      <main className="space-y-6 pb-6">
+        <div className="px-5 pt-5">
+          <DataLoadErrorBanner
+            title="Impossibile caricare il report mensile"
+            message={loadError ?? "Report non disponibile. Riprova tra poco."}
+          />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="space-y-6 pb-6">

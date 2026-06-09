@@ -1,7 +1,9 @@
 import { Label, Mono, Rule } from "@/components/crafted";
 import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
+import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button";
 import { RemoveWorkspaceMemberButton } from "@/src/components/workspace/remove-workspace-member-button";
+import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import {
   getCurrentWorkspace,
   getCurrentWorkspaceMemberDetails,
@@ -28,10 +30,32 @@ function getInitials(label: string) {
 }
 
 export default async function WorkspaceMembersPage() {
-  const [workspace, members] = await Promise.all([
-    getCurrentWorkspace(),
-    getCurrentWorkspaceMemberDetails(),
-  ]);
+  let loadError: string | null = null;
+  let workspace: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
+  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMemberDetails>> = [];
+
+  try {
+    [workspace, members] = await Promise.all([
+      getCurrentWorkspace(),
+      getCurrentWorkspaceMemberDetails(),
+    ]);
+  } catch (error) {
+    loadError = formatEntryLoadError(error);
+    console.error("Failed to load workspace members page:", error);
+  }
+
+  if (loadError || !workspace) {
+    return (
+      <main className="pb-6">
+        <div className="px-5 pt-5 pb-4">
+          <DataLoadErrorBanner
+            title="Impossibile caricare i partecipanti"
+            message={loadError ?? "Workspace non disponibile. Riprova tra poco."}
+          />
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="pb-6">

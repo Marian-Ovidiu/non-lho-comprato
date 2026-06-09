@@ -1,6 +1,8 @@
 import { getCategories } from "@/src/actions/entries";
 import { CraftedEntryForm } from "@/src/components/entries/crafted-entry-form";
+import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
@@ -49,13 +51,39 @@ export default async function NewEntryPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   type CategoryOption = Awaited<ReturnType<typeof getCategories>>[number];
-  const [categoriesResult, members, currentUser] = await Promise.all([
-    getCategories().catch(() => [] as CategoryOption[]),
-    getCurrentWorkspaceMembers(),
-    getCurrentUser(),
-  ]);
 
-  let categories: CategoryOption[] = categoriesResult;
+  let loadError: string | null = null;
+  let categories: CategoryOption[] = [];
+  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
+  let currentUser: Awaited<ReturnType<typeof getCurrentUser>> | null = null;
+
+  try {
+    const [categoriesResult, loadedMembers, loadedUser] = await Promise.all([
+      getCategories().catch(() => [] as CategoryOption[]),
+      getCurrentWorkspaceMembers(),
+      getCurrentUser(),
+    ]);
+    categories = categoriesResult;
+    members = loadedMembers;
+    currentUser = loadedUser;
+  } catch (error) {
+    loadError = formatEntryLoadError(error);
+    console.error("Failed to load new entry page:", error);
+  }
+
+  if (loadError || !currentUser) {
+    return (
+      <main className="pb-6">
+        <div className="px-5 pt-5 pb-4">
+          <DataLoadErrorBanner
+            title="Impossibile aprire il nuovo movimento"
+            message={loadError ?? "Sessione non disponibile. Riprova tra poco."}
+          />
+        </div>
+      </main>
+    );
+  }
+
   const query = await searchParams;
   const title = getSearchValue(query.title)?.trim();
   const categoryId =

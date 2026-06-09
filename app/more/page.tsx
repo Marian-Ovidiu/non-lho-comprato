@@ -8,6 +8,8 @@ import {
   CraftedMoreAppTools,
   CraftedMoreWorkspaceTools,
 } from "@/src/components/more/crafted-more-tools";
+import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
+import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
 import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 
@@ -43,13 +45,29 @@ function getWorkspaceNextStep(
 }
 
 export default async function MorePage() {
-  const [authUser, workspaceResult, members, monthSummary, streakResult] = await Promise.all([
-    getAuthenticatedUser(),
-    getCurrentWorkspace().catch(() => null),
-    getCurrentWorkspaceMembers().catch(() => []),
-    getDashboardSummary().catch(() => null),
-    getGlobalStreak().catch(() => ({ currentStreak: 0, bestStreak: 0, streakDates: [] })),
-  ]);
+  let loadError: string | null = null;
+  let authUser: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
+  let workspaceResult: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
+  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
+  let monthSummary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
+  let streakResult: Awaited<ReturnType<typeof getGlobalStreak>> = {
+    currentStreak: 0,
+    bestStreak: 0,
+    streakDates: [],
+  };
+
+  try {
+    [authUser, workspaceResult, members, monthSummary, streakResult] = await Promise.all([
+      getAuthenticatedUser(),
+      getCurrentWorkspace().catch(() => null),
+      getCurrentWorkspaceMembers().catch(() => []),
+      getDashboardSummary().catch(() => null),
+      getGlobalStreak().catch(() => ({ currentStreak: 0, bestStreak: 0, streakDates: [] })),
+    ]);
+  } catch (error) {
+    loadError = formatEntryLoadError(error);
+    console.error("Failed to load more page:", error);
+  }
 
   const workspace = workspaceResult;
   const profileLabel = authUser?.name ?? authUser?.email ?? "Account";
@@ -73,6 +91,14 @@ export default async function MorePage() {
 
   return (
     <main>
+      {loadError ? (
+        <div className="px-5 pt-5 pb-4">
+          <DataLoadErrorBanner
+            title="Alcuni dati non sono disponibili"
+            message={loadError}
+          />
+        </div>
+      ) : null}
       <CraftedMore
         profileLabel={profileLabel}
         workspaceName={workspace?.name ?? null}

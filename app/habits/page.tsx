@@ -12,8 +12,10 @@ import { CraftedHabitsEmptyState } from "@/src/components/habits/crafted-habits-
 import { CraftedHabitForm } from "@/src/components/habits/crafted-habit-form";
 import { HabitList } from "@/src/components/habits/habit-list";
 import { HabitReminderBanner } from "@/src/components/notifications/habit-reminder-banner";
+import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { buildCraftedHabitsProps } from "@/src/lib/crafted-habits-build";
 import { DEFAULT_CATEGORIES, toCategoryOption } from "@/src/lib/categories";
+import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import {
   getCurrentUser,
   getCurrentWorkspace,
@@ -23,11 +25,32 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function HabitsPage() {
-  void finalizeOldPendingOccurrences();
-  await ensureTodayHabitOccurrences();
+  try {
+    void finalizeOldPendingOccurrences();
+    await ensureTodayHabitOccurrences();
+  } catch (error) {
+    console.error("Failed to sync habit occurrences:", error);
+  }
 
-  const [workspace, currentUser, members, habits, todayOccurrences, categories, habitStats] =
-    await Promise.all([
+  let loadError: string | null = null;
+  let workspace: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
+  let currentUser: Awaited<ReturnType<typeof getCurrentUser>> | null = null;
+  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
+  let habits: Awaited<ReturnType<typeof getHabits>> = [];
+  let todayOccurrences: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
+  let categories: Awaited<ReturnType<typeof getCategories>> = [];
+  let habitStats: Awaited<ReturnType<typeof getHabitStats>> = [];
+
+  try {
+    [
+      workspace,
+      currentUser,
+      members,
+      habits,
+      todayOccurrences,
+      categories,
+      habitStats,
+    ] = await Promise.all([
       getCurrentWorkspace(),
       getCurrentUser(),
       getCurrentWorkspaceMembers(),
@@ -36,6 +59,23 @@ export default async function HabitsPage() {
       getCategories(),
       getHabitStats().catch(() => []),
     ]);
+  } catch (error) {
+    loadError = formatEntryLoadError(error);
+    console.error("Failed to load habits page:", error);
+  }
+
+  if (loadError || !workspace || !currentUser) {
+    return (
+      <main className="pb-6">
+        <div className="px-5 pt-5 pb-4">
+          <DataLoadErrorBanner
+            title="Impossibile caricare le abitudini"
+            message={loadError ?? "Dati workspace non disponibili. Riprova tra poco."}
+          />
+        </div>
+      </main>
+    );
+  }
 
   const categoryOptions =
     categories.length > 0

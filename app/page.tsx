@@ -250,10 +250,14 @@ export default async function Home({ searchParams }: HomePageProps) {
   const arrivedFromOnboarding =
     getFirstSearchParamValue(resolvedSearchParams.welcome) === "1";
 
-  await Promise.all([
-    ensureTodayHabitOccurrences(),
-    finalizeOldPendingOccurrences(),
-  ]);
+  try {
+    await Promise.all([
+      ensureTodayHabitOccurrences(),
+      finalizeOldPendingOccurrences(),
+    ]);
+  } catch (error) {
+    console.error("Failed to sync habit occurrences on home:", error);
+  }
 
   let monthSaved = 0;
   let entriesCountMonth = 0;

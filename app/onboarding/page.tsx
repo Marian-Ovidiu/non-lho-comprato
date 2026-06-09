@@ -12,7 +12,11 @@ export default async function OnboardingPage() {
     redirect("/login");
   }
 
-  await getCurrentWorkspace();
+  try {
+    await getCurrentWorkspace();
+  } catch (error) {
+    console.error("Failed to load workspace on onboarding:", error);
+  }
 
   return <CraftedOnboardingScreen />;
 }
