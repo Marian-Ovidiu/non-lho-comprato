@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
+import { unstable_rethrow } from "next/navigation";
 
 import { prisma } from "@/src/lib/prisma";
 import {
@@ -76,6 +77,7 @@ export async function createWorkspaceAction(
 
     return { success: true, message: "Workspace creato.", workspaceId: workspace.id };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to create workspace:", error);
     return { success: false, message: "Non riesco a creare lo workspace adesso. Riprova." };
   }
@@ -87,6 +89,7 @@ export async function getCurrentWorkspaceMembersAction() {
   try {
     return await getCurrentWorkspaceMembers();
   } catch (error) {
+    unstable_rethrow(error);
     console.error("getCurrentWorkspaceMembersAction failed:", error);
     return [];
   }
@@ -139,6 +142,7 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
 
     return { success: true, message: "Link generato.", inviteUrl };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to generate open invite:", error);
     return { success: false, message: "Non riesco a generare il link adesso. Riprova." };
   }
@@ -230,6 +234,7 @@ export async function joinByLinkAction(
 
     return { success: true, message: "Sei entrato nello workspace.", workspaceName: invite.workspace.name };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to join workspace:", error);
     return { success: false, message: "Non riesco a unirti adesso. Riprova." };
   }
@@ -250,6 +255,7 @@ export async function switchWorkspaceAction(
   try {
     user = await getCurrentUser();
   } catch (error) {
+    unstable_rethrow(error);
     console.error("switchWorkspaceAction auth failed:", error);
     return { success: false };
   }
@@ -325,6 +331,7 @@ export async function removeWorkspaceMemberAction(
 
     return { success: true, message: "Membro rimosso." };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to remove workspace member:", error);
     return { success: false, message: "Non riesco a rimuovere il membro adesso. Riprova." };
   }

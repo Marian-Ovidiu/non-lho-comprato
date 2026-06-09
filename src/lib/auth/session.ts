@@ -6,6 +6,7 @@ import {
 } from "@/src/lib/auth/provisioning";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
 import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 import { cache } from "react";
 import {
   WORKSPACE_SELECTION_COOKIE,
@@ -119,7 +120,7 @@ export const getCurrentUser = cache(async () => {
   }
 
   if (!isLegacyFallbackEnabled()) {
-    throw new Error("Unauthorized: legacy fallback is disabled");
+    redirect("/login");
   }
 
   const legacyUser = await prisma.user.findUnique({
@@ -184,7 +185,7 @@ export const getCurrentWorkspace = cache(async () => {
   }
 
   if (!isLegacyFallbackEnabled()) {
-    throw new Error("Unauthorized: legacy fallback is disabled");
+    redirect("/login");
   }
 
   const workspace = await prisma.workspace.findUnique({

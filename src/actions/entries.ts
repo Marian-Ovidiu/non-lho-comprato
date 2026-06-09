@@ -3,6 +3,7 @@
 import { subDays } from "date-fns";
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 
 import { DEFAULT_CATEGORIES, mergeCategoryOptions } from "@/src/lib/categories";
 import { calculateSavedAmount } from "@/src/lib/entry-calculations";
@@ -851,6 +852,7 @@ export async function getEntriesPage(
       hasMore,
     };
   } catch (error) {
+    unstable_rethrow(error);
     logEntryLoadError("getEntriesPage", error, {
       workspaceId,
       personFilter: person ?? "all",
@@ -1141,6 +1143,7 @@ export async function getCategories() {
 
     return mergeCategoryOptions(categories);
   } catch (error) {
+    unstable_rethrow(error);
     console.warn("Falling back to static categories:", error);
     return mergeCategoryOptions([]);
   }
@@ -1172,6 +1175,7 @@ export async function getExpenseSuggestion(
   try {
     activeWorkspaceId = await getCurrentWorkspaceId();
   } catch (error) {
+    unstable_rethrow(error);
     console.error("getExpenseSuggestion auth failed:", error);
     return null;
   }
@@ -1344,6 +1348,7 @@ export async function createEntry(
       streakTo,
     };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to create entry:", error);
     return {
       success: false,
@@ -1511,6 +1516,7 @@ export async function updateEntry(
       message: "Movimento aggiornato con successo",
     };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to update entry:", error);
     return {
       success: false,
@@ -1598,6 +1604,7 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
       message: "Movimento eliminato",
     };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to delete entry:", error);
     return {
       success: false,

@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { createSupabaseRouteClient } from "@/src/lib/supabase/route";
+import { createSupabaseRequestClient } from "@/src/lib/supabase/server";
 
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
 
@@ -53,13 +53,26 @@ export async function updateSupabaseSession(request: NextRequest) {
     pathname === "/" ||
     pathname === "/login";
 
-  const response = NextResponse.next({
-    request: {
-      headers: request.headers,
+  // The Supabase client refreshes expired tokens during `getUser()`. We must
+  // write the refreshed cookies onto BOTH the forwarded request (so the
+  // downstream Server Components / Server Actions read the fresh token) and the
+  // response (so the browser stores it). See supabase-ssr middleware guidance.
+  let response = NextResponse.next({ request });
+
+  const supabase = createSupabaseRequestClient({
+    getAll: () => request.cookies.getAll(),
+    setAll: (cookiesToSet) => {
+      for (const cookie of cookiesToSet) {
+        request.cookies.set(cookie.name, cookie.value);
+      }
+
+      response = NextResponse.next({ request });
+
+      for (const cookie of cookiesToSet) {
+        response.cookies.set(cookie.name, cookie.value, cookie.options);
+      }
     },
   });
-
-  const supabase = createSupabaseRouteClient(request, response);
 
   if (supabase) {
     const { data } = await supabase.auth.getUser();

@@ -1,4 +1,5 @@
 import { differenceInCalendarDays } from "date-fns";
+import { unstable_rethrow } from "next/navigation";
 
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { PublicAccessGate } from "@/src/components/public/public-access-gate";
@@ -248,6 +249,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       finalizeOldPendingOccurrences(),
     ]);
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to sync habit occurrences on home:", error);
   }
 
@@ -305,6 +307,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     recentEntries = snapshot.recentEntries;
     weekEntries = snapshot.weekEntries;
   } catch (error) {
+    unstable_rethrow(error);
     entriesLoadError = formatEntryLoadError(error);
     console.error("Failed to load dashboard entry snapshot:", error);
   }
@@ -324,6 +327,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     todayHabits = metrics.todayHabits;
     pendingHabitsCount = metrics.pendingHabitsCount;
   } catch (error) {
+    unstable_rethrow(error);
     dashboardLoadError = formatEntryLoadError(error);
     console.error("Failed to load dashboard summary:", error);
   }

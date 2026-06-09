@@ -20,8 +20,17 @@ export async function createSupabaseServerClient() {
 
   return buildClient({
     getAll: () => cookieStore.getAll(),
-    setAll: () => {
-      // Server Components cannot mutate cookies. Proxy/route handlers handle refresh.
+    setAll: (cookiesToSet) => {
+      try {
+        for (const cookie of cookiesToSet) {
+          cookieStore.set(cookie.name, cookie.value, cookie.options);
+        }
+      } catch {
+        // Called from a Server Component render, where cookies are read-only.
+        // The proxy middleware refreshes the session on navigations, so this is
+        // safe to ignore. In Server Actions / Route Handlers the write succeeds
+        // and the refreshed token is persisted.
+      }
     },
   });
 }

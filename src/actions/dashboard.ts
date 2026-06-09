@@ -8,6 +8,7 @@ import { getGlobalStreak } from "@/src/actions/streaks";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { buildPersonWhere } from "@/src/lib/person-filter";
+import { unstable_rethrow } from "next/navigation";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
@@ -97,6 +98,7 @@ export async function getTodayDashboardSummary(
       entriesTodayCount: entries.length,
     };
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to load today dashboard summary:", error);
     return {
       totalRealSpentToday: 0,
@@ -181,6 +183,7 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
       })),
     );
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to load workspace balance:", error);
     return {
       supported: false,
