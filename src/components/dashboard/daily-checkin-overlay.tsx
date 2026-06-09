@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { Compass, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { X } from "lucide-react";
 
+import { Label, Mono, Rule, Serif } from "@/components/crafted";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { formatMoney } from "@/src/lib/formatters";
+import { splitCraftedAmount } from "@/src/lib/crafted-money";
+import { cn } from "@/lib/utils";
 
 type DailyCheckinOverlayProps = {
   savedToday: number;
@@ -32,8 +33,6 @@ export function DailyCheckinOverlay({
   isVisible = true,
 }: DailyCheckinOverlayProps) {
   const [isOpen, setIsOpen] = useState(false);
-
-  const title = useMemo(() => "Riepilogo di oggi", []);
 
   useEffect(() => {
     if (!isVisible) {
@@ -62,101 +61,100 @@ export function DailyCheckinOverlay({
     return null;
   }
 
+  const hero = splitCraftedAmount(savedToday);
+  const hasSaved = savedToday > 0;
+  const showHabits =
+    typeof pendingHabitsCount === "number" && pendingHabitsCount > 0;
+
+  const lede = hasSaved
+    ? `Oggi hai già tenuto ${hero.whole},${hero.decimals}€ nel portafoglio. Continua così fino a stasera.`
+    : "Oggi è ancora aperto. Quando aggiungi un segnale, il quadro si aggiorna con calma.";
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-foreground/50 p-4 backdrop-blur-sm sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-background/60 p-0 backdrop-blur-[3px] sm:items-center sm:p-4"
       role="presentation"
       onClick={() => setIsOpen(false)}
     >
-      <Card
+      <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="daily-checkin-title"
-        className="w-full max-w-lg overflow-hidden border-border bg-surface shadow-2xl"
         onClick={(event) => event.stopPropagation()}
+        className={cn(
+          "w-full max-w-lg border border-line bg-surface",
+          "rounded-t-[28px] px-[22px] pb-[calc(env(safe-area-inset-bottom)+1.75rem)] pt-2.5",
+          "shadow-[0_-24px_60px_-30px_rgba(0,0,0,0.8)]",
+          "sm:rounded-[24px] sm:pb-7 sm:shadow-2xl",
+        )}
       >
-        <CardHeader className="space-y-3 p-4 pb-0 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
-                <Compass className="size-5" aria-hidden="true" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
-                  Quadro del giorno
-                </p>
-                <CardTitle
-                  id="daily-checkin-title"
-                  className="text-xl tracking-tight text-foreground"
-                >
-                  {title}
-                </CardTitle>
-              </div>
-            </div>
+        <div className="mx-auto mb-3.5 h-1 w-9 rounded-full bg-line sm:hidden" />
 
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="shrink-0 rounded-full text-muted-text hover:bg-surface-muted hover:text-foreground"
-              onClick={() => setIsOpen(false)}
-              aria-label="Chiudi"
-            >
-              <X className="size-4" aria-hidden="true" />
-            </Button>
+        <div className="mb-[18px] flex items-center justify-between gap-3">
+          <span id="daily-checkin-title">
+            <Label>Riepilogo di oggi</Label>
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            aria-label="Chiudi"
+            className="flex size-[30px] items-center justify-center rounded-full text-ink-3 transition-colors hover:text-foreground"
+          >
+            <X className="size-[18px]" aria-hidden="true" />
+          </button>
+        </div>
+
+        <Label className="mb-3 block">Tenuto oggi</Label>
+        <div className="flex items-start gap-1.5">
+          <Mono
+            className={cn(
+              "text-[52px] font-semibold leading-[0.85] tracking-[-0.05em]",
+              hasSaved ? "text-accent" : "text-foreground",
+            )}
+          >
+            {hero.whole}
+          </Mono>
+          <Mono className="mt-1.5 text-xl text-muted-foreground">
+            ,{hero.decimals}€
+          </Mono>
+        </div>
+
+        <Serif className="mt-3.5 block text-base leading-[1.4] text-muted-foreground">
+          {lede}
+        </Serif>
+
+        {showHabits ? (
+          <div className="mt-5">
+            <Rule />
+            <div className="flex items-center justify-between gap-3 py-3.5">
+              <span className="flex items-center gap-2.5">
+                <span className="size-[7px] rounded-full bg-accent" />
+                <span className="whitespace-nowrap text-sm font-[450]">
+                  Abitudini aperte
+                </span>
+              </span>
+              <Mono className="text-xl font-semibold">{pendingHabitsCount}</Mono>
+            </div>
+            <Rule />
           </div>
-        </CardHeader>
+        ) : null}
 
-        <CardContent className="space-y-4 p-4 pt-4 sm:p-6 sm:pt-4">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Tenuto oggi
-              </p>
-              <p className="mt-1 text-lg font-semibold text-foreground">
-                {formatMoney(savedToday)}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Segnali di oggi
-              </p>
-              <p className="mt-1 text-lg font-semibold text-foreground">
-                {savedToday > 0
-                  ? "Quadro attivo"
-                  : "In attesa"}
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
-              <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Abitudini aperte
-              </p>
-              <p className="mt-1 text-lg font-semibold text-foreground">
-                {typeof pendingHabitsCount === "number"
-                  ? `${pendingHabitsCount}`
-                  : "—"}
-              </p>
-            </div>
-          </div>
-
-          <p className="text-sm leading-6 text-muted-text">
-            {savedToday > 0
-              ? `Oggi hai già tenuto ${formatMoney(savedToday)} nel portafoglio.`
-              : "Oggi è ancora aperto. Quando aggiungi un segnale, il quadro si aggiorna con calma."}
-          </p>
-
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Button asChild className="w-full sm:flex-1">
-              <Link href="/entries/new">Aggiungi movimento</Link>
-            </Button>
-            <Button asChild variant="outline" className="w-full sm:flex-1">
-              <Link href="/habits">Vai alle abitudini</Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="mt-[22px] flex flex-col gap-2.5">
+          <Button
+            asChild
+            className="h-[52px] w-full rounded-[18px] text-[15px] font-bold"
+          >
+            <Link href="/entries/new">Aggiungi movimento</Link>
+          </Button>
+          <Button
+            asChild
+            variant="outline"
+            className="h-[52px] w-full rounded-[18px] border-line text-[15px] font-medium"
+          >
+            <Link href="/habits">Vai alle abitudini</Link>
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

@@ -1,10 +1,9 @@
 "use client";
 
-import { Sparkles } from "lucide-react";
+import { Check, Sparkles } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { formatMoney } from "@/src/lib/formatters";
+import { Label, Mono } from "@/components/crafted";
+import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type { ExpenseSuggestionResult } from "@/src/lib/expense-suggestion";
 import { cn } from "@/lib/utils";
 
@@ -14,49 +13,42 @@ type ExpenseSuggestionCardProps = {
   className?: string;
 };
 
-function formatSuggestionCost(value: number): string {
-  return formatMoney(value);
-}
-
 export function ExpenseSuggestionCard({
   suggestion,
   onApply,
   className,
 }: ExpenseSuggestionCardProps) {
   return (
-    <Card
-      className={cn(
-        "overflow-hidden border-border/70 bg-surface/80 shadow-sm",
-        className,
-      )}
-    >
-      <CardContent className="space-y-3 p-4 sm:p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl border border-premium-accent/20 bg-premium-accent/10 text-premium-accent">
-            <Sparkles className="size-4" aria-hidden="true" />
-          </div>
+    <div className={cn("border-y border-line py-3.5", className)}>
+      <div className="flex items-center gap-2">
+        <Sparkles className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
+        <Label>Alternativa trovata</Label>
+      </div>
 
-          <div className="min-w-0 flex-1 space-y-1">
-            <p className="text-sm font-medium tracking-tight text-foreground">
-              Alternativa trovata
-            </p>
-            <p className="text-sm leading-5 text-muted-text">
-              {suggestion.label}
-            </p>
-            <p className="text-sm leading-5 text-muted-text">
-              {formatSuggestionCost(suggestion.alternativeCost)}, {suggestion.evidenceCount} movimenti simili
-            </p>
-          </div>
-        </div>
-        <Button
+      <p className="mt-2 text-[15px] font-[450]">{suggestion.label}</p>
+
+      <div className="mt-1.5 flex items-center justify-between gap-3">
+        <span className="min-w-0 text-[13px] text-ink-3">
+          <Mono className="text-muted-foreground">
+            {formatCraftedCompact(suggestion.alternativeCost)}€
+          </Mono>{" "}
+          · da {suggestion.evidenceCount}{" "}
+          {suggestion.evidenceCount === 1 ? "movimento simile" : "movimenti simili"}
+        </span>
+
+        <button
           type="button"
-          variant="secondary"
-          className="h-10 w-full rounded-2xl"
           onClick={onApply}
+          aria-label="Usa suggerimento"
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/40 px-3.5 py-1.5",
+            "text-[12.5px] font-medium text-accent transition-colors hover:bg-accent/10 active:scale-[0.98]",
+          )}
         >
-          Usa suggerimento
-        </Button>
-      </CardContent>
-    </Card>
+          <Check className="size-3.5" aria-hidden="true" />
+          Usa
+        </button>
+      </div>
+    </div>
   );
 }
