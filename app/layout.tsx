@@ -4,9 +4,10 @@ import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import { AppShell } from "@/src/components/layout/app-shell";
 import { PostHogNavigationTracker } from "@/src/components/analytics/posthog-navigation-tracker";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
+import { SplashBootstrapShell } from "@/src/components/splash/splash-bootstrap-shell";
 import { SplashGate } from "@/src/components/splash/splash-gate";
 import { ThemeProvider } from "@/src/components/theme/theme-provider";
-import { getSplashBootstrapScript, SPLASH_SHELL_ID } from "@/src/lib/splash";
+import { getSplashBootstrapScript } from "@/src/lib/splash";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
@@ -72,13 +73,10 @@ export default async function RootLayout({
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
+        <script dangerouslySetInnerHTML={{ __html: getSplashBootstrapScript() }} />
       </head>
       <body className="min-h-[100dvh] flex flex-col bg-background text-foreground">
-        <div id={SPLASH_SHELL_ID} aria-hidden="true" suppressHydrationWarning>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icons/icon-192.png" alt="" width={210} height={210} decoding="sync" />
-        </div>
-        <script dangerouslySetInnerHTML={{ __html: getSplashBootstrapScript() }} />
+        <SplashBootstrapShell />
         <ThemeProvider>
           <SplashGate>
           <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />

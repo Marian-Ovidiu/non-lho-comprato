@@ -1,9 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 
 import { FlameSplash } from "@/src/components/brand/flame-splash";
-import { clearSplashBootstrapShell } from "@/src/lib/splash";
+import {
+  clearSplashBootstrapShell,
+  getSplashElapsedMs,
+} from "@/src/lib/splash";
 
 type AppSplashProps = {
   minDuration?: number;
@@ -19,20 +22,28 @@ export function AppSplash({
   const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
 
-  useEffect(() => {
-    clearSplashBootstrapShell();
+  useLayoutEffect(() => {
+    // Hand off from the static bootstrap shell only after FlameSplash is in the DOM.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        clearSplashBootstrapShell();
+      });
+    });
   }, []);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setLeaving(true), minDuration);
-    const t2 = setTimeout(() => {
+    const elapsed = getSplashElapsedMs();
+    const remaining = Math.max(minDuration - elapsed, 320);
+
+    const t1 = window.setTimeout(() => setLeaving(true), remaining);
+    const t2 = window.setTimeout(() => {
       setGone(true);
       onDone?.();
-    }, minDuration + fadeDuration);
+    }, remaining + fadeDuration);
 
     return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
     };
   }, [fadeDuration, minDuration, onDone]);
 
@@ -41,7 +52,7 @@ export function AppSplash({
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 z-[9999] transition-opacity ease-out"
+      className="fixed inset-0 z-[10000] transition-opacity ease-out"
       style={{
         opacity: leaving ? 0 : 1,
         transitionDuration: `${fadeDuration}ms`,

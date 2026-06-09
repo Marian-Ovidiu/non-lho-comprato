@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 
 import { AppSplash } from "@/src/components/splash/app-splash";
 import { SPLASH_SEEN_KEY } from "@/src/lib/splash";
@@ -10,10 +10,10 @@ type SplashGateProps = {
 };
 
 export function SplashGate({ children }: SplashGateProps) {
-  // Always false on SSR + first client paint so markup matches before sessionStorage is read.
+  // false on SSR + first paint — bootstrap shell covers the screen until we read sessionStorage.
   const [show, setShow] = useState(false);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!sessionStorage.getItem(SPLASH_SEEN_KEY)) {
       setShow(true);
     }

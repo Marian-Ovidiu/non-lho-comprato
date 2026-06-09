@@ -416,31 +416,37 @@
   50%      { transform: translateY(-1px) scale(1.04); }
 }
 
-/* Splash bootstrap: static shell before React hydrates (see src/lib/splash.ts) */
+/* Splash bootstrap: flame shell before React hydrates (see src/lib/splash.ts) */
 html.nlc-splash-pending,
 html.nlc-splash-pending body {
   background: #0a0a09 !important;
   overflow: hidden;
 }
 
+html.nlc-splash-pending body > :not(#nlc-splash-shell) {
+  visibility: hidden;
+}
+
 #nlc-splash-shell {
   position: fixed;
   inset: 0;
-  z-index: 9998;
+  z-index: 9999;
   display: none;
-  align-items: center;
-  justify-content: center;
   background: #0a0a09;
 }
 
 html.nlc-splash-pending #nlc-splash-shell {
-  display: flex;
+  display: block;
 }
 
-#nlc-splash-shell img {
-  width: 210px;
-  height: 210px;
-  object-fit: contain;
+.nlc-splash-bootstrap-scene {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 .nlc-flame { animation: nlc-flame 1.6s ease-in-out infinite; }
 
