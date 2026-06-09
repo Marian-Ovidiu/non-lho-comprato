@@ -5,8 +5,7 @@ import {
   getMonthlyReport,
 } from "@/src/actions/reports";
 import { getCategories } from "@/src/actions/entries";
-import { Label } from "@/components/crafted";
-import { MonthlyAnalyticsPanel } from "@/src/components/reports/monthly-analytics-panel";
+import { CraftedMonthlyReportDetail } from "@/src/components/reports/crafted-monthly-report-detail";
 import { CraftedMonthlyReportExtras } from "@/src/components/reports/crafted-monthly-report-extras";
 import { CraftedMonthlyReportHeader } from "@/src/components/reports/crafted-monthly-report-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
@@ -69,10 +68,7 @@ export default async function MonthlyReportPage({
 
       {report.hasData ? (
         <>
-          <section className="-mx-4 px-5 sm:-mx-6 lg:-mx-8">
-            <Label className="mb-4 block">Dettaglio</Label>
-            <MonthlyAnalyticsPanel report={report} categories={categories} />
-          </section>
+          <CraftedMonthlyReportDetail report={report} categories={categories} />
 
           <CraftedMonthlyReportExtras
             bestStreak={report.streakSummary.bestStreak}
