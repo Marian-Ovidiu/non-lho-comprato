@@ -419,7 +419,7 @@
 /* Splash bootstrap: static shell before React hydrates (see src/lib/splash.ts) */
 html.nlc-splash-pending,
 html.nlc-splash-pending body {
-  background: #15331e !important;
+  background: #0a0a09 !important;
   overflow: hidden;
 }
 
@@ -430,17 +430,50 @@ html.nlc-splash-pending body {
   display: none;
   align-items: center;
   justify-content: center;
-  background: #15331e;
+  background: #0a0a09;
+}
+
+html.nlc-splash-pending #nlc-splash-shell {
+  display: flex;
 }
 
 #nlc-splash-shell img {
-  width: 168px;
-  height: 168px;
-  border-radius: 40px;
-  object-fit: cover;
-  transform: scale(1.08);
+  width: 210px;
+  height: 210px;
+  object-fit: contain;
 }
 .nlc-flame { animation: nlc-flame 1.6s ease-in-out infinite; }
+
+@keyframes nlc-splash-flicker {
+  0%, 100% { transform: scaleY(1) scaleX(1) rotate(0deg); }
+  20% { transform: scaleY(1.04) scaleX(0.985) rotate(-1.1deg); }
+  45% { transform: scaleY(0.975) scaleX(1.015) rotate(0.9deg); }
+  70% { transform: scaleY(1.025) scaleX(0.99) rotate(-0.6deg); }
+  85% { transform: scaleY(0.99) scaleX(1.008) rotate(0.4deg); }
+}
+
+@keyframes nlc-splash-glow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.85; }
+}
+
+.nlc-splash-flicker {
+  transform-box: fill-box;
+  transform-origin: 50% 92%;
+  animation: nlc-splash-flicker 2.6s ease-in-out infinite;
+}
+
+.nlc-splash-glow {
+  background: radial-gradient(circle, rgba(217, 166, 81, 0.13), transparent 62%);
+  animation: nlc-splash-glow 2.6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nlc-splash-flicker,
+  .nlc-splash-glow {
+    animation: none !important;
+  }
+}
 
 @keyframes nlc-pop {
   0%   { transform: scale(1); }

@@ -11,6 +11,11 @@ import {
   Serif,
   StatTrio,
 } from "@/components/crafted";
+import { CraftedDailySpendingHeatmap } from "@/src/components/stats/crafted-daily-spending-heatmap";
+import {
+  CraftedTopSavingsList,
+  type CraftedTopSavingsItem,
+} from "@/src/components/stats/crafted-top-savings-list";
 import {
   CATEGORY_TONE_CLASS,
   buildCraftedStatsQueen,
@@ -19,6 +24,7 @@ import {
   getMaxChartSaved,
   getMonthChartData,
   getPeriodHero,
+  getPeriodOverview,
   getTrendAboveAverage,
   type CraftedStatsProps,
 } from "@/src/lib/crafted-stats-build";
@@ -37,7 +43,15 @@ const PERIOD_TABS: Array<{ id: CraftedStatsPeriod; label: string }> = [
   { id: "all", label: "Sempre" },
 ];
 
+function formatOverviewPercent(value: number): string {
+  return new Intl.NumberFormat("it-IT", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  }).format(value);
+}
+
 type CraftedStatsComponentProps = CraftedStatsProps & {
+  topSavings?: CraftedTopSavingsItem[];
   habitStats?: Array<{
     habitId: string;
     habitName: string;
@@ -106,6 +120,7 @@ export function CraftedStats({
   currentMonthLabel,
   queen: initialQueen,
   categories,
+  topSavings = [],
   habitStats = [],
 }: CraftedStatsComponentProps) {
   const [period, setPeriod] = useState<CraftedStatsPeriod>("month");
@@ -122,6 +137,15 @@ export function CraftedStats({
   );
 
   const heroAmount = splitCraftedAmount(hero.amount);
+  const periodOverview = useMemo(
+    () =>
+      getPeriodOverview({
+        period,
+        monthlyStats,
+        overview,
+      }),
+    [period, monthlyStats, overview],
+  );
   const trendPct = useMemo(
     () =>
       getTrendAboveAverage({
@@ -221,6 +245,44 @@ export function CraftedStats({
         ) : null}
       </section>
 
+      <section className="px-5 pb-1">
+        <Label className="mb-3 block">Bilancio</Label>
+      </section>
+      <StatTrio
+        items={[
+          {
+            label: "Speso davvero",
+            value: formatCraftedCompact(periodOverview.totalRealSpent),
+            suffix: "€",
+          },
+          {
+            label: "Avresti speso",
+            value: formatCraftedCompact(periodOverview.totalAlternativeCost),
+            suffix: "€",
+          },
+          {
+            label: "Tenuti",
+            value: formatCraftedCompact(periodOverview.totalSaved),
+            suffix: "€",
+          },
+        ]}
+      />
+      <StatTrio
+        items={[
+          {
+            label: "Efficienza",
+            value: formatOverviewPercent(periodOverview.savingRatePercent),
+            suffix: "%",
+          },
+          {
+            label: "Media/scelta",
+            value: formatCraftedCompact(periodOverview.averageSavedPerEntry),
+            suffix: "€",
+          },
+        ]}
+      />
+      <Rule />
+
       <section className="px-5 pb-2">
         <div className="mb-3.5 flex items-baseline justify-between gap-3">
           <Label>Ultimi 12 mesi</Label>
@@ -263,6 +325,13 @@ export function CraftedStats({
       </section>
       <Rule />
 
+      {period === "month" ? (
+        <>
+          <CraftedDailySpendingHeatmap data={dailySpendingComparison} />
+          <Rule />
+        </>
+      ) : null}
+
       {queen ? (
         <>
           <section className="px-5 py-5">
@@ -300,6 +369,9 @@ export function CraftedStats({
         <Label>Per categoria</Label>
       </section>
       <CraftedCategoryBars categories={categories} />
+      <Rule />
+
+      <CraftedTopSavingsList entries={topSavings} />
       <Rule />
 
       <StatTrio

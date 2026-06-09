@@ -45,6 +45,7 @@ type CraftedEntryListProps = {
   newEntryHref: string;
   previousMonthSummary?: {
     label: string;
+    totalRealSpent: number;
     totalSaved: number;
     entriesCount: number;
   } | null;
@@ -54,6 +55,7 @@ type DayGroup = {
   dateKey: string;
   label: string;
   entries: EntryItem[];
+  totalRealSpent: number;
   totalSaved: number;
 };
 
@@ -146,10 +148,12 @@ function groupEntries(entries: EntryItem[]): DayGroup[] {
       continue;
     }
 
+    const realSpent = Number(entry.realCost) || 0;
     const saved = Number(entry.savedAmount) || 0;
 
     if (currentGroup && currentGroup.dateKey === dateKey) {
       currentGroup.entries.push(entry);
+      currentGroup.totalRealSpent += realSpent;
       currentGroup.totalSaved += saved;
       continue;
     }
@@ -158,6 +162,7 @@ function groupEntries(entries: EntryItem[]): DayGroup[] {
       dateKey,
       label: getCraftedDayGroupLabel(dateKey),
       entries: [entry],
+      totalRealSpent: realSpent,
       totalSaved: saved,
     });
   }
@@ -391,11 +396,25 @@ export function CraftedEntryList({
       ) : (
         groups.map((group) => (
           <div key={group.dateKey}>
-            <div className="flex items-baseline justify-between px-5 pb-1 pt-5">
-              <Label>{group.label}</Label>
-              <Mono className="text-xs text-accent">
-                +{formatCraftedCompact(group.totalSaved)}€
-              </Mono>
+            <div className="flex items-baseline justify-between gap-4 px-5 pb-1 pt-5">
+              <div className="min-w-0">
+                <Label>{group.label}</Label>
+                <Mono className="mt-1 block text-[10px] text-ink-3">
+                  {group.entries.length}{" "}
+                  {group.entries.length === 1 ? "movimento" : "movimenti"}
+                </Mono>
+              </div>
+              <div className="shrink-0 text-right">
+                <Mono className="block text-xs font-medium">
+                  {formatCraftedCompact(group.totalRealSpent)}€
+                  <span className="font-normal text-ink-3"> spesi</span>
+                </Mono>
+                {group.totalSaved > 0 ? (
+                  <Mono className="mt-0.5 block text-xs text-accent">
+                    +{formatCraftedCompact(group.totalSaved)}€ tenuti
+                  </Mono>
+                ) : null}
+              </div>
             </div>
             <div className="px-5">
               {group.entries.map((entry, index) => (
@@ -415,8 +434,11 @@ export function CraftedEntryList({
         <div className="px-5 py-5 text-center">
           <Serif className="text-sm text-ink-3">
             {previousMonthSummary.label.toLowerCase()} —{" "}
-            {formatCraftedCompact(previousMonthSummary.totalSaved)}€ in{" "}
-            {previousMonthSummary.entriesCount} movimenti
+            {formatCraftedCompact(previousMonthSummary.totalRealSpent)}€ spesi
+            {previousMonthSummary.totalSaved > 0
+              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}€ tenuti`
+              : ""}{" "}
+            in {previousMonthSummary.entriesCount} movimenti
           </Serif>
         </div>
       ) : null}

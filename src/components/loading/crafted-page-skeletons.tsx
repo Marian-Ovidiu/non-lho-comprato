@@ -88,6 +88,27 @@ export function CraftedEntriesLoadingSkeleton() {
   );
 }
 
+function CraftedSkeletonHeatmap() {
+  return (
+    <section className="-mx-4 px-5 py-5 sm:-mx-6 lg:-mx-8">
+      <CraftedSkeletonLine className="mb-4 h-3 w-32" />
+      <CraftedSkeletonLine className="mb-5 h-4 w-56 max-w-full" />
+      <div className="space-y-1.5">
+        {[0, 1].map((row) => (
+          <div key={row} className="flex items-center gap-2">
+            <CraftedSkeletonLine className="h-3 w-7 shrink-0" />
+            <div className="flex gap-0.5">
+              {Array.from({ length: 31 }).map((_, index) => (
+                <CraftedSkeletonLine key={index} className="size-3 shrink-0" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export function CraftedStatsLoadingSkeleton() {
   return (
     <main className="pb-6">
@@ -100,6 +121,8 @@ export function CraftedStatsLoadingSkeleton() {
         <Rule />
       </section>
       <CraftedSkeletonHero />
+      <Rule className="mt-0" />
+      <CraftedSkeletonHeatmap />
       <CraftedSkeletonRows rows={4} />
     </main>
   );

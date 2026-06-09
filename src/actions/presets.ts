@@ -25,6 +25,19 @@ type PresetActionResult = {
   streakTo?: number;
 };
 
+export type SerializablePreset = {
+  id: string;
+  title: string;
+  realCost: string;
+  alternativeCost: string;
+  note: string | null;
+  person: LegacyPersonValue | null;
+  createdAt: string;
+  category: {
+    name: string;
+  };
+};
+
 type DecimalLike = {
   toString?: () => string;
 };
@@ -245,19 +258,58 @@ export async function createPreset(
   }
 }
 
-export async function getPresets() {
+function serializePreset(preset: {
+  id: string;
+  title: string;
+  realCost: unknown;
+  alternativeCost: unknown;
+  note: string | null;
+  person: LegacyPersonValue | null;
+  createdAt: Date;
+  category: {
+    name: string;
+  };
+}): SerializablePreset {
+  return {
+    id: preset.id,
+    title: preset.title,
+    realCost: toNumber(preset.realCost).toFixed(2),
+    alternativeCost: toNumber(preset.alternativeCost).toFixed(2),
+    note: preset.note,
+    person: preset.person,
+    createdAt: preset.createdAt.toISOString(),
+    category: {
+      name: preset.category.name,
+    },
+  };
+}
+
+export async function getPresets(): Promise<SerializablePreset[]> {
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
-    return await prisma.quickPreset.findMany({
+    const presets = await prisma.quickPreset.findMany({
       where: workspaceWhere,
       orderBy: {
         createdAt: "desc",
       },
-      include: {
-        category: true,
+      select: {
+        id: true,
+        title: true,
+        realCost: true,
+        alternativeCost: true,
+        note: true,
+        person: true,
+        createdAt: true,
+        category: {
+          select: {
+            name: true,
+          },
+        },
       },
     });
+
+    return presets.map(serializePreset);
   } catch (error) {
     console.error("Failed to load presets:", error);
     return [];

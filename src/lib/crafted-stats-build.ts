@@ -180,6 +180,79 @@ export function buildCraftedStatsProps({
   };
 }
 
+export type CraftedPeriodOverview = {
+  totalRealSpent: number;
+  totalAlternativeCost: number;
+  totalSaved: number;
+  entriesCount: number;
+  averageSavedPerEntry: number;
+  savingRatePercent: number;
+};
+
+function computePeriodOverview(
+  totalRealSpent: number,
+  totalAlternativeCost: number,
+  totalSaved: number,
+  entriesCount: number,
+): CraftedPeriodOverview {
+  return {
+    totalRealSpent,
+    totalAlternativeCost,
+    totalSaved,
+    entriesCount,
+    averageSavedPerEntry:
+      entriesCount === 0 ? 0 : round2(totalSaved / entriesCount),
+    savingRatePercent:
+      totalAlternativeCost === 0
+        ? 0
+        : round2((totalSaved / totalAlternativeCost) * 100),
+  };
+}
+
+export function getPeriodOverview({
+  period,
+  monthlyStats,
+  overview,
+}: {
+  period: CraftedStatsPeriod;
+  monthlyStats: CraftedStatsMonthlyItem[];
+  overview: StatsOverview;
+}): CraftedPeriodOverview {
+  const currentYear = getCurrentYearKey();
+  const latestMonth = monthlyStats.at(-1);
+
+  if (period === "month") {
+    return computePeriodOverview(
+      latestMonth?.totalRealSpent ?? 0,
+      latestMonth?.totalAlternativeCost ?? 0,
+      latestMonth?.totalSaved ?? 0,
+      latestMonth?.entriesCount ?? 0,
+    );
+  }
+
+  if (period === "year") {
+    const yearMonths = monthlyStats.filter((month) =>
+      month.month.startsWith(currentYear),
+    );
+
+    return computePeriodOverview(
+      round2(yearMonths.reduce((sum, month) => sum + month.totalRealSpent, 0)),
+      round2(
+        yearMonths.reduce((sum, month) => sum + month.totalAlternativeCost, 0),
+      ),
+      round2(yearMonths.reduce((sum, month) => sum + month.totalSaved, 0)),
+      yearMonths.reduce((sum, month) => sum + month.entriesCount, 0),
+    );
+  }
+
+  return computePeriodOverview(
+    overview.totalRealSpent,
+    overview.totalAlternativeCost,
+    overview.totalSaved,
+    overview.entriesCount,
+  );
+}
+
 export function getPeriodHero({
   period,
   monthlyStats,

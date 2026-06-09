@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { Label, Mono, Rule } from "@/components/crafted";
-import { createEntryFromPreset, deletePreset } from "@/src/actions/presets";
+import {
+  createEntryFromPreset,
+  deletePreset,
+  type SerializablePreset,
+} from "@/src/actions/presets";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate } from "@/src/lib/formatters";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
@@ -31,16 +35,7 @@ function toNumber(value: unknown): number {
 }
 
 type CraftedPresetRowProps = {
-  preset: {
-    id: string;
-    title: string;
-    category: { name: string };
-    realCost: unknown;
-    alternativeCost: unknown;
-    note: string | null;
-    person: LegacyPersonValue | null;
-    createdAt: Date;
-  };
+  preset: SerializablePreset;
 };
 
 export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {

@@ -48,7 +48,7 @@ type CategoryStatsItem = {
   averageSaved: number;
 };
 
-type TopSavingsItem = {
+export type TopSavingsItem = {
   id: string;
   title: string;
   categoryName: string;

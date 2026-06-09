@@ -69,6 +69,7 @@ export default async function EntriesPage() {
           previousMonth
             ? {
                 label: previousMonth.label,
+                totalRealSpent: previousMonth.totalRealSpent,
                 totalSaved: previousMonth.totalSaved,
                 entriesCount: previousMonth.entriesCount,
               }

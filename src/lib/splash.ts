@@ -1,6 +1,6 @@
 import { applyStoredTheme } from "@/src/lib/theme";
 
-export const SPLASH_BACKGROUND = "#15331e";
+export const SPLASH_BACKGROUND = "#0a0a09";
 export const SPLASH_SEEN_KEY = "nlc-splash-seen";
 export const SPLASH_PENDING_CLASS = "nlc-splash-pending";
 export const SPLASH_SHELL_ID = "nlc-splash-shell";
@@ -11,8 +11,6 @@ export function getSplashBootstrapScript() {
   try {
     if (sessionStorage.getItem(${JSON.stringify(SPLASH_SEEN_KEY)})) return;
     document.documentElement.classList.add(${JSON.stringify(SPLASH_PENDING_CLASS)});
-    var shell = document.getElementById(${JSON.stringify(SPLASH_SHELL_ID)});
-    if (shell) shell.style.display = "flex";
   } catch (error) {}
 })();
 `;

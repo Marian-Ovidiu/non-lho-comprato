@@ -1,12 +1,26 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
 import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
-import { updateEntry } from "@/src/actions/entries";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { deleteEntry, updateEntry } from "@/src/actions/entries";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatCraftedCompact, splitCraftedAmount } from "@/src/lib/crafted-money";
@@ -74,6 +88,9 @@ export function CraftedEntryEditForm({
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+  const [isDeleting, startDeleteTransition] = useTransition();
   const [categoryId, setCategoryId] = useState(entry.categoryId);
   const [showSavingsField, setShowSavingsField] = useState(
     entry.alternativeCost !== entry.realCost,
@@ -103,6 +120,23 @@ export function CraftedEntryEditForm({
     }
     return "Aggiorna i campi e il risparmio viene ricalcolato dal server.";
   }, [entry.source]);
+
+  function handleDelete() {
+    setDeleteMessage(null);
+
+    startDeleteTransition(async () => {
+      const result = await deleteEntry(entry.id);
+
+      if (!result.success) {
+        setDeleteMessage(result.message);
+        return;
+      }
+
+      setDeleteOpen(false);
+      router.replace("/entries");
+      router.refresh();
+    });
+  }
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
@@ -281,10 +315,10 @@ export function CraftedEntryEditForm({
           />
         </div>
 
-        <div className="px-5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] pt-2">
+        <div className="space-y-3 px-5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] pt-2">
           <button
             type="submit"
-            disabled={pending || categories.length === 0 || members.length === 0}
+            disabled={pending || isDeleting || categories.length === 0 || members.length === 0}
             className={cn(
               "flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl text-[15.5px] font-bold",
               "bg-accent text-accent-foreground transition-opacity disabled:opacity-50",
@@ -299,8 +333,60 @@ export function CraftedEntryEditForm({
               <>Salva · {formatCraftedCompact(Number(realCost))}€</>
             )}
           </button>
+          <button
+            type="button"
+            disabled={pending || isDeleting}
+            onClick={() => {
+              setDeleteMessage(null);
+              setDeleteOpen(true);
+            }}
+            className="flex h-11 w-full items-center justify-center text-[13px] text-destructive/80 transition-colors hover:text-destructive disabled:opacity-50"
+          >
+            Elimina movimento
+          </button>
         </div>
       </form>
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent className="border-line sm:max-w-md">
+          <DialogTitle>Elimina movimento</DialogTitle>
+          <DialogDescription>
+            {entry.source === "habit"
+              ? "Il movimento verrà rimosso e l'occorrenza dell'abitudine tornerà segnata come evitata."
+              : "Il movimento verrà rimosso dal registro. L'operazione non si può annullare."}
+          </DialogDescription>
+
+          {deleteMessage ? (
+            <p className="text-sm text-destructive">{deleteMessage}</p>
+          ) : null}
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={() => setDeleteOpen(false)}
+              className="px-4 py-2.5 text-sm text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
+            >
+              Annulla
+            </button>
+            <button
+              type="button"
+              disabled={isDeleting}
+              onClick={handleDelete}
+              className="flex items-center justify-center gap-2 rounded-2xl border border-destructive/40 px-5 py-2.5 text-sm font-semibold text-destructive transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                  Eliminazione…
+                </>
+              ) : (
+                "Elimina"
+              )}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

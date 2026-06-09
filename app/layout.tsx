@@ -31,7 +31,14 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: "Non l'ho comprato",
-  description: "Traccia quanto spendi e quanto hai evitato di buttare.",
+  description: "Traccia i soldi che non hai speso.",
+  icons: {
+    icon: [
+      { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+  },
   appleWebApp: {
     capable: true,
     title: "NLC",
@@ -67,9 +74,9 @@ export default async function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
       </head>
       <body className="min-h-[100dvh] flex flex-col bg-background text-foreground">
-        <div id={SPLASH_SHELL_ID} aria-hidden="true">
+        <div id={SPLASH_SHELL_ID} aria-hidden="true" suppressHydrationWarning>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/logo-euro.png" alt="" width={168} height={168} decoding="sync" />
+          <img src="/icons/icon-192.png" alt="" width={210} height={210} decoding="sync" />
         </div>
         <script dangerouslySetInnerHTML={{ __html: getSplashBootstrapScript() }} />
         <ThemeProvider>
