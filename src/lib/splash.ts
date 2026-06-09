@@ -38,8 +38,13 @@ export function getSplashBootstrapScript() {
 export function clearSplashBootstrapShell() {
   if (typeof document === "undefined") return;
 
+  // Removing the pending class alone hides #nlc-splash-shell via the critical
+  // CSS (`#nlc-splash-shell { display: none }` by default). We must NOT call
+  // `.remove()` on the shell node: it is rendered by React (<SplashBootstrapShell />
+  // in the layout), and deleting it from outside React corrupts the fiber tree,
+  // causing `NotFoundError: Failed to execute 'removeChild'/'insertBefore'` on the
+  // next reconciliation — which crashes the whole app on first interaction.
   document.documentElement.classList.remove(SPLASH_PENDING_CLASS);
-  document.getElementById(SPLASH_SHELL_ID)?.remove();
   sessionStorage.removeItem(SPLASH_START_KEY);
   applyStoredTheme();
 }
