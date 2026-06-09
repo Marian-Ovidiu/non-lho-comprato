@@ -7,7 +7,10 @@ import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { SplashBootstrapShell } from "@/src/components/splash/splash-bootstrap-shell";
 import { SplashGate } from "@/src/components/splash/splash-gate";
 import { ThemeProvider } from "@/src/components/theme/theme-provider";
-import { getSplashBootstrapScript } from "@/src/lib/splash";
+import {
+  getSplashBootstrapScript,
+  getSplashCriticalCss,
+} from "@/src/lib/splash";
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
@@ -72,6 +75,8 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+        <style dangerouslySetInnerHTML={{ __html: getSplashCriticalCss() }} />
         <script dangerouslySetInnerHTML={{ __html: getThemeBootstrapScript() }} />
         <script dangerouslySetInnerHTML={{ __html: getSplashBootstrapScript() }} />
       </head>

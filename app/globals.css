@@ -474,7 +474,32 @@ html.nlc-splash-pending #nlc-splash-shell {
   animation: nlc-splash-glow 2.6s ease-in-out infinite;
 }
 
+.nlc-splash-bootstrap-border {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.nlc-splash-bootstrap-comet {
+  fill: none;
+  stroke: #d9a651;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 14 86;
+  filter: drop-shadow(0 0 5px rgba(217, 166, 81, 0.85));
+  animation: nlc-splash-comet 2.2s linear infinite;
+}
+
+@keyframes nlc-splash-comet {
+  to {
+    stroke-dashoffset: -100;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .nlc-splash-bootstrap-comet,
   .nlc-splash-flicker,
   .nlc-splash-glow {
     animation: none !important;

@@ -15,15 +15,14 @@ type AppSplashProps = {
 };
 
 export function AppSplash({
-  minDuration = 1400,
-  fadeDuration = 400,
+  minDuration = 1800,
+  fadeDuration = 450,
   onDone,
 }: AppSplashProps) {
   const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
 
   useLayoutEffect(() => {
-    // Hand off from the static bootstrap shell only after FlameSplash is in the DOM.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         clearSplashBootstrapShell();
@@ -33,7 +32,7 @@ export function AppSplash({
 
   useEffect(() => {
     const elapsed = getSplashElapsedMs();
-    const remaining = Math.max(minDuration - elapsed, 320);
+    const remaining = Math.max(minDuration - elapsed, 500);
 
     const t1 = window.setTimeout(() => setLeaving(true), remaining);
     const t2 = window.setTimeout(() => {
@@ -52,7 +51,7 @@ export function AppSplash({
   return (
     <div
       aria-hidden="true"
-      className="fixed inset-0 z-[10000] transition-opacity ease-out"
+      className="fixed inset-0 z-[10000] bg-[#0a0a09] transition-opacity ease-out"
       style={{
         opacity: leaving ? 0 : 1,
         transitionDuration: `${fadeDuration}ms`,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { FlameMark } from "@/src/components/brand/flame-mark";
 
@@ -10,19 +10,29 @@ type FlameSplashProps = {
   onDone?: () => void;
 };
 
+function readViewport() {
+  return {
+    w: window.innerWidth,
+    h: window.innerHeight,
+  };
+}
+
 export function FlameSplash({ onDone }: FlameSplashProps) {
   const pathRef = useRef<SVGPathElement | null>(null);
   const dotsRef = useRef<(SVGCircleElement | null)[]>([]);
   const [dims, setDims] = useState({ w: 0, h: 0 });
 
+  useLayoutEffect(() => {
+    setDims(readViewport());
+  }, []);
+
   useEffect(() => {
-    const measure = () => setDims({ w: window.innerWidth, h: window.innerHeight });
-    measure();
+    const measure = () => setDims(readViewport());
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const path = pathRef.current;
     if (!path || prefersReduced || !dims.w) return;
@@ -94,11 +104,11 @@ export function FlameSplash({ onDone }: FlameSplashProps) {
   return (
     <div
       onClick={onDone}
-      className="flex size-full items-center justify-center overflow-hidden bg-background"
+      className="flex size-full items-center justify-center overflow-hidden bg-[#0a0a09]"
     >
       <div className="nlc-splash-glow absolute size-[300px] rounded-full" />
 
-      <FlameMark size={210} className="nlc-splash-flicker" />
+      <FlameMark size={210} className="nlc-splash-flicker relative z-[1]" />
 
       {w > 0 ? (
         <svg
