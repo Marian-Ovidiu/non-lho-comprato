@@ -279,6 +279,10 @@ export function CraftedStats({
             value: formatCraftedCompact(periodOverview.averageSavedPerEntry),
             suffix: "€",
           },
+          {
+            label: "Scelte",
+            value: period === "all" ? overview.entriesCount : hero.entriesCount,
+          },
         ]}
       />
       <Rule />
