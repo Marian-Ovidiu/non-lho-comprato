@@ -1,5 +1,9 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/src/lib/generated/prisma/client";
+import {
+  getRuntimeDatabaseUrl,
+  logDatabaseConfigHints,
+} from "@/src/lib/database-config";
 import { Pool } from "pg";
 
 declare global {
@@ -7,28 +11,13 @@ declare global {
   var prismaPool: Pool | undefined;
 }
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error("DATABASE_URL is required");
-}
-
-function getConnectionString(value: string): string {
-  const hasQuery = value.includes("?");
-  const suffix = hasQuery ? "&" : "?";
-  const requiredParams = "uselibpqcompat=true&sslmode=require";
-
-  if (value.includes("uselibpqcompat=true") && value.includes("sslmode=require")) {
-    return value;
-  }
-
-  return `${value}${suffix}${requiredParams}`;
-}
+const connectionString = getRuntimeDatabaseUrl();
+logDatabaseConfigHints();
 
 const pool =
   globalThis.prismaPool ??
   new Pool({
-    connectionString: getConnectionString(connectionString),
+    connectionString,
     ssl: {
       rejectUnauthorized: false,
     },

@@ -15,6 +15,7 @@ import {
 } from "@/src/lib/entry-ownership";
 import { EntryVisibility, type Person } from "@/src/lib/generated/prisma/enums";
 import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
+import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import type { LegacyPersonValue } from "@/src/lib/ui-person";
@@ -1017,7 +1018,9 @@ export async function getDashboardEntrySnapshot(
 
   try {
     const [entryCount, firstEntry, recentEntries, weekEntries] =
-      await Promise.all([
+      await withDatabaseRetry(
+        () =>
+          Promise.all([
         prisma.entry.count({
           where: workspaceWhere,
         }),
@@ -1097,7 +1100,9 @@ export async function getDashboardEntrySnapshot(
             },
           },
         }),
-      ]);
+      ]),
+        { label: "dashboard-entry-snapshot" },
+      );
 
     return {
       entryCount,

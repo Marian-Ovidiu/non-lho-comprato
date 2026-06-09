@@ -1,3 +1,4 @@
+import { getDatabaseConnectionSnapshot } from "@/src/lib/database-config";
 import { prisma } from "@/src/lib/prisma";
 
 const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-marian-martina";
@@ -22,16 +23,7 @@ export function logWorkspaceDebug(
 }
 
 export function getWorkspaceEnvSnapshot() {
-  const databaseUrl = process.env.DATABASE_URL?.trim() ?? "";
-  let databaseHost = "missing";
-
-  if (databaseUrl) {
-    try {
-      databaseHost = new URL(databaseUrl).host;
-    } catch {
-      databaseHost = "invalid-url";
-    }
-  }
+  const database = getDatabaseConnectionSnapshot();
 
   return {
     nodeEnv: process.env.NODE_ENV ?? "unknown",
@@ -45,8 +37,15 @@ export function getWorkspaceEnvSnapshot() {
     legacyMartinaEmailConfigured: Boolean(
       process.env.LEGACY_MARTINA_EMAIL?.trim(),
     ),
-    databaseHost,
-    databaseConfigured: Boolean(databaseUrl),
+    databaseHost: database.databaseHost,
+    databasePort: database.databasePort,
+    directDatabaseHost: database.directDatabaseHost,
+    databaseConfigured: database.databaseConfigured,
+    directDatabaseConfigured: database.directDatabaseConfigured,
+    supabasePooler: database.supabasePooler,
+    supabaseDirectRuntime: database.supabaseDirectRuntime,
+    supabaseTransactionPooler: database.supabaseTransactionPooler,
+    pgbouncerParam: database.pgbouncerParam,
     debugWorkspaceEnabled: isWorkspaceDebugEnabled(),
   };
 }

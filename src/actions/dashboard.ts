@@ -1,8 +1,14 @@
 "use server";
 
+import { getDashboardSummary } from "@/src/actions/entries";
+import { getGoalsWithProgress } from "@/src/actions/goals";
+import { getTodayHabitOccurrences } from "@/src/actions/habits";
+import { getCategoryStats, getMonthlyStats } from "@/src/actions/stats";
+import { getGlobalStreak } from "@/src/actions/streaks";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { buildPersonWhere } from "@/src/lib/person-filter";
+import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
 import { computeCoupleWorkspaceBalance, type WorkspaceBalanceCardState } from "@/src/lib/workspace-balance";
 import {
@@ -95,6 +101,49 @@ export async function getTodayDashboardSummary(
       entriesTodayCount: 0,
     };
   }
+}
+
+export async function getHomeDashboardMetrics() {
+  return withDatabaseRetry(async () => {
+  const [
+    loadedSummary,
+    loadedTodaySummary,
+    loadedWorkspaceBalance,
+    loadedGoals,
+  ] = await Promise.all([
+    getDashboardSummary(),
+    getTodayDashboardSummary(),
+    getWorkspaceBalance(),
+    getGoalsWithProgress(),
+  ]);
+
+  const [
+    loadedTodayHabits,
+    globalStreak,
+    loadedMonthlyStats,
+    loadedCategoryStats,
+  ] = await Promise.all([
+    getTodayHabitOccurrences(),
+    getGlobalStreak(),
+    getMonthlyStats(),
+    getCategoryStats(),
+  ]);
+
+  return {
+    summary: loadedSummary,
+    todaySummary: loadedTodaySummary,
+    workspaceBalance: loadedWorkspaceBalance,
+    goals: loadedGoals.filter((goal) => goal.isActive),
+    todayHabits: loadedTodayHabits,
+    pendingHabitsCount: loadedTodayHabits.filter(
+      (occurrence) => occurrence.status === "pending",
+    ).length,
+    currentStreak: globalStreak.currentStreak,
+    streakDates: globalStreak.streakDates,
+    monthlyStats: loadedMonthlyStats,
+    categoryStats: loadedCategoryStats,
+  };
+  }, { label: "home-dashboard-metrics" });
 }
 
 export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> {

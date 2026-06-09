@@ -42,19 +42,13 @@ export default async function HabitsPage() {
   let habitStats: Awaited<ReturnType<typeof getHabitStats>> = [];
 
   try {
-    [
-      workspace,
-      currentUser,
-      members,
-      habits,
-      todayOccurrences,
-      categories,
-      habitStats,
-    ] = await Promise.all([
+    [workspace, currentUser, members, habits] = await Promise.all([
       getCurrentWorkspace(),
       getCurrentUser(),
       getCurrentWorkspaceMembers(),
       getHabits(),
+    ]);
+    [todayOccurrences, categories, habitStats] = await Promise.all([
       getTodayHabitOccurrences(),
       getCategories(),
       getHabitStats().catch(() => []),

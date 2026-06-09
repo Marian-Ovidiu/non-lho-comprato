@@ -8,19 +8,9 @@ import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on
 import {
   ensureTodayHabitOccurrences,
   finalizeOldPendingOccurrences,
-  getTodayHabitOccurrences,
 } from "@/src/actions/habits";
-import {
-  getDashboardEntrySnapshot,
-  getDashboardSummary,
-} from "@/src/actions/entries";
-import { getGoalsWithProgress } from "@/src/actions/goals";
-import {
-  getTodayDashboardSummary,
-  getWorkspaceBalance,
-} from "@/src/actions/dashboard";
-import { getGlobalStreak } from "@/src/actions/streaks";
-import { getCategoryStats, getMonthlyStats } from "@/src/actions/stats";
+import { getDashboardEntrySnapshot } from "@/src/actions/entries";
+import { getHomeDashboardMetrics } from "@/src/actions/dashboard";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { buildCraftedDashboardProps } from "@/src/lib/crafted-dashboard-build";
@@ -37,6 +27,8 @@ type HomePageProps = {
 type HomePhase = "empty" | "first-entry" | "early-usage" | "first-week" | "established";
 
 type HomeReflection = HomeReflectionNoteProps | null;
+
+type HomeDashboardMetrics = Awaited<ReturnType<typeof getHomeDashboardMetrics>>;
 
 function getFirstSearchParamValue(value?: string | string[]) {
   return Array.isArray(value) ? value[0] : value;
@@ -289,14 +281,14 @@ export default async function Home({ searchParams }: HomePageProps) {
     savedAmount: unknown;
     date: Date;
   }> = [];
-  let activeGoals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
-  let todayHabits: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
+  let activeGoals: HomeDashboardMetrics["goals"] = [];
+  let todayHabits: HomeDashboardMetrics["todayHabits"] = [];
   let pendingHabitsCount = 0;
   let currentStreak = 0;
   let streakDates: string[] = [];
-  let monthlyStats: Awaited<ReturnType<typeof getMonthlyStats>> = [];
-  let categoryStats: Awaited<ReturnType<typeof getCategoryStats>> = [];
-  let workspaceBalance: Awaited<ReturnType<typeof getWorkspaceBalance>> = {
+  let monthlyStats: HomeDashboardMetrics["monthlyStats"] = [];
+  let categoryStats: HomeDashboardMetrics["categoryStats"] = [];
+  let workspaceBalance: HomeDashboardMetrics["workspaceBalance"] = {
     supported: false,
     status: "unsupported",
     amount: 0,
@@ -318,39 +310,19 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   try {
-    const [
-      loadedSummary,
-      loadedTodaySummary,
-      loadedWorkspaceBalance,
-      loadedGoals,
-      loadedTodayHabits,
-      globalStreak,
-      loadedMonthlyStats,
-      loadedCategoryStats,
-    ] = await Promise.all([
-      getDashboardSummary(),
-      getTodayDashboardSummary(),
-      getWorkspaceBalance(),
-      getGoalsWithProgress(),
-      getTodayHabitOccurrences(),
-      getGlobalStreak(),
-      getMonthlyStats(),
-      getCategoryStats(),
-    ]);
+    const metrics = await getHomeDashboardMetrics();
 
-    monthSaved = loadedSummary.totalSaved;
-    entriesCountMonth = loadedSummary.entriesCount;
-    todaySummary = loadedTodaySummary;
-    workspaceBalance = loadedWorkspaceBalance;
-    currentStreak = globalStreak.currentStreak;
-    streakDates = globalStreak.streakDates;
-    monthlyStats = loadedMonthlyStats;
-    categoryStats = loadedCategoryStats;
-    activeGoals = loadedGoals.filter((goal) => goal.isActive);
-    todayHabits = loadedTodayHabits;
-    pendingHabitsCount = loadedTodayHabits.filter(
-      (occurrence) => occurrence.status === "pending",
-    ).length;
+    monthSaved = metrics.summary.totalSaved;
+    entriesCountMonth = metrics.summary.entriesCount;
+    todaySummary = metrics.todaySummary;
+    workspaceBalance = metrics.workspaceBalance;
+    currentStreak = metrics.currentStreak;
+    streakDates = metrics.streakDates;
+    monthlyStats = metrics.monthlyStats;
+    categoryStats = metrics.categoryStats;
+    activeGoals = metrics.goals;
+    todayHabits = metrics.todayHabits;
+    pendingHabitsCount = metrics.pendingHabitsCount;
   } catch (error) {
     dashboardLoadError = formatEntryLoadError(error);
     console.error("Failed to load dashboard summary:", error);
