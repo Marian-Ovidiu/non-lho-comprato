@@ -15,6 +15,7 @@ import {
 } from "@/src/lib/entry-ownership";
 import { EntryVisibility, type Person } from "@/src/lib/generated/prisma/enums";
 import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
+import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
@@ -798,6 +799,8 @@ export async function getEntriesPage(
   personOrOptions?: PersonFilterValue | EntriesPageOptions,
   maybeOptions?: Omit<EntriesPageOptions, "person">,
 ): Promise<EntriesPageResult> {
+  await refreshSupabaseSessionForAction();
+
   const options =
     typeof personOrOptions === "string" || personOrOptions === undefined
       ? {
@@ -1146,6 +1149,8 @@ export async function getCategories() {
 export async function getExpenseSuggestion(
   request: ExpenseSuggestionRequest,
 ): Promise<ExpenseSuggestionResult | null> {
+  await refreshSupabaseSessionForAction();
+
   const title = request.title.trim();
   const categoryId = request.categoryId.trim();
   const workspaceId = request.workspaceId.trim();
@@ -1163,7 +1168,14 @@ export async function getExpenseSuggestion(
     return null;
   }
 
-  const activeWorkspaceId = await getCurrentWorkspaceId();
+  let activeWorkspaceId: string;
+  try {
+    activeWorkspaceId = await getCurrentWorkspaceId();
+  } catch (error) {
+    console.error("getExpenseSuggestion auth failed:", error);
+    return null;
+  }
+
   if (activeWorkspaceId !== workspaceId) {
     return null;
   }

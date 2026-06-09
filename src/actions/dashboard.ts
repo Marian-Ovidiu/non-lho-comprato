@@ -8,6 +8,7 @@ import { getGlobalStreak } from "@/src/actions/streaks";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import { buildPersonWhere } from "@/src/lib/person-filter";
+import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
 import { computeCoupleWorkspaceBalance, type WorkspaceBalanceCardState } from "@/src/lib/workspace-balance";
@@ -71,6 +72,8 @@ async function buildEntryWhere(
 export async function getTodayDashboardSummary(
   person?: PersonFilterValue,
 ): Promise<TodayDashboardSummary> {
+  await refreshSupabaseSessionForAction();
+
   try {
     const entries = await prisma.entry.findMany({
       where: await buildEntryWhere(person),

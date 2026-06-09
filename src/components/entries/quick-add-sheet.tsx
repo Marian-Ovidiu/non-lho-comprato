@@ -315,6 +315,8 @@ export function QuickAddSheet({
         }
 
         setMembers(loadedMembers);
+      } catch (error) {
+        console.error("Failed to load quick-add members:", error);
       } finally {
         if (active) {
           setMembersLoading(false);

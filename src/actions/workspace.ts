@@ -8,6 +8,7 @@ import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
+import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import {
   getCurrentUser,
   getCurrentWorkspaceMembers,
@@ -81,7 +82,14 @@ export async function createWorkspaceAction(
 }
 
 export async function getCurrentWorkspaceMembersAction() {
-  return getCurrentWorkspaceMembers();
+  await refreshSupabaseSessionForAction();
+
+  try {
+    return await getCurrentWorkspaceMembers();
+  } catch (error) {
+    console.error("getCurrentWorkspaceMembersAction failed:", error);
+    return [];
+  }
 }
 
 type GenerateOpenInviteResult = {
@@ -236,7 +244,15 @@ export async function switchWorkspaceAction(
     return { success: false };
   }
 
-  const user = await getCurrentUser();
+  await refreshSupabaseSessionForAction();
+
+  let user: Awaited<ReturnType<typeof getCurrentUser>>;
+  try {
+    user = await getCurrentUser();
+  } catch (error) {
+    console.error("switchWorkspaceAction auth failed:", error);
+    return { success: false };
+  }
   const workspace = await prisma.workspace.findFirst({
     where: {
       id: workspaceId,
