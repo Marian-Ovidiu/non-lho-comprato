@@ -96,13 +96,13 @@ function CraftedCategoryBars({
               <span className="text-[11px] text-accent">€</span>
             </Mono>
           </div>
-          <div className="relative h-0.5 bg-line">
+          <div className="relative h-0.5 overflow-hidden rounded-[1px] bg-line">
             <div
               className={cn(
-                "absolute inset-y-0 left-0",
+                "absolute inset-y-0 left-0 max-w-full",
                 CATEGORY_TONE_CLASS[category.tone],
               )}
-              style={{ width: `${category.pct}%` }}
+              style={{ width: `${Math.min(Math.max(category.pct, 0), 100)}%` }}
             />
           </div>
         </div>
