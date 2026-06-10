@@ -18,6 +18,8 @@ export type CraftedStatsCategoryItem = {
   categoryId: string;
   categoryName: string;
   categorySlug: string;
+  totalRealSpent: number;
+  totalAlternativeCost: number;
   totalSaved: number;
   entriesCount: number;
 };
@@ -26,6 +28,7 @@ export type CraftedCategoryRow = {
   categoryId: string;
   name: string;
   slug: string;
+  spent: number;
   saved: number;
   pct: number;
   tone: "accent" | "foreground" | "green" | "muted";
@@ -34,6 +37,7 @@ export type CraftedCategoryRow = {
 export type CraftedStatsQueen = {
   name: string;
   slug: string;
+  spent: number;
   saved: number;
   pct: number;
   entriesCount: number;
@@ -70,16 +74,6 @@ function round2(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function parseLeadingMoney(detail: string): number | null {
-  const match = detail.match(/^([\d.]+,\d{2})\s*€/);
-  if (!match?.[1]) {
-    return null;
-  }
-
-  const parsed = Number(match[1].replace(/\./g, "").replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : null;
-}
-
 function getCurrentYearKey() {
   return getRomeDateKey(new Date()).slice(0, 4);
 }
@@ -92,16 +86,20 @@ function getMonthInitial(label: string) {
 export function buildCraftedCategoryRows(
   categories: CraftedStatsCategoryItem[],
 ): CraftedCategoryRow[] {
-  const totalSaved = categories.reduce((sum, category) => sum + category.totalSaved, 0);
+  const totalSpent = categories.reduce(
+    (sum, category) => sum + category.totalRealSpent,
+    0,
+  );
 
   return categories.map((category, index) => ({
     categoryId: category.categoryId,
     name: category.categoryName,
     slug: category.categorySlug,
+    spent: category.totalRealSpent,
     saved: category.totalSaved,
     pct:
-      totalSaved > 0
-        ? Math.round((category.totalSaved / totalSaved) * 100)
+      totalSpent > 0
+        ? Math.round((category.totalRealSpent / totalSpent) * 100)
         : 0,
     tone: CATEGORY_TONES[index % CATEGORY_TONES.length] ?? "muted",
   }));
@@ -110,13 +108,13 @@ export function buildCraftedCategoryRows(
 export function buildCraftedStatsQueen({
   insights,
   categoryStats,
-  periodTotalSaved,
+  periodTotalSpent,
 }: {
   insights: StatsInsight[];
   categoryStats: CraftedStatsCategoryItem[];
-  periodTotalSaved: number;
+  periodTotalSpent: number;
 }): CraftedStatsQueen | null {
-  const insight = insights.find((item) => item.id === "best-savings-category");
+  const insight = insights.find((item) => item.id === "top-spending-category");
   const fallback = categoryStats[0];
 
   if (!insight?.value && !fallback) {
@@ -127,18 +125,16 @@ export function buildCraftedStatsQueen({
   const matchedCategory = categoryStats.find(
     (category) => category.categoryName === name,
   );
-  const saved =
-    (insight?.detail ? parseLeadingMoney(insight.detail) : null) ??
-    matchedCategory?.totalSaved ??
-    fallback?.totalSaved ??
-    0;
+  const spent = matchedCategory?.totalRealSpent ?? fallback?.totalRealSpent ?? 0;
+  const saved = matchedCategory?.totalSaved ?? fallback?.totalSaved ?? 0;
   const entriesCount = matchedCategory?.entriesCount ?? fallback?.entriesCount ?? 0;
   const pct =
-    periodTotalSaved > 0 ? Math.round((saved / periodTotalSaved) * 100) : 0;
+    periodTotalSpent > 0 ? Math.round((spent / periodTotalSpent) * 100) : 0;
 
   return {
     name,
     slug: matchedCategory?.categorySlug ?? fallback?.categorySlug ?? "altro",
+    spent,
     saved,
     pct,
     entriesCount,
@@ -162,7 +158,8 @@ export function buildCraftedStatsProps({
     monthlyStats.at(-1)?.label ??
     dailySpendingComparison.currentMonth.label;
 
-  const periodTotalSaved = monthlyStats.at(-1)?.totalSaved ?? overview.totalSaved;
+  const periodTotalSpent =
+    monthlyStats.at(-1)?.totalRealSpent ?? overview.totalRealSpent;
 
   return {
     overview,
@@ -174,7 +171,7 @@ export function buildCraftedStatsProps({
     queen: buildCraftedStatsQueen({
       insights,
       categoryStats,
-      periodTotalSaved,
+      periodTotalSpent,
     }),
     categories: buildCraftedCategoryRows(categoryStats),
   };
@@ -269,37 +266,39 @@ export function getPeriodHero({
 
   if (period === "month") {
     return {
-      label: `Tenuti a ${currentMonthLabel.split(" ")[0]?.toLowerCase() ?? currentMonthLabel.toLowerCase()}`,
-      amount: latestMonth?.totalSaved ?? 0,
+      label: `Speso a ${currentMonthLabel.split(" ")[0]?.toLowerCase() ?? currentMonthLabel.toLowerCase()}`,
+      amount: latestMonth?.totalRealSpent ?? 0,
       entriesCount: latestMonth?.entriesCount ?? 0,
     };
   }
 
   if (period === "year") {
     const yearMonths = monthlyStats.filter((month) => month.month.startsWith(currentYear));
-    const amount = round2(yearMonths.reduce((sum, month) => sum + month.totalSaved, 0));
+    const amount = round2(
+      yearMonths.reduce((sum, month) => sum + month.totalRealSpent, 0),
+    );
     const entriesCount = yearMonths.reduce((sum, month) => sum + month.entriesCount, 0);
 
     return {
-      label: `Tenuti nel ${currentYear}`,
+      label: `Speso nel ${currentYear}`,
       amount,
       entriesCount,
     };
   }
 
   return {
-    label: "Tenuti in totale",
-    amount: overview.totalSaved,
+    label: "Speso in totale",
+    amount: overview.totalRealSpent,
     entriesCount: overview.entriesCount,
   };
 }
 
-export function getAverageMonthlySaved(monthlyStats: CraftedStatsMonthlyItem[]) {
+export function getAverageMonthlySpent(monthlyStats: CraftedStatsMonthlyItem[]) {
   if (monthlyStats.length === 0) {
     return 0;
   }
 
-  const total = monthlyStats.reduce((sum, month) => sum + month.totalSaved, 0);
+  const total = monthlyStats.reduce((sum, month) => sum + month.totalRealSpent, 0);
   return round2(total / monthlyStats.length);
 }
 
@@ -317,7 +316,7 @@ export function getTrendAboveAverage({
   }
 
   const previousMonths = monthlyStats.slice(0, -1);
-  const average = getAverageMonthlySaved(previousMonths);
+  const average = getAverageMonthlySpent(previousMonths);
 
   if (average <= 0) {
     return null;
@@ -336,22 +335,23 @@ export function getMonthChartData(monthlyStats: CraftedStatsMonthlyItem[]) {
   const last12 = [...monthlyStats]
     .sort((left, right) => left.month.localeCompare(right.month))
     .slice(-12);
-  const maxSaved = Math.max(...last12.map((month) => month.totalSaved), 1);
+  const maxSpent = Math.max(...last12.map((month) => month.totalRealSpent), 1);
   const activeMonth = last12.at(-1)?.month;
 
   return last12.map((month) => ({
     month: month.month,
     initial: getMonthInitial(month.label),
+    totalRealSpent: month.totalRealSpent,
     totalSaved: month.totalSaved,
-    heightPct: (month.totalSaved / maxSaved) * 100,
+    heightPct: (month.totalRealSpent / maxSpent) * 100,
     isActive: month.month === activeMonth,
   }));
 }
 
-export function getMaxChartSaved(monthlyStats: CraftedStatsMonthlyItem[]) {
+export function getMaxChartSpent(monthlyStats: CraftedStatsMonthlyItem[]) {
   const last12 = [...monthlyStats]
     .sort((left, right) => left.month.localeCompare(right.month))
     .slice(-12);
 
-  return Math.max(...last12.map((month) => month.totalSaved), 0);
+  return Math.max(...last12.map((month) => month.totalRealSpent), 0);
 }

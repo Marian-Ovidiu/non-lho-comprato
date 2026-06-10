@@ -1,4 +1,0 @@
-interface:
-  display_name: "Non l'ho Comprato Stats Builder"
-  short_description: "Build analytics pages and charts"
-  default_prompt: "Use $non-lho-comprato-stats-builder to implement the stats page, query functions, and Recharts components for Non l'ho comprato."

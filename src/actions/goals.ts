@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 
+import { toEntryMoneyView, type EntryMoneyLike } from "@/src/lib/entry-domain";
 import { prisma } from "@/src/lib/prisma";
 import {
   isSharedPerson,
-  normalizeLegacyPerson,
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
 import {
@@ -97,28 +97,6 @@ function getTargetAmount(formData: FormData): {
   return { value };
 }
 
-function getGoalPerson(formData: FormData): {
-  value: GoalPerson | null;
-  error?: string;
-} {
-  const raw = getText(formData, "person");
-
-  if (!raw) {
-    return { value: null };
-  }
-
-  const normalized = normalizeLegacyPerson(raw);
-
-  if (normalized) {
-    return { value: normalized };
-  }
-
-  return {
-    value: null,
-    error: "Seleziona una persona valida",
-  };
-}
-
 function tryRevalidatePath(path: string) {
   try {
     revalidatePath(path);
@@ -152,6 +130,21 @@ function getProgressAmount(
   return totals.all;
 }
 
+function getGoalContribution(entry: EntryMoneyLike): number {
+  const money = toEntryMoneyView(entry);
+
+  if (money.savingImpact <= 0) {
+    return 0;
+  }
+
+  // Goals advance only on positive saving semantics: avoided entries or positive comparisons.
+  if (money.mode === "avoided" || money.savingContext === "comparison") {
+    return money.savingImpact;
+  }
+
+  return 0;
+}
+
 export async function createGoal(
   formData: FormData,
 ): Promise<GoalActionResult> {
@@ -160,7 +153,6 @@ export async function createGoal(
   const title = getText(formData, "title");
   const emoji = getText(formData, "emoji");
   const targetAmount = getTargetAmount(formData);
-  const person = getGoalPerson(formData);
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -174,10 +166,6 @@ export async function createGoal(
 
   if (emoji && Array.from(emoji).length > 4) {
     errors.emoji = "Usa al massimo 4 caratteri";
-  }
-
-  if (person.error) {
-    errors.person = person.error;
   }
 
   if (Object.keys(errors).length > 0) {
@@ -197,7 +185,6 @@ export async function createGoal(
         title,
         targetAmount: toDecimalString(targetAmount.value),
         emoji: emoji || null,
-        person: person.value,
         isActive: true,
       },
     });
@@ -222,7 +209,7 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
-    const [goals, savedByPerson] = await Promise.all([
+    const [goals, entries] = await Promise.all([
       prisma.goal.findMany({
         where: workspaceWhere,
         select: {
@@ -243,10 +230,16 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
           },
         ],
       }),
-      prisma.entry.groupBy({
+      prisma.entry.findMany({
         where: workspaceWhere,
-        by: ["person"],
-        _sum: { savedAmount: true },
+        select: {
+          person: true,
+          realCost: true,
+          alternativeCost: true,
+          savedAmount: true,
+          mode: true,
+          savingContext: true,
+        },
       }),
     ]);
 
@@ -257,12 +250,18 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
       TUTTI: 0,
     };
 
-    for (const row of savedByPerson) {
-      const savedAmount = round2(toNumber(row._sum.savedAmount));
-      if (row.person) {
-        totals[row.person] = savedAmount;
+    for (const entry of entries) {
+      const contribution = getGoalContribution(entry);
+
+      if (contribution <= 0) {
+        continue;
       }
-      totals.all = round2(totals.all + savedAmount);
+
+      if (entry.person) {
+        totals[entry.person] = round2(totals[entry.person] + contribution);
+      }
+
+      totals.all = round2(totals.all + contribution);
     }
 
     return goals.map((goal) => {

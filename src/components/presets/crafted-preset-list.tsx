@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-import { Label, Mono, Rule } from "@/components/crafted";
+import { Mono, Rule } from "@/components/crafted";
 import {
   createEntryFromPreset,
   deletePreset,
@@ -14,24 +14,42 @@ import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate } from "@/src/lib/formatters";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
-import { cn } from "@/lib/utils";
-import type { LegacyPersonValue } from "@/src/lib/ui-person";
-import { getPersonOwnershipOptions, getPresetPersonLabel } from "@/src/lib/ui-person";
+import { getPresetPersonLabel } from "@/src/lib/ui-person";
 
-function toNumber(value: unknown): number {
-  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
+function toNumber(value: string): number {
+  const parsed = Number(value.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function getPresetMoneySummary(preset: SerializablePreset) {
+  const amountSpent = toNumber(preset.amountSpent);
+  const comparisonAmount = toNumber(preset.comparisonAmount);
+  const savingImpact = toNumber(preset.savingImpact);
+
+  if (preset.mode === "avoided") {
+    return {
+      primaryAmount: `${formatCraftedCompact(comparisonAmount)}€`,
+      detail: "Spesa evitata",
+      note: `${formatCraftedCompact(comparisonAmount)}€ non spesi`,
+    };
   }
-  if (value && typeof value === "object") {
-    const decimal = value as { toString?: () => string };
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
+
+  if (preset.savingContext === "comparison") {
+    return {
+      primaryAmount: `${formatCraftedCompact(amountSpent)}€`,
+      detail: `${formatCraftedCompact(comparisonAmount)}€ di confronto`,
+      note:
+        savingImpact >= 0
+          ? `${formatCraftedCompact(savingImpact)}€ sotto il confronto`
+          : `${formatCraftedCompact(Math.abs(savingImpact))}€ sopra il confronto`,
+    };
   }
-  return 0;
+
+  return {
+    primaryAmount: `${formatCraftedCompact(amountSpent)}€`,
+    detail: "Spesa normale",
+    note: "Senza confronto",
+  };
 }
 
 type CraftedPresetRowProps = {
@@ -45,15 +63,11 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
   });
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
+  const summary = getPresetMoneySummary(preset);
 
-  const savings = Math.max(
-    0,
-    toNumber(preset.alternativeCost) - toNumber(preset.realCost),
-  );
-
-  function handleCreate(person?: LegacyPersonValue) {
+  function handleCreate() {
     startTransition(async () => {
-      const result = await createEntryFromPreset(preset.id, person);
+      const result = await createEntryFromPreset(preset.id);
       setMessage(result.message);
       if (result.success) {
         const showedCelebration = tryTrigger(result);
@@ -83,41 +97,26 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
           <div className="min-w-0">
             <p className="truncate text-[15px] font-[450]">{preset.title}</p>
             <p className="mt-0.5 text-xs text-ink-3">
-              {preset.category.name} · {getPresetPersonLabel(preset.person)} ·{" "}
-              {formatDate(preset.createdAt)}
+              {preset.category.name} · {getPresetPersonLabel(preset.person)} · {formatDate(preset.createdAt)}
             </p>
+            <p className="mt-1 text-xs text-ink-3">{summary.detail} · {summary.note}</p>
           </div>
           <Mono className="shrink-0 text-sm font-medium whitespace-nowrap">
-            {formatCraftedCompact(savings)}
-            <span className="text-[11px] text-accent">€</span>
+            {summary.primaryAmount}
           </Mono>
         </div>
 
         {preset.note ? <p className="mb-3 text-sm text-ink-3">{preset.note}</p> : null}
 
         <div className="flex flex-wrap gap-2">
-          {preset.person ? (
-            <button
-              type="button"
-              disabled={isPending}
-              onClick={() => handleCreate()}
-              className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
-            >
-              {isPending ? <Loader2 className="size-3.5 animate-spin" /> : "Usa preset"}
-            </button>
-          ) : (
-            getPersonOwnershipOptions().map((choice) => (
-              <button
-                key={choice.value}
-                type="button"
-                disabled={isPending}
-                onClick={() => handleCreate(choice.value)}
-                className="rounded-full border border-line px-3 py-2 text-[12px] font-medium text-muted-foreground"
-              >
-                {choice.label}
-              </button>
-            ))
-          )}
+          <button
+            type="button"
+            disabled={isPending}
+            onClick={handleCreate}
+            className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
+          >
+            {isPending ? <Loader2 className="size-3.5 animate-spin" /> : "Usa preset"}
+          </button>
           <button
             type="button"
             disabled={isPending}
@@ -142,7 +141,7 @@ export function CraftedPresetList({
   if (presets.length === 0) {
     return (
       <p className="border-y border-line py-8 text-center text-sm text-ink-3">
-        Ancora nessun preset. Salva una spesa ricorrente per riusarla in un tocco.
+        Ancora nessun preset. Salva una spesa o un confronto per riusarlo in un tocco.
       </p>
     );
   }

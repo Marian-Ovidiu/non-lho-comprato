@@ -1,6 +1,7 @@
 "use client";
 
 import { LoginPanel } from "@/src/components/auth/login-panel";
+import { TrustCopy } from "@/src/components/shared/trust-copy";
 import { useDisplayMode } from "@/src/hooks/use-display-mode";
 
 import { PublicLanding } from "./public-landing";
@@ -51,12 +52,10 @@ export function PublicAccessGate() {
 
         <LoginPanel compact providers={["google"]} />
 
-        <p
+        <TrustCopy
           className="mt-5 text-center text-[11px] tracking-[0.05em]"
           style={{ color: "var(--text-3)" }}
-        >
-          Cifratura end-to-end · Niente pubblicità
-        </p>
+        />
       </main>
     );
   }

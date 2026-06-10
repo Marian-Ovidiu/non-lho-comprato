@@ -4,6 +4,15 @@ import { revalidatePath } from "next/cache";
 
 import { createEntry } from "@/src/actions/entries";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { upsertDefaultCategoryForWorkspace } from "@/src/features/categories/repository";
+import {
+  calculateEntryMoney,
+  toEntryMoneyView,
+  type EntryMode,
+  type EntryMoneyView,
+  type EntrySavingContext,
+} from "@/src/lib/entry-domain";
+import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
 import { prisma } from "@/src/lib/prisma";
 import type { PersonFilterValue } from "@/src/lib/person-filter";
 import {
@@ -11,7 +20,14 @@ import {
   type LegacyPersonValue,
 } from "@/src/lib/ui-person";
 import {
+  getDefaultBeneficiaryUserIds,
+  getDefaultPaidByUserId,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
+import {
+  getCurrentUser,
   getCurrentWorkspaceId,
+  getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
@@ -28,8 +44,13 @@ type PresetActionResult = {
 export type SerializablePreset = {
   id: string;
   title: string;
+  mode: EntryMode;
+  savingContext: EntrySavingContext;
   realCost: string;
   alternativeCost: string;
+  amountSpent: string;
+  comparisonAmount: string;
+  savingImpact: string;
   note: string | null;
   person: LegacyPersonValue | null;
   createdAt: string;
@@ -40,6 +61,17 @@ export type SerializablePreset = {
 
 type DecimalLike = {
   toString?: () => string;
+};
+
+type ParsedMoneyField = {
+  value: number;
+  provided: boolean;
+  error?: string;
+};
+
+type ResolvedPresetMoney = {
+  money?: EntryMoneyView;
+  errors: Record<string, string>;
 };
 
 const ROME_TIME_ZONE = "Europe/Rome";
@@ -73,24 +105,38 @@ function getMoney(formData: FormData, name: string): {
   return { value };
 }
 
-function getOptionalPerson(formData: FormData): {
-  value: LegacyPersonValue | null;
-  error?: string;
-} {
-  const raw = getText(formData, "person");
+function getOptionalMoney(formData: FormData, name: string): ParsedMoneyField {
+  const raw = getText(formData, name);
 
   if (!raw) {
-    return { value: null };
+    return {
+      value: Number.NaN,
+      provided: false,
+    };
   }
 
-  const normalized = normalizeLegacyPerson(raw);
-  if (normalized) {
-    return { value: normalized };
+  const normalized = raw.replace(",", ".");
+  const value = Number(normalized);
+
+  if (!Number.isFinite(value)) {
+    return {
+      value: Number.NaN,
+      provided: true,
+      error: "Inserisci un numero valido",
+    };
+  }
+
+  if (value < 0) {
+    return {
+      value,
+      provided: true,
+      error: "Il valore deve essere maggiore o uguale a 0",
+    };
   }
 
   return {
-    value: null,
-    error: "Seleziona una persona valida",
+    value,
+    provided: true,
   };
 }
 
@@ -129,50 +175,237 @@ async function resolveCategory(categoryId: string, workspaceId: string) {
     );
 
     if (fallbackCategory) {
-      category = await prisma.category.upsert({
-        where: { slug: fallbackCategory.slug },
-        update: {
-          name: fallbackCategory.name,
-          icon: fallbackCategory.icon,
-          color: fallbackCategory.color,
-          workspaceId,
-        },
-        create: {
-          name: fallbackCategory.name,
-          slug: fallbackCategory.slug,
-          icon: fallbackCategory.icon,
-          color: fallbackCategory.color,
-          workspaceId,
-        },
-      });
+      category = await upsertDefaultCategoryForWorkspace(
+        prisma,
+        workspaceId,
+        fallbackCategory,
+      );
     }
   }
 
   return category;
 }
 
+function resolveLegacyAlternativeCost(
+  formData: FormData,
+  realCost: { value: number; error?: string },
+): { value: number; error?: string } {
+  const raw = getText(formData, "alternativeCost");
+
+  if (!raw) {
+    if (realCost.error) {
+      return { value: Number.NaN };
+    }
+
+    return { value: realCost.value };
+  }
+
+  return getMoney(formData, "alternativeCost");
+}
+
+function hasTrackerFirstMoneyFields(formData: FormData): boolean {
+  return ["mode", "savingContext", "amountSpent", "comparisonAmount"].some(
+    (name) => getText(formData, name) !== "",
+  );
+}
+
+function resolveLegacyPresetMoney(formData: FormData): ResolvedPresetMoney {
+  const errors: Record<string, string> = {};
+  const realCost = getMoney(formData, "realCost");
+  const alternativeCost = resolveLegacyAlternativeCost(formData, realCost);
+
+  if (realCost.error) {
+    errors.realCost = realCost.error;
+  }
+
+  if (alternativeCost.error) {
+    errors.alternativeCost = alternativeCost.error;
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
+
+  return {
+    errors,
+    money: toEntryMoneyView({
+      realCost: realCost.value,
+      alternativeCost: alternativeCost.value,
+      savedAmount: alternativeCost.value - realCost.value,
+    }),
+  };
+}
+
+function resolveTrackerFirstPresetMoney(formData: FormData): ResolvedPresetMoney {
+  const errors: Record<string, string> = {};
+  const rawMode = getText(formData, "mode");
+  const rawSavingContext = getText(formData, "savingContext");
+  const amountSpent = getOptionalMoney(formData, "amountSpent");
+  const comparisonAmount = getOptionalMoney(formData, "comparisonAmount");
+
+  if (amountSpent.error) {
+    errors.amountSpent = amountSpent.error;
+  }
+
+  if (comparisonAmount.error) {
+    errors.comparisonAmount = comparisonAmount.error;
+  }
+
+  const mode: EntryMode = rawMode === "avoided" ? "avoided" : "spent";
+
+  if (rawMode && rawMode !== "spent" && rawMode !== "avoided") {
+    errors.mode = "Seleziona una modalita valida";
+  }
+
+  let savingContext: EntrySavingContext =
+    rawSavingContext === "comparison" ? "comparison" : "none";
+
+  if (!rawSavingContext && mode === "spent" && comparisonAmount.provided) {
+    savingContext = "comparison";
+  }
+
+  if (
+    rawSavingContext &&
+    rawSavingContext !== "none" &&
+    rawSavingContext !== "comparison"
+  ) {
+    errors.savingContext = "Seleziona un contesto valido";
+  }
+
+  if (mode === "avoided") {
+    savingContext = "comparison";
+
+    if (!comparisonAmount.provided) {
+      errors.comparisonAmount = "Questo campo è obbligatorio";
+    } else if (comparisonAmount.value <= 0) {
+      errors.comparisonAmount = "L'importo deve essere maggiore di 0";
+    }
+  } else {
+    if (!amountSpent.provided) {
+      errors.amountSpent = "Questo campo è obbligatorio";
+    } else if (amountSpent.value <= 0) {
+      errors.amountSpent = "L'importo deve essere maggiore di 0";
+    }
+
+    if (savingContext === "comparison" && !comparisonAmount.provided) {
+      errors.comparisonAmount = "Questo campo è obbligatorio";
+    }
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return { errors };
+  }
+
+  return {
+    errors,
+    money: calculateEntryMoney({
+      mode,
+      savingContext,
+      amountSpent: amountSpent.provided ? amountSpent.value : undefined,
+      comparisonAmount: comparisonAmount.provided
+        ? comparisonAmount.value
+        : undefined,
+    }),
+  };
+}
+
+function resolvePresetMoney(formData: FormData): ResolvedPresetMoney {
+  if (hasTrackerFirstMoneyFields(formData)) {
+    return resolveTrackerFirstPresetMoney(formData);
+  }
+
+  return resolveLegacyPresetMoney(formData);
+}
+
 function buildPresetEntryFormData(params: {
   title: string;
   categoryId: string;
-  realCost: number;
-  alternativeCost: number;
+  money: EntryMoneyView;
   note: string | null;
-  person: LegacyPersonValue;
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
 }): FormData {
   const formData = new FormData();
   formData.append("title", params.title);
   formData.append("categoryId", params.categoryId);
-  formData.append("realCost", params.realCost.toFixed(2));
-  formData.append("alternativeCost", params.alternativeCost.toFixed(2));
+  formData.append("mode", params.money.mode);
+  formData.append("savingContext", params.money.savingContext);
+  formData.append("realCost", params.money.realCost.toFixed(2));
+  formData.append("alternativeCost", params.money.alternativeCost.toFixed(2));
   formData.append("date", getRomeDateInputValue(new Date()));
+  formData.append("paidByUserId", params.paidByUserId);
+
+  if (params.money.mode === "spent") {
+    formData.append("amountSpent", params.money.amountSpent.toFixed(2));
+  }
+
+  if (
+    params.money.mode === "avoided" ||
+    params.money.savingContext === "comparison"
+  ) {
+    formData.append("comparisonAmount", params.money.comparisonAmount.toFixed(2));
+  }
+
+  for (const beneficiaryUserId of params.beneficiaryUserIds) {
+    formData.append("beneficiaryUserIds", beneficiaryUserId);
+  }
 
   if (params.note) {
     formData.append("note", params.note);
   }
 
-  formData.append("person", params.person);
-
   return formData;
+}
+
+function resolvePresetOwnership(
+  person: LegacyPersonValue,
+  members: WorkspaceMemberOption[],
+  currentUserId: string,
+): {
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
+} {
+  const defaultPaidByUserId = getDefaultPaidByUserId(members, currentUserId);
+  const slots = getWorkspaceMemberSlots(members);
+
+  if (person === "TUTTI") {
+    const beneficiaryUserIds = members.map((member) => member.userId);
+
+    return {
+      paidByUserId: defaultPaidByUserId,
+      beneficiaryUserIds:
+        beneficiaryUserIds.length > 0
+          ? beneficiaryUserIds
+          : getDefaultBeneficiaryUserIds(members, defaultPaidByUserId),
+    };
+  }
+
+  const targetUserId =
+    person === "MARTINA"
+      ? slots.secondaryUserId ?? slots.primaryUserId ?? defaultPaidByUserId
+      : slots.primaryUserId ?? defaultPaidByUserId;
+
+  return {
+    paidByUserId: targetUserId,
+    beneficiaryUserIds: targetUserId
+      ? [targetUserId]
+      : getDefaultBeneficiaryUserIds(members, targetUserId),
+  };
+}
+
+function resolveDefaultPresetOwnership(
+  members: WorkspaceMemberOption[],
+  currentUserId: string,
+): {
+  paidByUserId: string;
+  beneficiaryUserIds: string[];
+} {
+  const paidByUserId = getDefaultPaidByUserId(members, currentUserId);
+
+  return {
+    paidByUserId,
+    beneficiaryUserIds: getDefaultBeneficiaryUserIds(members, paidByUserId),
+  };
 }
 
 export async function createPreset(
@@ -183,9 +416,7 @@ export async function createPreset(
   const title = getText(formData, "title");
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
-  const realCost = getMoney(formData, "realCost");
-  const alternativeCost = getMoney(formData, "alternativeCost");
-  const person = getOptionalPerson(formData);
+  const money = resolvePresetMoney(formData);
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -199,19 +430,17 @@ export async function createPreset(
     errors.categoryId = "Seleziona una categoria";
   }
 
-  if (realCost.error) {
-    errors.realCost = realCost.error;
-  }
-
-  if (alternativeCost.error) {
-    errors.alternativeCost = alternativeCost.error;
-  }
-
-  if (person.error) {
-    errors.person = person.error;
-  }
+  Object.assign(errors, money.errors);
 
   if (Object.keys(errors).length > 0) {
+    return {
+      success: false,
+      message: "Controlla i campi evidenziati",
+      errors,
+    };
+  }
+
+  if (!money.money) {
     return {
       success: false,
       message: "Controlla i campi evidenziati",
@@ -235,10 +464,9 @@ export async function createPreset(
         workspaceId,
         title,
         categoryId: category.id,
-        realCost: realCost.value.toFixed(2),
-        alternativeCost: alternativeCost.value.toFixed(2),
+        realCost: money.money.realCost.toFixed(2),
+        alternativeCost: money.money.alternativeCost.toFixed(2),
         note: note || null,
-        person: person.value,
       },
     });
 
@@ -270,11 +498,22 @@ function serializePreset(preset: {
     name: string;
   };
 }): SerializablePreset {
+  const money = toEntryMoneyView({
+    realCost: preset.realCost,
+    alternativeCost: preset.alternativeCost,
+    savedAmount: toNumber(preset.alternativeCost) - toNumber(preset.realCost),
+  });
+
   return {
     id: preset.id,
     title: preset.title,
-    realCost: toNumber(preset.realCost).toFixed(2),
-    alternativeCost: toNumber(preset.alternativeCost).toFixed(2),
+    mode: money.mode,
+    savingContext: money.savingContext,
+    realCost: money.realCost.toFixed(2),
+    alternativeCost: money.alternativeCost.toFixed(2),
+    amountSpent: money.amountSpent.toFixed(2),
+    comparisonAmount: money.comparisonAmount.toFixed(2),
+    savingImpact: money.savingImpact.toFixed(2),
     note: preset.note,
     person: preset.person,
     createdAt: preset.createdAt.toISOString(),
@@ -352,22 +591,34 @@ export async function createEntryFromPreset(
 
     await requireWorkspaceAccessForRecord(preset, "Preset");
 
-    const effectivePerson = preset.person ?? normalizeLegacyPerson(person);
+    const [currentUser, members] = await Promise.all([
+      getCurrentUser(),
+      getCurrentWorkspaceMembers(),
+    ]);
 
-    if (!effectivePerson) {
+    if (members.length === 0) {
       return {
         success: false,
-        message: "Seleziona una persona per usare questo preset",
+        message: "Nessun membro disponibile nel workspace",
       };
     }
+
+    const effectivePerson = preset.person ?? normalizeLegacyPerson(person);
+    const ownership = effectivePerson
+      ? resolvePresetOwnership(effectivePerson, members, currentUser.id)
+      : resolveDefaultPresetOwnership(members, currentUser.id);
 
     const entryFormData = buildPresetEntryFormData({
       title: preset.title,
       categoryId: preset.categoryId,
-      realCost: toNumber(preset.realCost),
-      alternativeCost: toNumber(preset.alternativeCost),
+      money: toEntryMoneyView({
+        realCost: toNumber(preset.realCost),
+        alternativeCost: toNumber(preset.alternativeCost),
+        savedAmount: toNumber(preset.alternativeCost) - toNumber(preset.realCost),
+      }),
       note: preset.note,
-      person: effectivePerson,
+      paidByUserId: ownership.paidByUserId,
+      beneficiaryUserIds: ownership.beneficiaryUserIds,
     });
 
     const result = await createEntry(entryFormData);
@@ -383,7 +634,7 @@ export async function createEntryFromPreset(
 
     return {
       success: true,
-      message: "Entrata creata dal preset",
+      message: "Movimento creato dal preset",
       isFirstEntryOfDay: result.isFirstEntryOfDay,
       streakFrom: result.streakFrom,
       streakTo: result.streakTo,
@@ -393,7 +644,7 @@ export async function createEntryFromPreset(
     return {
       success: false,
       message:
-        "Non riesco a creare l'entrata dal preset adesso. Riprova tra poco.",
+        "Non riesco a creare il movimento dal preset adesso. Riprova tra poco.",
     };
   }
 }

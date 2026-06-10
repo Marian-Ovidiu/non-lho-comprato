@@ -41,40 +41,47 @@ export function CraftedHabits({
   }
 
   const liveAvoided = today.filter((item) => item.status === "avoided").length;
+  const livePending = today.filter((item) => item.status === "pending").length;
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-5 py-7">
-        <Label className="mb-4 block">Abitudini — oggi</Label>
+        <Label className="mb-4 block">Ricorrenti — oggi</Label>
         <div className="flex items-baseline gap-2.5">
           <Mono className="text-[clamp(3rem,16vw,4.75rem)] font-semibold leading-[0.84] tracking-[-0.05em]">
-            {liveAvoided}
+            {livePending}
             <span className="text-ink-3">/{totalToday || today.length}</span>
           </Mono>
-          <span className="text-lg text-muted-foreground">evitate</span>
+          <span className="text-lg text-muted-foreground">da confermare</span>
         </div>
         {habitsNote ? (
           <Serif className="mt-3.5 block text-[19px] text-muted-foreground">
             {habitsNote}
+          </Serif>
+        ) : totalToday > 0 ? (
+          <Serif className="mt-3.5 block text-[19px] text-muted-foreground">
+            {liveAvoided > 0
+              ? `${liveAvoided} ${liveAvoided === 1 ? "spesa prevista evitata" : "spese previste evitate"} oggi.`
+              : "Conferma cosa hai pagato, evitato o cosa non era applicabile oggi."}
           </Serif>
         ) : null}
       </section>
       <Rule />
 
       <section className="px-5 pt-5 pb-1.5">
-        <Label>Da tenere d&apos;occhio oggi</Label>
+        <Label>Spese previste di oggi</Label>
       </section>
 
       {today.length === 0 ? (
         <div className="px-5 py-8 text-center">
           <Serif className="text-sm text-ink-3">
-            Nessuna abitudine attiva per oggi.
+            Nessuna ricorrente attiva per oggi.
           </Serif>
           <Link
             href="#nuova-abitudine"
             className="mt-4 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
           >
-            Crea una nuova abitudine
+            Crea una nuova ricorrente
           </Link>
         </div>
       ) : (
@@ -118,7 +125,7 @@ export function CraftedHabits({
       {all.length > 0 ? (
         <>
           <section className="flex items-baseline justify-between px-5 pt-5 pb-1.5">
-            <Label>Tutte le tue abitudini</Label>
+            <Label>Tutte le ricorrenti</Label>
             <Mono className="text-[11px] text-ink-3">{activeCount} attive</Mono>
           </section>
           <div className="px-5 pb-1">
@@ -138,18 +145,19 @@ export function CraftedHabits({
                   </div>
                   <div className="text-right">
                     <Mono className="text-[15px] font-medium whitespace-nowrap">
-                      +{formatCraftedCompact(habit.weekSaved)}
+                      {habit.monthImpact > 0 ? "+" : ""}
+                      {formatCraftedCompact(habit.monthImpact)}
                       <span className="text-[11px] text-accent">€</span>
                     </Mono>
                     <Mono className="mt-0.5 block text-[10px] tracking-[0.06em] text-ink-3 uppercase">
-                      in totale
+                      impatto mese
                     </Mono>
                   </div>
                 </div>
                 <div className="flex items-center gap-2.5">
                   <ProgressLine value={habit.progressPercent} className="flex-1" />
                   <Mono className="text-[10.5px] whitespace-nowrap text-ink-3">
-                    {habit.avoidedLabel}
+                    {habit.completionLabel}
                   </Mono>
                 </div>
               </div>
@@ -158,7 +166,7 @@ export function CraftedHabits({
           {monthSaved > 0 ? (
             <div className="px-5 py-4 text-center">
               <Serif className="text-sm text-ink-3">
-                {formatCraftedCompact(monthSaved)}€ risparmiati dalle abitudini, a{" "}
+                {formatCraftedCompact(monthSaved)}€ evitati / risparmiati dalle ricorrenti, a{" "}
                 {monthLabel}.
               </Serif>
             </div>

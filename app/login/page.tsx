@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import { CraftedIcon } from "@/components/crafted";
 import { LoginPanel } from "@/src/components/auth/login-panel";
+import { TrustCopy } from "@/src/components/shared/trust-copy";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 
 export const dynamic = "force-dynamic";
@@ -45,9 +46,7 @@ export default async function LoginPage() {
         <span className="size-1.5 rounded-full bg-accent/25" />
       </div>
 
-      <p className="mt-5 text-center text-[11px] tracking-[0.05em] text-ink-3">
-        Cifratura end-to-end · Niente pubblicità
-      </p>
+      <TrustCopy className="mt-5 text-center text-[11px] tracking-[0.05em] text-ink-3" />
     </main>
   );
 }

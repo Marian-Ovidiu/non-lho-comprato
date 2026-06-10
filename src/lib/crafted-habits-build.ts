@@ -25,15 +25,16 @@ export type CraftedAllHabit = {
   name: string;
   freq: string;
   icon: CraftedIconName;
-  avoidedLabel: string;
+  completionLabel: string;
   progressPercent: number;
-  weekSaved: number;
+  monthImpact: number;
 };
 
 export type CraftedHabitsProps = {
   today: CraftedTodayHabit[];
   all: CraftedAllHabit[];
   avoidedToday: number;
+  pendingToday: number;
   totalToday: number;
   habitsNote: string | null;
   activeCount: number;
@@ -90,14 +91,14 @@ export function buildHabitsNote(
   }
 
   if (avoided.length === 1) {
-    return `${avoided[0]}, già fatto.`;
+    return `${avoided[0]}, già evitata.`;
   }
 
   if (avoided.length === 2) {
-    return `${avoided[0]} e ${avoided[1]}, già fatto.`;
+    return `${avoided[0]} e ${avoided[1]}, già evitate.`;
   }
 
-  return `${avoided.slice(0, -1).join(", ")} e ${avoided.at(-1)}, già fatto.`;
+  return `${avoided.slice(0, -1).join(", ")} e ${avoided.at(-1)}, già evitate.`;
 }
 
 function getMonthLabel() {
@@ -152,6 +153,9 @@ export function buildCraftedHabitsProps({
   const avoidedToday = todayOccurrences.filter(
     (occurrence) => occurrence.status === "avoided",
   ).length;
+  const pendingToday = todayOccurrences.filter(
+    (occurrence) => occurrence.status === "pending",
+  ).length;
 
   return {
     today: todayOccurrences.map((occurrence) => ({
@@ -173,15 +177,16 @@ export function buildCraftedHabitsProps({
           name: habit.name,
           freq: formatHabitFrequency(habit.activeDays),
           icon: getCategoryCraftedIcon(habit.category),
-          avoidedLabel:
+          completionLabel:
             considered > 0
-              ? `${stats?.avoidedCount ?? 0}/${considered} evitate`
-              : "0 evitate",
+              ? `${considered} confermate · ${stats?.avoidedCount ?? 0} evitate`
+              : "Nessuna conferma ancora",
           progressPercent: stats?.disciplineRatePercent ?? 0,
-          weekSaved: stats?.totalSaved ?? 0,
+          monthImpact: stats?.totalSaved ?? 0,
         };
       }),
     avoidedToday,
+    pendingToday,
     totalToday: todayOccurrences.length,
     habitsNote: buildHabitsNote(todayOccurrences),
     activeCount: habits.filter((habit) => habit.isActive).length,

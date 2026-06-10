@@ -71,7 +71,7 @@ export function CraftedMore({
           <StatTrio
             items={[
               {
-                label: "Tenuti",
+                label: "Risparmio",
                 value: formatCraftedCompact(monthSaved),
                 suffix: "€",
               },
@@ -147,8 +147,8 @@ export function CraftedMore({
         <div className="divide-y divide-line-soft border-y border-line">
           <CraftedMoreRow
             href="/habits"
-            label="Abitudini"
-            detail="Spese ricorrenti da tenere d'occhio"
+            label="Ricorrenti"
+            detail="Spese previste da tenere d'occhio"
             icon="coffee"
           />
           <CraftedMoreRow
@@ -160,7 +160,7 @@ export function CraftedMore({
           <CraftedMoreRow
             href="/goals"
             label="Obiettivi"
-            detail="Mete verso cui stai risparmiando"
+            detail="Mete alimentate dal risparmio"
             icon="target"
           />
         </div>

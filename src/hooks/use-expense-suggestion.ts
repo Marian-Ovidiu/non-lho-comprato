@@ -9,7 +9,7 @@ type UseExpenseSuggestionOptions = {
   title: string;
   categoryId: string;
   workspaceId: string;
-  realCost: string;
+  amountSpent: string;
   paidByUserId?: string | null;
   beneficiaryUserIds?: string[];
   enabled?: boolean;
@@ -25,7 +25,7 @@ export function useExpenseSuggestion({
   title,
   categoryId,
   workspaceId,
-  realCost,
+  amountSpent,
   paidByUserId,
   beneficiaryUserIds,
   enabled = true,
@@ -34,7 +34,7 @@ export function useExpenseSuggestion({
   const [isLoading, setIsLoading] = useState(false);
   const requestIdRef = useRef(0);
   const lastSignatureRef = useRef<string | null>(null);
-  const parsedRealCost = parseMoney(realCost);
+  const parsedRealCost = parseMoney(amountSpent);
   const hasRequiredFields =
     enabled &&
     categoryId.trim().length > 0 &&

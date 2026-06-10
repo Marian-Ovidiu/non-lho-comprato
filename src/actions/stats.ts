@@ -154,10 +154,31 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function sum(values: Array<unknown>): number {
-  return round2(
-    values.reduce<number>((total, value) => total + toNumber(value), 0),
-  );
+function buildOverviewFromTotals(input: {
+  totalRealSpent: unknown;
+  totalAlternativeCost: unknown;
+  totalSaved: unknown;
+  entriesCount: number;
+}): StatsOverview {
+  if (input.entriesCount === 0) {
+    return emptyOverview();
+  }
+
+  const totalRealSpent = round2(toNumber(input.totalRealSpent));
+  const totalAlternativeCost = round2(toNumber(input.totalAlternativeCost));
+  const totalSaved = round2(toNumber(input.totalSaved));
+
+  return {
+    totalRealSpent,
+    totalAlternativeCost,
+    totalSaved,
+    entriesCount: input.entriesCount,
+    averageSavedPerEntry: round2(totalSaved / input.entriesCount),
+    savingRatePercent:
+      totalAlternativeCost === 0
+        ? 0
+        : round2((totalSaved / totalAlternativeCost) * 100),
+  };
 }
 
 async function buildEntryWhere(
@@ -263,37 +284,55 @@ function buildSavingCategoryInsight(
   if (!latestMonth) {
     return {
       id: "best-savings-category",
-      label: "Dove rende di più",
+      label: "Dove hai evitato di più",
       value: "In costruzione",
       detail:
-        "Appena ci saranno movimenti, qui comparirà la categoria che protegge di più il budget.",
+        "Appena ci saranno confronti o spese evitate, qui comparirà la categoria più protetta.",
       tone: "default",
     };
   }
 
   const latestCategories = monthlyCategoryGrouped.get(latestMonth.month);
   if (!latestCategories || latestCategories.size === 0) {
-    const fallback = categoryStats[0];
+    const fallback = [...categoryStats]
+      .filter((category) => category.totalSaved > 0)
+      .sort(
+        (left, right) =>
+          right.totalSaved - left.totalSaved ||
+          right.entriesCount - left.entriesCount ||
+          left.categoryName.localeCompare(right.categoryName, "it"),
+      )[0];
 
     return {
       id: "best-savings-category",
-      label: "Dove rende di più",
+      label: "Dove hai evitato di più",
       value: fallback?.categoryName ?? "In costruzione",
       detail: fallback
-        ? `${formatMoney(fallback.totalSaved)} tenuti finora in questa categoria.`
-        : "Appena compariranno dati, qui vedrai la categoria più forte.",
+        ? `${formatMoney(fallback.totalSaved)} evitati o risparmiati finora in questa categoria.`
+        : "Appena compariranno dati positivi, qui vedrai la categoria più protetta.",
       tone: "success",
     };
   }
 
   const currentCategory = [...latestCategories.entries()]
     .map(([categoryId, totals]) => ({ categoryId, ...totals }))
+    .filter((category) => category.totalSaved > 0)
     .sort(
       (left, right) =>
         right.totalSaved - left.totalSaved ||
         right.entriesCount - left.entriesCount ||
         left.categoryName.localeCompare(right.categoryName, "it"),
     )[0];
+
+  if (!currentCategory) {
+    return {
+      id: "best-savings-category",
+      label: "Dove hai evitato di più",
+      value: "Nessun dato positivo",
+      detail: `Nel mese di ${latestMonth.label} non ci sono ancora confronti o evitate con impatto positivo.`,
+      tone: "default",
+    };
+  }
 
   const previousMonth = monthlyStats.at(-2);
   const previousCategory = previousMonth
@@ -311,148 +350,119 @@ function buildSavingCategoryInsight(
 
     return {
       id: "best-savings-category",
-      label: "Dove rende di più",
+      label: "Dove hai evitato di più",
       value: currentCategory.categoryName,
-      detail: `${formatMoney(currentCategory.totalSaved)} tenuti ${monthPart}. ${deltaLabel}.`,
+      detail: `${formatMoney(currentCategory.totalSaved)} evitati o risparmiati ${monthPart}. ${deltaLabel}.`,
       tone: "success",
     };
   }
 
   return {
     id: "best-savings-category",
-    label: "Dove rende di più",
+    label: "Dove hai evitato di più",
     value: currentCategory.categoryName,
-    detail: `${formatMoney(currentCategory.totalSaved)} tenuti ${monthPart}.`,
+    detail: `${formatMoney(currentCategory.totalSaved)} evitati o risparmiati ${monthPart}.`,
     tone: "success",
   };
 }
 
-function buildDeteriorationInsight(
+function buildSpendingCategoryInsight(
   monthlyStats: MonthlyStatsItem[],
   monthlyCategoryGrouped: Map<string, Map<string, StatsMonthlyCategoryRow>>,
+  categoryStats: CategoryStatsItem[],
 ): StatsInsight {
+  const latestMonth = monthlyStats.at(-1);
+
+  if (!latestMonth) {
+    return {
+      id: "top-spending-category",
+      label: "Categoria dove spendi di più",
+      value: "In costruzione",
+      detail:
+        "Appena ci saranno movimenti, qui comparirà la categoria con più spesa reale.",
+      tone: "default",
+    };
+  }
+
+  const currentCategories = monthlyCategoryGrouped.get(latestMonth.month) ?? new Map();
+  const currentCategory = [...currentCategories.values()].sort(
+    (left, right) =>
+      right.totalRealSpent - left.totalRealSpent ||
+      right.entriesCount - left.entriesCount ||
+      left.categoryName.localeCompare(right.categoryName, "it"),
+  )[0];
+  const fallback = [...categoryStats].sort(
+    (left, right) =>
+      right.totalRealSpent - left.totalRealSpent ||
+      right.entriesCount - left.entriesCount ||
+      left.categoryName.localeCompare(right.categoryName, "it"),
+  )[0];
+  const topCategory = currentCategory ?? fallback;
+
+  if (!topCategory) {
+    return {
+      id: "top-spending-category",
+      label: "Categoria dove spendi di più",
+      value: "In costruzione",
+      detail: "Appena compariranno dati, qui vedrai la categoria principale.",
+      tone: "default",
+    };
+  }
+
+  return {
+    id: "top-spending-category",
+    label: "Categoria dove spendi di più",
+    value: topCategory.categoryName,
+    detail: `${formatMoney(topCategory.totalRealSpent)} spesi nel mese di ${latestMonth.label}.`,
+    tone: "premium",
+  };
+}
+
+function buildSpendingTrendInsight(monthlyStats: MonthlyStatsItem[]): StatsInsight {
   const latestMonth = monthlyStats.at(-1);
   const previousMonth = monthlyStats.at(-2);
 
   if (!latestMonth || !previousMonth) {
     return {
       id: "month-trend",
-      label: "Da tenere d'occhio",
+      label: "Spesa mese su mese",
       value: "Confronto non ancora disponibile",
       detail:
-        "Serve almeno un secondo mese con dati per leggere cosa sta andando peggio.",
+        "Serve almeno un secondo mese con dati per leggere se la spesa sale o scende.",
       tone: "default",
     };
   }
 
-  const currentCategories = monthlyCategoryGrouped.get(latestMonth.month) ?? new Map();
-  const previousCategories = monthlyCategoryGrouped.get(previousMonth.month) ?? new Map();
-  let worstCategory: {
-    categoryName: string;
-    currentSaved: number;
-    previousSaved: number;
-    deltaSaved: number;
-  } | null = null;
-
-  for (const [categoryId, currentTotals] of currentCategories.entries()) {
-    const previousTotals = previousCategories.get(categoryId) ?? null;
-    const previousSaved = previousTotals?.totalSaved ?? 0;
-    const deltaSaved = round2(currentTotals.totalSaved - previousSaved);
-
-    if (deltaSaved >= 0) {
-      continue;
-    }
-
-    if (
-      !worstCategory ||
-      deltaSaved < worstCategory.deltaSaved ||
-      (deltaSaved === worstCategory.deltaSaved &&
-        currentTotals.categoryName.localeCompare(worstCategory.categoryName, "it") < 0)
-    ) {
-      worstCategory = {
-        categoryName: currentTotals.categoryName,
-        currentSaved: currentTotals.totalSaved,
-        previousSaved,
-        deltaSaved,
-      };
-    }
-  }
-
-  if (worstCategory) {
-    return {
-      id: "month-trend",
-      label: "Da tenere d'occhio",
-      value: worstCategory.categoryName,
-      detail: `${formatMoney(Math.abs(worstCategory.deltaSaved))} in meno rispetto al mese scorso in questa categoria.`,
-      tone: "warning",
-    };
-  }
-
-  const currentMonth = latestMonth;
   const previousRealSpent = previousMonth.totalRealSpent;
-  const currentRealSpent = currentMonth.totalRealSpent;
+  const currentRealSpent = latestMonth.totalRealSpent;
   const realSpentDelta = round2(currentRealSpent - previousRealSpent);
 
   if (realSpentDelta > 0) {
     return {
       id: "month-trend",
-      label: "Da tenere d'occhio",
-      value: "Spesa reale in salita",
+      label: "Spesa mese su mese",
+      value: "Spesa in salita",
       detail: `${formatMoney(realSpentDelta)} in più rispetto al mese scorso.`,
       tone: "warning",
     };
   }
 
-  const savedDelta = round2(currentMonth.totalSaved - previousMonth.totalSaved);
-  if (savedDelta < 0) {
+  if (realSpentDelta < 0) {
     return {
       id: "month-trend",
-      label: "Da tenere d'occhio",
-      value: "Risparmio in calo",
-      detail: `${formatMoney(Math.abs(savedDelta))} in meno rispetto al mese scorso.`,
-      tone: "warning",
+      label: "Spesa mese su mese",
+      value: "Spesa in discesa",
+      detail: `${formatMoney(Math.abs(realSpentDelta))} in meno rispetto al mese scorso.`,
+      tone: "success",
     };
   }
 
   return {
     id: "month-trend",
-    label: "Da tenere d'occhio",
-    value: "Nessun calo netto",
-    detail:
-      "Il mese non mostra un peggioramento netto rispetto al precedente.",
-    tone: "success",
-  };
-}
-
-function buildHabitInsight(habitStats: HabitStatsItem[]): StatsInsight {
-  if (habitStats.length === 0) {
-    return {
-      id: "best-habit",
-      label: "Abitudine più incisiva",
-      value: "In costruzione",
-      detail:
-        "Appena inizierai a registrare le abitudini, qui comparirà il loro impatto economico.",
-      tone: "premium",
-    };
-  }
-
-  const strongestHabit = [...habitStats].sort(
-    (left, right) =>
-      right.totalSaved - left.totalSaved ||
-      right.disciplineRatePercent - left.disciplineRatePercent ||
-      right.totalOccurrences - left.totalOccurrences ||
-      left.habitName.localeCompare(right.habitName, "it"),
-  )[0];
-
-  return {
-    id: "best-habit",
-    label: "Abitudine più incisiva",
-    value: strongestHabit.habitName,
-    detail:
-      strongestHabit.totalSaved > 0
-        ? `${formatMoney(strongestHabit.totalSaved)} evitati su ${strongestHabit.totalOccurrences} occorrenze, con ${strongestHabit.disciplineRatePercent.toFixed(1)}% di evitati.`
-        : `Ancora nessun risparmio evitato: ${strongestHabit.totalOccurrences} occorrenze registrate.`,
-    tone: "premium",
+    label: "Spesa mese su mese",
+    value: "Spesa stabile",
+    detail: "La spesa reale è in linea con il mese scorso.",
+    tone: "default",
   };
 }
 
@@ -648,7 +658,12 @@ function getStatsFromEntries(
           ? 0
           : round2(totals.totalSaved / totals.entriesCount),
     }))
-    .sort((left, right) => right.totalSaved - left.totalSaved);
+    .sort(
+      (left, right) =>
+        right.totalRealSpent - left.totalRealSpent ||
+        right.totalSaved - left.totalSaved ||
+        left.categoryName.localeCompare(right.categoryName, "it"),
+    );
 
   topSavings.sort(
     (left, right) =>
@@ -657,8 +672,9 @@ function getStatsFromEntries(
   );
 
   const insights = [
+    buildSpendingCategoryInsight(monthlyStats, monthlyCategoryGrouped, categoryStats),
     buildSavingCategoryInsight(monthlyStats, monthlyCategoryGrouped, categoryStats),
-    buildDeteriorationInsight(monthlyStats, monthlyCategoryGrouped),
+    buildSpendingTrendInsight(monthlyStats),
   ];
 
   return {
@@ -822,8 +838,7 @@ export async function getStatsPageData(
   });
 
   const entryStats = getStatsFromEntries(entries);
-  const habitInsight = buildHabitInsight(habitStats);
-  const insights = [...entryStats.insights, habitInsight].slice(0, 3);
+  const insights = entryStats.insights.slice(0, 3);
   const dailySpendingComparison = buildDailySpendingComparison(
     entries.map((entry) => ({
       date: entry.date,
@@ -846,37 +861,24 @@ export async function getStatsOverview(
   memberUserId?: string,
 ): Promise<StatsOverview> {
   try {
-    const entries = await prisma.entry.findMany({
+    const totals = await prisma.entry.aggregate({
       where: await buildEntryWhere(memberUserId),
-      select: {
+      _sum: {
         realCost: true,
         alternativeCost: true,
         savedAmount: true,
       },
+      _count: {
+        _all: true,
+      },
     });
 
-    if (entries.length === 0) {
-      return emptyOverview();
-    }
-
-    const totalRealSpent = sum(entries.map((entry) => entry.realCost));
-    const totalAlternativeCost = sum(
-      entries.map((entry) => entry.alternativeCost),
-    );
-    const totalSaved = sum(entries.map((entry) => entry.savedAmount));
-    const entriesCount = entries.length;
-
-    return {
-      totalRealSpent,
-      totalAlternativeCost,
-      totalSaved,
-      entriesCount,
-      averageSavedPerEntry: round2(totalSaved / entriesCount),
-      savingRatePercent:
-        totalAlternativeCost === 0
-          ? 0
-          : round2((totalSaved / totalAlternativeCost) * 100),
-    };
+    return buildOverviewFromTotals({
+      totalRealSpent: totals._sum.realCost,
+      totalAlternativeCost: totals._sum.alternativeCost,
+      totalSaved: totals._sum.savedAmount,
+      entriesCount: totals._count._all,
+    });
   } catch (error) {
     console.error("Failed to load stats overview:", error);
     return emptyOverview();
@@ -955,72 +957,64 @@ export async function getCategoryStats(
   memberUserId?: string,
 ): Promise<CategoryStatsItem[]> {
   try {
-    const entries = await prisma.entry.findMany({
+    const grouped = await prisma.entry.groupBy({
+      by: ["categoryId"],
       where: await buildEntryWhere(memberUserId),
-      select: {
-        categoryId: true,
+      _sum: {
         realCost: true,
         alternativeCost: true,
         savedAmount: true,
-        category: {
-          select: {
-            name: true,
-            slug: true,
-          },
-        },
+      },
+      _count: {
+        _all: true,
       },
     });
 
-    if (entries.length === 0) {
+    if (grouped.length === 0) {
       return [];
     }
 
-    const grouped = new Map<
-      string,
-      {
-        categoryName: string;
-        categorySlug: string;
-        totalRealSpent: number;
-        totalAlternativeCost: number;
-        totalSaved: number;
-        entriesCount: number;
-      }
-    >();
+    const categoryIds = grouped.map((item) => item.categoryId);
+    const categories = await prisma.category.findMany({
+      where: {
+        id: {
+          in: categoryIds,
+        },
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+      },
+    });
+    const categoryById = new Map(
+      categories.map((category) => [category.id, category]),
+    );
 
-    for (const entry of entries) {
-      const current = grouped.get(entry.categoryId) ?? {
-        categoryName: entry.category.name,
-        categorySlug: entry.category.slug,
-        totalRealSpent: 0,
-        totalAlternativeCost: 0,
-        totalSaved: 0,
-        entriesCount: 0,
-      };
+    return grouped
+      .map((totals) => {
+        const category = categoryById.get(totals.categoryId);
+        const entriesCount = totals._count._all;
+        const totalSaved = round2(toNumber(totals._sum.savedAmount));
 
-      current.totalRealSpent = round2(
-        current.totalRealSpent + toNumber(entry.realCost),
+        return {
+          categoryId: totals.categoryId,
+          categoryName: category?.name ?? "Senza categoria",
+          categorySlug: category?.slug ?? totals.categoryId,
+          totalRealSpent: round2(toNumber(totals._sum.realCost)),
+          totalAlternativeCost: round2(toNumber(totals._sum.alternativeCost)),
+          totalSaved,
+          entriesCount,
+          averageSaved:
+            entriesCount === 0 ? 0 : round2(totalSaved / entriesCount),
+        };
+      })
+      .sort(
+        (left, right) =>
+          right.totalRealSpent - left.totalRealSpent ||
+          right.totalSaved - left.totalSaved ||
+          left.categoryName.localeCompare(right.categoryName, "it"),
       );
-      current.totalAlternativeCost = round2(
-        current.totalAlternativeCost + toNumber(entry.alternativeCost),
-      );
-      current.totalSaved = round2(current.totalSaved + toNumber(entry.savedAmount));
-      current.entriesCount += 1;
-
-      grouped.set(entry.categoryId, current);
-    }
-
-    return Array.from(grouped.entries())
-      .map(([categoryId, totals]) => ({
-        categoryId,
-        categoryName: totals.categoryName,
-        categorySlug: totals.categorySlug,
-        totalRealSpent: totals.totalRealSpent,
-        totalAlternativeCost: totals.totalAlternativeCost,
-        totalSaved: totals.totalSaved,
-        entriesCount: totals.entriesCount,
-        averageSaved: totals.entriesCount === 0 ? 0 : round2(totals.totalSaved / totals.entriesCount),
-      }))
-      .sort((left, right) => right.totalSaved - left.totalSaved);
   } catch (error) {
     console.error("Failed to load category stats:", error);
     return [];

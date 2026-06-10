@@ -6,17 +6,13 @@ import { useRouter } from "next/navigation";
 
 import { Label as CraftedLabel } from "@/components/crafted";
 import { createGoal } from "@/src/actions/goals";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { cn } from "@/lib/utils";
-import { getGoalScopeOptions, type LegacyPersonValue } from "@/src/lib/ui-person";
 
 type FormState = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
-};
-
-type CraftedGoalFormProps = {
-  defaultPerson?: "" | LegacyPersonValue;
 };
 
 const initialState: FormState = {
@@ -25,15 +21,7 @@ const initialState: FormState = {
   errors: {},
 };
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return <p className="mt-2 text-sm text-destructive">{message}</p>;
-}
-
-export function CraftedGoalForm({ defaultPerson = "" }: CraftedGoalFormProps) {
+export function CraftedGoalForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -87,7 +75,7 @@ export function CraftedGoalForm({ defaultPerson = "" }: CraftedGoalFormProps) {
           />
           <CraftedLabel>Obiettivo</CraftedLabel>
         </div>
-        <FieldError message={state.errors?.title} />
+        <FormFieldError message={state.errors?.title} />
       </div>
 
       <div className="border-y border-line py-3">
@@ -105,27 +93,7 @@ export function CraftedGoalForm({ defaultPerson = "" }: CraftedGoalFormProps) {
           />
           <CraftedLabel>Importo €</CraftedLabel>
         </div>
-        <FieldError message={state.errors?.targetAmount} />
-      </div>
-
-      <div className="border-y border-line py-3">
-        <div className="flex items-center justify-between gap-4">
-          <select
-            id="person"
-            name="person"
-            defaultValue={defaultPerson}
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none"
-            aria-invalid={Boolean(state.errors?.person)}
-          >
-            {getGoalScopeOptions().map((option) => (
-              <option key={option.value || "GLOBAL"} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          <CraftedLabel>Di chi</CraftedLabel>
-        </div>
-        <FieldError message={state.errors?.person} />
+        <FormFieldError message={state.errors?.targetAmount} />
       </div>
 
       <input type="hidden" name="emoji" value="" />

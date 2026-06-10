@@ -5,6 +5,7 @@ import { CraftedIcon, Mono, Rule } from "@/components/crafted";
 import { formatCraftedEntryAmount } from "@/src/lib/crafted-money";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
+import { cn } from "@/lib/utils";
 
 type CraftedEntryRowProps = {
   entry: {
@@ -15,6 +16,10 @@ type CraftedEntryRowProps = {
       slug?: string | null;
     };
     date: string | Date;
+    mode?: "spent" | "avoided";
+    savingContext?: "none" | "comparison";
+    realCost: unknown;
+    alternativeCost?: unknown;
     savedAmount: unknown;
   };
   showDivider?: boolean;
@@ -40,10 +45,59 @@ function formatEntryMeta(date: string | Date, categoryName: string) {
   return `${categoryName} · ${formatDate(parsedDate)}`;
 }
 
+function toFiniteNumber(value: unknown): number {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
+function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
+  const mode = entry.mode === "avoided" ? "avoided" : "spent";
+  const savingContext =
+    entry.savingContext === "comparison" ? "comparison" : "none";
+  const savedAmount = toFiniteNumber(entry.savedAmount);
+  const alternativeCost = toFiniteNumber(entry.alternativeCost);
+
+  if (mode === "avoided") {
+    return {
+      badge: "Evitata",
+      detail: `${formatCraftedEntryAmount(alternativeCost)}€ evitati`,
+      tone: "accent" as const,
+    };
+  }
+
+  if (savingContext === "comparison") {
+    if (savedAmount > 0) {
+      return {
+        badge: "Confronto",
+        detail: `${formatCraftedEntryAmount(savedAmount)}€ sotto il confronto`,
+        tone: "accent" as const,
+      };
+    }
+
+    if (savedAmount < 0) {
+      return {
+        badge: "Confronto",
+        detail: `${formatCraftedEntryAmount(savedAmount)}€ sopra il confronto`,
+        tone: "default" as const,
+      };
+    }
+
+    return {
+      badge: "Confronto",
+      detail: "In linea con il confronto",
+      tone: "muted" as const,
+    };
+  }
+
+  return null;
+}
+
 export function CraftedEntryRow({
   entry,
   showDivider = true,
 }: CraftedEntryRowProps) {
+  const meta = getSecondaryMeta(entry);
+
   return (
     <div>
       <Link
@@ -60,9 +114,33 @@ export function CraftedEntryRow({
           <Mono className="mt-0.5 block text-[11px] tracking-[0.02em] text-ink-3">
             {formatEntryMeta(entry.date, entry.category.name)}
           </Mono>
+          {meta ? (
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <span
+                className={cn(
+                  "rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em]",
+                  meta.tone === "accent"
+                    ? "border-accent/30 text-accent"
+                    : meta.tone === "muted"
+                      ? "border-line text-ink-3"
+                      : "border-border text-foreground",
+                )}
+              >
+                {meta.badge}
+              </span>
+              <Mono
+                className={cn(
+                  "text-[11px]",
+                  meta.tone === "accent" ? "text-accent" : "text-ink-3",
+                )}
+              >
+                {meta.detail}
+              </Mono>
+            </div>
+          ) : null}
         </div>
         <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
-          {formatCraftedEntryAmount(entry.savedAmount)}
+          {formatCraftedEntryAmount(entry.realCost)}
           <span className="text-[11px] text-accent">€</span>
         </Mono>
       </Link>

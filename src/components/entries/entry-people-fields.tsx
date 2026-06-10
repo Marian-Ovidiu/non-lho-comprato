@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
@@ -26,14 +27,6 @@ type EntryPeopleFieldsProps = {
   onPaidByUserIdChange?: (userId: string) => void;
   onBeneficiaryUserIdsChange?: (userIds: string[]) => void;
 };
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return <p className="text-sm text-destructive">{message}</p>;
-}
 
 function getMemberGridClass(count: number) {
   if (count <= 2) {
@@ -144,7 +137,7 @@ export function EntryPeopleFields({
             ))}
           </SelectContent>
         </Select>
-        <FieldError message={errors?.paidByUserId} />
+        <FormFieldError message={errors?.paidByUserId} className="text-sm" />
       </div>
 
       <fieldset className="space-y-3">
@@ -191,7 +184,7 @@ export function EntryPeopleFields({
             );
           })}
         </div>
-        <FieldError message={errors?.beneficiaryUserIds} />
+        <FormFieldError message={errors?.beneficiaryUserIds} className="text-sm" />
       </fieldset>
     </div>
   );

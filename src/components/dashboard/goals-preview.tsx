@@ -27,7 +27,7 @@ function getProgressWidth(progressPercent: number) {
 
 export function GoalsPreview({
   goals,
-  description = "Le mete che stanno ricevendo risparmio adesso.",
+  description = "Le mete che avanzano con risparmi positivi ed evitati.",
 }: GoalsPreviewProps) {
   const visibleGoals = goals.slice(0, 3);
 
@@ -48,7 +48,7 @@ export function GoalsPreview({
       <CardContent className={`space-y-3 ${spacing.cardBodyCompact}`}>
         {visibleGoals.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-3 text-sm leading-5 text-muted-text">
-            🎯 Nessun obiettivo attivo al momento. Dai una direzione ai risparmi.
+            🎯 Nessun obiettivo attivo al momento. Dai una direzione a risparmi ed evitati.
           </p>
         ) : (
           visibleGoals.map((goal) => {

@@ -1,3 +1,5 @@
+// Compatibility-only projection for historical Person columns.
+// New runtime flows should use workspace member user IDs instead.
 export const LEGACY_PERSON_VALUES = ["MARIAN", "MARTINA", "TUTTI"] as const;
 
 export type LegacyPersonValue = (typeof LEGACY_PERSON_VALUES)[number];
@@ -8,11 +10,6 @@ export type PersonBucket = {
   key: LegacyPersonValue;
   label: string;
   isShared: boolean;
-};
-
-export type PersonChoice = {
-  value: LegacyPersonValue;
-  label: string;
 };
 
 export type PersonSelectChoice = {
@@ -56,7 +53,7 @@ export const GOAL_SCOPE_LABELS = {
 } as const;
 
 export const PRESET_PERSON_LABELS = {
-  DEFAULT: "Da scegliere al momento",
+  DEFAULT: "Automatico",
   MARIAN: "Marian",
   MARTINA: "Martina",
   TUTTI: "Condivisa",
@@ -148,31 +145,6 @@ export function getPersonFilterOptions(): PersonSelectChoice[] {
     { value: "MARIAN", label: PERSON_FILTER_LABELS.MARIAN },
     { value: "MARTINA", label: PERSON_FILTER_LABELS.MARTINA },
     { value: "TUTTI", label: PERSON_FILTER_LABELS.TUTTI },
-  ];
-}
-
-export function getPersonOwnershipOptions(): PersonChoice[] {
-  return LEGACY_PERSON_VALUES.map((value) => ({
-    value,
-    label: getEntryOwnershipLabel(value),
-  }));
-}
-
-export function getGoalScopeOptions(): PersonSelectChoice[] {
-  return [
-    { value: "", label: GOAL_SCOPE_LABELS.GLOBAL },
-    { value: "MARIAN", label: GOAL_SCOPE_LABELS.MARIAN },
-    { value: "MARTINA", label: GOAL_SCOPE_LABELS.MARTINA },
-    { value: "TUTTI", label: GOAL_SCOPE_LABELS.TUTTI },
-  ];
-}
-
-export function getPresetPersonOptions(): PersonSelectChoice[] {
-  return [
-    { value: "", label: PRESET_PERSON_LABELS.DEFAULT },
-    { value: "MARIAN", label: PRESET_PERSON_LABELS.MARIAN },
-    { value: "MARTINA", label: PRESET_PERSON_LABELS.MARTINA },
-    { value: "TUTTI", label: PRESET_PERSON_LABELS.TUTTI },
   ];
 }
 

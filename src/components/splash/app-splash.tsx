@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { FlameSplash } from "@/src/components/brand/flame-splash";
 import {
@@ -22,7 +22,7 @@ export function AppSplash({
   const [leaving, setLeaving] = useState(false);
   const [gone, setGone] = useState(false);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         clearSplashBootstrapShell();

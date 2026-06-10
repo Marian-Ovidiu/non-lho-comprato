@@ -11,12 +11,18 @@ import {
   buildAbsoluteAppUrl,
   generateInviteToken,
   getInviteExpiresAt,
+  getWorkspaceInviteUnavailableMessage,
   getWorkspaceInviteByTokenHash,
   getWorkspaceInvitePath,
   hashInviteToken,
   isValidInviteEmail,
+  isOpenWorkspaceInvite,
   normalizeInviteEmail,
 } from "@/src/lib/workspace-invites";
+import {
+  requireWorkspaceRole,
+  WorkspaceRbacError,
+} from "@/src/features/workspaces/rbac";
 import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
@@ -87,6 +93,19 @@ export async function createWorkspaceInviteAction(
     const invitedEmail = normalizeInviteEmail(invitedEmailRaw);
     const currentEmail = normalizeInviteEmail(currentUser.email ?? "");
 
+    if (currentWorkspace.kind === "shared") {
+      await requireWorkspaceRole(prisma, {
+        workspaceId: currentWorkspace.id,
+        userId: currentUser.id,
+        roles: ["owner"],
+      });
+    } else if (currentWorkspace.ownerUserId !== currentUser.id) {
+      return {
+        success: false,
+        message: "Solo un owner può creare inviti.",
+      };
+    }
+
     if (!currentEmail) {
       return {
         success: false,
@@ -123,9 +142,12 @@ export async function createWorkspaceInviteAction(
           data: {
             tokenHash,
             workspaceId: currentWorkspace.id,
+            type: "email",
             invitedEmail,
+            role: "member",
             createdByUserId: currentUser.id,
             expiresAt: getInviteExpiresAt(),
+            maxUses: 1,
           },
         });
 
@@ -155,9 +177,12 @@ export async function createWorkspaceInviteAction(
         data: {
           tokenHash,
           workspaceId: workspace.id,
+          type: "email",
           invitedEmail,
+          role: "member",
           createdByUserId: currentUser.id,
           expiresAt: getInviteExpiresAt(),
+          maxUses: 1,
         },
       });
 
@@ -187,6 +212,13 @@ export async function createWorkspaceInviteAction(
       createdSharedWorkspace: currentWorkspace.kind === "private",
     };
   } catch (error) {
+    if (error instanceof WorkspaceRbacError) {
+      return {
+        success: false,
+        message: "Solo un owner può creare inviti.",
+      };
+    }
+
     console.error("Failed to create workspace invite:", error);
     return {
       success: false,
@@ -225,6 +257,13 @@ export async function acceptWorkspaceInviteAction(
       };
     }
 
+    if (invite.revokedAt) {
+      return {
+        success: false,
+        message: "Questo invito non è più disponibile.",
+      };
+    }
+
     if (invite.expiresAt.getTime() < Date.now()) {
       return {
         success: false,
@@ -232,19 +271,22 @@ export async function acceptWorkspaceInviteAction(
       };
     }
 
-    const currentEmail = normalizeInviteEmail(currentUser.email ?? "");
-    if (!currentEmail) {
-      return {
-        success: false,
-        message: "Serve un account con email per accettare l'invito.",
-      };
-    }
+    const isOpen = isOpenWorkspaceInvite(invite);
+    if (!isOpen) {
+      const currentEmail = normalizeInviteEmail(currentUser.email ?? "");
+      if (!currentEmail) {
+        return {
+          success: false,
+          message: "Serve un account con email per accettare l'invito.",
+        };
+      }
 
-    if (currentEmail !== invite.invitedEmail) {
-      return {
-        success: false,
-        message: "Apri questo invito con l'account a cui è stato inviato.",
-      };
+      if (currentEmail !== invite.invitedEmail) {
+        return {
+          success: false,
+          message: "Apri questo invito con l'account a cui è stato inviato.",
+        };
+      }
     }
 
     const existingMembership = await prisma.workspaceMember.findUnique({
@@ -294,29 +336,43 @@ export async function acceptWorkspaceInviteAction(
       };
     }
 
-    if (invite.acceptedAt) {
+    const unavailableMessage = getWorkspaceInviteUnavailableMessage(invite);
+    if (unavailableMessage) {
       return {
         success: false,
-        message: "Questo invito è già stato usato.",
+        message: unavailableMessage,
       };
     }
 
+    const acceptedAt = new Date();
     await prisma.$transaction(async (tx) => {
+      const claimedInvite = await tx.workspaceInvite.updateMany({
+        where: {
+          id: invite.id,
+          revokedAt: null,
+          expiresAt: { gt: acceptedAt },
+          usedCount: { lt: invite.maxUses },
+        },
+        data: {
+          usedCount: { increment: 1 },
+          lastUsedAt: acceptedAt,
+          acceptedAt: isOpen ? invite.acceptedAt : acceptedAt,
+          acceptedByUserId: isOpen ? invite.acceptedByUserId : currentUser.id,
+        },
+      });
+
+      if (claimedInvite.count !== 1) {
+        throw new WorkspaceRbacError(
+          "forbidden",
+          "Questo invito non è più disponibile.",
+        );
+      }
+
       await tx.workspaceMember.create({
         data: {
           workspaceId: invite.workspaceId,
           userId: currentUser.id,
-          role: "member",
-        },
-      });
-
-      await tx.workspaceInvite.update({
-        where: {
-          id: invite.id,
-        },
-        data: {
-          acceptedAt: new Date(),
-          acceptedByUserId: currentUser.id,
+          role: invite.role,
         },
       });
     });
@@ -342,6 +398,13 @@ export async function acceptWorkspaceInviteAction(
       },
     };
   } catch (error) {
+    if (error instanceof WorkspaceRbacError) {
+      return {
+        success: false,
+        message: error.message,
+      };
+    }
+
     console.error("Failed to accept workspace invite:", error);
     return {
       success: false,

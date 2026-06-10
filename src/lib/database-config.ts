@@ -7,6 +7,10 @@ type DatabaseUrlParts = {
   hasPgbouncerParam: boolean;
 };
 
+function isLocalDatabaseHost(host: string): boolean {
+  return host === "localhost" || host === "127.0.0.1" || host === "::1" || host === "[::1]";
+}
+
 function parseDatabaseUrl(value: string): DatabaseUrlParts | null {
   try {
     const url = new URL(value);
@@ -38,16 +42,27 @@ function appendQueryParam(url: string, key: string, value: string): string {
 }
 
 function ensureSslParams(connectionString: string): string {
-  if (
-    connectionString.includes("uselibpqcompat=true") &&
-    connectionString.includes("sslmode=require")
-  ) {
+  let parsed: URL;
+
+  try {
+    parsed = new URL(connectionString);
+  } catch {
     return connectionString;
   }
 
-  const hasQuery = connectionString.includes("?");
-  const suffix = hasQuery ? "&" : "?";
-  return `${connectionString}${suffix}uselibpqcompat=true&sslmode=require`;
+  if (isLocalDatabaseHost(parsed.hostname)) {
+    return connectionString;
+  }
+
+  if (!parsed.searchParams.has("uselibpqcompat")) {
+    parsed.searchParams.set("uselibpqcompat", "true");
+  }
+
+  if (!parsed.searchParams.has("sslmode")) {
+    parsed.searchParams.set("sslmode", "require");
+  }
+
+  return parsed.toString();
 }
 
 export function normalizeRuntimeDatabaseUrl(connectionString: string): string {

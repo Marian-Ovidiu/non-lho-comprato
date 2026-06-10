@@ -1,4 +1,5 @@
 import { getEntryOwnershipLabel } from "@/src/lib/person-labels";
+import { toEntryMoneyView } from "@/src/lib/entry-domain";
 
 const ROME_TIME_ZONE = "Europe/Rome";
 
@@ -28,6 +29,11 @@ export const AI_EXPENSE_EXPORT_COLUMNS = [
   "location",
   "paymentMethod",
   "notes",
+  "mode",
+  "savingContext",
+  "amountSpent",
+  "comparisonAmount",
+  "savingImpact",
 ] as const;
 
 export type AiExpenseExportEntry = {
@@ -41,6 +47,12 @@ export type AiExpenseExportEntry = {
   person: string;
   realCost: unknown;
   alternativeCost: unknown;
+  savedAmount: unknown;
+  mode?: unknown;
+  savingContext?: unknown;
+  amountSpent?: unknown;
+  comparisonAmount?: unknown;
+  savingImpact?: unknown;
   category: {
     name: string;
   };
@@ -78,6 +90,11 @@ export type AiExpenseExportRow = {
   location: string;
   paymentMethod: string;
   notes: string;
+  mode: string;
+  savingContext: string;
+  amountSpent: string;
+  comparisonAmount: string;
+  savingImpact: string;
 };
 
 export type AiExpenseExportSummary = {
@@ -91,28 +108,6 @@ export type AiExpenseExportSummary = {
   categoriesByFrequency: Map<string, { count: number; spend: number }>;
   categoriesBySpend: Map<string, { count: number; spend: number }>;
 };
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as { toString?: () => string };
-
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
 
 function round2(value: number): number {
   const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
@@ -202,9 +197,10 @@ export function buildAiExpenseExportRow(
   entry: AiExpenseExportEntry,
   workspaceName: string,
 ): AiExpenseExportRow {
-  const spentReally = round2(toNumber(entry.realCost));
-  const wouldHaveSpent = round2(toNumber(entry.alternativeCost));
-  const savedAmount = round2(wouldHaveSpent - spentReally);
+  const money = toEntryMoneyView(entry);
+  const spentReally = round2(money.realCost);
+  const wouldHaveSpent = round2(money.alternativeCost);
+  const savedAmount = round2(money.savedAmount);
   const habitId = entry.habitOccurrence?.habitId ?? "";
   const habitName = entry.habitOccurrence?.habit?.name ?? "";
   const isHabitGenerated = Boolean(habitId);
@@ -235,6 +231,11 @@ export function buildAiExpenseExportRow(
     location: "",
     paymentMethod: "",
     notes: entry.note ?? "",
+    mode: money.mode,
+    savingContext: money.savingContext,
+    amountSpent: formatMoneyValue(money.amountSpent),
+    comparisonAmount: formatMoneyValue(money.comparisonAmount),
+    savingImpact: formatMoneyValue(money.savingImpact),
   };
 }
 
@@ -265,6 +266,11 @@ export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
     row.location,
     row.paymentMethod,
     row.notes,
+    row.mode,
+    row.savingContext,
+    row.amountSpent,
+    row.comparisonAmount,
+    row.savingImpact,
   ]);
 }
 

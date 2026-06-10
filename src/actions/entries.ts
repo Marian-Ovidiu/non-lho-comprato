@@ -5,8 +5,12 @@ import { Prisma } from "@/src/lib/generated/prisma/client";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 
-import { DEFAULT_CATEGORIES, mergeCategoryOptions } from "@/src/lib/categories";
-import { calculateSavedAmount } from "@/src/lib/entry-calculations";
+import { mergeCategoryOptions } from "@/src/lib/categories";
+import {
+  toEntryMoneyView,
+  type EntryMode,
+  type EntrySavingContext,
+} from "@/src/lib/entry-domain";
 import { resolveIsFirstEntryOfDay } from "@/src/lib/entry-first-of-day";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import {
@@ -15,6 +19,11 @@ import {
   validateEntryOwnership,
 } from "@/src/lib/entry-ownership";
 import { EntryVisibility, type Person } from "@/src/lib/generated/prisma/enums";
+import {
+  getEntryFormText as getText,
+  resolveEntryMoneyFromForm,
+} from "@/src/features/entries/form-money";
+import { resolveEntryCategory } from "@/src/features/entries/repository";
 import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
@@ -38,6 +47,8 @@ import {
   logEntryLoadStep,
 } from "@/src/lib/entry-load-debug";
 import {
+  entryEditSelect,
+  entryEditSelectWithBeneficiaries,
   entryListSelect,
   entryListSelectWithBeneficiaries,
 } from "@/src/lib/entry-list-select";
@@ -66,6 +77,8 @@ type EntryWithCategory = {
   realCost: unknown;
   alternativeCost: unknown;
   savedAmount: unknown;
+  mode: unknown;
+  savingContext: unknown;
   date: Date;
   note: string | null;
   source: string;
@@ -89,9 +102,14 @@ type SerializableEntry = {
   id: string;
   title: string;
   categoryId: string;
+  mode: EntryMode;
+  savingContext: EntrySavingContext;
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
+  amountSpent: number;
+  comparisonAmount: number;
+  savingImpact: number;
   date: string;
   note: string | null;
   source: string;
@@ -114,8 +132,14 @@ type SerializableEntryEdit = {
   id: string;
   title: string;
   categoryId: string;
+  mode: EntryMode;
+  savingContext: EntrySavingContext;
   realCost: number;
   alternativeCost: number;
+  savedAmount: number;
+  amountSpent: number;
+  comparisonAmount: number;
+  savingImpact: number;
   date: string;
   note: string | null;
   source: string;
@@ -129,6 +153,9 @@ type EntryEditRecord = {
   categoryId: string;
   realCost: unknown;
   alternativeCost: unknown;
+  savedAmount: unknown;
+  mode: unknown;
+  savingContext: unknown;
   date: Date;
   note: string | null;
   source: string;
@@ -190,52 +217,6 @@ type EntriesPageOptions = {
   members?: WorkspaceMemberOption[] | Promise<WorkspaceMemberOption[]>;
 };
 
-function getText(formData: FormData, name: string): string {
-  const value = formData.get(name);
-  return typeof value === "string" ? value.trim() : "";
-}
-
-function getMoney(formData: FormData, name: string): {
-  value: number;
-  error?: string;
-} {
-  const raw = getText(formData, name);
-
-  if (!raw) {
-    return { value: Number.NaN, error: "Questo campo è obbligatorio" };
-  }
-
-  const normalized = raw.replace(",", ".");
-  const value = Number(normalized);
-
-  if (!Number.isFinite(value)) {
-    return { value: Number.NaN, error: "Inserisci un numero valido" };
-  }
-
-  if (value < 0) {
-    return { value, error: "Il valore deve essere maggiore o uguale a 0" };
-  }
-
-  return { value };
-}
-
-function resolveAlternativeCost(
-  formData: FormData,
-  realCost: { value: number; error?: string },
-): { value: number; error?: string } {
-  const raw = getText(formData, "alternativeCost");
-
-  if (!raw) {
-    if (realCost.error) {
-      return { value: Number.NaN };
-    }
-
-    return { value: realCost.value };
-  }
-
-  return getMoney(formData, "alternativeCost");
-}
-
 function toDecimalString(value: number): string {
   return value.toFixed(2);
 }
@@ -254,49 +235,6 @@ function tryRevalidatePath(path: string) {
   } catch (error) {
     console.warn(`Failed to revalidate ${path}:`, error);
   }
-}
-
-async function resolveCategory(categoryId: string, workspaceId: string) {
-  let category = await prisma.category.findFirst({
-    where: await getCurrentWorkspaceScopedWhere({
-      id: categoryId,
-    }),
-  });
-
-  if (!category) {
-    category = await prisma.category.findFirst({
-      where: await getCurrentWorkspaceScopedWhere({
-        slug: categoryId,
-      }),
-    });
-  }
-
-  if (!category) {
-    const fallbackCategory = DEFAULT_CATEGORIES.find(
-      (item) => item.slug === categoryId,
-    );
-
-    if (fallbackCategory) {
-      category = await prisma.category.upsert({
-        where: { slug: fallbackCategory.slug },
-        update: {
-          name: fallbackCategory.name,
-          icon: fallbackCategory.icon,
-          color: fallbackCategory.color,
-          workspaceId,
-        },
-        create: {
-          name: fallbackCategory.name,
-          slug: fallbackCategory.slug,
-          icon: fallbackCategory.icon,
-          color: fallbackCategory.color,
-          workspaceId,
-        },
-      });
-    }
-  }
-
-  return category;
 }
 
 function toNumber(value: unknown): number {
@@ -694,14 +632,20 @@ function serializeEntry(
   members: WorkspaceMemberOption[],
 ): SerializableEntry {
   const people = resolveEntryPeopleFromRecord(entry, members);
+  const money = toEntryMoneyView(entry);
 
   return {
     id: entry.id,
     title: entry.title,
     categoryId: entry.categoryId,
-    realCost: toNumber(entry.realCost),
-    alternativeCost: toNumber(entry.alternativeCost),
-    savedAmount: toNumber(entry.savedAmount),
+    mode: money.mode,
+    savingContext: money.savingContext,
+    realCost: money.realCost,
+    alternativeCost: money.alternativeCost,
+    savedAmount: money.savedAmount,
+    amountSpent: money.amountSpent,
+    comparisonAmount: money.comparisonAmount,
+    savingImpact: money.savingImpact,
     date: entry.date.toISOString(),
     note: entry.note,
     source: entry.source,
@@ -878,32 +822,12 @@ export async function getEntryById(
   }
 
   try {
-    const entrySelect = {
-      id: true,
-      title: true,
-      categoryId: true,
-      realCost: true,
-      alternativeCost: true,
-      date: true,
-      note: true,
-      source: true,
-      paidByUserId: true,
-      workspaceId: true,
-    } as const;
-
     let entry: EntryEditRecord | null = null;
 
     try {
       entry = await prisma.entry.findUnique({
         where: { id },
-        select: {
-          ...entrySelect,
-          beneficiaries: {
-            select: {
-              userId: true,
-            },
-          },
-        },
+        select: entryEditSelectWithBeneficiaries,
       });
     } catch (error) {
       if (!isMissingEntryBeneficiaryTable(error)) {
@@ -917,7 +841,7 @@ export async function getEntryById(
 
       const legacyEntry = await prisma.entry.findUnique({
         where: { id },
-        select: entrySelect,
+        select: entryEditSelect,
       });
 
       entry = legacyEntry
@@ -936,13 +860,20 @@ export async function getEntryById(
 
     const members = await getCurrentWorkspaceMembers();
     const people = resolveEntryPeopleFromRecord(entry, members);
+    const money = toEntryMoneyView(entry);
 
     return {
       id: entry.id,
       title: entry.title,
       categoryId: entry.categoryId,
-      realCost: toNumber(entry.realCost),
-      alternativeCost: toNumber(entry.alternativeCost),
+      mode: money.mode,
+      savingContext: money.savingContext,
+      realCost: money.realCost,
+      alternativeCost: money.alternativeCost,
+      savedAmount: money.savedAmount,
+      amountSpent: money.amountSpent,
+      comparisonAmount: money.comparisonAmount,
+      savingImpact: money.savingImpact,
       date: entry.date.toISOString(),
       note: entry.note,
       source: entry.source,
@@ -1212,8 +1143,7 @@ export async function createEntry(
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
-  const realCost = getMoney(formData, "realCost");
-  const alternativeCost = resolveAlternativeCost(formData, realCost);
+  const entryMoney = resolveEntryMoneyFromForm(formData);
   let members: WorkspaceMemberOption[] = [];
 
   try {
@@ -1239,14 +1169,7 @@ export async function createEntry(
   if (!categoryId) {
     errors.categoryId = "Seleziona una categoria";
   }
-
-  if (realCost.error) {
-    errors.realCost = realCost.error;
-  }
-
-  if (alternativeCost.error) {
-    errors.alternativeCost = alternativeCost.error;
-  }
+  Object.assign(errors, entryMoney.errors);
 
   if (!ownership.ok) {
     Object.assign(errors, ownership.errors);
@@ -1265,16 +1188,20 @@ export async function createEntry(
     };
   }
 
+  if (!entryMoney.money) {
+    return {
+      success: false,
+      message: "Controlla i campi evidenziati",
+      errors,
+    };
+  }
+
+  const money = entryMoney.money;
+
   const personFields = syncEntryPersonColumns(
     ownership.paidByUserId,
     ownership.beneficiaryUserIds,
     members,
-  );
-
-  const normalizedAlternativeCost = alternativeCost.value;
-  const savedAmount = calculateSavedAmount(
-    realCost.value,
-    normalizedAlternativeCost,
   );
 
   try {
@@ -1283,7 +1210,7 @@ export async function createEntry(
     const existingEntryCount = await prisma.entry.count({
       where: await getCurrentWorkspaceScopedWhere(),
     });
-    const category = await resolveCategory(categoryId, workspaceId);
+    const category = await resolveEntryCategory(categoryId, workspaceId);
 
     if (!category) {
       return {
@@ -1313,9 +1240,11 @@ export async function createEntry(
         workspaceId,
         title,
         categoryId: category.id,
-        realCost: toDecimalString(realCost.value),
-        alternativeCost: toDecimalString(normalizedAlternativeCost),
-        savedAmount: toDecimalString(savedAmount),
+        realCost: toDecimalString(money.realCost),
+        alternativeCost: toDecimalString(money.alternativeCost),
+        savedAmount: toDecimalString(money.savedAmount),
+        mode: money.mode,
+        savingContext: money.savingContext,
         date,
         isFirstEntryOfDay,
         note: note || null,
@@ -1373,8 +1302,7 @@ export async function updateEntry(
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
-  const realCost = getMoney(formData, "realCost");
-  const alternativeCost = resolveAlternativeCost(formData, realCost);
+  const entryMoney = resolveEntryMoneyFromForm(formData);
   let members: WorkspaceMemberOption[] = [];
 
   try {
@@ -1400,14 +1328,7 @@ export async function updateEntry(
   if (!categoryId) {
     errors.categoryId = "Seleziona una categoria";
   }
-
-  if (realCost.error) {
-    errors.realCost = realCost.error;
-  }
-
-  if (alternativeCost.error) {
-    errors.alternativeCost = alternativeCost.error;
-  }
+  Object.assign(errors, entryMoney.errors);
 
   if (!ownership.ok) {
     Object.assign(errors, ownership.errors);
@@ -1426,16 +1347,20 @@ export async function updateEntry(
     };
   }
 
+  if (!entryMoney.money) {
+    return {
+      success: false,
+      message: "Controlla i campi evidenziati",
+      errors,
+    };
+  }
+
+  const money = entryMoney.money;
+
   const personFields = syncEntryPersonColumns(
     ownership.paidByUserId,
     ownership.beneficiaryUserIds,
     members,
-  );
-
-  const normalizedAlternativeCost = alternativeCost.value;
-  const savedAmount = calculateSavedAmount(
-    realCost.value,
-    normalizedAlternativeCost,
   );
 
   try {
@@ -1462,7 +1387,7 @@ export async function updateEntry(
 
     const currentUser = await getCurrentUser();
     const workspaceId = await getCurrentWorkspaceId();
-    const category = await resolveCategory(categoryId, workspaceId);
+    const category = await resolveEntryCategory(categoryId, workspaceId);
 
     if (!category) {
       return {
@@ -1485,9 +1410,11 @@ export async function updateEntry(
           workspaceId,
           title,
           categoryId: category.id,
-          realCost: toDecimalString(realCost.value),
-          alternativeCost: toDecimalString(normalizedAlternativeCost),
-          savedAmount: toDecimalString(savedAmount),
+          realCost: toDecimalString(money.realCost),
+          alternativeCost: toDecimalString(money.alternativeCost),
+          savedAmount: toDecimalString(money.savedAmount),
+          mode: money.mode,
+          savingContext: money.savingContext,
           date,
           note: note || null,
           paidByUserId: ownership.paidByUserId,

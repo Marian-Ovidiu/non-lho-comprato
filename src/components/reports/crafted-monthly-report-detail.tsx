@@ -42,12 +42,6 @@ function formatSignedMoney(value: number): string {
   return `${prefix}${formatCraftedCompact(Math.abs(value))}€`;
 }
 
-function formatSharePercent(value: number): string {
-  return `${new Intl.NumberFormat("it-IT", {
-    maximumFractionDigits: 0,
-  }).format(value * 100)}%`;
-}
-
 function getShortBalanceLabel(balanceRatio: number): string {
   if (balanceRatio > 1.1) return "Sopra media";
   if (balanceRatio < 0.9) return "Sotto media";
@@ -107,7 +101,12 @@ function getSummaryText({
           ? `Rispetto al mese scorso siete sotto di ${formatSignedMoney(Math.abs(workspaceDelta))}.`
           : "Rispetto al mese scorso siete allineati.";
 
-  return `${categoryPrefix}${formatMoney(snapshot.overview.totalSaved)} tenuti in tasca. ${balancedText} ${deltaText}`;
+  const savingText =
+    snapshot.overview.totalSaved > 0
+      ? ` ${formatMoney(snapshot.overview.totalSaved)} evitati / risparmiati.`
+      : "";
+
+  return `${categoryPrefix}${formatMoney(snapshot.overview.totalRealSpent)} spesi nel mese.${savingText} ${balancedText} ${deltaText}`;
 }
 
 function buildCategoryOptions(
@@ -318,37 +317,13 @@ function MonthHighlights({
       <section className="px-5 pb-0.5 pt-[22px]">
         <Label className="mb-1.5 block">Evidenze del mese</Label>
         <Serif className="block text-[13px] text-ink-3">
-          I punti che hanno fatto la differenza.
+          Prima la spesa reale, poi quello che hai evitato o risparmiato.
         </Serif>
       </section>
 
       <div className="px-5">
-        {bestCategory ? (
-          <div className="flex items-start gap-4 border-b border-line-soft py-3.5">
-            <span className="flex w-[30px] shrink-0 justify-center pt-0.5 text-muted-foreground">
-              <CraftedIcon
-                name={getCategoryCraftedIcon({
-                  name: bestCategory.categoryName,
-                  slug: bestCategory.categorySlug,
-                })}
-                size={20}
-              />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-[450]">{bestCategory.name}</p>
-              <Serif className="mt-1 block text-[13px] text-ink-3">
-                la categoria dove hai tenuto di più
-              </Serif>
-            </div>
-            <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-green">
-              {formatCraftedCompact(bestCategory.totalSaved)}
-              <span className="text-[11px] text-accent">€</span>
-            </Mono>
-          </div>
-        ) : null}
-
         {worstCategory ? (
-          <div className="flex items-start gap-4 py-3.5">
+          <div className="flex items-start gap-4 border-b border-line-soft py-3.5">
             <span className="flex w-[30px] shrink-0 justify-center pt-0.5 text-muted-foreground">
               <CraftedIcon
                 name={getCategoryCraftedIcon({
@@ -361,11 +336,35 @@ function MonthHighlights({
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-[450]">{worstCategory.name}</p>
               <Serif className="mt-1 block text-[13px] text-ink-3">
-                qui è uscito più contante
+                la categoria dove hai speso di più
               </Serif>
             </div>
-            <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-destructive">
+            <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
               {formatCraftedCompact(worstCategory.totalRealSpent)}
+              <span className="text-[11px] text-accent">€</span>
+            </Mono>
+          </div>
+        ) : null}
+
+        {bestCategory ? (
+          <div className="flex items-start gap-4 py-3.5">
+            <span className="flex w-[30px] shrink-0 justify-center pt-0.5 text-muted-foreground">
+              <CraftedIcon
+                name={getCategoryCraftedIcon({
+                  name: bestCategory.categoryName,
+                  slug: bestCategory.categorySlug,
+                })}
+                size={20}
+              />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[15px] font-[450]">{bestCategory.name}</p>
+              <Serif className="mt-1 block text-[13px] text-ink-3">
+                dove hai evitato o risparmiato di più
+              </Serif>
+            </div>
+            <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-green">
+              {formatCraftedCompact(bestCategory.totalSaved)}
               <span className="text-[11px] text-accent">€</span>
             </Mono>
           </div>
@@ -378,7 +377,7 @@ function MonthHighlights({
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-3">
               <span className="block font-num text-[10px] font-normal uppercase tracking-[0.22em] text-green">
-                Schivata più forte
+                Risparmio più alto
               </span>
               <span className="shrink-0 rounded-full border border-line px-2.5 py-[3px] font-num text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
                 {biggestSaving.ownershipLabel}

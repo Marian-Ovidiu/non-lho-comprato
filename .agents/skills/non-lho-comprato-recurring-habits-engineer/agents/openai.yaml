@@ -1,4 +1,0 @@
-interface:
-  display_name: "Non l'ho Comprato Recurring Habits Engineer"
-  short_description: "Build recurring habits and today occurrences"
-  default_prompt: "Use $non-lho-comprato-recurring-habits-engineer to implement recurring habits, daily occurrences, and today-page behavior for Non l'ho comprato."

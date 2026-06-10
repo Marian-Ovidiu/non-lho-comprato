@@ -1,10 +1,76 @@
-const ROME_TIME_ZONE = "Europe/Rome";
+export const ROME_TIME_ZONE = "Europe/Rome";
 
 type RomeDateParts = {
   year: number;
   month: number;
   day: number;
 };
+
+function formatDateKey(parts: RomeDateParts): string {
+  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(
+    2,
+    "0",
+  )}-${String(parts.day).padStart(2, "0")}`;
+}
+
+function formatMonthKey(parts: Pick<RomeDateParts, "year" | "month">): string {
+  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(
+    2,
+    "0",
+  )}`;
+}
+
+function parseRomeDateKey(dateKey: string): RomeDateParts | null {
+  const match = dateKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day) ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return null;
+  }
+
+  const normalized = new Date(Date.UTC(year, month - 1, day));
+  if (
+    normalized.getUTCFullYear() !== year ||
+    normalized.getUTCMonth() !== month - 1 ||
+    normalized.getUTCDate() !== day
+  ) {
+    return null;
+  }
+
+  return { year, month, day };
+}
+
+function parseRomeMonthKey(monthKey: string): Pick<RomeDateParts, "year" | "month"> | null {
+  const match = monthKey.match(/^(\d{4})-(\d{2})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+    return null;
+  }
+
+  return { year, month };
+}
 
 function getTimeZoneParts(date: Date, timeZone: string): RomeDateParts & {
   hour: number;
@@ -66,10 +132,7 @@ export function getRomeDateKey(date: Date): string {
     return "";
   }
 
-  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(
-    2,
-    "0",
-  )}-${String(parts.day).padStart(2, "0")}`;
+  return formatDateKey(parts);
 }
 
 export function getRomeMonthKey(date: Date): string {
@@ -80,6 +143,32 @@ export function getRomeMonthKey(date: Date): string {
   }
 
   return dateKey.slice(0, 7);
+}
+
+export function getRomeTodayDateKey(now: Date = new Date()): string {
+  return getRomeDateKey(now);
+}
+
+export function normalizeRomeMonthKey(
+  input?: string,
+  now: Date = new Date(),
+): string {
+  return input && parseRomeMonthKey(input) ? input : getRomeMonthKey(now);
+}
+
+export function getPreviousRomeMonthKey(monthKey: string): string {
+  const parts = parseRomeMonthKey(monthKey);
+
+  if (!parts) {
+    return monthKey;
+  }
+
+  const previousMonth = new Date(Date.UTC(parts.year, parts.month - 2, 1));
+
+  return formatMonthKey({
+    year: previousMonth.getUTCFullYear(),
+    month: previousMonth.getUTCMonth() + 1,
+  });
 }
 
 export function getRomeDayRangeForDate(date: Date): { start: Date; end: Date } {
@@ -96,6 +185,64 @@ export function getRomeDayRangeForDate(date: Date): { start: Date; end: Date } {
     start,
     end: getRomeMidnightUtc(endParts),
   };
+}
+
+export function getRomeDayRangeForDateKey(dateKey: string): {
+  start: Date;
+  end: Date;
+} {
+  const parts = parseRomeDateKey(dateKey);
+
+  if (!parts) {
+    throw new Error(`Invalid Rome date key: ${dateKey}`);
+  }
+
+  const start = getRomeMidnightUtc(parts);
+  const nextDay = new Date(Date.UTC(parts.year, parts.month - 1, parts.day + 1));
+
+  return {
+    start,
+    end: getRomeMidnightUtc({
+      year: nextDay.getUTCFullYear(),
+      month: nextDay.getUTCMonth() + 1,
+      day: nextDay.getUTCDate(),
+    }),
+  };
+}
+
+export function getRomeMonthRangeForMonthKey(monthKey: string): {
+  start: Date;
+  end: Date;
+} {
+  const parts = parseRomeMonthKey(monthKey);
+
+  if (!parts) {
+    throw new Error(`Invalid Rome month key: ${monthKey}`);
+  }
+
+  const nextMonth = new Date(Date.UTC(parts.year, parts.month, 1));
+
+  return {
+    start: getRomeMidnightUtc({
+      year: parts.year,
+      month: parts.month,
+      day: 1,
+    }),
+    end: getRomeMidnightUtc({
+      year: nextMonth.getUTCFullYear(),
+      month: nextMonth.getUTCMonth() + 1,
+      day: 1,
+    }),
+  };
+}
+
+export function getRomeIsoWeekday(date: Date): number {
+  const parts = getRomeDateParts(date);
+  const utcWeekday = new Date(
+    Date.UTC(parts.year, parts.month - 1, parts.day),
+  ).getUTCDay();
+
+  return ((utcWeekday + 6) % 7) + 1;
 }
 
 function shiftDateKey(dateKey: string, deltaDays: number): string {
@@ -153,6 +300,22 @@ export function formatRomeDateLabel(dateKey: string): string {
     month: "long",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(year, month - 1, day)));
+}
+
+export function formatRomeMonthLabel(monthKey: string): string {
+  const parts = parseRomeMonthKey(monthKey);
+
+  if (!parts) {
+    return monthKey;
+  }
+
+  const raw = new Intl.DateTimeFormat("it-IT", {
+    timeZone: "UTC",
+    month: "long",
+    year: "numeric",
+  }).format(new Date(Date.UTC(parts.year, parts.month - 1, 1)));
+
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
 export function buildRomeStreakResult(dateKeys: Iterable<string>): {

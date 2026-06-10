@@ -13,8 +13,6 @@ import {
   getAccessibleWorkspacesForCurrentUser,
 } from "@/src/lib/auth/session";
 
-const LEGACY_CURRENT_WORKSPACE_ID = "legacy-marian-martina";
-
 type CurrentUser = NonNullable<Awaited<ReturnType<typeof prisma.user.findUnique>>>;
 type CurrentWorkspace = NonNullable<Awaited<ReturnType<typeof getAuthCurrentWorkspace>>>;
 type CurrentWorkspaceUiContext = {
@@ -226,7 +224,7 @@ export function getWorkspaceScopedWhere<T extends Record<string, unknown>>(
 ): T & { workspaceId: string } {
   return {
     ...extraWhere,
-    workspaceId: LEGACY_CURRENT_WORKSPACE_ID,
+    workspaceId: getLegacyWorkspaceId(),
   };
 }
 

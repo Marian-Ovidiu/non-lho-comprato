@@ -1,12 +1,14 @@
-import { Label, Mono, Rule } from "@/components/crafted";
+import { Mono, Rule } from "@/components/crafted";
 import { CraftedInviteLoginShell } from "@/src/components/invites/crafted-invite-login-shell";
 import { CraftedInviteMessage } from "@/src/components/invites/crafted-invite-message";
 import { InviteAcceptancePanel } from "@/src/components/invites/invite-acceptance-panel";
 import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import {
+  getWorkspaceInviteUnavailableMessage,
   getWorkspaceInviteByTokenHash,
   hashInviteToken,
+  isOpenWorkspaceInvite,
   normalizeInviteEmail,
 } from "@/src/lib/workspace-invites";
 
@@ -49,12 +51,21 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
     );
   }
 
-  if (invite.expiresAt.getTime() < now.getTime()) {
+  let unavailableMessage: string | null = null;
+  if (invite.revokedAt) {
+    unavailableMessage = "Questo invito non è più disponibile.";
+  } else if (invite.expiresAt.getTime() < now.getTime()) {
+    unavailableMessage = "Questo invito è scaduto.";
+  } else if (!invite.acceptedAt) {
+    unavailableMessage = getWorkspaceInviteUnavailableMessage(invite, now);
+  }
+
+  if (unavailableMessage) {
     return (
       <main className="pb-6">
         <CraftedInviteMessage
           title="Invito non disponibile"
-          context="Questo link è scaduto."
+          context={unavailableMessage}
           message="Chiedi un nuovo link a chi ti ha invitato."
         />
       </main>
@@ -73,7 +84,7 @@ export default async function InviteTokenPage({ params }: InvitePageProps) {
     );
   }
 
-  const isOpen = invite.invitedEmail === "open";
+  const isOpen = isOpenWorkspaceInvite(invite);
   if (!isOpen) {
     const currentEmail = normalizeInviteEmail(authUser.email ?? "");
     if (!currentEmail || currentEmail !== invite.invitedEmail) {

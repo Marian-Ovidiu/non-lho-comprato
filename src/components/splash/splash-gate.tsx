@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useState } from "react";
 
 import { AppSplash } from "@/src/components/splash/app-splash";
 
@@ -9,12 +9,7 @@ type SplashGateProps = {
 };
 
 export function SplashGate({ children }: SplashGateProps) {
-  const [show, setShow] = useState(false);
-
-  // Splash on every cold document load (PWA launcher, refresh, first visit).
-  useLayoutEffect(() => {
-    setShow(true);
-  }, []);
+  const [show, setShow] = useState(true);
 
   return (
     <>

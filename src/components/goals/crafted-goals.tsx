@@ -159,8 +159,8 @@ export function CraftedGoals({
           <section className="px-5 py-5">
             <Label className="mb-2 block">Obiettivi attivi</Label>
             <Serif className="text-sm text-ink-3">
-              Nessuna meta attiva al momento. Riattivane una per far tornare il progresso in
-              primo piano.
+              Nessuna meta attiva al momento. Riattivane una per tornare a raccogliere
+              risparmi ed evitati.
             </Serif>
           </section>
           <Rule />
@@ -208,7 +208,7 @@ export function CraftedGoals({
       <StatTrio
         items={[
           {
-            label: "Verso le mete",
+            label: "Da risparmi positivi",
             value: formatCraftedCompact(trio.towardGoals),
             suffix: "€",
           },
@@ -217,7 +217,7 @@ export function CraftedGoals({
             value: trio.completedCount,
           },
           {
-            label: "Questo mese",
+            label: "Risparmio mese",
             value: trio.monthSaved > 0 ? `+${formatCraftedCompact(trio.monthSaved)}` : "0",
             suffix: trio.monthSaved > 0 ? "€" : undefined,
           },

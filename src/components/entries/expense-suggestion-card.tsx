@@ -22,7 +22,7 @@ export function ExpenseSuggestionCard({
     <div className={cn("border-y border-line py-3.5", className)}>
       <div className="flex items-center gap-2">
         <Sparkles className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
-        <Label>Alternativa trovata</Label>
+        <Label>Confronto trovato</Label>
       </div>
 
       <p className="mt-2 text-[15px] font-[450]">{suggestion.label}</p>
@@ -46,7 +46,7 @@ export function ExpenseSuggestionCard({
           )}
         >
           <Check className="size-3.5" aria-hidden="true" />
-          Usa
+          Aggiungi confronto
         </button>
       </div>
     </div>

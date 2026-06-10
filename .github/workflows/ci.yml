@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+env:
+  DATABASE_URL: postgresql://localhost:5432/non_lho_comprato_ci
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
+  NEXT_PUBLIC_POSTHOG_ENABLED: "false"
+  NEXT_PUBLIC_SENTRY_ENABLED: "false"
+  ENABLE_LEGACY_FALLBACK: "false"
+  ENABLE_LEGACY_AUTH_BRIDGE: "false"
+  DEBUG_WORKSPACE: "false"
+  DEBUG_ENTRIES: "false"
+
+jobs:
+  check:
+    name: Validate, Test, Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check
+        run: npm run check

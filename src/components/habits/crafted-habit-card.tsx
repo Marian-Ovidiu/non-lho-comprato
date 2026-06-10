@@ -26,6 +26,7 @@ import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { HabitScopeReminderFields } from "@/src/components/habits/habit-scope-reminder-fields";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import {
   getHabitTargetDisplayLabel,
   type WorkspaceMemberOption,
@@ -78,11 +79,6 @@ const weekdayOptions = [
   { value: 6, label: "Sab" },
   { value: 7, label: "Dom" },
 ] as const;
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="mt-2 text-sm text-destructive">{message}</p>;
-}
 
 function getActiveDayLabels(activeDays: unknown): string[] {
   if (!Array.isArray(activeDays)) return [];
@@ -252,7 +248,7 @@ export function CraftedHabitCard({
           <div ref={menuRef} className="relative shrink-0">
             <button
               type="button"
-              aria-label="Azioni abitudine"
+              aria-label="Azioni ricorrente"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
               onClick={() => setMenuOpen((value) => !value)}
@@ -264,7 +260,7 @@ export function CraftedHabitCard({
             {menuOpen ? (
               <div
                 role="menu"
-                aria-label="Azioni abitudine"
+                aria-label="Azioni ricorrente"
                 className="absolute right-0 top-9 z-20 w-40 border border-line bg-background p-1 shadow-lg"
               >
                 <button
@@ -311,7 +307,7 @@ export function CraftedHabitCard({
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto border-line sm:max-w-lg">
-          <DialogTitle>Modifica abitudine</DialogTitle>
+          <DialogTitle>Modifica ricorrente</DialogTitle>
           <DialogDescription>
             Aggiorna nome, categoria, importo e giorni attivi.
           </DialogDescription>
@@ -353,7 +349,7 @@ export function CraftedHabitCard({
                 />
                 <CraftedLabel>Nome</CraftedLabel>
               </div>
-              <FieldError message={editErrors.name} />
+              <FormFieldError message={editErrors.name} />
             </div>
 
             <div className="border-y border-line py-3">
@@ -373,7 +369,7 @@ export function CraftedHabitCard({
                 </select>
                 <CraftedLabel>Categoria</CraftedLabel>
               </div>
-              <FieldError message={editErrors.categoryId} />
+              <FormFieldError message={editErrors.categoryId} />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
@@ -392,7 +388,7 @@ export function CraftedHabitCard({
                   />
                   <CraftedLabel>Costo €</CraftedLabel>
                 </div>
-                <FieldError message={editErrors.amount} />
+                <FormFieldError message={editErrors.amount} />
               </div>
 
               <div className="border-y border-line py-3">
@@ -458,7 +454,7 @@ export function CraftedHabitCard({
               {selectedLabels.length > 0 ? (
                 <p className="mt-2 text-xs text-ink-3">{selectedLabels.join(", ")}</p>
               ) : null}
-              <FieldError message={editErrors.activeDays} />
+              <FormFieldError message={editErrors.activeDays} />
             </div>
 
             <div className="flex justify-end gap-3 pt-2">
@@ -484,9 +480,9 @@ export function CraftedHabitCard({
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="border-line sm:max-w-md">
-          <DialogTitle>Elimina abitudine</DialogTitle>
+          <DialogTitle>Elimina ricorrente</DialogTitle>
           <DialogDescription>
-            Scegli se mantenere i movimenti già generati da questa abitudine.
+            Scegli se mantenere i movimenti già generati da questa ricorrente.
           </DialogDescription>
 
           <div className="space-y-2">
@@ -496,9 +492,9 @@ export function CraftedHabitCard({
               onClick={() => handleDelete("habit_only")}
               className="w-full border border-line px-4 py-3 text-left transition-opacity hover:opacity-80 disabled:opacity-50"
             >
-              <span className="block text-sm font-medium">Solo abitudine</span>
+              <span className="block text-sm font-medium">Solo ricorrente</span>
               <span className="mt-1 block text-xs text-ink-3">
-                I movimenti restano nel registro, scollegati dall&apos;abitudine.
+                I movimenti restano nel registro, scollegati dalla ricorrente.
               </span>
             </button>
             <button
@@ -507,9 +503,9 @@ export function CraftedHabitCard({
               onClick={() => handleDelete("habit_and_entries")}
               className="w-full border border-destructive/30 px-4 py-3 text-left text-destructive transition-opacity hover:opacity-80 disabled:opacity-50"
             >
-              <span className="block text-sm font-medium">Abitudine e movimenti collegati</span>
+              <span className="block text-sm font-medium">Ricorrente e movimenti collegati</span>
               <span className="mt-1 block text-xs opacity-80">
-                Elimina anche i movimenti creati dalle occorrenze di questa abitudine.
+                Elimina anche i movimenti creati dalle occorrenze di questa ricorrente.
               </span>
             </button>
           </div>

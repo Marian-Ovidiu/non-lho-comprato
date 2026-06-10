@@ -22,6 +22,7 @@
 
 # misc
 .DS_Store
+**/.DS_Store
 *.pem
 
 # debug
@@ -31,8 +32,10 @@ yarn-error.log*
 .pnpm-debug.log*
 *.log
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
+!.env.example
+.env-backup/
 
 # vercel
 .vercel
@@ -44,3 +47,15 @@ next-env.d.ts
 src/lib/generated/prisma/
 node_modules/.prisma/
 .env*.local
+
+# database dumps and local backups
+backups/
+*.dump
+
+# IDE and local agent artifacts
+.idea/
+.claude/
+.agents/
+
+# release artifacts
+/release/

@@ -1,11 +1,24 @@
 import { prisma } from "@/src/lib/prisma";
+import {
+  getLegacyAuthMapping,
+  getLegacyPrimaryUserId,
+  getLegacySecondaryUserId,
+  getLegacyWorkspaceId,
+  getProductionWorkspaceDisplayName,
+  normalizeEmail,
+} from "@/src/lib/auth/legacy-auth";
 import { logWorkspaceResolutionSnapshot } from "@/src/lib/workspace-debug";
 
-const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-marian-martina";
-const DEFAULT_LEGACY_MARIAN_USER_ID = "legacy-marian";
-const DEFAULT_LEGACY_MARTINA_USER_ID = "legacy-martina";
-const DEFAULT_PRODUCTION_WORKSPACE_NAME = "Marian & Martina";
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
+
+export {
+  getLegacyAuthMapping,
+  getLegacyPrimaryUserId,
+  getLegacySecondaryUserId,
+  getLegacyWorkspaceId,
+  getProductionWorkspaceDisplayName,
+  isLegacyAuthBridgeEnabled,
+} from "@/src/lib/auth/legacy-auth";
 
 function logPerformance(label: string, startedAt: number) {
   if (!shouldLogPerformance) {
@@ -28,10 +41,6 @@ type AppUserLike = {
   name: string | null;
   image: string | null;
 };
-
-function normalizeEmail(email: string | null | undefined) {
-  return email?.trim().toLowerCase() ?? null;
-}
 
 function buildWorkspaceName(user: AppUserLike) {
   return user.name || user.email || "Workspace personale";
@@ -62,17 +71,6 @@ function toWorkspaceRecord(workspace: {
   };
 }
 
-export function getLegacyWorkspaceId() {
-  return process.env.LEGACY_WORKSPACE_ID?.trim() || DEFAULT_LEGACY_WORKSPACE_ID;
-}
-
-export function getProductionWorkspaceDisplayName() {
-  return (
-    process.env.PRODUCTION_WORKSPACE_NAME?.trim() ||
-    DEFAULT_PRODUCTION_WORKSPACE_NAME
-  );
-}
-
 export async function countWorkspaceEntries(workspaceId: string) {
   return prisma.entry.count({
     where: {
@@ -85,6 +83,7 @@ export async function adoptProductionWorkspaceForUser(
   userId: string,
 ): Promise<WorkspaceRecord | null> {
   const workspaceId = getLegacyWorkspaceId();
+  const legacyPrimaryUserId = getLegacyPrimaryUserId();
   const workspace = await prisma.workspace.findUnique({
     where: {
       id: workspaceId,
@@ -116,11 +115,11 @@ export async function adoptProductionWorkspaceForUser(
     });
   }
 
-  if (userId !== DEFAULT_LEGACY_MARIAN_USER_ID) {
+  if (userId !== legacyPrimaryUserId) {
     await ensureWorkspaceMember(
       workspaceId,
       userId,
-      userId === DEFAULT_LEGACY_MARIAN_USER_ID ? "owner" : "member",
+      userId === legacyPrimaryUserId ? "owner" : "member",
     );
   }
 
@@ -132,34 +131,10 @@ export async function adoptProductionWorkspaceForUser(
   };
 }
 
-export function getLegacyAuthMapping(email: string | null | undefined) {
-  const normalizedEmail = normalizeEmail(email);
-
-  if (!normalizedEmail) {
-    return null;
-  }
-
-  const marianEmail = normalizeEmail(process.env.LEGACY_MARIAN_EMAIL);
-  if (marianEmail && normalizedEmail === marianEmail) {
-    return {
-      userId: DEFAULT_LEGACY_MARIAN_USER_ID,
-      workspaceId: getLegacyWorkspaceId(),
-    };
-  }
-
-  const martinaEmail = normalizeEmail(process.env.LEGACY_MARTINA_EMAIL);
-  if (martinaEmail && normalizedEmail === martinaEmail) {
-    return {
-      userId: DEFAULT_LEGACY_MARTINA_USER_ID,
-      workspaceId: getLegacyWorkspaceId(),
-    };
-  }
-
-  return null;
-}
-
-async function resolveCanonicalMarianUserId(): Promise<string | null> {
+async function resolveCanonicalPrimaryUserId(): Promise<string | null> {
   const workspaceId = getLegacyWorkspaceId();
+  const legacyPrimaryUserId = getLegacyPrimaryUserId();
+  const legacySecondaryUserId = getLegacySecondaryUserId();
   const workspace = await prisma.workspace.findUnique({
     where: { id: workspaceId },
     select: { ownerUserId: true },
@@ -167,8 +142,8 @@ async function resolveCanonicalMarianUserId(): Promise<string | null> {
 
   if (
     workspace?.ownerUserId &&
-    workspace.ownerUserId !== DEFAULT_LEGACY_MARTINA_USER_ID &&
-    workspace.ownerUserId !== DEFAULT_LEGACY_MARIAN_USER_ID
+    workspace.ownerUserId !== legacySecondaryUserId &&
+    workspace.ownerUserId !== legacyPrimaryUserId
   ) {
     return workspace.ownerUserId;
   }
@@ -177,7 +152,7 @@ async function resolveCanonicalMarianUserId(): Promise<string | null> {
     where: {
       workspaceId,
       userId: {
-        notIn: [DEFAULT_LEGACY_MARTINA_USER_ID, DEFAULT_LEGACY_MARIAN_USER_ID],
+        notIn: [legacySecondaryUserId, legacyPrimaryUserId],
       },
     },
     select: { userId: true },
@@ -215,27 +190,27 @@ export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
   const legacyMapping = getLegacyAuthMapping(authUser.email);
 
   if (legacyMapping) {
-    // TODO: replace this legacy-email bridge with proper invited-member onboarding.
     const email = normalizeEmail(authUser.email);
     const existingByEmail = email
       ? await prisma.user.findUnique({
           where: { email },
         })
       : null;
-    const canonicalMarianUserId = await resolveCanonicalMarianUserId();
+    const canonicalPrimaryUserId = await resolveCanonicalPrimaryUserId();
+    const legacyPrimaryUserId = getLegacyPrimaryUserId();
 
     let targetUserId =
       existingByEmail?.id ??
-      (legacyMapping.userId === DEFAULT_LEGACY_MARIAN_USER_ID
-        ? (canonicalMarianUserId ?? authUser.id)
+      (legacyMapping.userId === legacyPrimaryUserId
+        ? (canonicalPrimaryUserId ?? authUser.id)
         : legacyMapping.userId);
 
     if (
-      legacyMapping.userId === DEFAULT_LEGACY_MARIAN_USER_ID &&
-      targetUserId === DEFAULT_LEGACY_MARIAN_USER_ID &&
-      canonicalMarianUserId
+      legacyMapping.userId === legacyPrimaryUserId &&
+      targetUserId === legacyPrimaryUserId &&
+      canonicalPrimaryUserId
     ) {
-      targetUserId = canonicalMarianUserId;
+      targetUserId = canonicalPrimaryUserId;
     }
 
     const user = await prisma.user.upsert({

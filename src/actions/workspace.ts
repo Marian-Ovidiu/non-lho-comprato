@@ -11,6 +11,7 @@ import {
 } from "@/src/lib/workspace-selection";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import {
+  getCurrentWorkspaceId,
   getCurrentUser,
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
@@ -18,11 +19,18 @@ import {
   buildAbsoluteAppUrl,
   generateInviteToken,
   getInviteExpiresAt,
+  getWorkspaceInviteUnavailableMessage,
   getWorkspaceInvitePath,
   hashInviteToken,
+  isOpenWorkspaceInvite,
+  OPEN_INVITE_MAX_USES,
+  OPEN_INVITE_SENTINEL,
 } from "@/src/lib/workspace-invites";
-
-const OPEN_INVITE_SENTINEL = "open";
+import {
+  authorizeWorkspaceMemberRemoval,
+  requireWorkspaceRole,
+  WorkspaceRbacError,
+} from "@/src/features/workspaces/rbac";
 
 type CreateWorkspaceResult = {
   success: boolean;
@@ -104,15 +112,17 @@ type GenerateOpenInviteResult = {
 export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResult> {
   try {
     const user = await getCurrentUser();
-    const workspaceId = await (await import("@/src/lib/workspace-context")).getCurrentWorkspaceId();
+    const workspaceId = await getCurrentWorkspaceId();
+
+    await requireWorkspaceRole(prisma, {
+      workspaceId,
+      userId: user.id,
+      roles: ["owner"],
+    });
 
     const workspace = await prisma.workspace.findUnique({
       where: {
         id: workspaceId,
-        OR: [
-          { ownerUserId: user.id },
-          { members: { some: { userId: user.id } } },
-        ],
       },
       select: { id: true, kind: true },
     });
@@ -134,15 +144,22 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
       data: {
         tokenHash,
         workspaceId: workspace.id,
+        type: "open_link",
         invitedEmail: OPEN_INVITE_SENTINEL,
+        role: "member",
         createdByUserId: user.id,
         expiresAt: getInviteExpiresAt(),
+        maxUses: OPEN_INVITE_MAX_USES,
       },
     });
 
     return { success: true, message: "Link generato.", inviteUrl };
   } catch (error) {
     unstable_rethrow(error);
+    if (error instanceof WorkspaceRbacError) {
+      return { success: false, message: "Solo un owner può generare inviti." };
+    }
+
     console.error("Failed to generate open invite:", error);
     return { success: false, message: "Non riesco a generare il link adesso. Riprova." };
   }
@@ -189,11 +206,12 @@ export async function joinByLinkAction(
       return { success: false, message: "Link non valido o non più disponibile." };
     }
 
-    if (invite.expiresAt.getTime() < Date.now()) {
-      return { success: false, message: "Questo link è scaduto." };
+    const unavailableMessage = getWorkspaceInviteUnavailableMessage(invite);
+    if (unavailableMessage) {
+      return { success: false, message: unavailableMessage };
     }
 
-    const isOpen = invite.invitedEmail === OPEN_INVITE_SENTINEL;
+    const isOpen = isOpenWorkspaceInvite(invite);
 
     if (!isOpen) {
       const userEmail = user.email?.trim().toLowerCase();
@@ -209,17 +227,33 @@ export async function joinByLinkAction(
     });
 
     if (!existing) {
+      const acceptedAt = new Date();
       await prisma.$transaction(async (tx) => {
-        await tx.workspaceMember.create({
-          data: { workspaceId: invite.workspaceId, userId: user.id, role: "member" },
+        const claimedInvite = await tx.workspaceInvite.updateMany({
+          where: {
+            id: invite.id,
+            revokedAt: null,
+            expiresAt: { gt: acceptedAt },
+            usedCount: { lt: invite.maxUses },
+          },
+          data: {
+            usedCount: { increment: 1 },
+            lastUsedAt: acceptedAt,
+            acceptedAt: isOpen ? invite.acceptedAt : acceptedAt,
+            acceptedByUserId: isOpen ? invite.acceptedByUserId : user.id,
+          },
         });
 
-        if (!isOpen) {
-          await tx.workspaceInvite.update({
-            where: { id: invite.id },
-            data: { acceptedAt: new Date(), acceptedByUserId: user.id },
-          });
+        if (claimedInvite.count !== 1) {
+          throw new WorkspaceRbacError(
+            "forbidden",
+            "Link non valido o non più disponibile.",
+          );
         }
+
+        await tx.workspaceMember.create({
+          data: { workspaceId: invite.workspaceId, userId: user.id, role: invite.role },
+        });
       });
     }
 
@@ -235,6 +269,10 @@ export async function joinByLinkAction(
     return { success: true, message: "Sei entrato nello workspace.", workspaceName: invite.workspace.name };
   } catch (error) {
     unstable_rethrow(error);
+    if (error instanceof WorkspaceRbacError) {
+      return { success: false, message: error.message };
+    }
+
     console.error("Failed to join workspace:", error);
     return { success: false, message: "Non riesco a unirti adesso. Riprova." };
   }
@@ -299,30 +337,19 @@ export async function removeWorkspaceMemberAction(
   }
 
   try {
-    const { getCurrentWorkspaceId } = await import("@/src/lib/workspace-context");
     const user = await getCurrentUser();
     const workspaceId = await getCurrentWorkspaceId();
 
-    const membership = await prisma.workspaceMember.findUnique({
-      where: { workspaceId_userId: { workspaceId, userId: user.id } },
-      select: { id: true },
-    });
+    await prisma.$transaction(async (tx) => {
+      await authorizeWorkspaceMemberRemoval(tx, {
+        workspaceId,
+        actorUserId: user.id,
+        targetUserId,
+      });
 
-    if (!membership) {
-      return { success: false, message: "Non sei membro di questo workspace." };
-    }
-
-    const targetMembership = await prisma.workspaceMember.findUnique({
-      where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
-      select: { id: true },
-    });
-
-    if (!targetMembership) {
-      return { success: false, message: "Membro non trovato." };
-    }
-
-    await prisma.workspaceMember.delete({
-      where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
+      await tx.workspaceMember.delete({
+        where: { workspaceId_userId: { workspaceId, userId: targetUserId } },
+      });
     });
 
     revalidatePath("/", "layout");
@@ -332,6 +359,10 @@ export async function removeWorkspaceMemberAction(
     return { success: true, message: "Membro rimosso." };
   } catch (error) {
     unstable_rethrow(error);
+    if (error instanceof WorkspaceRbacError) {
+      return { success: false, message: error.message };
+    }
+
     console.error("Failed to remove workspace member:", error);
     return { success: false, message: "Non riesco a rimuovere il membro adesso. Riprova." };
   }

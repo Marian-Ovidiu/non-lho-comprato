@@ -63,6 +63,7 @@ export type MonthlyReportAnalyticsBiggestSaving = {
 
 export type MonthlyReportAnalyticsBestCategory = {
   name: string;
+  totalRealSpent: number;
   totalSaved: number;
   entriesCount: number;
   categoryId: string;
@@ -240,12 +241,12 @@ function buildEmptySnapshot(
   };
 }
 
-function sortCategoriesBySaved(
+function sortCategoriesBySpend(
   categories: MonthlyReportAnalyticsCategorySummary[],
 ): MonthlyReportAnalyticsCategorySummary[] {
   return [...categories].sort((left, right) => {
-    if (right.totalSaved !== left.totalSaved) {
-      return right.totalSaved - left.totalSaved;
+    if (right.totalRealSpent !== left.totalRealSpent) {
+      return right.totalRealSpent - left.totalRealSpent;
     }
 
     if (right.entriesCount !== left.entriesCount) {
@@ -335,20 +336,22 @@ export function buildMonthlyReportAnalyticsSnapshot(
       }
     }
 
-    biggestSavingCandidates.push({
-      id: entry.id,
-      title: entry.title,
-      savedAmount,
-      date: entry.date,
-      ownershipLabel:
-        payerUserId && members.find((member) => member.userId === payerUserId)
-          ? getMemberLabel(members, payerUserId) ?? "Membro"
-          : "Membro",
-      categoryName,
-      realCost,
-      alternativeCost,
-      note: entry.note,
-    });
+    if (savedAmount > 0) {
+      biggestSavingCandidates.push({
+        id: entry.id,
+        title: entry.title,
+        savedAmount,
+        date: entry.date,
+        ownershipLabel:
+          payerUserId && members.find((member) => member.userId === payerUserId)
+            ? getMemberLabel(members, payerUserId) ?? "Membro"
+            : "Membro",
+        categoryName,
+        realCost,
+        alternativeCost,
+        note: entry.note,
+      });
+    }
   }
 
   const previousTotalsByUserId = new Map<string, number>();
@@ -418,7 +421,7 @@ export function buildMonthlyReportAnalyticsSnapshot(
     };
   });
 
-  const categoriesByFrequency = sortCategoriesBySaved(
+  const categoriesByFrequency = sortCategoriesBySpend(
     Array.from(categoryMap.values()).map((category) => ({
       ...category,
       averageSaved:
@@ -440,12 +443,21 @@ export function buildMonthlyReportAnalyticsSnapshot(
     return left.categoryName.localeCompare(right.categoryName, "it");
   });
 
-  const topSavedCategory = categoriesByFrequency[0] ?? null;
+  const topSavedCategory =
+    [...categoriesByFrequency]
+      .filter((category) => category.totalSaved > 0)
+      .sort(
+        (left, right) =>
+          right.totalSaved - left.totalSaved ||
+          right.entriesCount - left.entriesCount ||
+          left.categoryName.localeCompare(right.categoryName, "it"),
+      )[0] ?? null;
   const topSpentCategory = categoriesBySpend[0] ?? null;
 
   const bestCategory = topSavedCategory
     ? {
         name: topSavedCategory.categoryName,
+        totalRealSpent: topSavedCategory.totalRealSpent,
         totalSaved: topSavedCategory.totalSaved,
         entriesCount: topSavedCategory.entriesCount,
         categoryId: topSavedCategory.categoryId,

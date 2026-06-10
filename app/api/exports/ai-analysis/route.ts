@@ -26,6 +26,7 @@ const exportSelect = {
   person: true,
   realCost: true,
   alternativeCost: true,
+  savedAmount: true,
   category: {
     select: {
       name: true,
@@ -79,6 +80,7 @@ async function fetchEntriesBatch(
     person: entry.person,
     realCost: entry.realCost,
     alternativeCost: entry.alternativeCost,
+    savedAmount: entry.savedAmount,
     category: {
       name: entry.category.name,
     },

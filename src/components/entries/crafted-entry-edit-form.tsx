@@ -1,17 +1,14 @@
 "use client";
 
-import {
-  useActionState,
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  useTransition,
-} from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import {
+  ChevronDown,
+  CircleOff,
+  Loader2,
+  Receipt,
+} from "lucide-react";
 
 import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
 import {
@@ -22,8 +19,20 @@ import {
 } from "@/components/ui/dialog";
 import { deleteEntry, updateEntry } from "@/src/actions/entries";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-import { formatCraftedCompact, splitCraftedAmount } from "@/src/lib/crafted-money";
+import {
+  formatMoneyPreview,
+  formatMoneyValue,
+  getMoneyDelta,
+  moneyStringToInput,
+  normalizeMoneyInput,
+  toHiddenMoneyValue,
+} from "@/src/components/entries/entry-form-money";
+import type {
+  EntryMode,
+  EntrySavingContext,
+} from "@/src/lib/entry-domain";
 import { cn } from "@/lib/utils";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
@@ -39,8 +48,14 @@ type EntryToEdit = {
   id: string;
   title: string;
   categoryId: string;
+  mode: EntryMode;
+  savingContext: EntrySavingContext;
   realCost: number;
   alternativeCost: number;
+  savedAmount: number;
+  amountSpent: number;
+  comparisonAmount: number;
+  savingImpact: number;
   date: string;
   note: string | null;
   source: string;
@@ -57,14 +72,11 @@ type FormState = {
 const ROME_TIME_ZONE = "Europe/Rome";
 const initialState: FormState = { success: false, message: "", errors: {} };
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="mt-2 text-sm text-destructive">{message}</p>;
-}
-
 function getDateValue(date: string) {
   const parsed = new Date(date);
-  if (Number.isNaN(parsed.getTime())) return "";
+  if (Number.isNaN(parsed.getTime())) {
+    return "";
+  }
 
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: ROME_TIME_ZONE,
@@ -73,7 +85,46 @@ function getDateValue(date: string) {
     day: "2-digit",
   }).formatToParts(parsed);
 
-  return `${parts.find((p) => p.type === "year")?.value}-${parts.find((p) => p.type === "month")?.value}-${parts.find((p) => p.type === "day")?.value}`;
+  return `${parts.find((part) => part.type === "year")?.value}-${parts.find((part) => part.type === "month")?.value}-${parts.find((part) => part.type === "day")?.value}`;
+}
+
+function getPrimaryFieldError(errors?: Record<string, string>) {
+  return errors?.amountSpent ?? errors?.realCost;
+}
+
+function getComparisonFieldError(errors?: Record<string, string>) {
+  return errors?.comparisonAmount ?? errors?.alternativeCost;
+}
+
+function formatPrimaryFieldLabel(mode: EntryMode) {
+  return mode === "avoided" ? "Avresti speso" : "Hai speso";
+}
+
+function getSummaryText(
+  mode: EntryMode,
+  savingContext: EntrySavingContext,
+  amountSpentInput: string,
+  comparisonInput: string,
+) {
+  if (mode === "avoided") {
+    return "spesa evitata";
+  }
+
+  if (savingContext === "comparison") {
+    const delta = getMoneyDelta(amountSpentInput, comparisonInput);
+
+    if (delta > 0) {
+      return `${formatMoneyValue(delta)}€ sotto il confronto`;
+    }
+
+    if (delta < 0) {
+      return `${formatMoneyValue(delta)}€ sopra il confronto`;
+    }
+
+    return "in linea con il confronto";
+  }
+
+  return "spesa registrata";
 }
 
 export function CraftedEntryEditForm({
@@ -91,35 +142,66 @@ export function CraftedEntryEditForm({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
+
+  const [mode, setMode] = useState<EntryMode>(entry.mode);
   const [categoryId, setCategoryId] = useState(entry.categoryId);
-  const [showSavingsField, setShowSavingsField] = useState(
-    entry.alternativeCost !== entry.realCost,
+  const [title, setTitle] = useState(entry.title);
+  const [date, setDate] = useState(getDateValue(entry.date));
+  const [note, setNote] = useState(entry.note ?? "");
+  const [showAdvanced, setShowAdvanced] = useState(Boolean(entry.note));
+  const [showComparison, setShowComparison] = useState(
+    entry.mode === "spent" && entry.savingContext === "comparison",
   );
-  const [realCost, setRealCost] = useState(entry.realCost.toFixed(2));
-  const [alternativeCost, setAlternativeCost] = useState(entry.alternativeCost.toFixed(2));
-  const resolvedAlternativeCost = showSavingsField ? alternativeCost : realCost;
-  const redirect = useCallback((path: string) => router.replace(path), [router]);
+  const [amountSpentInput, setAmountSpentInput] = useState(() =>
+    moneyStringToInput(entry.amountSpent),
+  );
+  const [comparisonInput, setComparisonInput] = useState(() =>
+    moneyStringToInput(entry.comparisonAmount),
+  );
+  const [paidByUserId, setPaidByUserId] = useState(entry.paidByUserId);
+  const [beneficiaryUserIds, setBeneficiaryUserIds] = useState(
+    entry.beneficiaryUserIds,
+  );
+
   const [state, formAction, pending] = useActionState(
-    async (_previousState: FormState, formData: FormData) => updateEntry(entry.id, formData),
+    async (_previousState: FormState, formData: FormData) =>
+      updateEntry(entry.id, formData),
     initialState,
   );
 
-  const savedAmount = Math.max(Number(alternativeCost) - Number(realCost), 0);
-  const heroAmount = splitCraftedAmount(savedAmount || Number(realCost));
-
   useEffect(() => {
-    if (!state.success || didHandleSuccessRef.current) return;
-    didHandleSuccessRef.current = true;
-    const timeout = window.setTimeout(() => redirect("/entries"), 800);
-    return () => window.clearTimeout(timeout);
-  }, [redirect, state.success]);
-
-  const helperText = useMemo(() => {
-    if (entry.source === "habit") {
-      return "Puoi correggere il movimento senza scollegarlo dall'abitudine.";
+    if (!state.success || didHandleSuccessRef.current) {
+      return;
     }
-    return "Aggiorna i campi e il risparmio viene ricalcolato dal server.";
-  }, [entry.source]);
+
+    didHandleSuccessRef.current = true;
+    const timeout = window.setTimeout(() => router.replace("/entries"), 800);
+    return () => window.clearTimeout(timeout);
+  }, [router, state.success]);
+
+  const savingContext: EntrySavingContext =
+    mode === "avoided" ? "comparison" : showComparison ? "comparison" : "none";
+  const hiddenAmountSpent = mode === "spent" ? toHiddenMoneyValue(amountSpentInput) : "";
+  const hiddenComparisonAmount =
+    mode === "avoided" || showComparison ? toHiddenMoneyValue(comparisonInput) : "";
+  const primaryFieldError = getPrimaryFieldError(state.errors);
+  const comparisonFieldError = getComparisonFieldError(state.errors);
+  const summaryAmount =
+    mode === "avoided"
+      ? formatMoneyPreview(comparisonInput)
+      : formatMoneyPreview(amountSpentInput);
+
+  function handleModeChange(nextMode: EntryMode) {
+    setMode(nextMode);
+
+    if (nextMode === "avoided") {
+      setComparisonInput((current) => current || amountSpentInput);
+      setShowComparison(false);
+      return;
+    }
+
+    setAmountSpentInput((current) => current || comparisonInput);
+  }
 
   function handleDelete() {
     setDeleteMessage(null);
@@ -141,26 +223,52 @@ export function CraftedEntryEditForm({
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
       <form ref={formRef} action={formAction}>
-        <input type="hidden" name="alternativeCost" value={resolvedAlternativeCost} />
+        <input type="hidden" name="mode" value={mode} />
+        <input type="hidden" name="savingContext" value={savingContext} />
         <input type="hidden" name="categoryId" value={categoryId} />
+        <input type="hidden" name="paidByUserId" value={paidByUserId} />
+        {beneficiaryUserIds.map((userId) => (
+          <input
+            key={userId}
+            type="hidden"
+            name="beneficiaryUserIds"
+            value={userId}
+          />
+        ))}
+        {hiddenAmountSpent ? (
+          <input type="hidden" name="amountSpent" value={hiddenAmountSpent} />
+        ) : null}
+        {hiddenComparisonAmount ? (
+          <input
+            type="hidden"
+            name="comparisonAmount"
+            value={hiddenComparisonAmount}
+          />
+        ) : null}
 
         <div className="flex items-center justify-between px-5 pb-1.5 pt-3">
           <Link href="/entries" className="text-sm text-muted-foreground hover:opacity-80">
             Annulla
           </Link>
-          <Label>Modifica segnale</Label>
+          <Label>Modifica movimento</Label>
           <div className="w-14" aria-hidden="true" />
         </div>
 
         <section className="px-5 py-5 text-center">
-          <Serif className="mb-3 text-sm text-muted-foreground">tenuti nel movimento</Serif>
-          <div className="flex items-start justify-center gap-1.5">
-            <Mono className="text-[clamp(2.5rem,12vw,3.5rem)] font-semibold leading-[0.9] tracking-[-0.05em] text-accent">
-              {heroAmount.whole}
+          <Serif className="mb-3 text-sm text-muted-foreground">
+            {entry.source === "habit"
+              ? "movimento collegato a una ricorrente"
+              : "stai aggiornando il movimento"}
+          </Serif>
+          <div className="flex items-baseline justify-center gap-1.5">
+            <Mono className="text-[clamp(2.5rem,12vw,3.75rem)] font-semibold leading-[0.9] text-accent">
+              {summaryAmount}
             </Mono>
-            <Mono className="mt-1.5 text-xl text-muted-foreground">,{heroAmount.decimals}€</Mono>
+            <Mono className="text-xl text-muted-foreground">€</Mono>
           </div>
-          <Serif className="mt-3 block text-sm text-ink-3">{helperText}</Serif>
+          <Serif className="mt-3 block text-sm text-ink-3">
+            {getSummaryText(mode, savingContext, amountSpentInput, comparisonInput)}
+          </Serif>
         </section>
         <Rule />
 
@@ -168,18 +276,54 @@ export function CraftedEntryEditForm({
           <div
             className={cn(
               "mx-5 my-4 border px-4 py-3 text-sm",
-              state.success ? "border-green/30 text-green" : "border-destructive/30 text-destructive",
+              state.success
+                ? "border-green/30 text-green"
+                : "border-destructive/30 text-destructive",
             )}
           >
             {state.message}
           </div>
         ) : null}
 
-        <div className="px-5 pb-2 pt-4">
+        <div className="px-5 pb-4 pt-3">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleModeChange("spent")}
+              className={cn(
+                "flex min-h-12 items-center justify-center gap-2 border-b-[1.5px] px-3 py-2 text-sm transition-colors",
+                mode === "spent"
+                  ? "border-accent text-foreground"
+                  : "border-transparent text-ink-3 hover:text-foreground",
+              )}
+              aria-pressed={mode === "spent"}
+            >
+              <Receipt className="size-4" aria-hidden="true" />
+              Ho speso
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange("avoided")}
+              className={cn(
+                "flex min-h-12 items-center justify-center gap-2 border-b-[1.5px] px-3 py-2 text-sm transition-colors",
+                mode === "avoided"
+                  ? "border-accent text-foreground"
+                  : "border-transparent text-ink-3 hover:text-foreground",
+              )}
+              aria-pressed={mode === "avoided"}
+            >
+              <CircleOff className="size-4" aria-hidden="true" />
+              Non l&apos;ho comprato
+            </button>
+          </div>
+        </div>
+
+        <div className="px-5 pb-2">
           <Label className="mb-3 block">Categoria</Label>
           <div className="flex gap-5 overflow-x-auto pb-1">
             {categories.map((cat) => {
               const selected = categoryId === cat.id;
+
               return (
                 <button
                   key={cat.id}
@@ -198,7 +342,9 @@ export function CraftedEntryEditForm({
                   <span
                     className={cn(
                       "whitespace-nowrap text-[11.5px]",
-                      selected ? "font-semibold text-foreground" : "font-[450] text-ink-3",
+                      selected
+                        ? "font-semibold text-foreground"
+                        : "font-[450] text-ink-3",
                     )}
                   >
                     {cat.name}
@@ -207,118 +353,173 @@ export function CraftedEntryEditForm({
               );
             })}
           </div>
-          <FieldError message={state.errors?.categoryId} />
+          <FormFieldError message={state.errors?.categoryId} />
         </div>
 
         <div className="px-5 pb-3">
           <div className="flex items-center justify-between gap-4 border-y border-line py-3">
             <input
-              id="title"
               name="title"
-              defaultValue={entry.title}
-              placeholder="Caffè in stazione"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
               className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
               aria-invalid={Boolean(state.errors?.title)}
             />
             <Label>Cosa</Label>
           </div>
-          <FieldError message={state.errors?.title} />
+          <FormFieldError message={state.errors?.title} />
         </div>
 
         <div className="space-y-3 px-5 pb-3">
           <div className="border-y border-line py-3">
             <label className="flex items-center justify-between gap-4">
               <input
-                id="realCost"
-                name="realCost"
-                type="number"
+                type="text"
                 inputMode="decimal"
-                min="0"
-                step="0.01"
-                value={realCost}
-                onChange={(event) => setRealCost(event.target.value)}
-                className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
+                value={mode === "avoided" ? comparisonInput : amountSpentInput}
+                onChange={(event) => {
+                  const nextValue = normalizeMoneyInput(event.target.value);
+                  if (mode === "avoided") {
+                    setComparisonInput(nextValue);
+                    return;
+                  }
+                  setAmountSpentInput(nextValue);
+                }}
+                placeholder={mode === "avoided" ? "18,00" : "12,00"}
+                className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
+                aria-invalid={Boolean(primaryFieldError)}
               />
-              <Label>Speso</Label>
+              <Label>{formatPrimaryFieldLabel(mode)}</Label>
             </label>
-            <FieldError message={state.errors?.realCost} />
+            <FormFieldError message={primaryFieldError} />
           </div>
 
+          {mode === "spent" ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowComparison((current) => {
+                    if (current) {
+                      return false;
+                    }
+
+                    setComparisonInput((prev) => prev || amountSpentInput);
+                    return true;
+                  });
+                }}
+                className="flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 hover:text-foreground"
+              >
+                <ChevronDown
+                  className={cn(
+                    "size-3.5 transition-transform duration-200",
+                    showComparison && "rotate-180",
+                  )}
+                  aria-hidden="true"
+                />
+                {showComparison ? "Nascondi confronto" : "Aggiungi confronto"}
+              </button>
+
+              {showComparison ? (
+                <div className="border-y border-line py-3">
+                  <label className="flex items-center justify-between gap-4">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={comparisonInput}
+                      onChange={(event) =>
+                        setComparisonInput(normalizeMoneyInput(event.target.value))
+                      }
+                      placeholder="45,00"
+                      className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
+                      aria-invalid={Boolean(comparisonFieldError)}
+                    />
+                    <Label>Quanto sarebbe costato</Label>
+                  </label>
+                  <p className="mt-2 text-xs text-ink-3">
+                    Il server ricalcola sempre il confronto e l&apos;eventuale sforamento.
+                  </p>
+                  <FormFieldError message={comparisonFieldError} />
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-[13px] text-ink-3">
+              Salvando in questa modalità il movimento resta una spesa evitata.
+            </p>
+          )}
+        </div>
+
+        <div className="space-y-3 px-5 pb-3">
           <button
             type="button"
-            onClick={() => {
-              setShowSavingsField((current) => {
-                if (current) return false;
-                setAlternativeCost((prev) => prev || realCost);
-                return true;
-              });
-            }}
-            className="text-[13px] text-ink-3 hover:text-foreground"
+            onClick={() => setShowAdvanced((value) => !value)}
+            className="flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-foreground"
           >
-            {showSavingsField ? "Nascondi risparmio" : "Ho risparmiato qualcosa?"}
+            <ChevronDown
+              className={cn(
+                "size-3.5 transition-transform duration-200",
+                showAdvanced && "rotate-180",
+              )}
+              aria-hidden="true"
+            />
+            {showAdvanced ? "Nascondi dettagli" : "Data, nota e ripartizione"}
           </button>
 
-          {showSavingsField ? (
-            <div className="border-y border-line py-3">
-              <label className="flex items-center justify-between gap-4">
+          {showAdvanced ? (
+            <div className="space-y-4 border-t border-line pt-4">
+              <div className="space-y-2 border-b border-line pb-3">
+                <Label>Data</Label>
                 <input
-                  id="alternativeCost"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={alternativeCost}
-                  onChange={(event) => setAlternativeCost(event.target.value)}
-                  className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
+                  name="date"
+                  type="date"
+                  value={date}
+                  onChange={(event) => setDate(event.target.value)}
+                  className="w-full bg-transparent py-2 text-sm outline-none"
                 />
-                <Label>Avresti speso</Label>
-              </label>
-              <FieldError message={state.errors?.alternativeCost} />
+                <FormFieldError message={state.errors?.date} />
+              </div>
+
+              <div className="space-y-2 border-b border-line pb-3">
+                <Label>Nota</Label>
+                <textarea
+                  name="note"
+                  value={note}
+                  onChange={(event) => setNote(event.target.value)}
+                  rows={2}
+                  className="w-full resize-none bg-transparent py-2 text-sm outline-none placeholder:text-ink-3/70"
+                  placeholder="Nota opzionale"
+                />
+              </div>
+
+              <EntryPeopleFields
+                members={members}
+                paidByUserId={paidByUserId}
+                beneficiaryUserIds={beneficiaryUserIds}
+                errors={state.errors}
+                onPaidByUserIdChange={setPaidByUserId}
+                onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
+              />
             </div>
+          ) : (
+            <input type="hidden" name="date" value={date} />
+          )}
+
+          {!showAdvanced && note.trim() ? (
+            <input type="hidden" name="note" value={note} />
           ) : null}
-        </div>
-
-        <div className="space-y-3 px-5 pb-3">
-          <div className="border-y border-line py-3">
-            <label className="flex items-center justify-between gap-4">
-              <input
-                id="date"
-                name="date"
-                type="date"
-                defaultValue={getDateValue(entry.date)}
-                className="min-w-0 flex-1 bg-transparent text-sm outline-none"
-              />
-              <Label>Data</Label>
-            </label>
-            <FieldError message={state.errors?.date} />
-          </div>
-
-          <div className="border-y border-line py-3">
-            <label className="flex items-start justify-between gap-4">
-              <textarea
-                id="note"
-                name="note"
-                defaultValue={entry.note ?? ""}
-                rows={2}
-                className="min-w-0 flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-ink-3/70"
-                placeholder="Nota opzionale"
-              />
-              <Label>Nota</Label>
-            </label>
-          </div>
-
-          <EntryPeopleFields
-            members={members}
-            paidByUserId={entry.paidByUserId}
-            beneficiaryUserIds={entry.beneficiaryUserIds}
-            errors={state.errors}
-          />
         </div>
 
         <div className="space-y-3 px-5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] pt-2">
           <button
             type="submit"
-            disabled={pending || isDeleting || categories.length === 0 || members.length === 0}
+            disabled={
+              pending ||
+              isDeleting ||
+              categories.length === 0 ||
+              members.length === 0
+            }
             className={cn(
               "flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl text-[15.5px] font-bold",
               "bg-accent text-accent-foreground transition-opacity disabled:opacity-50",
@@ -330,7 +531,7 @@ export function CraftedEntryEditForm({
                 Salvataggio…
               </>
             ) : (
-              <>Salva · {formatCraftedCompact(Number(realCost))}€</>
+              "Salva movimento"
             )}
           </button>
           <button
@@ -352,7 +553,7 @@ export function CraftedEntryEditForm({
           <DialogTitle>Elimina movimento</DialogTitle>
           <DialogDescription>
             {entry.source === "habit"
-              ? "Il movimento verrà rimosso e l'occorrenza dell'abitudine tornerà segnata come evitata."
+              ? "Il movimento verrà rimosso e l'occorrenza della ricorrente tornerà in sospeso."
               : "Il movimento verrà rimosso dal registro. L'operazione non si può annullare."}
           </DialogDescription>
 

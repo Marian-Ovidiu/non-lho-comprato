@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import {
@@ -20,8 +19,8 @@ import {
   CATEGORY_TONE_CLASS,
   buildCraftedStatsQueen,
   getActiveDays,
-  getAverageMonthlySaved,
-  getMaxChartSaved,
+  getAverageMonthlySpent,
+  getMaxChartSpent,
   getMonthChartData,
   getPeriodHero,
   getPeriodOverview,
@@ -92,10 +91,15 @@ function CraftedCategoryBars({
             <span className="min-w-0 flex-1 text-sm font-[450]">{category.name}</span>
             <Mono className="mr-3 text-[11px] text-ink-3">{category.pct}%</Mono>
             <Mono className="text-sm font-medium whitespace-nowrap">
-              {formatCraftedCompact(category.saved)}
+              {formatCraftedCompact(category.spent)}
               <span className="text-[11px] text-accent">€</span>
             </Mono>
           </div>
+          {category.saved > 0 ? (
+            <Serif className="mb-2 block text-[12.5px] text-ink-3">
+              {formatCraftedCompact(category.saved)}€ evitati / risparmiati
+            </Serif>
+          ) : null}
           <div className="relative h-0.5 overflow-hidden rounded-[1px] bg-line">
             <div
               className={cn(
@@ -157,9 +161,9 @@ export function CraftedStats({
   );
 
   const chartData = useMemo(() => getMonthChartData(monthlyStats), [monthlyStats]);
-  const maxChartSaved = useMemo(() => getMaxChartSaved(monthlyStats), [monthlyStats]);
-  const averageMonthlySaved = useMemo(
-    () => getAverageMonthlySaved(monthlyStats),
+  const maxChartSpent = useMemo(() => getMaxChartSpent(monthlyStats), [monthlyStats]);
+  const averageMonthlySpent = useMemo(
+    () => getAverageMonthlySpent(monthlyStats),
     [monthlyStats],
   );
   const activeDays = useMemo(
@@ -178,18 +182,18 @@ export function CraftedStats({
         period === "year"
           ? monthlyStats
               .filter((month) => month.month.startsWith(getRomeDateKey(new Date()).slice(0, 4)))
-              .reduce((sum, month) => sum + month.totalSaved, 0)
-          : overview.totalSaved;
+              .reduce((sum, month) => sum + month.totalRealSpent, 0)
+          : overview.totalRealSpent;
 
       return buildCraftedStatsQueen({
         insights,
         categoryStats,
-        periodTotalSaved: periodTotal,
+        periodTotalSpent: periodTotal,
       });
     }
 
     return initialQueen;
-  }, [period, categoryStats, monthlyStats, overview.totalSaved, insights, initialQueen]);
+  }, [period, categoryStats, monthlyStats, overview.totalRealSpent, insights, initialQueen]);
 
   const queenMonthLabel =
     currentMonthLabel.split(" ")[0]?.toLowerCase() ?? currentMonthLabel.toLowerCase();
@@ -251,37 +255,37 @@ export function CraftedStats({
       <StatTrio
         items={[
           {
-            label: "Speso davvero",
+            label: "Speso",
             value: formatCraftedCompact(periodOverview.totalRealSpent),
             suffix: "€",
           },
           {
-            label: "Avresti speso",
-            value: formatCraftedCompact(periodOverview.totalAlternativeCost),
+            label: "Evitato/risparmiato",
+            value: formatCraftedCompact(periodOverview.totalSaved),
             suffix: "€",
           },
           {
-            label: "Tenuti",
-            value: formatCraftedCompact(periodOverview.totalSaved),
-            suffix: "€",
+            label: "Movimenti",
+            value: period === "all" ? overview.entriesCount : hero.entriesCount,
           },
         ]}
       />
       <StatTrio
         items={[
           {
-            label: "Efficienza",
-            value: formatOverviewPercent(periodOverview.savingRatePercent),
-            suffix: "%",
+            label: "Confronto stimato",
+            value: formatCraftedCompact(periodOverview.totalAlternativeCost),
+            suffix: "€",
           },
           {
-            label: "Media/scelta",
+            label: "Impatto medio",
             value: formatCraftedCompact(periodOverview.averageSavedPerEntry),
             suffix: "€",
           },
           {
-            label: "Scelte",
-            value: period === "all" ? overview.entriesCount : hero.entriesCount,
+            label: "Efficienza",
+            value: formatOverviewPercent(periodOverview.savingRatePercent),
+            suffix: "%",
           },
         ]}
       />
@@ -289,10 +293,10 @@ export function CraftedStats({
 
       <section className="px-5 pb-2">
         <div className="mb-3.5 flex items-baseline justify-between gap-3">
-          <Label>Ultimi 12 mesi</Label>
-          {maxChartSaved > 0 ? (
+          <Label>Spesa ultimi 12 mesi</Label>
+          {maxChartSpent > 0 ? (
             <Mono className="text-[11px] text-ink-3">
-              max {formatCraftedCompact(maxChartSaved)}€
+              max {formatCraftedCompact(maxChartSpent)}€
             </Mono>
           ) : null}
         </div>
@@ -311,8 +315,8 @@ export function CraftedStats({
                     "w-full min-h-[3px] rounded-[1px]",
                     month.isActive ? "bg-accent" : "bg-ink-3",
                   )}
-                  style={{ height: `${Math.max(month.heightPct, month.totalSaved > 0 ? 4 : 0)}%` }}
-                  title={`${month.initial}: ${formatCraftedCompact(month.totalSaved)}€`}
+                  style={{ height: `${Math.max(month.heightPct, month.totalRealSpent > 0 ? 4 : 0)}%` }}
+                  title={`${month.initial}: ${formatCraftedCompact(month.totalRealSpent)}€ spesi`}
                 />
                 <Mono
                   className={cn(
@@ -341,8 +345,8 @@ export function CraftedStats({
           <section className="px-5 py-5">
             <Label className="mb-3.5 block">
               {period === "month"
-                ? `La regina di ${queenMonthLabel}`
-                : "La regina del periodo"}
+                ? `Categoria principale di ${queenMonthLabel}`
+                : "Categoria principale del periodo"}
             </Label>
             <div className="flex items-center gap-4">
               <CraftedIcon
@@ -354,13 +358,16 @@ export function CraftedStats({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <Mono className="text-[28px] font-semibold leading-none">
-                    {formatCraftedCompact(queen.saved)}€
+                    {formatCraftedCompact(queen.spent)}€
                   </Mono>
-                  <span className="text-sm text-muted-foreground">in {queen.name}</span>
+                  <span className="text-sm text-muted-foreground">spesi in {queen.name}</span>
                 </div>
                 <Serif className="mt-1 block text-sm text-ink-3">
                   il {queen.pct}% di tutto, in {queen.entriesCount}{" "}
                   {queen.entriesCount === 1 ? "movimento" : "movimenti"}.
+                  {queen.saved > 0
+                    ? ` ${formatCraftedCompact(queen.saved)}€ evitati / risparmiati.`
+                    : ""}
                 </Serif>
               </div>
             </div>
@@ -381,8 +388,8 @@ export function CraftedStats({
       <StatTrio
         items={[
           {
-            label: "Media/mese",
-            value: formatCraftedCompact(averageMonthlySaved),
+            label: "Media spesa/mese",
+            value: formatCraftedCompact(averageMonthlySpent),
             suffix: "€",
           },
           {
@@ -400,7 +407,7 @@ export function CraftedStats({
         <>
           <Rule />
           <section className="px-5 py-5">
-            <Label className="mb-4 block">Abitudini</Label>
+            <Label className="mb-4 block">Ricorrenti</Label>
             <div>
               {habitStats.map((habit, index) => (
                 <div

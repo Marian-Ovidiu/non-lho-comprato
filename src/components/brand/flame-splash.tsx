@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { FlameMark } from "@/src/components/brand/flame-mark";
 
@@ -8,6 +8,11 @@ const GOLD = "var(--accent, #d9a651)";
 
 type FlameSplashProps = {
   onDone?: () => void;
+};
+
+type ViewportSize = {
+  w: number;
+  h: number;
 };
 
 function readViewport() {
@@ -20,26 +25,21 @@ function readViewport() {
 export function FlameSplash({ onDone }: FlameSplashProps) {
   const pathRef = useRef<SVGPathElement | null>(null);
   const dotsRef = useRef<(SVGCircleElement | null)[]>([]);
-  const [dims, setDims] = useState({ w: 0, h: 0 });
-
-  useLayoutEffect(() => {
-    setDims(readViewport());
-  }, []);
+  const [dims, setDims] = useState<ViewportSize | null>(null);
 
   useEffect(() => {
     const measure = () => setDims(readViewport());
+    measure();
     window.addEventListener("resize", measure);
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     const prefersReduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const path = pathRef.current;
-    if (!path || prefersReduced || !dims.w) return;
+    if (!path || prefersReduced || !dims?.w) return;
 
     const L = path.getTotalLength();
-    const x = 10;
-    const y = 10;
     const w = dims.w - 20;
     const h = dims.h - 20;
     const r = 44;
@@ -89,9 +89,11 @@ export function FlameSplash({ onDone }: FlameSplashProps) {
     return () => cancelAnimationFrame(raf);
   }, [dims]);
 
-  const { w, h } = dims;
-  const x = 10;
-  const y = 10;
+  const w = dims?.w ?? 0;
+  const h = dims?.h ?? 0;
+  const inset = 10;
+  const x = inset;
+  const y = inset;
   const bw = w - 20;
   const bh = h - 20;
   const r = 44;

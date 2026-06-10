@@ -1,4 +1,4 @@
-import { differenceInCalendarDays, subDays } from "date-fns";
+import { subDays } from "date-fns";
 
 import type { CraftedDashboardProps } from "@/src/components/dashboard/crafted-dashboard";
 import {
@@ -11,13 +11,16 @@ import { getRomeDateKey } from "@/src/lib/rome-dates";
 type CategoryStatsItem = {
   categoryName: string;
   categorySlug: string;
+  totalRealSpent: number;
   totalSaved: number;
   entriesCount: number;
 };
 
 type MonthlyStatsItem = {
   month: string;
+  totalRealSpent: number;
   totalSaved: number;
+  entriesCount: number;
 };
 
 type GoalRow = {
@@ -46,15 +49,6 @@ const CATEGORY_TONES: CraftedDashboardProps["categories"][number]["tone"][] = [
   "muted",
 ];
 
-function getRomeDayOfMonth(date: Date) {
-  return Number(
-    new Intl.DateTimeFormat("en-US", {
-      day: "numeric",
-      timeZone: "Europe/Rome",
-    }).format(date),
-  );
-}
-
 function getMonthLabel(date: Date) {
   const label = new Intl.DateTimeFormat("it-IT", {
     month: "long",
@@ -62,6 +56,10 @@ function getMonthLabel(date: Date) {
   }).format(date);
 
   return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function round2(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function buildStreakWeek(streakDates: string[]) {
@@ -84,31 +82,32 @@ function buildHabitsNote(habits: HabitOccurrence[]) {
   }
 
   if (avoided.length === 1) {
-    return `${avoided[0]}, fatto.`;
+    return `${avoided[0]}, evitata.`;
   }
 
   if (avoided.length === 2) {
-    return `${avoided[0]} e ${avoided[1]}, fatto.`;
+    return `${avoided[0]} e ${avoided[1]}, evitate.`;
   }
 
-  return `${avoided.slice(0, -1).join(", ")} e ${avoided.at(-1)}, fatto.`;
+  return `${avoided.slice(0, -1).join(", ")} e ${avoided.at(-1)}, evitate.`;
 }
 
 export function buildCraftedCategories(
   categoryStats: CategoryStatsItem[],
 ): CraftedDashboardProps["categories"] {
   const ranked = [...categoryStats]
-    .filter((item) => item.totalSaved > 0)
+    .filter((item) => item.totalRealSpent > 0)
     .sort(
       (left, right) =>
-        right.totalSaved - left.totalSaved ||
-        right.entriesCount - left.entriesCount,
+        right.totalRealSpent - left.totalRealSpent ||
+        right.entriesCount - left.entriesCount ||
+        right.totalSaved - left.totalSaved,
     )
     .slice(0, 4);
 
-  const totalSaved = ranked.reduce((sum, item) => sum + item.totalSaved, 0);
+  const totalSpent = ranked.reduce((sum, item) => sum + item.totalRealSpent, 0);
 
-  if (totalSaved <= 0) {
+  if (totalSpent <= 0) {
     return [];
   }
 
@@ -116,17 +115,20 @@ export function buildCraftedCategories(
     name: item.categoryName,
     slug: item.categorySlug,
     count: item.entriesCount,
-    saved: item.totalSaved,
-    pct: Math.max(1, Math.round((item.totalSaved / totalSaved) * 100)),
+    spent: round2(item.totalRealSpent),
+    saved: round2(item.totalSaved),
+    pct: Math.max(1, Math.round((item.totalRealSpent / totalSpent) * 100)),
     tone: CATEGORY_TONES[index] ?? "muted",
   }));
 }
 
 export function buildCraftedDashboardProps(input: {
+  monthRealSpent: number;
   monthSaved: number;
-  entriesCountMonth: number;
+  spentToday: number;
   savedToday: number;
-  weekEntries: Array<{ savedAmount: unknown; date: Date | string }>;
+  entriesTodayCount: number;
+  entriesCountMonth: number;
   monthlyStats: MonthlyStatsItem[];
   categoryStats: CategoryStatsItem[];
   currentStreak: number;
@@ -140,37 +142,23 @@ export function buildCraftedDashboardProps(input: {
 }): CraftedDashboardProps {
   const now = new Date();
   const monthLabel = getMonthLabel(now);
-  const monthTrend = input.monthlyStats.slice(-6).map((item) => item.totalSaved);
+  const monthTrend = input.monthlyStats.slice(-6).map((item) => item.totalRealSpent);
   const previousMonth = input.monthlyStats.at(-2);
   const currentMonth = input.monthlyStats.at(-1);
   const monthDelta =
     previousMonth && currentMonth
-      ? Math.round((currentMonth.totalSaved - previousMonth.totalSaved) * 100) / 100
+      ? round2(currentMonth.totalRealSpent - previousMonth.totalRealSpent)
       : null;
-
-  const savedWeek = input.weekEntries.reduce((sum, entry) => {
-    const daysAgo = differenceInCalendarDays(now, new Date(entry.date));
-    if (daysAgo >= 7) {
-      return sum;
-    }
-
-    return sum + (Number(entry.savedAmount) || 0);
-  }, 0);
-
-  const dayOfMonth = getRomeDayOfMonth(now);
-  const savedPerDay =
-    dayOfMonth > 0
-      ? Math.round((input.monthSaved / dayOfMonth) * 100) / 100
-      : 0;
 
   return {
     monthLabel,
+    monthRealSpent: input.monthRealSpent,
     monthSaved: input.monthSaved,
     monthDelta,
     monthTrend,
+    spentToday: input.spentToday,
     savedToday: input.savedToday,
-    savedWeek: Math.round(savedWeek * 100) / 100,
-    savedPerDay,
+    entriesTodayCount: input.entriesTodayCount,
     entriesCountMonth: input.entriesCountMonth,
     categories: buildCraftedCategories(input.categoryStats),
     currentStreak: input.currentStreak,

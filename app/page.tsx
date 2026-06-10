@@ -71,7 +71,7 @@ function getHomePhase({
 function getHomeReflection({
   entries,
   phase,
-  monthSaved,
+  monthRealSpent,
 }: {
   entries: Array<{
     category: {
@@ -82,7 +82,7 @@ function getHomeReflection({
     date: string | Date;
   }>;
   phase: HomePhase;
-  monthSaved: number;
+  monthRealSpent: number;
 }): HomeReflection {
   if (entries.length === 0) {
     return null;
@@ -125,18 +125,13 @@ function getHomeReflection({
     };
   }
 
-  const savedThisWeek = weekEntries.reduce(
-    (sum, entry) => sum + (Number(entry.savedAmount) || 0),
-    0,
-  );
-
-  if (savedThisWeek > 0 && weekEntries.length >= 2) {
+  if (weekEntries.length >= 3) {
     return {
       label: "Riflessione",
       text:
-        weekEntries.length === 2
-          ? "Questa settimana hai già dato forma a 2 scelte."
-          : `Questa settimana hai già dato forma a ${weekEntries.length} scelte.`,
+        weekEntries.length === 3
+          ? "Questa settimana hai già registrato 3 movimenti."
+          : `Questa settimana hai già registrato ${weekEntries.length} movimenti.`,
     };
   }
 
@@ -151,8 +146,8 @@ function getHomeReflection({
     return {
       label: "Riflessione",
       text:
-        monthSaved > 0
-          ? "Rispetto all'inizio, il quadro è già più chiaro."
+        monthRealSpent > 0
+          ? "Rispetto all'inizio, il quadro delle spese è già più chiaro."
           : "Il quadro si sta ancora formando, ma il ritmo comincia a vedersi.",
     };
   }
@@ -163,22 +158,22 @@ function getHomeReflection({
 function getDashboardEmptyStateCopy({
   phase,
   arrivedFromOnboarding,
-  monthSaved,
+  monthRealSpent,
   activeGoalsCount,
   todayHabitsCount,
 }: {
   phase: HomePhase;
   arrivedFromOnboarding: boolean;
-  monthSaved: number;
+  monthRealSpent: number;
   activeGoalsCount: number;
   todayHabitsCount: number;
 }) {
-  if (phase === "empty" && monthSaved === 0 && activeGoalsCount === 0 && todayHabitsCount === 0) {
+  if (phase === "empty" && monthRealSpent === 0 && activeGoalsCount === 0 && todayHabitsCount === 0) {
     return {
-      title: arrivedFromOnboarding ? "Il quadro è pronto" : "Ancora nessun segnale",
+      title: arrivedFromOnboarding ? "Il quadro è pronto" : "Ancora nessun movimento",
       description: arrivedFromOnboarding
-        ? "Hai finito l'onboarding. Da qui il quadro continua con calma, un segnale alla volta."
-        : "Aggiungi il primo movimento e il quadro di oggi prenderà forma subito.",
+        ? "Hai finito l'onboarding. Da qui puoi iniziare a registrare spese e movimenti, uno alla volta."
+        : "Aggiungi il primo movimento e la dashboard inizierà subito a leggere la spesa reale.",
       note: "Bastano pochi secondi per iniziare.",
       actionLabel: "Aggiungi movimento",
     };
@@ -186,9 +181,9 @@ function getDashboardEmptyStateCopy({
 
   if (phase === "first-entry") {
     return {
-      title: "Il primo segnale è dentro",
+      title: "Il primo movimento è dentro",
       description:
-        "Ora il quadro può già leggere qualcosa. Il prossimo segnale renderà la lettura più chiara.",
+        "Ora la dashboard può già leggere qualcosa. Il prossimo movimento renderà il quadro più chiaro.",
       note: "La continuità si costruisce da qui.",
       actionLabel: "Nuovo movimento",
     };
@@ -198,7 +193,7 @@ function getDashboardEmptyStateCopy({
     return {
       title: "Un ritmo sta emergendo",
       description:
-        "I primi segnali stanno iniziando a raccontare una direzione. Ogni visita aggiunge contesto.",
+        "I primi movimenti stanno iniziando a raccontare una direzione. Ogni visita aggiunge contesto.",
       note: "Il quadro diventa più utile con pochi, buoni ritorni.",
       actionLabel: "Nuovo movimento",
     };
@@ -208,16 +203,16 @@ function getDashboardEmptyStateCopy({
     return {
       title: "Prima settimana in lettura",
       description:
-        "Stai già vedendo un ritmo più riconoscibile. Il quadro comincia a restituire una forma chiara.",
+        "Stai già vedendo un ritmo più riconoscibile. Il quadro della spesa comincia a restituire una forma chiara.",
       note: "Il valore cresce quando il contesto si fa continuo.",
       actionLabel: "Nuovo movimento",
     };
   }
 
-  if (monthSaved > 0) {
+  if (monthRealSpent > 0) {
     return {
       title: "Giornata ancora aperta",
-      description: `Hai già protetto qualcosa questo mese. Oggi può restare leggero.`,
+      description: "Hai già registrato spese questo mese. Se serve, puoi aggiungere il prossimo movimento in pochi secondi.",
       note: "Il prossimo tap aggiornerà subito il quadro.",
       actionLabel: "Nuovo movimento",
     };
@@ -226,9 +221,9 @@ function getDashboardEmptyStateCopy({
   return {
     title: "Giornata leggera finora",
     description:
-      "I tuoi obiettivi restano pronti, senza pressione. Se serve, un solo tap basta per aggiungere un nuovo segnale.",
+      "La dashboard è pronta. Se serve, un solo tap basta per registrare una spesa o un movimento evitato.",
     note: "Puoi rientrare e uscire in pochi secondi.",
-    actionLabel: "Aggiungi movimento",
+    actionLabel: "Registra una spesa",
   };
 }
 
@@ -254,6 +249,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   let monthSaved = 0;
+  let monthRealSpent = 0;
   let entriesCountMonth = 0;
   let todaySummary = {
     totalSavedToday: 0,
@@ -316,6 +312,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     const metrics = await getHomeDashboardMetrics();
 
     monthSaved = metrics.summary.totalSaved;
+    monthRealSpent = metrics.summary.totalRealSpent;
     entriesCountMonth = metrics.summary.entriesCount;
     todaySummary = metrics.todaySummary;
     workspaceBalance = metrics.workspaceBalance;
@@ -339,7 +336,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const homeReflection = getHomeReflection({
     entries: weekEntries,
     phase: homePhase,
-    monthSaved,
+    monthRealSpent,
   });
 
   const dashboardEmptyState =
@@ -347,17 +344,19 @@ export default async function Home({ searchParams }: HomePageProps) {
       ? getDashboardEmptyStateCopy({
           phase: homePhase,
           arrivedFromOnboarding,
-          monthSaved,
+          monthRealSpent,
           activeGoalsCount: activeGoals.length,
           todayHabitsCount: todayHabits.length,
         })
       : null;
 
   const craftedProps = buildCraftedDashboardProps({
+    monthRealSpent,
     monthSaved,
+    spentToday: todaySummary.totalRealSpentToday,
     entriesCountMonth,
+    entriesTodayCount: todaySummary.entriesTodayCount,
     savedToday: todaySummary.totalSavedToday,
-    weekEntries,
     monthlyStats,
     categoryStats,
     currentStreak,
@@ -381,9 +380,14 @@ export default async function Home({ searchParams }: HomePageProps) {
       ) : null}
 
       <DailyCheckinOverlay
+        spentToday={todaySummary.totalRealSpentToday}
         savedToday={todaySummary.totalSavedToday}
         pendingHabitsCount={pendingHabitsCount}
-        isVisible={todaySummary.totalSavedToday > 0 || pendingHabitsCount > 0}
+        isVisible={
+          todaySummary.totalRealSpentToday > 0 ||
+          todaySummary.totalSavedToday > 0 ||
+          pendingHabitsCount > 0
+        }
       />
 
       {entriesLoadError ? (

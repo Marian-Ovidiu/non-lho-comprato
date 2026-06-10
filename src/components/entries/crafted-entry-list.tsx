@@ -23,9 +23,14 @@ type EntryItem = {
     slug: string;
   };
   date: string;
+  mode?: "spent" | "avoided";
+  savingContext?: "none" | "comparison";
   realCost: unknown;
   alternativeCost: unknown;
   savedAmount: unknown;
+  amountSpent?: unknown;
+  comparisonAmount?: unknown;
+  savingImpact?: unknown;
   note: string | null;
   source: string;
   paidByUserId: string;
@@ -405,15 +410,26 @@ export function CraftedEntryList({
                 </Mono>
               </div>
               <div className="shrink-0 text-right">
-                <Mono className="block text-xs font-medium">
+                <Mono className="block text-sm font-medium">
                   {formatCraftedCompact(group.totalRealSpent)}€
                   <span className="font-normal text-ink-3"> spesi</span>
                 </Mono>
-                {group.totalSaved > 0 ? (
-                  <Mono className="mt-0.5 block text-xs text-accent">
-                    +{formatCraftedCompact(group.totalSaved)}€ tenuti
-                  </Mono>
-                ) : null}
+                <Mono
+                  className={cn(
+                    "mt-0.5 block text-xs",
+                    group.totalSaved > 0
+                      ? "text-accent"
+                      : group.totalSaved < 0
+                        ? "text-foreground"
+                        : "text-ink-3",
+                  )}
+                >
+                  {group.totalSaved > 0 ? "+" : ""}
+                  {formatCraftedCompact(group.totalSaved)}€
+                  <span className="ml-1 font-normal text-ink-3">
+                    {group.totalSaved < 0 ? "impatto confronto" : "evitati / risparmio"}
+                  </span>
+                </Mono>
               </div>
             </div>
             <div className="px-5">
@@ -436,7 +452,7 @@ export function CraftedEntryList({
             {previousMonthSummary.label.toLowerCase()} —{" "}
             {formatCraftedCompact(previousMonthSummary.totalRealSpent)}€ spesi
             {previousMonthSummary.totalSaved > 0
-              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}€ tenuti`
+              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}€ evitati / risparmio`
               : ""}{" "}
             in {previousMonthSummary.entriesCount} movimenti
           </Serif>

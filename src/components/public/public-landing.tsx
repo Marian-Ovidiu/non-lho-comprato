@@ -2,25 +2,26 @@
 
 import { LoginPanel } from "@/src/components/auth/login-panel";
 import { InstallButton } from "@/src/components/pwa/install-button";
+import { TrustCopy } from "@/src/components/shared/trust-copy";
 
 const steps = [
-  "Segna ciò che non hai comprato",
-  "L'app calcola il risparmio reale",
-  "Guarda crescere i risultati",
+  "Registra una spesa",
+  "Aggiungi il confronto solo quando serve",
+  "Vedi spesa e risparmio insieme",
 ] as const;
 
 const benefitCards = [
   {
-    title: "Più consapevolezza",
-    description: "Capisci dove spariscono davvero i soldi.",
+    title: "Spese chiare",
+    description: "Capisci subito dove va il tuo denaro.",
   },
   {
-    title: "Obiettivi condivisi",
-    description: "Perfetto per coppie e spese condivise.",
+    title: "Risparmio visibile",
+    description: "Quando eviti un acquisto, il vantaggio resta in vista.",
   },
   {
-    title: "Motivazione reale",
-    description: "Vedere crescere il totale ti fa continuare.",
+    title: "Obiettivi utili",
+    description: "Il risparmio può alimentare le tue mete.",
   },
 ] as const;
 
@@ -36,21 +37,21 @@ export function PublicLanding() {
 
           <div className="space-y-3">
             <p className="font-serif italic text-[18px] leading-none text-muted-foreground sm:text-[20px]">
-              traccia i soldi che
+              prima le spese,
             </p>
             <h1
               className="font-bold leading-[0.95] tracking-[-0.045em] text-foreground"
               style={{ fontSize: "clamp(52px, 9vw, 80px)" }}
             >
-              <span className="text-accent">non</span> hai
+              poi il risparmio
               <br />
-              speso.
+              <span className="text-accent">resta visibile.</span>
             </h1>
           </div>
 
           <p className="max-w-xl text-[16px] leading-7 text-muted-foreground">
-            Segna il caffè saltato, la delivery evitata o l&apos;acquisto rimandato.
-            Vedrai il risparmio reale crescere in euro, non in sensazioni.
+            Registra quello che spendi ogni giorno. Se un acquisto viene evitato o
+            confrontato, il risparmio si aggiunge senza spostare il focus.
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -63,9 +64,10 @@ export function PublicLanding() {
             </div>
           </div>
 
-          <p className="text-[11px] tracking-[0.05em]" style={{ color: "var(--text-3)" }}>
-            Cifratura end-to-end · Niente pubblicità
-          </p>
+          <TrustCopy
+            className="text-[11px] tracking-[0.05em]"
+            style={{ color: "var(--text-3)" }}
+          />
         </div>
 
         {/* Mock dashboard card */}
@@ -74,7 +76,7 @@ export function PublicLanding() {
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-1">
                 <p className="text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-                  Tenuto questo mese
+                  Speso questo mese
                 </p>
                 <p className="font-num text-[48px] font-bold leading-none tracking-[-0.05em] text-accent sm:text-[56px]">
                   247
@@ -82,15 +84,15 @@ export function PublicLanding() {
                 </p>
               </div>
               <div className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-[11px] font-semibold text-accent">
-                +18%
+                +18% risparmiato
               </div>
             </div>
 
             <div className="mt-5 space-y-2.5">
               {[
-                { label: "Caffè evitati", sub: "questo mese", value: "18" },
-                { label: "Delivery saltate", sub: "questo mese", value: "6" },
-                { label: "Acquisti rimandati", sub: "questo mese", value: "4" },
+                { label: "Spese registrate", sub: "questo mese", value: "18" },
+                { label: "Acquisti evitati", sub: "quando serve", value: "6" },
+                { label: "Confronti aggiunti", sub: "solo se utili", value: "4" },
               ].map(({ label, sub, value }) => (
                 <div
                   key={label}
@@ -107,7 +109,7 @@ export function PublicLanding() {
 
             <div className="mt-5 rounded-[14px] border border-border bg-surface-muted px-4 py-3">
               <div className="flex items-center justify-between text-[12px]">
-                <span className="text-muted-foreground">Obiettivo mensile</span>
+                <span className="text-muted-foreground">Obiettivo del mese</span>
                 <span className="font-num font-semibold text-foreground">320€</span>
               </div>
               <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-surface">
@@ -169,10 +171,14 @@ export function PublicLanding() {
               className="font-bold tracking-[-0.03em] text-foreground"
               style={{ fontSize: "clamp(24px, 4vw, 36px)" }}
             >
-              Inizia a vedere quanto
+              Inizia a tracciare
               <br />
-              risparmi davvero.
+              spese e risparmio.
             </h2>
+            <p className="max-w-xl text-[14px] leading-6 text-muted-foreground">
+              Il totale speso resta al centro. Il risparmio entra come valore
+              aggiunto, quando c&apos;è.
+            </p>
           </div>
 
           <LoginPanel compact providers={["google"]} className="w-full sm:w-auto sm:min-w-[260px]" />

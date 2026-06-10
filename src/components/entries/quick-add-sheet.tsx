@@ -3,14 +3,15 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { format } from "date-fns";
 import {
   ArrowRight,
   Check,
   ChevronLeft,
+  CircleOff,
   LockKeyhole,
   Loader2,
   Plus,
+  Receipt,
   SlidersHorizontal,
   Sparkles,
   Users2,
@@ -39,6 +40,7 @@ import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { getCategoryIdentity } from "@/src/lib/category-identity";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
 import { ExpenseSuggestionCard } from "@/src/components/entries/expense-suggestion-card";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { getCurrentWorkspaceMembersAction } from "@/src/actions/workspace";
 import {
   getDefaultBeneficiaryUserIds,
@@ -49,7 +51,9 @@ import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-
 import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
-import { shiftRomeDateKey } from "@/src/lib/rome-dates";
+import { getRomeTodayDateKey, shiftRomeDateKey } from "@/src/lib/rome-dates";
+import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
+import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
 
 type CategoryOption = {
   id: string;
@@ -82,8 +86,8 @@ type QuickAddState = {
 type QuickAddDraft = {
   title: string;
   categoryId: string;
-  realCost: string;
-  alternativeCost: string;
+  amountSpent: string;
+  comparisonAmount: string;
   paidByUserId: string;
   beneficiaryUserIds: string[];
   date: string;
@@ -99,7 +103,7 @@ const presets: QuickAddPreset[] = [
   {
     id: "coffee",
     emoji: "☕",
-    title: "Caffè evitato",
+    title: "Caffè",
     categorySlug: "caffe",
     amount: 4,
     rangeLabel: "2 - 5 €",
@@ -107,7 +111,7 @@ const presets: QuickAddPreset[] = [
   {
     id: "delivery",
     emoji: "🍔",
-    title: "Delivery saltata",
+    title: "Delivery",
     categorySlug: "delivery",
     amount: 24,
     rangeLabel: "15 - 30 €",
@@ -116,15 +120,16 @@ const presets: QuickAddPreset[] = [
   {
     id: "grocery",
     emoji: "🛒",
-    title: "Spesa intelligente",
+    title: "Spesa",
     categorySlug: "spesa",
     amount: 28,
     rangeLabel: "20 - 45 €",
+    shared: true,
   },
   {
     id: "smoke",
     emoji: "🚬",
-    title: "Sigarette non comprate",
+    title: "Sigarette",
     categorySlug: "salute",
     amount: 12,
     rangeLabel: "8 - 15 €",
@@ -132,7 +137,7 @@ const presets: QuickAddPreset[] = [
   {
     id: "shopping",
     emoji: "🛍️",
-    title: "Acquisto evitato",
+    title: "Shopping",
     categorySlug: "shopping",
     amount: 36,
     rangeLabel: "20 - 60 €",
@@ -140,7 +145,7 @@ const presets: QuickAddPreset[] = [
 ];
 
 function getTodayLocal() {
-  return format(new Date(), "yyyy-MM-dd");
+  return getRomeTodayDateKey();
 }
 
 function getInitialDraft(
@@ -152,8 +157,8 @@ function getInitialDraft(
   return {
     title: "",
     categoryId: "",
-    realCost: "",
-    alternativeCost: "",
+    amountSpent: "",
+    comparisonAmount: "",
     paidByUserId,
     beneficiaryUserIds: getDefaultBeneficiaryUserIds(members, paidByUserId),
     date: getTodayLocal(),
@@ -164,8 +169,19 @@ function getMoneyValue(amount: number) {
   return amount.toFixed(2);
 }
 
-function getSearchHref(draft: QuickAddDraft, returnTo?: string) {
+function getSearchHref(
+  draft: QuickAddDraft,
+  mode: EntryMode,
+  savingContext: EntrySavingContext,
+  returnTo?: string,
+) {
   const params = new URLSearchParams();
+  const hiddenAmountSpent =
+    mode === "spent" ? toHiddenMoneyValue(draft.amountSpent) : "";
+  const hiddenComparisonAmount =
+    mode === "avoided" || savingContext === "comparison"
+      ? toHiddenMoneyValue(draft.comparisonAmount)
+      : "";
 
   if (draft.title.trim()) {
     params.set("title", draft.title.trim());
@@ -175,12 +191,21 @@ function getSearchHref(draft: QuickAddDraft, returnTo?: string) {
     params.set("categoryId", draft.categoryId);
   }
 
-  if (draft.realCost) {
-    params.set("realCost", draft.realCost);
+  params.set("mode", mode);
+  params.set("savingContext", savingContext);
+
+  if (hiddenAmountSpent) {
+    params.set("amountSpent", hiddenAmountSpent);
+    params.set("realCost", hiddenAmountSpent);
   }
 
-  if (draft.alternativeCost) {
-    params.set("alternativeCost", draft.alternativeCost);
+  if (hiddenComparisonAmount) {
+    params.set("comparisonAmount", hiddenComparisonAmount);
+    params.set("alternativeCost", hiddenComparisonAmount);
+  }
+
+  if (mode === "avoided") {
+    params.set("realCost", "0.00");
   }
 
   if (draft.paidByUserId) {
@@ -237,8 +262,9 @@ export function QuickAddSheet({
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">(
     "idle",
   );
-  const [savingsModeEnabled, setSavingsModeEnabled] = useState(false);
-  const [alternativeCostTouched, setAlternativeCostTouched] = useState(false);
+  const [mode, setMode] = useState<EntryMode>("spent");
+  const [comparisonEnabled, setComparisonEnabled] = useState(false);
+  const [comparisonAmountTouched, setComparisonAmountTouched] = useState(false);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
   });
@@ -285,23 +311,35 @@ export function QuickAddSheet({
     title: draft.title,
     categoryId: draft.categoryId,
     workspaceId: workspace.id,
-    realCost: draft.realCost,
+    amountSpent: draft.amountSpent,
     paidByUserId: draft.paidByUserId,
     beneficiaryUserIds: draft.beneficiaryUserIds,
     enabled:
-      !savingsModeEnabled &&
-      !alternativeCostTouched &&
-      draft.realCost.trim().length > 0,
+      mode === "spent" &&
+      !comparisonEnabled &&
+      !comparisonAmountTouched &&
+      draft.amountSpent.trim().length > 0,
   });
   const showSuggestionLookupState = expenseSuggestion.isLoading;
   const todayKey = getTodayLocal();
   const yesterdayKey = shiftRomeDateKey(todayKey, -1);
-  const resolvedAlternativeCost =
-    savingsModeEnabled && draft.alternativeCost.trim()
-      ? draft.alternativeCost
-      : draft.realCost;
-
-  const fullFormHref = useMemo(() => getSearchHref(draft, pathname), [draft, pathname]);
+  const savingContext: EntrySavingContext =
+    mode === "avoided" ? "comparison" : comparisonEnabled ? "comparison" : "none";
+  const hiddenAmountSpent =
+    mode === "spent" ? toHiddenMoneyValue(draft.amountSpent) : "";
+  const hiddenComparisonAmount =
+    mode === "avoided" || comparisonEnabled
+      ? toHiddenMoneyValue(draft.comparisonAmount)
+      : "";
+  const fullFormHref = useMemo(
+    () => getSearchHref(draft, mode, savingContext, pathname),
+    [draft, mode, pathname, savingContext],
+  );
+  const suggestion =
+    expenseSuggestion.suggestion &&
+    expenseSuggestion.suggestion.confidence >= 0.75
+      ? expenseSuggestion.suggestion
+      : null;
 
   useEffect(() => {
     let active = true;
@@ -381,6 +419,9 @@ export function QuickAddSheet({
       setOpen(false);
       setActivePreset(null);
       hasDraftBeenEditedRef.current = false;
+      setMode("spent");
+      setComparisonEnabled(false);
+      setComparisonAmountTouched(false);
       setDraft(getInitialDraft(activeMembers, currentUserId));
 
       if (!showedCelebration) {
@@ -434,24 +475,45 @@ export function QuickAddSheet({
     setDraft({
       title: preset.title,
       categoryId: resolveCategoryId(preset.categorySlug),
-      realCost: "0.00",
-      alternativeCost: getMoneyValue(preset.amount),
+      amountSpent: mode === "spent" ? getMoneyValue(preset.amount) : "",
+      comparisonAmount: mode === "avoided" ? getMoneyValue(preset.amount) : "",
       paidByUserId,
       beneficiaryUserIds,
       date: getTodayLocal(),
     });
-    setSavingsModeEnabled(true);
-    setAlternativeCostTouched(true);
+    setComparisonEnabled(false);
+    setComparisonAmountTouched(mode === "avoided");
     focusTitleSoon();
   }
 
   function personalize() {
     hasDraftBeenEditedRef.current = true;
     setActivePreset("custom");
-    setSavingsModeEnabled(false);
-    setAlternativeCostTouched(false);
+    setComparisonEnabled(false);
+    setComparisonAmountTouched(false);
     setDraft(getInitialDraft(activeMembers, currentUserId));
     focusTitleSoon();
+  }
+
+  function handleModeChange(nextMode: EntryMode) {
+    hasDraftBeenEditedRef.current = true;
+    setMode(nextMode);
+    setActivePreset("custom");
+
+    if (nextMode === "avoided") {
+      setComparisonEnabled(false);
+      setComparisonAmountTouched(false);
+      setDraft((current) => ({
+        ...current,
+        comparisonAmount: current.comparisonAmount || current.amountSpent,
+      }));
+      return;
+    }
+
+    setDraft((current) => ({
+      ...current,
+      amountSpent: current.amountSpent || current.comparisonAmount,
+    }));
   }
 
   const handlePaidByUserIdChange = useCallback((value: string) => {
@@ -470,28 +532,6 @@ export function QuickAddSheet({
     }));
   }, []);
 
-  useEffect(() => {
-    if (
-      !expenseSuggestion.suggestion ||
-      expenseSuggestion.suggestion.confidence < 0.75 ||
-      savingsModeEnabled ||
-      alternativeCostTouched
-    ) {
-      return;
-    }
-
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSavingsModeEnabled(true);
-    setDraft((current) => ({
-      ...current,
-      alternativeCost: expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
-    }));
-  }, [
-    expenseSuggestion.suggestion,
-    savingsModeEnabled,
-    alternativeCostTouched,
-  ]);
-
   return (
     <>
       {overlay}
@@ -502,8 +542,9 @@ export function QuickAddSheet({
 
         if (!nextOpen) {
           setActivePreset(null);
-          setSavingsModeEnabled(false);
-          setAlternativeCostTouched(false);
+          setMode("spent");
+          setComparisonEnabled(false);
+          setComparisonAmountTouched(false);
           hasDraftBeenEditedRef.current = false;
           setDraft(getInitialDraft(activeMembers, currentUserId));
         }
@@ -595,6 +636,39 @@ export function QuickAddSheet({
           </div>
 
           <div className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
+            <div className="sm:col-span-2">
+              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background p-1">
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("spent")}
+                  className={cn(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
+                    mode === "spent"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground hover:bg-surface-muted",
+                  )}
+                  aria-pressed={mode === "spent"}
+                >
+                  <Receipt className="size-4" aria-hidden="true" />
+                  Ho speso
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleModeChange("avoided")}
+                  className={cn(
+                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
+                    mode === "avoided"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground hover:bg-surface-muted",
+                  )}
+                  aria-pressed={mode === "avoided"}
+                >
+                  <CircleOff className="size-4" aria-hidden="true" />
+                  Non l&apos;ho comprato
+                </button>
+              </div>
+            </div>
+
             {presets.map((preset, index) => {
               const isActive = activePreset === preset.id;
               const presetIdentity = getCategoryIdentity({
@@ -657,7 +731,7 @@ export function QuickAddSheet({
                   Personalizza
                 </span>
                 <span className="block text-xs leading-4 text-muted-text">
-                  Campi rapidi e selezione libera
+                  Compila titolo, importo e confronto se serve
                 </span>
               </span>
 
@@ -669,8 +743,19 @@ export function QuickAddSheet({
             action={formAction}
             className="min-w-0 border-t border-border/70 px-4 py-4 sm:px-6"
           >
+            <input type="hidden" name="mode" value={mode} />
+            <input type="hidden" name="savingContext" value={savingContext} />
+            {hiddenAmountSpent ? (
+              <input type="hidden" name="amountSpent" value={hiddenAmountSpent} />
+            ) : null}
+            {hiddenComparisonAmount ? (
+              <input
+                type="hidden"
+                name="comparisonAmount"
+                value={hiddenComparisonAmount}
+              />
+            ) : null}
             <input type="hidden" name="date" value={draft.date} />
-            <input type="hidden" name="alternativeCost" value={resolvedAlternativeCost} />
 
             <div className="min-w-0 space-y-4">
               {state.message ? (
@@ -706,13 +791,11 @@ export function QuickAddSheet({
                       title: event.target.value,
                     }));
                   }}
-                  placeholder="Caffè evitato"
+                  placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
                   autoComplete="off"
                   aria-invalid={Boolean(state.errors?.title)}
                 />
-                {state.errors?.title ? (
-                  <p className="text-sm text-destructive">{state.errors.title}</p>
-                ) : null}
+                <FormFieldError message={state.errors?.title} className="text-sm" />
               </div>
 
               <div className="grid min-w-0 gap-3 sm:grid-cols-[1.15fr_0.85fr]">
@@ -744,36 +827,49 @@ export function QuickAddSheet({
                       ))}
                     </SelectContent>
                   </Select>
-                  {state.errors?.categoryId ? (
-                    <p className="text-sm text-destructive">
-                      {state.errors.categoryId}
-                    </p>
-                  ) : null}
+                  <FormFieldError
+                    message={state.errors?.categoryId}
+                    className="text-sm"
+                  />
                 </div>
 
                 <div className="min-w-0 space-y-2">
-                  <Label htmlFor="quick-realCost">Quanto hai speso</Label>
+                  <Label htmlFor="quick-amount">
+                    {mode === "avoided" ? "Quanto avresti speso" : "Quanto hai speso"}
+                  </Label>
                   <Input
-                    id="quick-realCost"
-                    name="realCost"
+                    id="quick-amount"
                     type="number"
                     inputMode="decimal"
                     min="0"
                     step="0.01"
-                    value={draft.realCost}
+                    value={
+                      mode === "avoided" ? draft.comparisonAmount : draft.amountSpent
+                    }
                     onChange={(event) => {
                       hasDraftBeenEditedRef.current = true;
                       setDraft((current) => ({
                         ...current,
-                        realCost: event.target.value,
+                        ...(mode === "avoided"
+                          ? { comparisonAmount: event.target.value }
+                          : { amountSpent: event.target.value }),
                       }));
                     }}
                     placeholder="2.00"
-                    aria-invalid={Boolean(state.errors?.realCost)}
+                    aria-invalid={Boolean(
+                      mode === "avoided"
+                        ? state.errors?.comparisonAmount
+                        : state.errors?.amountSpent,
+                    )}
                   />
-                  {state.errors?.realCost ? (
-                    <p className="text-sm text-destructive">{state.errors.realCost}</p>
-                  ) : null}
+                  <FormFieldError
+                    message={
+                      mode === "avoided"
+                        ? state.errors?.comparisonAmount
+                        : state.errors?.amountSpent
+                    }
+                    className="text-sm"
+                  />
                 </div>
               </div>
 
@@ -820,83 +916,90 @@ export function QuickAddSheet({
                 </div>
               </div>
 
-              <div className="min-w-0 space-y-2">
-                <button
-                  type="button"
-                  className="w-full text-left text-[13px] text-muted-text transition-colors hover:text-foreground"
-                  onClick={() => {
-                    setSavingsModeEnabled((current) => {
-                      if (current) {
-                        return false;
-                      }
+              {mode === "spent" ? (
+                <div className="min-w-0 space-y-2">
+                  <button
+                    type="button"
+                    className="w-full text-left text-[13px] text-muted-text transition-colors hover:text-foreground"
+                    onClick={() => {
+                      setComparisonEnabled((current) => {
+                        if (current) {
+                          return false;
+                        }
 
-                      setDraft((prev) => ({
-                        ...prev,
-                        alternativeCost: prev.alternativeCost || prev.realCost,
-                      }));
-                      return true;
-                    });
-                  }}
-                >
-                  {savingsModeEnabled
-                    ? "Nascondi risparmio"
-                    : "Ho risparmiato qualcosa?"}
-                </button>
-
-                {savingsModeEnabled ? (
-                  <>
-                    <Label htmlFor="quick-alternativeCost">Quanto avresti speso</Label>
-                    <Input
-                      id="quick-alternativeCost"
-                      type="number"
-                      inputMode="decimal"
-                      min="0"
-                      step="0.01"
-                      value={draft.alternativeCost}
-                      onChange={(event) => {
-                        hasDraftBeenEditedRef.current = true;
-                        setAlternativeCostTouched(true);
-                        setDraft((current) => ({
-                          ...current,
-                          alternativeCost: event.target.value,
+                        setDraft((prev) => ({
+                          ...prev,
+                          comparisonAmount: prev.comparisonAmount || prev.amountSpent,
                         }));
-                      }}
-                      placeholder="4.00"
-                      aria-invalid={Boolean(state.errors?.alternativeCost)}
-                    />
-                    {state.errors?.alternativeCost ? (
-                      <p className="text-sm text-destructive">
-                        {state.errors.alternativeCost}
-                      </p>
-                    ) : null}
-                  </>
-                ) : null}
-                {showSuggestionLookupState ? (
-                  <p
-                    className="flex items-center gap-2 text-xs leading-5 text-muted-text"
-                    aria-live="polite"
+                        return true;
+                      });
+                    }}
                   >
-                    <Loader2
-                      className="size-3.5 animate-spin motion-reduce:animate-none"
-                      aria-hidden="true"
-                    />
-                    Cerco un suggerimento…
-                  </p>
-                ) : null}
-              </div>
+                    {comparisonEnabled
+                      ? "Nascondi confronto"
+                      : "Aggiungi confronto"}
+                  </button>
 
-              {expenseSuggestion.suggestion ? (
+                  {comparisonEnabled ? (
+                    <>
+                      <Label htmlFor="quick-comparisonAmount">
+                        Quanto sarebbe costato
+                      </Label>
+                      <Input
+                        id="quick-comparisonAmount"
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        value={draft.comparisonAmount}
+                        onChange={(event) => {
+                          hasDraftBeenEditedRef.current = true;
+                          setComparisonAmountTouched(true);
+                          setDraft((current) => ({
+                            ...current,
+                            comparisonAmount: event.target.value,
+                          }));
+                        }}
+                        placeholder="4.00"
+                        aria-invalid={Boolean(state.errors?.comparisonAmount)}
+                      />
+                      <FormFieldError
+                        message={state.errors?.comparisonAmount}
+                        className="text-sm"
+                      />
+                    </>
+                  ) : null}
+                  {showSuggestionLookupState ? (
+                    <p
+                      className="flex items-center gap-2 text-xs leading-5 text-muted-text"
+                      aria-live="polite"
+                    >
+                      <Loader2
+                        className="size-3.5 animate-spin motion-reduce:animate-none"
+                        aria-hidden="true"
+                      />
+                      Cerco un confronto utile…
+                    </p>
+                  ) : null}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-border/70 bg-surface-muted/60 px-4 py-3 text-sm text-muted-text">
+                  Qui registri una spesa evitata. Se vuoi solo segnare una spesa normale,
+                  torna su <span className="font-medium text-foreground">Ho speso</span>.
+                </div>
+              )}
+
+              {suggestion ? (
                 <ExpenseSuggestionCard
                   className="mt-4"
-                  suggestion={expenseSuggestion.suggestion}
+                  suggestion={suggestion}
                   onApply={() => {
                     hasDraftBeenEditedRef.current = true;
-                    setSavingsModeEnabled(true);
-                    setAlternativeCostTouched(false);
+                    setComparisonEnabled(true);
+                    setComparisonAmountTouched(true);
                     setDraft((current) => ({
                       ...current,
-                      alternativeCost:
-                        expenseSuggestion.suggestion?.alternativeCost.toFixed(2) ?? "",
+                      comparisonAmount: suggestion.alternativeCost.toFixed(2),
                     }));
                   }}
                 />
@@ -929,7 +1032,11 @@ export function QuickAddSheet({
                   activeMembers.length === 0 ||
                   !draft.title.trim() ||
                   !draft.categoryId.trim() ||
-                  !draft.realCost.trim()
+                  (mode === "avoided"
+                    ? hiddenComparisonAmount === "" || hiddenComparisonAmount === "0.00"
+                    : hiddenAmountSpent === "" ||
+                      hiddenAmountSpent === "0.00" ||
+                      (comparisonEnabled && hiddenComparisonAmount === ""))
                 }
               >
                 {pending ? "Salvataggio..." : "Salva"}

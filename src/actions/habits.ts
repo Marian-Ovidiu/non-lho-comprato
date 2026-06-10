@@ -3,11 +3,18 @@
 import { revalidatePath } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import { calculateEntryMoney } from "@/src/lib/entry-domain";
+import { upsertDefaultCategoryForWorkspace } from "@/src/features/categories/repository";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
 import { syncHabitEntryPersonColumns } from "@/src/lib/entry-person-sync";
+import {
+  getRomeDayRangeForDateKey,
+  getRomeIsoWeekday,
+  getRomeTodayDateKey,
+} from "@/src/lib/rome-dates";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
@@ -50,6 +57,8 @@ const habitOccurrenceEntrySelect = {
   realCost: true,
   alternativeCost: true,
   savedAmount: true,
+  mode: true,
+  savingContext: true,
   source: true,
 } as const;
 
@@ -114,6 +123,8 @@ type TodayHabitOccurrence = {
     realCost: number;
     alternativeCost: number;
     savedAmount: number;
+    mode: "spent" | "avoided";
+    savingContext: "none" | "comparison";
     source: string;
   } | null;
 };
@@ -191,6 +202,8 @@ function serializeTodayHabitOccurrence(
       realCost: unknown;
       alternativeCost: unknown;
       savedAmount: unknown;
+      mode: "spent" | "avoided";
+      savingContext: "none" | "comparison";
       source: string;
     } | null;
   },
@@ -215,6 +228,8 @@ function serializeTodayHabitOccurrence(
           realCost: toNumber(occurrence.entry.realCost),
           alternativeCost: toNumber(occurrence.entry.alternativeCost),
           savedAmount: toNumber(occurrence.entry.savedAmount),
+          mode: occurrence.entry.mode,
+          savingContext: occurrence.entry.savingContext,
           source: occurrence.entry.source,
         }
       : null,
@@ -286,21 +301,16 @@ function toDecimalString(value: number): string {
   return value.toFixed(2);
 }
 
-function toLocalMidnight(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-}
-
 function getTodayStart(): Date {
-  return toLocalMidnight(new Date());
+  return getTodayRomeDayRange().start;
 }
 
-function getTomorrowStart(): Date {
-  const today = getTodayStart();
-  return new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0, 0);
+function getTodayRomeDayRange(): { start: Date; end: Date } {
+  return getRomeDayRangeForDateKey(getRomeTodayDateKey());
 }
 
-function getLocalIsoWeekday(date: Date): number {
-  return ((date.getDay() + 6) % 7) + 1;
+function getTodayRomeIsoWeekday(): number {
+  return getRomeIsoWeekday(new Date());
 }
 
 function normalizeActiveDays(values: number[]): number[] {
@@ -442,22 +452,11 @@ async function resolveCategory(categoryId: string, workspaceId: string) {
     );
 
     if (fallbackCategory) {
-      category = await prisma.category.upsert({
-        where: { slug: fallbackCategory.slug },
-        update: {
-          name: fallbackCategory.name,
-          icon: fallbackCategory.icon,
-          color: fallbackCategory.color,
-          workspaceId,
-        },
-        create: {
-          name: fallbackCategory.name,
-          slug: fallbackCategory.slug,
-          icon: fallbackCategory.icon,
-          color: fallbackCategory.color,
-          workspaceId,
-        },
-      });
+      category = await upsertDefaultCategoryForWorkspace(
+        prisma,
+        workspaceId,
+        fallbackCategory,
+      );
     }
   }
 
@@ -474,6 +473,23 @@ function buildEntryDataForOccurrence(
   },
 ) {
   const amount = Number(occurrence.habit.amount);
+  const money =
+    status === "spent"
+      ? calculateEntryMoney({
+          mode: "spent",
+          savingContext: "none",
+          amountSpent: amount,
+        })
+      : status === "avoided"
+        ? calculateEntryMoney({
+            mode: "avoided",
+            comparisonAmount: amount,
+          })
+        : calculateEntryMoney({
+            mode: "spent",
+            savingContext: "none",
+            amountSpent: 0,
+          });
   const { person, paidBy, paidByUserId, beneficiaryUserIds } =
     syncHabitEntryPersonColumns({
       targetScope: occurrence.habit.targetScope,
@@ -498,9 +514,11 @@ function buildEntryDataForOccurrence(
       ...sharedFields,
       title: occurrence.habit.name,
       categoryId: occurrence.habit.categoryId,
-      realCost: toDecimalString(amount),
-      alternativeCost: toDecimalString(amount),
-      savedAmount: toDecimalString(0),
+      realCost: toDecimalString(money.realCost),
+      alternativeCost: toDecimalString(money.alternativeCost),
+      savedAmount: toDecimalString(money.savedAmount),
+      mode: money.mode,
+      savingContext: money.savingContext,
       date: occurrence.date,
       note: null,
       source: "habit" as const,
@@ -513,9 +531,11 @@ function buildEntryDataForOccurrence(
       ...sharedFields,
       title: occurrence.habit.name,
       categoryId: occurrence.habit.categoryId,
-      realCost: toDecimalString(0),
-      alternativeCost: toDecimalString(amount),
-      savedAmount: toDecimalString(amount),
+      realCost: toDecimalString(money.realCost),
+      alternativeCost: toDecimalString(money.alternativeCost),
+      savedAmount: toDecimalString(money.savedAmount),
+      mode: money.mode,
+      savingContext: money.savingContext,
       date: occurrence.date,
       note: null,
       source: "habit" as const,
@@ -527,9 +547,11 @@ function buildEntryDataForOccurrence(
     ...sharedFields,
     title: occurrence.habit.name,
     categoryId: occurrence.habit.categoryId,
-    realCost: toDecimalString(0),
-    alternativeCost: toDecimalString(0),
-    savedAmount: toDecimalString(0),
+    realCost: toDecimalString(money.realCost),
+    alternativeCost: toDecimalString(money.alternativeCost),
+    savedAmount: toDecimalString(money.savedAmount),
+    mode: money.mode,
+    savingContext: money.savingContext,
     date: occurrence.date,
     note: null,
     source: "habit" as const,
@@ -556,7 +578,7 @@ async function syncOccurrenceStatus(
   if (!id) {
     return {
       success: false,
-      message: "ID abitudine non valido",
+      message: "ID ricorrente non valido",
     };
   }
 
@@ -576,7 +598,7 @@ async function syncOccurrenceStatus(
       };
     }
 
-    await requireWorkspaceAccessForRecord(occurrence, "Occorrenza abitudine");
+    await requireWorkspaceAccessForRecord(occurrence, "Occorrenza ricorrente");
     logStep("access-check");
 
     const [currentUser, workspaceId, members, workspaceWhere] = await Promise.all([
@@ -629,16 +651,16 @@ async function syncOccurrenceStatus(
       success: true,
       message:
         status === "spent"
-          ? "Segnata come spesa"
+          ? "Segnata come pagata"
           : status === "avoided"
             ? "Segnata come evitata"
-            : "Segnata come saltata",
+            : "Segnata come non applicabile",
     };
   } catch (error) {
     console.error("Failed to update habit occurrence:", error);
     return {
       success: false,
-      message: "Non riesco ad aggiornare l'abitudine adesso. Riprova tra poco.",
+      message: "Non riesco ad aggiornare la ricorrente adesso. Riprova tra poco.",
     };
   }
 }
@@ -681,13 +703,13 @@ export async function createHabit(
   }
 
   if (targetScopeInput !== null && !targetScopeInput) {
-    errors.targetScope = "Seleziona per chi vale l'abitudine";
+    errors.targetScope = "Seleziona per chi vale la ricorrente";
   } else if (
     targetScopeInput !== null &&
     targetScopeInput !== "self" &&
     targetScopeInput !== "shared"
   ) {
-    errors.targetScope = "Seleziona per chi vale l'abitudine";
+    errors.targetScope = "Seleziona per chi vale la ricorrente";
   }
 
   if (
@@ -767,14 +789,14 @@ export async function createHabit(
 
     return {
       success: true,
-      message: "Abitudine salvata con successo",
+      message: "Ricorrente salvata con successo",
     };
   } catch (error) {
     console.error("Failed to create habit:", error);
     return {
       success: false,
       message:
-        "Non riesco a salvare l'abitudine adesso. Controlla il database e riprova tra poco.",
+        "Non riesco a salvare la ricorrente adesso. Controlla il database e riprova tra poco.",
     };
   }
 }
@@ -822,7 +844,7 @@ export async function deleteHabit(
   if (!id) {
     return {
       success: false,
-      message: "ID abitudine non valido",
+      message: "ID ricorrente non valido",
     };
   }
 
@@ -845,11 +867,11 @@ export async function deleteHabit(
     if (!habit) {
       return {
         success: false,
-        message: "Abitudine non trovata",
+        message: "Ricorrente non trovata",
       };
     }
 
-    await requireWorkspaceAccessForRecord(habit, "Abitudine");
+    await requireWorkspaceAccessForRecord(habit, "Ricorrente");
 
     await prisma.$transaction(async (tx) => {
       await applyHabitDeletionToLinkedEntries(tx, id, mode);
@@ -865,14 +887,14 @@ export async function deleteHabit(
       success: true,
       message:
         mode === "habit_and_entries"
-          ? "Abitudine e movimenti collegati eliminati"
-          : "Abitudine eliminata. I movimenti generati restano nel registro.",
+          ? "Ricorrente e movimenti collegati eliminati"
+          : "Ricorrente eliminata. I movimenti generati restano nel registro.",
     };
   } catch (error) {
     console.error("Failed to delete habit:", error);
     return {
       success: false,
-      message: "Non riesco a eliminare l'abitudine adesso. Riprova tra poco.",
+      message: "Non riesco a eliminare la ricorrente adesso. Riprova tra poco.",
     };
   }
 }
@@ -887,7 +909,7 @@ export async function updateHabit(
   if (!id) {
     return {
       success: false,
-      message: "ID abitudine non valido",
+      message: "ID ricorrente non valido",
     };
   }
 
@@ -941,11 +963,11 @@ export async function updateHabit(
     if (!existingHabit) {
       return {
         success: false,
-        message: "Abitudine non trovata",
+        message: "Ricorrente non trovata",
       };
     }
 
-    await requireWorkspaceAccessForRecord(existingHabit, "Abitudine");
+    await requireWorkspaceAccessForRecord(existingHabit, "Ricorrente");
 
     const [workspaceId, currentUser, members] = await Promise.all([
       getCurrentWorkspaceId(),
@@ -989,7 +1011,7 @@ export async function updateHabit(
       targetScopeInput !== "self" &&
       targetScopeInput !== "shared"
     ) {
-      errors.targetScope = "Seleziona per chi vale l'abitudine";
+      errors.targetScope = "Seleziona per chi vale la ricorrente";
     }
 
     if (
@@ -1036,14 +1058,14 @@ export async function updateHabit(
 
     return {
       success: true,
-      message: "Abitudine aggiornata con successo",
+      message: "Ricorrente aggiornata con successo",
     };
   } catch (error) {
     console.error("Failed to update habit:", error);
     return {
       success: false,
       message:
-        "Non riesco ad aggiornare l'abitudine adesso. Controlla il database e riprova tra poco.",
+        "Non riesco ad aggiornare la ricorrente adesso. Controlla il database e riprova tra poco.",
     };
   }
 }
@@ -1120,7 +1142,7 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
       },
     });
 
-    const todayWeekday = getLocalIsoWeekday(todayStart);
+    const todayWeekday = getTodayRomeIsoWeekday();
     const rows = habits.filter((habit) => {
       if (!Array.isArray(habit.activeDays)) {
         return false;
@@ -1158,8 +1180,7 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
 }
 
 export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]> {
-  const todayStart = getTodayStart();
-  const tomorrowStart = getTomorrowStart();
+  const todayRange = getTodayRomeDayRange();
 
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
@@ -1167,8 +1188,8 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
     const occurrences = await prisma.habitOccurrence.findMany({
       where: {
         date: {
-          gte: todayStart,
-          lt: tomorrowStart,
+          gte: todayRange.start,
+          lt: todayRange.end,
         },
         habit: {
           is: workspaceWhere,

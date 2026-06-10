@@ -14,7 +14,7 @@ export function CraftedMonthlyReportHeader({
   months,
   selectedMonth,
 }: CraftedMonthlyReportHeaderProps) {
-  const hero = splitCraftedAmount(report.overview?.totalSaved ?? 0);
+  const hero = splitCraftedAmount(report.overview?.totalRealSpent ?? 0);
   const monthLabel =
     months.find((month) => month.value === selectedMonth)?.label ?? "Mese";
 
@@ -29,7 +29,7 @@ export function CraftedMonthlyReportHeader({
       {report.hasData ? (
         <>
           <section className="px-5 py-6">
-            <Label className="mb-3 block">Tenuti nel mese</Label>
+            <Label className="mb-3 block">Speso nel mese</Label>
             <div className="flex items-start gap-1.5">
               <Mono className="text-[clamp(2.5rem,12vw,3.75rem)] font-semibold leading-[0.85] tracking-[-0.05em]">
                 {hero.whole}
@@ -40,8 +40,8 @@ export function CraftedMonthlyReportHeader({
           <StatTrio
             items={[
               {
-                label: "Speso",
-                value: formatCraftedCompact(report.overview?.totalRealSpent ?? 0),
+                label: "Evitato/risparmiato",
+                value: formatCraftedCompact(report.overview?.totalSaved ?? 0),
                 suffix: "€",
               },
               {

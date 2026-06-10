@@ -33,9 +33,24 @@ enum WorkspaceMemberRole {
   member
 }
 
+enum WorkspaceInviteType {
+  email
+  open_link
+}
+
 enum EntryVisibility {
   private
   workspace
+}
+
+enum EntryMode {
+  spent
+  avoided
+}
+
+enum EntrySavingContext {
+  none
+  comparison
 }
 
 enum HabitOccurrenceStatus {
@@ -47,10 +62,10 @@ enum HabitOccurrenceStatus {
 
 model Category {
   id           String        @id @default(cuid())
-  workspaceId  String?
-  workspace    Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
-  name         String        @unique
-  slug         String        @unique
+  workspaceId  String
+  workspace    Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  name         String
+  slug         String
   color        String?
   icon         String?
   entries      Entry[]
@@ -59,6 +74,8 @@ model Category {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
+  @@unique([workspaceId, slug])
+  @@unique([workspaceId, name])
   @@index([workspaceId])
 }
 
@@ -72,6 +89,8 @@ model Entry {
   realCost          Decimal          @db.Decimal(10, 2)
   alternativeCost   Decimal          @db.Decimal(10, 2)
   savedAmount       Decimal          @db.Decimal(10, 2)
+  mode              EntryMode          @default(spent)
+  savingContext     EntrySavingContext @default(none)
   date              DateTime
   isFirstEntryOfDay Boolean          @default(false)
   note              String?
@@ -92,6 +111,9 @@ model Entry {
   @@index([workspaceId])
   @@index([createdByUserId])
   @@index([paidByUserId])
+  @@index([workspaceId, date])
+  @@index([workspaceId, categoryId, date])
+  @@index([workspaceId, savedAmount, date])
 }
 
 model EntryBeneficiary {
@@ -231,17 +253,25 @@ model WorkspaceInvite {
   tokenHash         String     @unique
   workspaceId       String
   workspace         Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  type              WorkspaceInviteType @default(email)
   invitedEmail      String
+  role              WorkspaceMemberRole @default(member)
   createdByUserId   String?
   createdBy         User?      @relation("WorkspaceInviteCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
   acceptedByUserId  String?
   acceptedBy        User?      @relation("WorkspaceInviteAcceptedBy", fields: [acceptedByUserId], references: [id], onDelete: SetNull)
   acceptedAt        DateTime?
+  revokedAt         DateTime?
   expiresAt         DateTime
+  maxUses           Int        @default(1)
+  usedCount         Int        @default(0)
+  lastUsedAt        DateTime?
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
   @@index([workspaceId])
   @@index([invitedEmail])
   @@index([expiresAt])
+  @@index([workspaceId, expiresAt])
+  @@index([workspaceId, revokedAt])
 }

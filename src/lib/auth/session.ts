@@ -2,6 +2,8 @@ import { prisma } from "@/src/lib/prisma";
 import {
   ensureAppUserForAuthUser,
   getAccessibleWorkspacesForUserId,
+  getLegacyPrimaryUserId,
+  getLegacyWorkspaceId,
   resolveWorkspaceForAuthenticatedUser,
 } from "@/src/lib/auth/provisioning";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
@@ -17,8 +19,6 @@ import {
   logWorkspaceDebug,
 } from "@/src/lib/workspace-debug";
 
-const LEGACY_CURRENT_USER_ID = "legacy-marian";
-const LEGACY_CURRENT_WORKSPACE_ID = "legacy-marian-martina";
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
 
 function logPerformance(label: string, startedAt: number) {
@@ -124,7 +124,7 @@ export const getCurrentUser = cache(async () => {
   }
 
   const legacyUser = await prisma.user.findUnique({
-    where: { id: LEGACY_CURRENT_USER_ID },
+    where: { id: getLegacyPrimaryUserId() },
   });
 
   if (!legacyUser) {
@@ -189,7 +189,7 @@ export const getCurrentWorkspace = cache(async () => {
   }
 
   const workspace = await prisma.workspace.findUnique({
-    where: { id: LEGACY_CURRENT_WORKSPACE_ID },
+    where: { id: getLegacyWorkspaceId() },
   });
 
   if (!workspace) {

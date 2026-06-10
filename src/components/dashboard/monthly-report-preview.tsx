@@ -11,6 +11,7 @@ type MonthlyReportPreviewProps = {
     hasData: boolean;
     label: string;
     overview: {
+      totalRealSpent?: number;
       totalSaved: number;
     };
     bestCategory: {
@@ -29,7 +30,7 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
       <CardHeader className={spacing.cardHeader}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3">
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-2xl bg-accent text-background">
               {report?.hasData ? (
                 <Sparkles className="size-4" aria-hidden="true" />
               ) : (
@@ -64,10 +65,10 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Risparmiato
+                Speso
               </p>
               <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">
-                {formatMoney(report.overview.totalSaved)}
+                {formatMoney(report.overview.totalRealSpent ?? 0)}
               </p>
             </div>
 
@@ -82,10 +83,10 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
 
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Schivata top
+                Evitato / risparmio
               </p>
               <p className="mt-1 truncate text-base font-semibold text-foreground sm:text-lg">
-                {report.biggestSaving?.title ?? "Nessuna"}
+                {formatMoney(report.overview.totalSaved)}
               </p>
             </div>
           </div>

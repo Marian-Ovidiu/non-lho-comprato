@@ -1,12 +1,13 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useRef, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import { Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Label as CraftedLabel } from "@/components/crafted";
 import { createHabit } from "@/src/actions/habits";
 import { HabitScopeReminderFields } from "@/src/components/habits/habit-scope-reminder-fields";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/src/lib/haptics";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
@@ -33,11 +34,6 @@ const weekdayOptions = [
   { value: 6, label: "Sab" },
   { value: 7, label: "Dom" },
 ] as const;
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="mt-2 text-sm text-destructive">{message}</p>;
-}
 
 export function CraftedHabitForm({
   categories,
@@ -129,7 +125,7 @@ export function CraftedHabitForm({
           />
           <CraftedLabel>Nome</CraftedLabel>
         </div>
-        <FieldError message={state.errors?.name} />
+        <FormFieldError message={state.errors?.name} />
       </div>
 
       <div className="border-y border-line py-3">
@@ -148,7 +144,7 @@ export function CraftedHabitForm({
           </select>
           <CraftedLabel>Categoria</CraftedLabel>
         </div>
-        <FieldError message={state.errors?.categoryId} />
+        <FormFieldError message={state.errors?.categoryId} />
       </div>
 
       <div className="border-y border-line py-3">
@@ -164,7 +160,7 @@ export function CraftedHabitForm({
           />
           <CraftedLabel>Costo €</CraftedLabel>
         </div>
-        <FieldError message={state.errors?.amount} />
+        <FormFieldError message={state.errors?.amount} />
         <input type="hidden" name="defaultBehavior" value="spent" />
       </div>
 
@@ -214,7 +210,7 @@ export function CraftedHabitForm({
         {selectedLabels.length > 0 ? (
           <p className="mt-2 text-xs text-ink-3">{selectedLabels.join(", ")}</p>
         ) : null}
-        <FieldError message={state.errors?.activeDays} />
+        <FormFieldError message={state.errors?.activeDays} />
       </div>
 
       <button
@@ -228,7 +224,7 @@ export function CraftedHabitForm({
             Salvataggio…
           </>
         ) : (
-          "Salva abitudine"
+          "Salva ricorrente"
         )}
       </button>
     </form>

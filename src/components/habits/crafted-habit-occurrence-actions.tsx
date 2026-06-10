@@ -54,7 +54,7 @@ export function CraftedHabitOccurrenceActions({
         onStatusChange?.(nextStatus);
         setPendingStatus(null);
       } catch {
-        setFeedback("Non riesco ad aggiornare l'abitudine adesso. Riprova tra poco.");
+        setFeedback("Non riesco ad aggiornare la ricorrente adesso. Riprova tra poco.");
         setPendingStatus(null);
       }
     });
@@ -73,13 +73,15 @@ export function CraftedHabitOccurrenceActions({
 
   if (currentStatus === "spent") {
     return (
-      <span className="shrink-0 text-[12.5px] font-medium text-ink-3">Spesa</span>
+      <span className="shrink-0 text-[12.5px] font-medium text-ink-3">Pagata</span>
     );
   }
 
   if (currentStatus === "skipped") {
     return (
-      <span className="shrink-0 text-[12.5px] font-medium text-ink-3">Saltata</span>
+      <span className="shrink-0 text-[12.5px] font-medium text-ink-3">
+        Non applicabile
+      </span>
     );
   }
 
@@ -95,7 +97,7 @@ export function CraftedHabitOccurrenceActions({
           {pendingStatus === "spent" ? (
             <Loader2 className="size-3 animate-spin" aria-hidden="true" />
           ) : (
-            "Spesa"
+            "Pagata"
           )}
         </button>
         <button
@@ -110,7 +112,7 @@ export function CraftedHabitOccurrenceActions({
           {pendingStatus === "avoided" ? (
             <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
           ) : (
-            "Evita"
+            "Evitata"
           )}
         </button>
       </div>
@@ -120,7 +122,7 @@ export function CraftedHabitOccurrenceActions({
         onClick={() => runAction(markHabitOccurrenceSkipped, "skipped")}
         className="text-[10px] text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
       >
-        Salta
+        Non applicabile
       </button>
       {feedback ? (
         <p className="max-w-[12rem] text-right text-[10px] leading-4 text-destructive">

@@ -48,6 +48,7 @@ export default async function EntriesPage() {
       <CraftedEntriesHeader
         monthLabel={monthLabel}
         entriesCount={monthSummary?.entriesCount ?? 0}
+        totalRealSpent={monthSummary?.totalRealSpent ?? 0}
         totalSaved={monthSummary?.totalSaved ?? 0}
       />
 

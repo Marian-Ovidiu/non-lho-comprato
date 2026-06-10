@@ -32,9 +32,9 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
 
   return (
     <section className="px-5 py-5">
-      <Label className="mb-2 block">Le scelte più forti</Label>
+      <Label className="mb-2 block">Risparmi ed evitate</Label>
       <Serif className="mb-4 block text-sm text-ink-3">
-        I movimenti che hanno protetto di più il tuo budget.
+        I movimenti con impatto positivo sul risparmio.
       </Serif>
 
       {sortedEntries.length === 0 ? (
@@ -58,7 +58,7 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
                   <p className="truncate text-[15px] font-[450]">{item.title}</p>
                   <Mono className="mt-0.5 block text-[11px] text-ink-3">
                     {item.categoryName} · {formatDate(toDate(item.date))}
-                    {item.source === "habit" ? " · abitudine" : ""}
+                    {item.source === "habit" ? " · ricorrente" : ""}
                   </Mono>
                   <Serif className="mt-1.5 block text-[13px] text-ink-3">
                     {formatCraftedCompact(item.realCost)}€ spesi invece di{" "}

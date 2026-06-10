@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { getHabitTargetOptionLabel, sortWorkspaceMembers } from "@/src/lib/workspace-members";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
@@ -27,14 +28,6 @@ type HabitScopeReminderFieldsProps = {
   idPrefix: string;
   compact?: boolean;
 };
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return <p className="text-sm text-destructive">{message}</p>;
-}
 
 function getSelectionValue(
   targetScope: "self" | "shared",
@@ -140,7 +133,10 @@ export function HabitScopeReminderFields({
             ? "Puoi scegliere un utente specifico o la versione condivisa."
             : "L'abitudine è personale e la assegni al membro scelto."}
         </p>
-        <FieldError message={errors?.targetScope ?? errors?.targetUserId} />
+        <FormFieldError
+          message={errors?.targetScope ?? errors?.targetUserId}
+          className="text-sm"
+        />
       </div>
 
       <div className="space-y-2">
@@ -191,7 +187,7 @@ export function HabitScopeReminderFields({
             aria-invalid={Boolean(errors?.reminderTime)}
           />
           <p className="text-xs text-muted-text">Formato locale. Esempio: 09:30.</p>
-          <FieldError message={errors?.reminderTime} />
+          <FormFieldError message={errors?.reminderTime} className="text-sm" />
         </div>
       ) : null}
     </div>

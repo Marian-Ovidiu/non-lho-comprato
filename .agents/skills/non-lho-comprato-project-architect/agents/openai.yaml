@@ -1,4 +1,0 @@
-interface:
-  display_name: "Non l'ho Comprato Project Architect"
-  short_description: "Plan app structure and implementation flow"
-  default_prompt: "Use $non-lho-comprato-project-architect to design the Next.js App Router architecture, folder structure, and implementation order for Non l'ho comprato."

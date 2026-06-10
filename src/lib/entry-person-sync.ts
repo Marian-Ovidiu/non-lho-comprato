@@ -34,7 +34,10 @@ function beneficiaryUserIdsToPerson(
   return "MARIAN";
 }
 
-/** Keeps Entry.person / Entry.paidBy aligned with ownership fields for legacy filters. */
+/**
+ * Projects user/member ownership into legacy Person columns.
+ * Runtime ownership must keep using paidByUserId and EntryBeneficiary rows.
+ */
 export function syncEntryPersonColumns(
   paidByUserId: string,
   beneficiaryUserIds: readonly string[],

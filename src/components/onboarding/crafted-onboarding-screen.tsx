@@ -18,10 +18,11 @@ export function CraftedOnboardingScreen() {
       <div className="mb-8 mt-auto">
         <CraftedIcon name="flame" size={40} className="mb-6 text-accent" aria-hidden="true" />
         <Serif className="text-[clamp(1.75rem,8vw,2.25rem)] leading-snug text-muted-foreground">
-          Il quadro è pronto.
+          La dashboard è pronta.
         </Serif>
         <p className="mt-5 max-w-[320px] text-base leading-relaxed text-ink-3">
-          Ogni volta che eviti un acquisto, lo registri qui. Un segnale alla volta, con calma.
+          Parti dalle spese. Se qualcosa viene evitato o confrontato, il risparmio si
+          aggiunge da solo.
         </p>
       </div>
 
@@ -29,7 +30,7 @@ export function CraftedOnboardingScreen() {
         href="/?welcome=1"
         className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
       >
-        Apri il quadro
+        Apri la dashboard
         <ArrowRight className="size-4" aria-hidden="true" />
       </Link>
 

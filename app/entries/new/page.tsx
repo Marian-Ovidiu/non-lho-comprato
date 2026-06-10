@@ -88,9 +88,22 @@ export default async function NewEntryPage({
   const title = getSearchValue(query.title)?.trim();
   const categoryId =
     getSearchValue(query.categoryId) ?? getSearchValue(query.category) ?? "";
+  const mode =
+    getSearchValue(query.mode) === "avoided" ? "avoided" : "spent";
+  const savingContext =
+    getSearchValue(query.savingContext) === "comparison"
+      ? "comparison"
+      : "none";
+  const amountSpent =
+    getSearchValue(query.amountSpent)?.trim() ??
+    getSearchValue(query.realCost)?.trim();
+  const comparisonAmount =
+    getSearchValue(query.comparisonAmount)?.trim() ??
+    getSearchValue(query.alternativeCost)?.trim();
   const realCost = getSearchValue(query.realCost)?.trim();
   const alternativeCost = getSearchValue(query.alternativeCost)?.trim();
   const date = getSearchValue(query.date)?.trim();
+  const note = getSearchValue(query.note)?.trim();
   const returnTo = getSafeReturnTo(query.returnTo);
   const paidByUserIdRaw = getSearchValue(query.paidByUserId);
   const paidByUserId =
@@ -126,9 +139,16 @@ export default async function NewEntryPage({
       initialValues={{
         title,
         categoryId,
+        mode,
+        savingContext,
+        amountSpent,
+        comparisonAmount,
         realCost,
         alternativeCost,
         date,
+        note,
+        paidByUserId,
+        beneficiaryUserIds: resolvedBeneficiaryUserIds,
       }}
     />
   );

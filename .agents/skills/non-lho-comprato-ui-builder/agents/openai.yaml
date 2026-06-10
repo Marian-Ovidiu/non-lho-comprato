@@ -1,4 +1,0 @@
-interface:
-  display_name: "Non l'ho Comprato UI Builder"
-  short_description: "Build the MVP app UI and pages"
-  default_prompt: "Use $non-lho-comprato-ui-builder to build the mobile-first Next.js UI, pages, and shadcn/ui components for Non l'ho comprato."

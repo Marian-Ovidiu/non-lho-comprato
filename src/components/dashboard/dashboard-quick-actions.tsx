@@ -1,31 +1,31 @@
 import Link from "next/link";
-import { BarChart3, Layers3, PlusCircle, Repeat2 } from "lucide-react";
+import { BarChart3, CircleOff, Layers3, PlusCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const actions = [
   {
     href: "/entries/new",
-    title: "Nuovo movimento",
-    description: "Registra una spesa evitata",
+    title: "Registra una spesa",
+    description: "Aggiungi movimento o confronto",
     icon: PlusCircle,
+  },
+  {
+    href: "/entries/new?mode=avoided&savingContext=comparison",
+    title: "Non l'ho comprato",
+    description: "Segna una spesa evitata",
+    icon: CircleOff,
   },
   {
     href: "/presets",
     title: "Preset rapidi",
-    description: "Riusa una spesa pronta",
+    description: "Riusa spese e scorciatoie",
     icon: Layers3,
-  },
-  {
-    href: "/habits",
-    title: "Abitudini",
-    description: "Controlla le ricorrenze",
-    icon: Repeat2,
   },
   {
     href: "/stats",
     title: "Statistiche",
-    description: "Apri i grafici",
+    description: "Guarda spesa e risparmio",
     icon: BarChart3,
   },
 ] as const;
@@ -36,7 +36,7 @@ export function DashboardQuickActions() {
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-foreground">Azioni rapide</h2>
         <p className="text-sm text-muted-text">
-          Scorciatoie immediate per i passaggi che usi di più.
+          Parti da una spesa normale, poi aggiungi confronto o evitato solo quando serve.
         </p>
       </div>
 

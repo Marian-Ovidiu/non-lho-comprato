@@ -10,6 +10,7 @@ import { splitCraftedAmount } from "@/src/lib/crafted-money";
 import { cn } from "@/lib/utils";
 
 type DailyCheckinOverlayProps = {
+  spentToday: number;
   savedToday: number;
   pendingHabitsCount?: number;
   isVisible?: boolean;
@@ -28,6 +29,7 @@ function getStorageKey() {
 }
 
 export function DailyCheckinOverlay({
+  spentToday,
   savedToday,
   pendingHabitsCount,
   isVisible = true,
@@ -61,14 +63,17 @@ export function DailyCheckinOverlay({
     return null;
   }
 
-  const hero = splitCraftedAmount(savedToday);
+  const spentHero = splitCraftedAmount(spentToday);
+  const hasSpent = spentToday > 0;
   const hasSaved = savedToday > 0;
   const showHabits =
     typeof pendingHabitsCount === "number" && pendingHabitsCount > 0;
 
-  const lede = hasSaved
-    ? `Oggi hai già tenuto ${hero.whole},${hero.decimals}€ nel portafoglio. Continua così fino a stasera.`
-    : "Oggi è ancora aperto. Quando aggiungi un segnale, il quadro si aggiorna con calma.";
+  const lede = hasSpent
+    ? `Oggi hai già registrato ${spentHero.whole},${spentHero.decimals}€ di spesa reale.`
+    : hasSaved
+      ? "Oggi non hai ancora speso, ma hai già segnato qualcosa di evitato."
+      : "Oggi è ancora aperto. Puoi registrare una spesa o un movimento evitato quando serve.";
 
   return (
     <div
@@ -104,20 +109,33 @@ export function DailyCheckinOverlay({
           </button>
         </div>
 
-        <Label className="mb-3 block">Tenuto oggi</Label>
+        <Label className="mb-3 block">Speso oggi</Label>
         <div className="flex items-start gap-1.5">
           <Mono
             className={cn(
               "text-[52px] font-semibold leading-[0.85] tracking-[-0.05em]",
-              hasSaved ? "text-accent" : "text-foreground",
+              hasSpent ? "text-accent" : "text-foreground",
             )}
           >
-            {hero.whole}
+            {spentHero.whole}
           </Mono>
           <Mono className="mt-1.5 text-xl text-muted-foreground">
-            ,{hero.decimals}€
+            ,{spentHero.decimals}€
           </Mono>
         </div>
+
+        {hasSaved ? (
+          <div className="mt-3">
+            <Label className="mb-1.5 block">Evitato / risparmio oggi</Label>
+            <Mono className="text-lg font-medium text-accent">
+              {savedToday.toLocaleString("it-IT", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              })}
+              €
+            </Mono>
+          </div>
+        ) : null}
 
         <Serif className="mt-3.5 block text-base leading-[1.4] text-muted-foreground">
           {lede}
@@ -130,7 +148,7 @@ export function DailyCheckinOverlay({
               <span className="flex items-center gap-2.5">
                 <span className="size-[7px] rounded-full bg-accent" />
                 <span className="whitespace-nowrap text-sm font-[450]">
-                  Abitudini aperte
+                  Ricorrenti aperte
                 </span>
               </span>
               <Mono className="text-xl font-semibold">{pendingHabitsCount}</Mono>
@@ -144,14 +162,14 @@ export function DailyCheckinOverlay({
             asChild
             className="h-[52px] w-full rounded-[18px] text-[15px] font-bold"
           >
-            <Link href="/entries/new">Aggiungi movimento</Link>
+            <Link href="/entries/new">Registra una spesa</Link>
           </Button>
           <Button
             asChild
             variant="outline"
             className="h-[52px] w-full rounded-[18px] border-line text-[15px] font-medium"
           >
-            <Link href="/habits">Vai alle abitudini</Link>
+            <Link href="/entries/new?mode=avoided&savingContext=comparison">Non l&apos;ho comprato</Link>
           </Button>
         </div>
       </div>

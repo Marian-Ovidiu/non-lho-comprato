@@ -4,8 +4,16 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { formatMoney } from "@/src/lib/formatters";
 import { getEntryExpenseKind } from "@/src/lib/entry-ownership";
 import { prisma } from "@/src/lib/prisma";
-import { buildRomeStreakResult } from "@/src/lib/rome-dates";
 import {
+  buildRomeStreakResult,
+  formatRomeMonthLabel,
+  getPreviousRomeMonthKey,
+  getRomeDateKey,
+  getRomeMonthRangeForMonthKey,
+  normalizeRomeMonthKey,
+} from "@/src/lib/rome-dates";
+import {
+  getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
 } from "@/src/lib/workspace-context";
@@ -32,6 +40,7 @@ export type MonthlyReportOverview = {
 export type MonthlyReportMemberSummary = {
   userId: string | null;
   label: string;
+  totalRealSpent: number;
   totalSaved: number;
   entriesCount: number;
 };
@@ -45,6 +54,7 @@ export type MonthlyReportMemberSplit = {
 
 export type MonthlyReportBestCategory = {
   name: string;
+  totalRealSpent: number;
   totalSaved: number;
   entriesCount: number;
   categoryId: string;
@@ -152,8 +162,6 @@ export type MonthlyReportPageData = {
   report: MonthlyReportData;
 };
 
-const ROME_TIME_ZONE = "Europe/Rome";
-
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
     return Number.isFinite(value) ? value : 0;
@@ -179,125 +187,26 @@ function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function getRomeDateParts(date: Date): {
-  year: number;
-  month: number;
-  day: number;
-} {
-  const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
-
-  const parts = formatter.formatToParts(date);
-  const year = Number(parts.find((part) => part.type === "year")?.value);
-  const month = Number(parts.find((part) => part.type === "month")?.value);
-  const day = Number(parts.find((part) => part.type === "day")?.value);
-
-  return { year, month, day };
-}
-
-function getRomeMonthKey(date: Date): string {
-  const parts = getRomeDateParts(date);
-
-  if (!Number.isFinite(parts.year) || !Number.isFinite(parts.month)) {
-    return "";
-  }
-
-  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(
-    2,
-    "0",
-  )}`;
-}
-
-function getRomeDateKey(date: Date): string {
-  const parts = getRomeDateParts(date);
-
-  if (
-    !Number.isFinite(parts.year) ||
-    !Number.isFinite(parts.month) ||
-    !Number.isFinite(parts.day)
-  ) {
-    return "";
-  }
-
-  return `${String(parts.year).padStart(4, "0")}-${String(parts.month).padStart(
-    2,
-    "0",
-  )}-${String(parts.day).padStart(2, "0")}`;
-}
-
 function normalizeMonthKey(input?: string): string {
-  if (input && /^\d{4}-\d{2}$/.test(input)) {
-    const [yearPart, monthPart] = input.split("-");
-    const year = Number(yearPart);
-    const month = Number(monthPart);
-
-    if (Number.isFinite(year) && month >= 1 && month <= 12) {
-      return input;
-    }
-  }
-
-  return getRomeMonthKey(new Date());
-}
-
-function getMonthRangeUtc(monthKey: string): { start: Date; end: Date } {
-  const [yearPart, monthPart] = monthKey.split("-");
-  const year = Number(yearPart);
-  const monthIndex = Number(monthPart) - 1;
-
-  const start = new Date(Date.UTC(year, monthIndex, 1, 0, 0, 0, 0));
-  const end = new Date(Date.UTC(year, monthIndex + 1, 1, 0, 0, 0, 0));
-
-  return { start, end };
+  return normalizeRomeMonthKey(input);
 }
 
 function getPreviousMonthKey(monthKey: string): string {
-  const [yearPart, monthPart] = monthKey.split("-");
-  const year = Number(yearPart);
-  const monthIndex = Number(monthPart) - 1;
-
-  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
-    return monthKey;
-  }
-
-  return getRomeMonthKey(new Date(Date.UTC(year, monthIndex - 1, 1)));
+  return getPreviousRomeMonthKey(monthKey);
 }
 
 function formatMonthLabel(monthKey: string): string {
-  const [yearPart, monthPart] = monthKey.split("-");
-  const year = Number(yearPart);
-  const monthIndex = Number(monthPart) - 1;
-
-  if (!Number.isFinite(year) || !Number.isFinite(monthIndex)) {
-    return monthKey;
-  }
-
-  const raw = new Intl.DateTimeFormat("it-IT", {
-    timeZone: ROME_TIME_ZONE,
-    month: "long",
-    year: "numeric",
-  }).format(new Date(Date.UTC(year, monthIndex, 1)));
-
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
+  return formatRomeMonthLabel(monthKey);
 }
 
-function buildMonthOptions(dates: Date[]): MonthlyReportMonthOption[] {
-  const monthKeys = new Set<string>();
-
-  for (const date of dates) {
-    const key = getRomeMonthKey(date);
-    if (key) {
-      monthKeys.add(key);
-    }
-  }
-
+function buildMonthOptionsFromKeys(monthKeys: string[]): MonthlyReportMonthOption[] {
   const currentMonth = normalizeMonthKey();
-  monthKeys.add(currentMonth);
+  const uniqueMonthKeys = new Set(
+    monthKeys.filter((monthKey) => /^\d{4}-\d{2}$/.test(monthKey)),
+  );
+  uniqueMonthKeys.add(currentMonth);
 
-  return Array.from(monthKeys)
+  return Array.from(uniqueMonthKeys)
     .sort((left, right) => right.localeCompare(left))
     .map((value) => ({
       value,
@@ -363,7 +272,7 @@ function serializeMonthlyReportEntry(entry: {
 }
 
 async function buildEntryWhere(monthKey: string): Promise<Prisma.EntryWhereInput> {
-  const { start, end } = getMonthRangeUtc(monthKey);
+  const { start, end } = getRomeMonthRangeForMonthKey(monthKey);
 
   return getCurrentWorkspaceScopedWhere({
     date: {
@@ -374,7 +283,7 @@ async function buildEntryWhere(monthKey: string): Promise<Prisma.EntryWhereInput
 }
 
 async function buildHabitOccurrenceWhere(monthKey: string): Promise<Prisma.HabitOccurrenceWhereInput> {
-  const { start, end } = getMonthRangeUtc(monthKey);
+  const { start, end } = getRomeMonthRangeForMonthKey(monthKey);
   const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
   return {
@@ -391,12 +300,14 @@ async function buildHabitOccurrenceWhere(monthKey: string): Promise<Prisma.Habit
 function createMonthlyReportMemberSummary(
   userId: string | null,
   label: string,
+  totalRealSpent = 0,
   totalSaved = 0,
   entriesCount = 0,
 ): MonthlyReportMemberSummary {
   return {
     userId,
     label,
+    totalRealSpent: round2(totalRealSpent),
     totalSaved: round2(totalSaved),
     entriesCount,
   };
@@ -424,9 +335,11 @@ function buildMemberSplit(
   entries: Array<{
     paidByUserId: string | null;
     beneficiaries: Array<{ userId: string }>;
+    realCost: unknown;
     savedAmount: unknown;
   }>,
   members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
+  totalRealSpent: number,
   totalSaved: number,
   entriesCount: number,
 ): MonthlyReportMemberSplit {
@@ -448,9 +361,11 @@ function buildMemberSplit(
   for (const entry of entries) {
     const resolved = resolveEntryPeopleFromRecord(entry, members);
     const expenseKind = getEntryExpenseKind(resolved.beneficiaryUserIds);
+    const realCost = toNumber(entry.realCost);
     const savedAmount = toNumber(entry.savedAmount);
 
     if (expenseKind === "shared") {
+      shared.totalRealSpent = round2(shared.totalRealSpent + realCost);
       shared.totalSaved = round2(shared.totalSaved + savedAmount);
       shared.entriesCount += 1;
       continue;
@@ -460,11 +375,13 @@ function buildMemberSplit(
       resolved.beneficiaryUserIds[0] ?? resolved.paidByUserId;
 
     if (beneficiaryUserId && beneficiaryUserId === slots.secondaryUserId) {
+      secondary.totalRealSpent = round2(secondary.totalRealSpent + realCost);
       secondary.totalSaved = round2(secondary.totalSaved + savedAmount);
       secondary.entriesCount += 1;
       continue;
     }
 
+    primary.totalRealSpent = round2(primary.totalRealSpent + realCost);
     primary.totalSaved = round2(primary.totalSaved + savedAmount);
     primary.entriesCount += 1;
   }
@@ -473,7 +390,13 @@ function buildMemberSplit(
     primary,
     secondary,
     shared,
-    total: createMonthlyReportMemberSummary(null, "Totale", totalSaved, entriesCount),
+    total: createMonthlyReportMemberSummary(
+      null,
+      "Totale",
+      totalRealSpent,
+      totalSaved,
+      entriesCount,
+    ),
   };
 }
 
@@ -490,7 +413,7 @@ function buildEmptyReport(
   monthKey: string,
   members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
 ): MonthlyReportData {
-  const memberSplit = buildMemberSplit([], members, 0, 0);
+  const memberSplit = buildMemberSplit([], members, 0, 0, 0);
 
   return {
     month: monthKey,
@@ -554,19 +477,15 @@ function buildEmptyReport(
 
 export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOption[]> {
   try {
-    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+    const workspaceId = await getCurrentWorkspaceId();
+    const rows = await prisma.$queryRaw<Array<{ month: string }>>`
+      SELECT DISTINCT to_char("date" AT TIME ZONE 'Europe/Rome', 'YYYY-MM') AS month
+      FROM "Entry"
+      WHERE "workspaceId" = ${workspaceId}
+      ORDER BY month DESC
+    `;
 
-    const dates = await prisma.entry.findMany({
-      where: workspaceWhere,
-      select: {
-        date: true,
-      },
-      orderBy: {
-        date: "desc",
-      },
-    });
-
-    return buildMonthOptions(dates.map((item) => item.date));
+    return buildMonthOptionsFromKeys(rows.map((row) => row.month));
   } catch (error) {
     console.error("Failed to load available report months:", error);
     return [];
@@ -703,13 +622,20 @@ export async function getMonthlyReport(
         ? 0
         : round2((totalSaved / totalAlternativeCost) * 100);
 
-    const memberSplit = buildMemberSplit(monthEntries, members, totalSaved, entriesCount);
+    const memberSplit = buildMemberSplit(
+      monthEntries,
+      members,
+      totalRealSpent,
+      totalSaved,
+      entriesCount,
+    );
 
     const categoryMap = new Map<
       string,
       {
         categoryName: string;
         categorySlug: string;
+        totalRealSpent: number;
         totalSaved: number;
         entriesCount: number;
       }
@@ -721,17 +647,22 @@ export async function getMonthlyReport(
       const current = categoryMap.get(entry.category.slug) ?? {
         categoryName: entry.category.name,
         categorySlug: entry.category.slug,
+        totalRealSpent: 0,
         totalSaved: 0,
         entriesCount: 0,
       };
 
+      current.totalRealSpent = round2(
+        current.totalRealSpent + toNumber(entry.realCost),
+      );
       current.totalSaved = round2(current.totalSaved + toNumber(entry.savedAmount));
       current.entriesCount += 1;
       categoryMap.set(entry.category.slug, current);
 
       if (
-        !biggestSaving ||
-        toNumber(entry.savedAmount) > biggestSaving.savedAmount
+        toNumber(entry.savedAmount) > 0 &&
+        (!biggestSaving ||
+          toNumber(entry.savedAmount) > biggestSaving.savedAmount)
       ) {
         biggestSaving = {
           id: entry.id,
@@ -755,10 +686,12 @@ export async function getMonthlyReport(
               categoryId,
               categoryName: totals.categoryName,
               categorySlug: totals.categorySlug,
+              totalRealSpent: totals.totalRealSpent,
               totalSaved: totals.totalSaved,
               entriesCount: totals.entriesCount,
               name: totals.categoryName,
             }))
+            .filter((category) => category.totalSaved > 0)
             .sort((left, right) => {
               if (right.totalSaved !== left.totalSaved) {
                 return right.totalSaved - left.totalSaved;
@@ -775,9 +708,7 @@ export async function getMonthlyReport(
               categoryId,
               categoryName: totals.categoryName,
               categorySlug: totals.categorySlug,
-              totalRealSpent: monthEntries
-                .filter((entry) => entry.category.slug === categoryId)
-                .reduce((total, entry) => total + toNumber(entry.realCost), 0),
+              totalRealSpent: totals.totalRealSpent,
               entriesCount: totals.entriesCount,
               name: totals.categoryName,
             }))
@@ -850,7 +781,7 @@ export async function getMonthlyReport(
       }
 
       const currentTotal = dayTotals.get(dateKey) ?? 0;
-      dayTotals.set(dateKey, round2(currentTotal + toNumber(entry.savedAmount)));
+      dayTotals.set(dateKey, round2(currentTotal + toNumber(entry.realCost)));
     }
 
     const streakSummary = buildStreakSummary(dayTotals);
@@ -862,20 +793,26 @@ export async function getMonthlyReport(
     );
 
     const recapParts = [
-      `A ${monthLower} avete risparmiato ${formatMoney(totalSaved)}.`,
-      `Risparmio per membro: ${memberSplit.primary.label} ${formatMoney(
-        memberSplit.primary.totalSaved,
+      `A ${monthLower} avete speso ${formatMoney(totalRealSpent)} in ${entriesCount} movimenti.`,
+      `Spesa per membro: ${memberSplit.primary.label} ${formatMoney(
+        memberSplit.primary.totalRealSpent,
       )}, ${memberSplit.secondary.label} ${formatMoney(
-        memberSplit.secondary.totalSaved,
-      )}, ${memberSplit.shared.label} ${formatMoney(memberSplit.shared.totalSaved)}.`,
-      bestCategory
-        ? `La categoria migliore è stata ${bestCategory.categoryName}.`
-        : "Nessuna categoria si è distinta questo mese.",
+        memberSplit.secondary.totalRealSpent,
+      )}, ${memberSplit.shared.label} ${formatMoney(memberSplit.shared.totalRealSpent)}.`,
+      worstCategory
+        ? `La categoria con più spesa è stata ${worstCategory.categoryName}.`
+        : "Nessuna categoria si è distinta per spesa questo mese.",
+      totalSaved > 0
+        ? `Risparmiato/evitato: ${formatMoney(totalSaved)}.`
+        : "Nessun risparmio positivo da segnalare.",
+      bestCategory && bestCategory.totalSaved > 0
+        ? `Dove avete evitato di più: ${bestCategory.categoryName}.`
+        : "Nessuna categoria si è distinta per risparmio questo mese.",
       biggestSaving
-        ? `La schivata del mese: ${biggestSaving.title} (+${formatMoney(
+        ? `Il risparmio più alto: ${biggestSaving.title} (+${formatMoney(
             biggestSaving.savedAmount,
           )}).`
-        : "Nessuna schivata rilevante da segnalare.",
+        : "Nessun risparmio positivo rilevante da segnalare.",
     ];
 
     return {

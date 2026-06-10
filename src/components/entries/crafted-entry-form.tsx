@@ -4,12 +4,31 @@ import { useActionState, useCallback, useEffect, useRef, useState } from "react"
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import { ArrowRight, ChevronDown, Loader2 } from "lucide-react";
+import {
+  ArrowRight,
+  ChevronDown,
+  CircleOff,
+  Loader2,
+  Receipt,
+} from "lucide-react";
 
-import { CraftedIcon, CraftedNumpad, Label, Mono, Serif } from "@/components/crafted";
+import { CraftedIcon, Label, Mono, Serif } from "@/components/crafted";
 import { createEntry } from "@/src/actions/entries";
+import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
+import {
+  formatMoneyPreview,
+  formatMoneyValue,
+  getMoneyDelta,
+  moneyStringToInput,
+  normalizeMoneyInput,
+  toHiddenMoneyValue,
+} from "@/src/components/entries/entry-form-money";
+import type {
+  EntryMode,
+  EntrySavingContext,
+} from "@/src/lib/entry-domain";
+import { getRomeTodayDateKey } from "@/src/lib/rome-dates";
 import { cn } from "@/lib/utils";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
@@ -45,69 +64,102 @@ type FormState = {
   streakTo?: number;
 };
 
+type EntryFormInitialValues = {
+  title?: string;
+  categoryId?: string;
+  mode?: EntryMode;
+  savingContext?: EntrySavingContext;
+  amountSpent?: string;
+  comparisonAmount?: string;
+  realCost?: string;
+  alternativeCost?: string;
+  paidByUserId?: string;
+  beneficiaryUserIds?: string[];
+  date?: string;
+  note?: string;
+};
+
 export type CraftedEntryFormProps = {
   categories: CategoryOption[];
   members: WorkspaceMemberOption[];
   initialPaidByUserId: string;
   initialBeneficiaryUserIds: string[];
   returnTo: string;
-  initialValues?: {
-    title?: string;
-    categoryId?: string;
-    realCost?: string;
-    alternativeCost?: string;
-    paidByUserId?: string;
-    beneficiaryUserIds?: string[];
-    date?: string;
-  };
+  initialValues?: EntryFormInitialValues;
 };
 
 const initialState: FormState = { success: false, message: "", errors: {} };
 
 function getTodayLocal() {
-  return format(new Date(), "yyyy-MM-dd");
+  return getRomeTodayDateKey();
 }
 
-function parseMoneyString(raw: string | undefined): number {
-  if (!raw) return Number.NaN;
-  const n = parseFloat(raw.replace(",", "."));
-  return Number.isFinite(n) ? n : Number.NaN;
-}
-
-function moneyStringToInput(raw: string | undefined): string {
-  const n = parseMoneyString(raw);
-  if (!Number.isFinite(n) || n <= 0) return "";
-  return n.toLocaleString("it-IT", { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-}
-
-function rawToCents(raw: string): number {
-  if (!raw) return 0;
-  const n = parseFloat(raw.replace(",", "."));
-  return isNaN(n) ? 0 : Math.round(n * 100);
-}
-
-function normalizeMoneyInput(value: string): string {
-  return value
-    .replace(/[^\d,.]/g, "")
-    .replace(".", ",")
-    .replace(/(,.*),/g, "$1")
-    .replace(/^0+(\d)/, "$1");
-}
-
-function formatDisplayValue(raw: string): string {
-  if (!raw) return "0,00";
-  if (!raw.includes(",")) {
-    return parseInt(raw, 10).toLocaleString("it-IT");
+function getInitialComparisonEnabled(initialValues?: EntryFormInitialValues): boolean {
+  if (initialValues?.mode === "avoided") {
+    return false;
   }
-  const [intPart, decPart = ""] = raw.split(",");
-  return `${parseInt(intPart || "0", 10).toLocaleString("it-IT")},${decPart}`;
+
+  if (initialValues?.savingContext === "comparison") {
+    return true;
+  }
+
+  return Boolean(
+    initialValues?.comparisonAmount &&
+      initialValues.comparisonAmount !== initialValues.amountSpent,
+  );
 }
 
-function formatButtonValue(raw: string): string {
-  return (rawToCents(raw) / 100).toLocaleString("it-IT", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+function getPrimaryFieldError(errors?: Record<string, string>) {
+  return errors?.amountSpent ?? errors?.realCost;
+}
+
+function getComparisonFieldError(errors?: Record<string, string>) {
+  return errors?.comparisonAmount ?? errors?.alternativeCost;
+}
+
+function formatPrimaryFieldLabel(mode: EntryMode) {
+  return mode === "avoided" ? "Avresti speso" : "Hai speso";
+}
+
+function formatPrimaryPlaceholder(mode: EntryMode) {
+  return mode === "avoided" ? "18,00" : "12,00";
+}
+
+function getSummaryText(
+  mode: EntryMode,
+  savingContext: EntrySavingContext,
+  amountSpentInput: string,
+  comparisonInput: string,
+) {
+  if (mode === "avoided") {
+    return "spesa evitata";
+  }
+
+  if (savingContext === "comparison") {
+    const delta = getMoneyDelta(amountSpentInput, comparisonInput);
+
+    if (delta > 0) {
+      return `${formatMoneyValue(delta)}€ sotto il confronto`;
+    }
+
+    if (delta < 0) {
+      return `${formatMoneyValue(delta)}€ sopra il confronto`;
+    }
+
+    return "in linea con il confronto";
+  }
+
+  return "spesa registrata";
+}
+
+function getSummaryAmount(
+  mode: EntryMode,
+  amountSpentInput: string,
+  comparisonInput: string,
+) {
+  return mode === "avoided"
+    ? formatMoneyPreview(comparisonInput)
+    : formatMoneyPreview(amountSpentInput);
 }
 
 export function CraftedEntryForm({
@@ -124,38 +176,34 @@ export function CraftedEntryForm({
   const redirectTimerRef = useRef<number | null>(null);
   const successTimerRef = useRef<number | null>(null);
 
+  const initialMode = initialValues?.mode === "avoided" ? "avoided" : "spent";
+  const initialComparisonEnabled = getInitialComparisonEnabled(initialValues);
   const resolvedInitialPaidByUserId =
     initialValues?.paidByUserId ?? initialPaidByUserId;
   const resolvedInitialBeneficiaryUserIds =
     initialValues?.beneficiaryUserIds ?? initialBeneficiaryUserIds;
 
-  const initialReal = parseMoneyString(initialValues?.realCost);
-  const initialAlt = parseMoneyString(
-    initialValues?.alternativeCost ?? initialValues?.realCost,
-  );
-  const initialSavingsMode =
-    Number.isFinite(initialReal) &&
-    Number.isFinite(initialAlt) &&
-    initialAlt !== initialReal;
-
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">("idle");
+  const [mode, setMode] = useState<EntryMode>(initialMode);
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? "");
   const [paidByUserId, setPaidByUserId] = useState(resolvedInitialPaidByUserId);
   const [beneficiaryUserIds, setBeneficiaryUserIds] = useState(
     resolvedInitialBeneficiaryUserIds,
   );
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [showSavingsField, setShowSavingsField] = useState(initialSavingsMode);
-  const [note, setNote] = useState("");
-  const [date, setDate] = useState(initialValues?.date ?? getTodayLocal());
-  const [amountInput, setAmountInput] = useState(() =>
-    moneyStringToInput(initialValues?.realCost),
+  const [showAdvanced, setShowAdvanced] = useState(
+    Boolean(initialValues?.note?.trim()),
   );
-  const [alternativeInput, setAlternativeInput] = useState(() =>
-    initialSavingsMode
-      ? moneyStringToInput(initialValues?.alternativeCost)
-      : moneyStringToInput(initialValues?.realCost),
+  const [showComparison, setShowComparison] = useState(initialComparisonEnabled);
+  const [note, setNote] = useState(initialValues?.note ?? "");
+  const [date, setDate] = useState(initialValues?.date ?? getTodayLocal());
+  const [amountSpentInput, setAmountSpentInput] = useState(() =>
+    moneyStringToInput(initialValues?.amountSpent ?? initialValues?.realCost),
+  );
+  const [comparisonInput, setComparisonInput] = useState(() =>
+    moneyStringToInput(
+      initialValues?.comparisonAmount ?? initialValues?.alternativeCost,
+    ),
   );
 
   const redirect = useCallback(() => router.replace(returnTo), [router, returnTo]);
@@ -166,40 +214,40 @@ export function CraftedEntryForm({
     initialState,
   );
 
-  function handleNumpadKey(key: string) {
-    triggerHaptic("subtle");
-    setAmountInput((prev) => {
-      if (key === "⌫") return prev.slice(0, -1);
-      if (key === ",") {
-        if (prev.includes(",")) return prev;
-        return (prev || "0") + ",";
-      }
-      if (prev.includes(",")) {
-        const decPart = prev.split(",")[1] ?? "";
-        if (decPart.length >= 2) return prev;
-      } else {
-        if (prev.length >= 7) return prev;
-        if (prev === "0") return key === "0" ? prev : key;
-      }
-      return prev + key;
-    });
-  }
-
   useEffect(() => {
     if (!state.success) {
       didHandleSuccessRef.current = false;
       return;
     }
-    if (didHandleSuccessRef.current) return;
+
+    if (didHandleSuccessRef.current) {
+      return;
+    }
+
     didHandleSuccessRef.current = true;
     trackPostHogEvent("entry_created");
-    if (state.isFirstEntryCreated) trackPostHogEvent("first_entry_created");
+    if (state.isFirstEntryCreated) {
+      trackPostHogEvent("first_entry_created");
+    }
     setSuccessStage("confirming");
-    if (successTimerRef.current) window.clearTimeout(successTimerRef.current);
-    if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
+
+    if (successTimerRef.current) {
+      window.clearTimeout(successTimerRef.current);
+    }
+    if (redirectTimerRef.current) {
+      window.clearTimeout(redirectTimerRef.current);
+    }
+
     const showedCelebration = tryTrigger(state);
-    if (!showedCelebration) triggerHaptic("light");
-    successTimerRef.current = window.setTimeout(() => setSuccessStage("closing"), 1400);
+    if (!showedCelebration) {
+      triggerHaptic("light");
+    }
+
+    successTimerRef.current = window.setTimeout(
+      () => setSuccessStage("closing"),
+      1400,
+    );
+
     if (!showedCelebration) {
       redirectTimerRef.current = window.setTimeout(redirect, 1800);
     }
@@ -207,25 +255,58 @@ export function CraftedEntryForm({
 
   useEffect(() => {
     return () => {
-      if (successTimerRef.current) window.clearTimeout(successTimerRef.current);
-      if (redirectTimerRef.current) window.clearTimeout(redirectTimerRef.current);
+      if (successTimerRef.current) {
+        window.clearTimeout(successTimerRef.current);
+      }
+      if (redirectTimerRef.current) {
+        window.clearTimeout(redirectTimerRef.current);
+      }
     };
   }, []);
 
-  const realCents = rawToCents(amountInput);
-  const alternativeCents = showSavingsField
-    ? rawToCents(alternativeInput)
-    : realCents;
-  const hasAmount =
-    realCents > 0 || (showSavingsField && alternativeCents > realCents);
+  const savingContext: EntrySavingContext =
+    mode === "avoided" ? "comparison" : showComparison ? "comparison" : "none";
+  const primaryFieldError = getPrimaryFieldError(state.errors);
+  const comparisonFieldError = getComparisonFieldError(state.errors);
+  const hiddenAmountSpent = mode === "spent" ? toHiddenMoneyValue(amountSpentInput) : "";
+  const hiddenComparisonAmount =
+    mode === "avoided" || showComparison ? toHiddenMoneyValue(comparisonInput) : "";
   const canSubmit =
-    hasAmount &&
     title.trim().length > 0 &&
-    categories.length > 0 &&
+    categoryId.length > 0 &&
     members.length > 0 &&
-    !pending;
-  const realCostValue = (realCents / 100).toFixed(2);
-  const alternativeCostValue = (alternativeCents / 100).toFixed(2);
+    categories.length > 0 &&
+    !pending &&
+    (mode === "avoided"
+      ? hiddenComparisonAmount !== "" && hiddenComparisonAmount !== "0.00"
+      : hiddenAmountSpent !== "" &&
+        hiddenAmountSpent !== "0.00" &&
+        (!showComparison || hiddenComparisonAmount !== ""));
+
+  function handleModeChange(nextMode: EntryMode) {
+    triggerHaptic("subtle");
+    setMode(nextMode);
+
+    if (nextMode === "avoided") {
+      setComparisonInput((current) => current || amountSpentInput);
+      setShowComparison(false);
+      return;
+    }
+
+    setAmountSpentInput((current) => current || comparisonInput);
+  }
+
+  function toggleComparison() {
+    triggerHaptic("subtle");
+    setShowComparison((current) => {
+      if (current) {
+        return false;
+      }
+
+      setComparisonInput((prev) => prev || amountSpentInput);
+      return true;
+    });
+  }
 
   return (
     <>
@@ -239,16 +320,23 @@ export function CraftedEntryForm({
           successStage === "closing" && "translate-y-1 opacity-0 blur-[1px]",
         )}
       >
-        <input type="hidden" name="realCost" value={realCostValue} />
-        <input type="hidden" name="alternativeCost" value={alternativeCostValue} />
-        <input type="hidden" name="title" value={title} />
+        <input type="hidden" name="mode" value={mode} />
+        <input type="hidden" name="savingContext" value={savingContext} />
+        {hiddenAmountSpent ? (
+          <input type="hidden" name="amountSpent" value={hiddenAmountSpent} />
+        ) : null}
+        {hiddenComparisonAmount ? (
+          <input
+            type="hidden"
+            name="comparisonAmount"
+            value={hiddenComparisonAmount}
+          />
+        ) : null}
         <input type="hidden" name="categoryId" value={categoryId} />
         <input type="hidden" name="paidByUserId" value={paidByUserId} />
         {beneficiaryUserIds.map((id) => (
           <input key={id} type="hidden" name="beneficiaryUserIds" value={id} />
         ))}
-        <input type="hidden" name="date" value={date} />
-        {note.trim() ? <input type="hidden" name="note" value={note} /> : null}
 
         <div className="flex items-center justify-between px-5 pb-1.5 pt-3">
           <Link
@@ -257,7 +345,7 @@ export function CraftedEntryForm({
           >
             Annulla
           </Link>
-          <Label>Nuovo segnale</Label>
+          <Label>Nuovo movimento</Label>
           <div className="w-14" aria-hidden="true" />
         </div>
 
@@ -271,33 +359,78 @@ export function CraftedEntryForm({
           </div>
         ) : null}
 
-        <div className="flex flex-1 flex-col items-center justify-center px-5 py-6 text-center">
+        <div className="px-5 pb-4 pt-3">
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => handleModeChange("spent")}
+              className={cn(
+                "flex min-h-12 items-center justify-center gap-2 border-b-[1.5px] px-3 py-2 text-sm transition-colors",
+                mode === "spent"
+                  ? "border-accent text-foreground"
+                  : "border-transparent text-ink-3 hover:text-foreground",
+              )}
+              aria-pressed={mode === "spent"}
+            >
+              <Receipt className="size-4" aria-hidden="true" />
+              Ho speso
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeChange("avoided")}
+              className={cn(
+                "flex min-h-12 items-center justify-center gap-2 border-b-[1.5px] px-3 py-2 text-sm transition-colors",
+                mode === "avoided"
+                  ? "border-accent text-foreground"
+                  : "border-transparent text-ink-3 hover:text-foreground",
+              )}
+              aria-pressed={mode === "avoided"}
+            >
+              <CircleOff className="size-4" aria-hidden="true" />
+              Non l&apos;ho comprato
+            </button>
+          </div>
+        </div>
+
+        <section className="px-5 pb-5 pt-2 text-center">
           {successStage !== "idle" ? (
             <div className="flex flex-col items-center gap-4">
-              <CraftedIcon name="check" size={28} className="text-green" strokeWidth={2} />
+              <CraftedIcon
+                name="check"
+                size={28}
+                className="text-green"
+                strokeWidth={2}
+              />
               <div className="flex items-baseline gap-2">
-                <Mono className="text-[clamp(3rem,16vw,4.5rem)] font-semibold leading-none tracking-[-0.055em] text-accent">
-                  {formatButtonValue(amountInput)}
+                <Mono className="text-[clamp(3rem,16vw,4.5rem)] font-semibold leading-none text-accent">
+                  {getSummaryAmount(mode, amountSpentInput, comparisonInput)}
                 </Mono>
                 <Mono className="text-[26px] text-muted-foreground">€</Mono>
               </div>
-              <p className="text-[15px] font-semibold">Aggiunto al portafoglio</p>
+              <p className="text-[15px] font-semibold">Movimento salvato</p>
             </div>
           ) : (
             <>
-              <Serif className="mb-4 text-[17px] text-muted-foreground">
-                non ho comprato per
+              <Serif className="mb-3 text-[16px] text-muted-foreground">
+                {mode === "avoided" ? "stai evitando una spesa" : "stai registrando una spesa"}
               </Serif>
-              <div className="flex items-baseline gap-2">
-                <Mono className="text-[clamp(3rem,16vw,5.25rem)] font-semibold leading-[0.9] tracking-[-0.055em] text-accent">
-                  {formatDisplayValue(amountInput)}
+              <div className="flex items-baseline justify-center gap-2">
+                <Mono className="text-[clamp(3rem,16vw,5rem)] font-semibold leading-[0.9] text-accent">
+                  {getSummaryAmount(mode, amountSpentInput, comparisonInput)}
                 </Mono>
-                <Mono className="text-[30px] font-medium text-muted-foreground">€</Mono>
+                <Mono className="text-[28px] text-muted-foreground">€</Mono>
               </div>
-              <p className="mt-3 text-[12.5px] text-ink-3">tenuti nel portafoglio</p>
+              <p className="mt-3 text-[12.5px] text-ink-3">
+                {getSummaryText(
+                  mode,
+                  savingContext,
+                  amountSpentInput,
+                  comparisonInput,
+                )}
+              </p>
             </>
           )}
-        </div>
+        </section>
 
         <div className="px-5 pb-2">
           <Label className="mb-3 block">Categoria</Label>
@@ -334,146 +467,134 @@ export function CraftedEntryForm({
               );
             })}
           </div>
+          <FormFieldError message={state.errors?.categoryId} />
         </div>
 
         <div className="px-5 pb-3">
           <div className="flex items-center justify-between gap-4 border-y border-line py-3">
             <input
               type="text"
+              name="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Caffè in stazione"
+              placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
               autoComplete="off"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-ink-3/70"
               aria-invalid={Boolean(state.errors?.title)}
             />
             <Label>Cosa</Label>
           </div>
-          {state.errors?.title ? (
-            <p className="mt-2 text-sm text-destructive">{state.errors.title}</p>
-          ) : null}
+          <FormFieldError message={state.errors?.title} />
         </div>
 
-        {state.errors?.categoryId ? (
-          <div className="px-5 pb-2">
-            <p className="text-sm text-destructive">{state.errors.categoryId}</p>
-          </div>
-        ) : null}
-
-        {state.errors?.realCost ? (
-          <div className="px-5 pb-2">
-            <p className="text-sm text-destructive">{state.errors.realCost}</p>
-          </div>
-        ) : null}
-
-        <div className="px-5 pb-3">
-          <button
-            type="button"
-            onClick={() => {
-              setShowSavingsField((current) => {
-                if (current) {
-                  return false;
-                }
-
-                setAlternativeInput((prev) => prev || amountInput);
-                return true;
-              });
-            }}
-            className="flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-foreground"
-          >
-            <ChevronDown
-              className={cn(
-                "size-3.5 transition-transform duration-200",
-                showSavingsField && "rotate-180",
-              )}
-              aria-hidden="true"
-            />
-            {showSavingsField ? "Nascondi risparmio" : "Ho risparmiato qualcosa?"}
-          </button>
-
-          {showSavingsField ? (
-            <div className="mt-3 border-y border-line py-3">
-              <label className="flex items-center justify-between gap-4">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={alternativeInput}
-                  onChange={(event) =>
-                    setAlternativeInput(normalizeMoneyInput(event.target.value))
+        <div className="space-y-3 px-5 pb-3">
+          <div className="border-y border-line py-3">
+            <label className="flex items-center justify-between gap-4">
+              <input
+                type="text"
+                inputMode="decimal"
+                value={mode === "avoided" ? comparisonInput : amountSpentInput}
+                onChange={(event) => {
+                  const nextValue = normalizeMoneyInput(event.target.value);
+                  if (mode === "avoided") {
+                    setComparisonInput(nextValue);
+                    return;
                   }
-                  placeholder="18,00"
-                  className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-ink-3/70"
-                  aria-invalid={Boolean(state.errors?.alternativeCost)}
-                />
-                <Label>Avresti speso</Label>
-              </label>
-              {state.errors?.alternativeCost ? (
-                <p className="mt-2 text-xs text-destructive">
-                  {state.errors.alternativeCost}
-                </p>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
+                  setAmountSpentInput(nextValue);
+                }}
+                placeholder={formatPrimaryPlaceholder(mode)}
+                className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-ink-3/70"
+                aria-invalid={Boolean(primaryFieldError)}
+              />
+              <Label>{formatPrimaryFieldLabel(mode)}</Label>
+            </label>
+            <FormFieldError message={primaryFieldError} className="mt-2 text-xs" />
+          </div>
 
-        <div className="px-4 pb-2">
-          <CraftedNumpad onKey={handleNumpadKey} />
+          {mode === "spent" ? (
+            <>
+              <button
+                type="button"
+                onClick={toggleComparison}
+                className="flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-foreground"
+              >
+                <ChevronDown
+                  className={cn(
+                    "size-3.5 transition-transform duration-200",
+                    showComparison && "rotate-180",
+                  )}
+                  aria-hidden="true"
+                />
+                {showComparison ? "Nascondi confronto" : "Aggiungi confronto"}
+              </button>
+
+              {showComparison ? (
+                <div className="border-y border-line py-3">
+                  <label className="flex items-center justify-between gap-4">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={comparisonInput}
+                      onChange={(event) =>
+                        setComparisonInput(normalizeMoneyInput(event.target.value))
+                      }
+                      placeholder="45,00"
+                      className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-ink-3/70"
+                      aria-invalid={Boolean(comparisonFieldError)}
+                    />
+                    <Label>Quanto sarebbe costato</Label>
+                  </label>
+                  <p className="mt-2 text-xs text-ink-3">
+                    Serve solo se vuoi confrontare la spesa con un importo di riferimento.
+                  </p>
+                  <FormFieldError
+                    message={comparisonFieldError}
+                    className="mt-2 text-xs"
+                  />
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="text-[13px] text-ink-3">
+              Registriamo una spesa evitata: non verrà contato nulla come speso.
+            </p>
+          )}
         </div>
 
         <div className="px-5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] pt-1.5">
           <button
-            type="submit"
-            disabled={!canSubmit}
-            className={cn(
-              "flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl text-[15.5px] font-bold",
-              "transition-[opacity,transform,background-color] duration-200",
-              canSubmit
-                ? "bg-accent text-accent-foreground active:scale-[0.98] active:opacity-90"
-                : "bg-surface-muted text-ink-3",
-            )}
-          >
-            {pending ? (
-              <>
-                <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-                Salvataggio…
-              </>
-            ) : (
-              <>
-                {hasAmount
-                  ? `Aggiungi ${formatButtonValue(amountInput)}€`
-                  : "Inserisci un importo"}
-                {hasAmount ? <ArrowRight className="size-4" aria-hidden="true" /> : null}
-              </>
-            )}
-          </button>
-
-          <button
             type="button"
             onClick={() => setShowAdvanced((value) => !value)}
-            className="mt-3 flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-foreground"
+            className="mb-4 flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-foreground"
           >
             <ChevronDown
-              className={cn("size-3.5 transition-transform duration-200", showAdvanced && "rotate-180")}
+              className={cn(
+                "size-3.5 transition-transform duration-200",
+                showAdvanced && "rotate-180",
+              )}
               aria-hidden="true"
             />
-            Altre opzioni
+            {showAdvanced ? "Nascondi dettagli" : "Data, nota e ripartizione"}
           </button>
 
           {showAdvanced ? (
-            <div className="mt-4 space-y-4 border-t border-line pt-4">
+            <div className="mb-5 space-y-4 border-t border-line pt-4">
               <div className="space-y-2 border-b border-line pb-3">
                 <Label>Data</Label>
                 <input
                   type="date"
+                  name="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
                   className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
                 />
+                <FormFieldError message={state.errors?.date} className="text-xs" />
               </div>
 
               <div className="space-y-2 border-b border-line pb-3">
                 <Label>Nota</Label>
                 <textarea
+                  name="note"
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Pasta al tonno invece di delivery"
@@ -491,7 +612,40 @@ export function CraftedEntryForm({
                 onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
               />
             </div>
+          ) : (
+            <input type="hidden" name="date" value={date} />
+          )}
+
+          {!showAdvanced && note.trim() ? (
+            <input type="hidden" name="note" value={note} />
           ) : null}
+
+          <button
+            type="submit"
+            disabled={!canSubmit}
+            className={cn(
+              "flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl text-[15.5px] font-bold",
+              "transition-[opacity,transform,background-color] duration-200",
+              canSubmit
+                ? "bg-accent text-accent-foreground active:scale-[0.98] active:opacity-90"
+                : "bg-surface-muted text-ink-3",
+            )}
+          >
+            {pending ? (
+              <>
+                <Loader2
+                  className="size-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+                Salvataggio…
+              </>
+            ) : (
+              <>
+                Salva movimento
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </>
+            )}
+          </button>
         </div>
       </form>
     </>
