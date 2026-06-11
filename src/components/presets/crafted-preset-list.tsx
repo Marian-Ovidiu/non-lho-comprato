@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
@@ -125,6 +126,12 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
           >
             Elimina
           </button>
+          <Link
+            href={`/presets?edit=${encodeURIComponent(preset.id)}`}
+            className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
+          >
+            Modifica
+          </Link>
         </div>
 
         {message ? <p className="mt-2 text-xs text-ink-3">{message}</p> : null}

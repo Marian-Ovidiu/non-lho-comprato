@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import {
   CraftedIcon,
@@ -12,19 +12,18 @@ import {
   StatTrio,
 } from "@/components/crafted";
 import { CraftedDailySpendingHeatmap } from "@/src/components/stats/crafted-daily-spending-heatmap";
+import { CraftedStatsPeriodFilter } from "@/src/components/stats/crafted-stats-period-filter";
 import {
   CraftedTopSavingsList,
   type CraftedTopSavingsItem,
 } from "@/src/components/stats/crafted-top-savings-list";
 import {
   CATEGORY_TONE_CLASS,
-  buildCraftedStatsQueen,
   getActiveDays,
   getAverageMonthlySpent,
   getMaxChartSpent,
   getMonthChartData,
   getPeriodHero,
-  getPeriodOverview,
   getTrendAboveAverage,
   type CraftedStatsProps,
 } from "@/src/lib/crafted-stats-build";
@@ -37,16 +36,14 @@ import {
 } from "@/components/crafted/motion";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { cn } from "@/lib/utils";
-import { getRomeDateKey } from "@/src/lib/rome-dates";
-import type { CraftedStatsPeriod } from "@/src/lib/crafted-stats-build";
-
-const PERIOD_TABS: Array<{ id: CraftedStatsPeriod; label: string }> = [
-  { id: "month", label: "Mese" },
-  { id: "year", label: "Anno" },
-  { id: "all", label: "Sempre" },
-];
+import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
 
 type CraftedStatsComponentProps = CraftedStatsProps & {
+  selectedPeriod: StatsPeriod;
+  selectedMonthKey: string;
+  selectedMonthLabel: string;
+  selectedYear: string;
+  monthOptions: StatsMonthOption[];
   topSavings?: CraftedTopSavingsItem[];
   habitStats?: Array<{
     habitId: string;
@@ -110,49 +107,48 @@ function CraftedCategoryBars({
 
 export function CraftedStats({
   monthlyStats,
-  categoryStats,
   overview,
-  insights,
   dailySpendingComparison,
   currentMonthLabel,
   queen: initialQueen,
   categories,
+  selectedPeriod,
+  selectedMonthKey,
+  selectedMonthLabel,
+  selectedYear,
+  monthOptions,
   topSavings = [],
   habitStats = [],
 }: CraftedStatsComponentProps) {
-  const [period, setPeriod] = useState<CraftedStatsPeriod>("month");
+  const period = selectedPeriod;
 
   const hero = useMemo(
     () =>
       getPeriodHero({
         period,
-        monthlyStats,
         overview,
         currentMonthLabel,
+        selectedYear,
       }),
-    [period, monthlyStats, overview, currentMonthLabel],
+    [period, overview, currentMonthLabel, selectedYear],
   );
 
-  const periodOverview = useMemo(
-    () =>
-      getPeriodOverview({
-        period,
-        monthlyStats,
-        overview,
-      }),
-    [period, monthlyStats, overview],
-  );
+  const periodOverview = overview;
   const trendPct = useMemo(
     () =>
       getTrendAboveAverage({
         period,
         monthlyStats,
         heroAmount: hero.amount,
+        selectedMonthKey,
       }),
-    [period, monthlyStats, hero.amount],
+    [period, monthlyStats, hero.amount, selectedMonthKey],
   );
 
-  const chartData = useMemo(() => getMonthChartData(monthlyStats), [monthlyStats]);
+  const chartData = useMemo(
+    () => getMonthChartData(monthlyStats, selectedMonthKey),
+    [monthlyStats, selectedMonthKey],
+  );
   const maxChartSpent = useMemo(() => getMaxChartSpent(monthlyStats), [monthlyStats]);
   const averageMonthlySpent = useMemo(
     () => getAverageMonthlySpent(monthlyStats),
@@ -163,56 +159,18 @@ export function CraftedStats({
     [dailySpendingComparison],
   );
 
-  const queen = useMemo(() => {
-    if (period !== "month") {
-      const top = categoryStats[0];
-      if (!top) {
-        return null;
-      }
-
-      const periodTotal =
-        period === "year"
-          ? monthlyStats
-              .filter((month) => month.month.startsWith(getRomeDateKey(new Date()).slice(0, 4)))
-              .reduce((sum, month) => sum + month.totalRealSpent, 0)
-          : overview.totalRealSpent;
-
-      return buildCraftedStatsQueen({
-        insights,
-        categoryStats,
-        periodTotalSpent: periodTotal,
-      });
-    }
-
-    return initialQueen;
-  }, [period, categoryStats, monthlyStats, overview.totalRealSpent, insights, initialQueen]);
-
   const queenMonthLabel =
-    currentMonthLabel.split(" ")[0]?.toLowerCase() ?? currentMonthLabel.toLowerCase();
+    selectedMonthLabel.split(" ")[0]?.toLowerCase() ?? selectedMonthLabel.toLowerCase();
 
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <div className="flex gap-5 overflow-x-auto px-5 pt-6 pb-0">
-        {PERIOD_TABS.map((tab) => {
-          const selected = period === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setPeriod(tab.id)}
-              className={cn(
-                "shrink-0 border-b-[1.5px] pb-2 text-[13px] transition-colors",
-                selected
-                  ? "border-accent font-semibold text-foreground"
-                  : "border-transparent font-[450] text-ink-3",
-              )}
-            >
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
+      <CraftedStatsPeriodFilter
+        selectedPeriod={selectedPeriod}
+        selectedMonthKey={selectedMonthKey}
+        selectedMonthLabel={selectedMonthLabel}
+        selectedYear={selectedYear}
+        monthOptions={monthOptions}
+      />
       <Rule className="mt-0" />
 
       <section className="px-5 py-6">
@@ -342,7 +300,7 @@ export function CraftedStats({
         </>
       ) : null}
 
-      {queen ? (
+      {initialQueen ? (
         <>
           <section className="px-5 py-5">
             <Label className="mb-3.5 block">
@@ -352,7 +310,7 @@ export function CraftedStats({
             </Label>
             <div className="flex items-center gap-4">
               <CraftedIcon
-                name={getCategoryCraftedIcon({ slug: queen.slug, name: queen.name })}
+                name={getCategoryCraftedIcon({ slug: initialQueen.slug, name: initialQueen.name })}
                 size={30}
                 strokeWidth={1.4}
                 className="text-accent"
@@ -360,15 +318,15 @@ export function CraftedStats({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <Mono className="text-[28px] font-semibold leading-none">
-                    {formatCraftedCompact(queen.spent)}€
+                    {formatCraftedCompact(initialQueen.spent)}€
                   </Mono>
-                  <span className="text-sm text-muted-foreground">spesi in {queen.name}</span>
+                  <span className="text-sm text-muted-foreground">spesi in {initialQueen.name}</span>
                 </div>
                 <Serif className="mt-1 block text-sm text-ink-3">
-                  il {queen.pct}% di tutto, in {queen.entriesCount}{" "}
-                  {queen.entriesCount === 1 ? "movimento" : "movimenti"}.
-                  {queen.saved > 0
-                    ? ` ${formatCraftedCompact(queen.saved)}€ evitati / risparmiati.`
+                  il {initialQueen.pct}% di tutto, in {initialQueen.entriesCount}{" "}
+                  {initialQueen.entriesCount === 1 ? "movimento" : "movimenti"}.
+                  {initialQueen.saved > 0
+                    ? ` ${formatCraftedCompact(initialQueen.saved)}€ evitati / risparmiati.`
                     : ""}
                 </Serif>
               </div>

@@ -119,4 +119,23 @@ describe("buildDailySpendingComparison", () => {
 
     assert.equal(comparison.monthToDateDelta, 10);
   });
+
+  it("can build the comparison for a selected past month", () => {
+    const now = romeDate(2026, 6, 8);
+    const comparison = buildDailySpendingComparison(
+      [
+        { date: romeDate(2026, 4, 12), realCost: 18 },
+        { date: romeDate(2026, 5, 12), realCost: 30 },
+      ],
+      now,
+      "2026-05",
+    );
+
+    assert.equal(comparison.currentMonth.monthKey, "2026-05");
+    assert.equal(comparison.previousMonth?.monthKey, "2026-04");
+    assert.equal(getDay(comparison, "current", 31)?.isFuture, false);
+    assert.equal(getDay(comparison, "current", 12)?.totalRealSpent, 30);
+    assert.equal(getDay(comparison, "previous", 12)?.totalRealSpent, 18);
+    assert.equal(comparison.monthToDateDelta, 12);
+  });
 });

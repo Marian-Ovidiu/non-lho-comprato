@@ -8,6 +8,14 @@ import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-ban
 import { buildCraftedStatsProps } from "@/src/lib/crafted-stats-build";
 import { buildDailySpendingComparison } from "@/src/lib/daily-spending-comparison";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
+import {
+  getFirstSearchParam,
+  getStatsMonthLabel,
+  getStatsYearFromMonthKey,
+  normalizeStatsMonthKey,
+  parseStatsPeriod,
+  type StatsMonthOption,
+} from "@/src/lib/stats-period";
 import type { StatsOverview } from "@/src/lib/stats-overview";
 import { getWorkspaceMemberFilter } from "@/src/lib/workspace-member-filter";
 import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
@@ -17,10 +25,21 @@ export const dynamic = "force-dynamic";
 type StatsPageProps = {
   searchParams: Promise<{
     person?: string | string[];
+    period?: string | string[];
+    month?: string | string[];
   }>;
 };
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
+  const resolvedSearchParams = await searchParams;
+  const selectedPeriod = parseStatsPeriod(
+    getFirstSearchParam(resolvedSearchParams.period),
+  );
+  const selectedMonthKey = normalizeStatsMonthKey(
+    getFirstSearchParam(resolvedSearchParams.month),
+  );
+  const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
+  const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
   let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
   let loadError: string | null = null;
 
@@ -32,7 +51,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   }
 
   const memberUserId = getWorkspaceMemberFilter(
-    (await searchParams).person,
+    resolvedSearchParams.person,
     members,
   );
   let overview: StatsOverview = {
@@ -48,10 +67,25 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   let habitStats: Awaited<ReturnType<typeof getStatsPageData>>["habitStats"] = [];
   let insights: Awaited<ReturnType<typeof getStatsPageData>>["insights"] = [];
   let topSavings: CraftedTopSavingsItem[] = [];
-  let dailySpendingComparison = buildDailySpendingComparison([]);
+  let dailySpendingComparison = buildDailySpendingComparison(
+    [],
+    new Date(),
+    selectedMonthKey,
+  );
+  let monthOptions: StatsMonthOption[] = [
+    {
+      month: selectedMonthKey,
+      label: selectedMonthLabel,
+      entriesCount: 0,
+    },
+  ];
+  let hasAnyStatsData = false;
 
   try {
-    const stats = await getStatsPageData(memberUserId, members);
+    const stats = await getStatsPageData(memberUserId, members, {
+      period: selectedPeriod,
+      selectedMonthKey,
+    });
     overview = stats.overview;
     monthlyStats = stats.monthlyStats;
     categoryStats = stats.categoryStats;
@@ -62,13 +96,15 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       date: item.date.toISOString(),
     }));
     dailySpendingComparison = stats.dailySpendingComparison;
+    monthOptions = stats.monthOptions;
+    hasAnyStatsData = stats.hasAnyStatsData;
   } catch (error) {
     loadError = formatEntryLoadError(error);
     console.error("Failed to load stats:", error);
   }
 
   const isCompletelyEmpty =
-    !loadError && overview.entriesCount === 0 && habitStats.length === 0;
+    !loadError && !hasAnyStatsData;
 
   const craftedProps = buildCraftedStatsProps({
     overview,
@@ -76,6 +112,8 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     categoryStats,
     insights,
     dailySpendingComparison,
+    currentMonthLabel: selectedMonthLabel,
+    periodTotalSpent: overview.totalRealSpent,
   });
 
   return (
@@ -86,6 +124,10 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
         members={members}
         selectedMemberUserId={memberUserId}
         basePath="/stats"
+        extraParams={{
+          period: selectedPeriod,
+          month: selectedMonthKey,
+        }}
       />
 
       {loadError ? (
@@ -102,6 +144,11 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       ) : loadError ? null : (
         <CraftedStats
           {...craftedProps}
+          selectedPeriod={selectedPeriod}
+          selectedMonthKey={selectedMonthKey}
+          selectedMonthLabel={selectedMonthLabel}
+          selectedYear={selectedYear}
+          monthOptions={monthOptions}
           topSavings={topSavings}
           habitStats={habitStats.map((habit) => ({
             habitId: habit.habitId,

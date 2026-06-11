@@ -18,6 +18,14 @@ import {
   type DailySpendingComparison,
 } from "@/src/lib/daily-spending-comparison";
 import { getRomeMonthKey } from "@/src/lib/rome-dates";
+import {
+  getCurrentStatsMonthKey,
+  getStatsMonthLabel,
+  getStatsYearFromMonthKey,
+  normalizeStatsMonthKey,
+  type StatsMonthOption,
+  type StatsPeriod,
+} from "@/src/lib/stats-period";
 
 type StatsOverview = {
   totalRealSpent: number;
@@ -121,12 +129,25 @@ type StatsMonthlyCategoryRow = {
 
 type StatsPageData = {
   overview: StatsOverview;
+  allTimeOverview: StatsOverview;
   monthlyStats: MonthlyStatsItem[];
   categoryStats: CategoryStatsItem[];
   topSavings: TopSavingsItem[];
   habitStats: HabitStatsItem[];
   insights: StatsInsight[];
   dailySpendingComparison: DailySpendingComparison;
+  selectedPeriod: StatsPeriod;
+  selectedMonthKey: string;
+  selectedMonthLabel: string;
+  selectedYear: string;
+  monthOptions: StatsMonthOption[];
+  hasAnyStatsData: boolean;
+};
+
+type StatsPageDataOptions = {
+  period?: StatsPeriod;
+  selectedMonthKey?: string;
+  now?: Date;
 };
 
 function round2(value: number): number {
@@ -696,6 +717,50 @@ function getStatsFromEntries(
   };
 }
 
+function buildStatsMonthOptionsFromMonthlyStats(
+  monthlyStats: MonthlyStatsItem[],
+  selectedMonthKey: string,
+  now: Date,
+): StatsMonthOption[] {
+  const monthCounts = new Map(
+    monthlyStats.map((month) => [month.month, month.entriesCount]),
+  );
+  const monthKeys = new Set(monthCounts.keys());
+
+  monthKeys.add(getCurrentStatsMonthKey(now));
+  monthKeys.add(selectedMonthKey);
+
+  return Array.from(monthKeys)
+    .sort((left, right) => right.localeCompare(left))
+    .map((month) => ({
+      month,
+      label: getStatsMonthLabel(month),
+      entriesCount: monthCounts.get(month) ?? 0,
+    }));
+}
+
+function filterEntriesForStatsPeriod(
+  entries: StatsEntryRow[],
+  period: StatsPeriod,
+  selectedMonthKey: string,
+): StatsEntryRow[] {
+  if (period === "all") {
+    return entries;
+  }
+
+  const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
+
+  return entries.filter((entry) => {
+    const entryMonthKey = getRomeMonthKey(entry.date);
+
+    if (period === "year") {
+      return entryMonthKey.startsWith(selectedYear);
+    }
+
+    return entryMonthKey === selectedMonthKey;
+  });
+}
+
 async function getHabitStatsFromMembers(
   memberUserId: string | undefined,
   members: WorkspaceMemberOption[],
@@ -807,7 +872,13 @@ async function getHabitStatsFromMembers(
 export async function getStatsPageData(
   memberUserId?: string,
   members?: WorkspaceMemberOption[],
+  options: StatsPageDataOptions = {},
 ): Promise<StatsPageData> {
+  const now = options.now ?? new Date();
+  const selectedPeriod = options.period ?? "month";
+  const selectedMonthKey = normalizeStatsMonthKey(options.selectedMonthKey, now);
+  const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
+  const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
   const workspaceMembers = members ?? (await getCurrentWorkspaceMembers());
   const [entryWhere, habitStats] = await Promise.all([
     buildStatsEntryWhere(memberUserId, workspaceMembers),
@@ -837,23 +908,43 @@ export async function getStatsPageData(
     },
   });
 
-  const entryStats = getStatsFromEntries(entries);
+  const allTimeEntryStats = getStatsFromEntries(entries);
+  const periodEntries = filterEntriesForStatsPeriod(
+    entries,
+    selectedPeriod,
+    selectedMonthKey,
+  );
+  const entryStats = getStatsFromEntries(periodEntries);
   const insights = entryStats.insights.slice(0, 3);
+  const monthOptions = buildStatsMonthOptionsFromMonthlyStats(
+    allTimeEntryStats.monthlyStats,
+    selectedMonthKey,
+    now,
+  );
   const dailySpendingComparison = buildDailySpendingComparison(
     entries.map((entry) => ({
       date: entry.date,
       realCost: entry.realCost,
     })),
+    now,
+    selectedMonthKey,
   );
 
   return {
     overview: entryStats.overview,
-    monthlyStats: entryStats.monthlyStats,
+    allTimeOverview: allTimeEntryStats.overview,
+    monthlyStats: allTimeEntryStats.monthlyStats,
     categoryStats: entryStats.categoryStats,
     topSavings: entryStats.topSavings,
     habitStats,
     insights,
     dailySpendingComparison,
+    selectedPeriod,
+    selectedMonthKey,
+    selectedMonthLabel,
+    selectedYear,
+    monthOptions,
+    hasAnyStatsData: entries.length > 0 || habitStats.length > 0,
   };
 }
 

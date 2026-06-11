@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { createPortal } from "react-dom";
 
 import { Label, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,11 @@ type PopoverPosition = {
   top: number;
   placement: "top" | "bottom";
   width: number;
+};
+
+type AnchorPoint = {
+  x: number;
+  y: number;
 };
 
 const INTENSITY_CLASS = [
@@ -176,7 +182,11 @@ function getSubtitle(data: DailySpendingComparison): string {
     return `${data.currentMonth.label} · confronto giorno per giorno con ${previousAbbrev}`;
   }
 
-  return `${data.currentMonth.label} · ${formatSignedMoney(data.monthToDateDelta)} finora vs ${previousAbbrev}`;
+  const scope = data.currentMonth.days.some((cell) => cell.isToday)
+    ? "finora"
+    : "totale";
+
+  return `${data.currentMonth.label} · ${formatSignedMoney(data.monthToDateDelta)} ${scope} vs ${previousAbbrev}`;
 }
 
 function getIntensityLevel(spent: number, maxDailySpent: number): number {
@@ -303,80 +313,58 @@ function DayDetailPopover({
       role="tooltip"
       aria-live="polite"
       className={cn(
-        "rounded-3xl border border-line bg-background px-4 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)]",
+        "rounded-2xl border border-line bg-background/95 px-3 py-2.5 shadow-[0_16px_46px_rgba(0,0,0,0.18)] backdrop-blur",
         className,
       )}
       style={style}
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <Mono className="block text-[11px] uppercase tracking-[0.18em] text-ink-3">
-            Giorno selezionato
-          </Mono>
-          <p className="mt-1 text-sm font-semibold text-foreground">
-            {details.currentLabel}
-          </p>
-        </div>
+      <div className="flex items-start justify-between gap-3">
+        <p className="min-w-0 text-[13px] font-semibold leading-5 text-foreground">
+          {details.currentLabel}
+        </p>
         {details.cell.isFuture ? (
-          <span className="rounded-full border border-line bg-surface-muted px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-3">
+          <span className="shrink-0 rounded-full border border-line bg-surface-muted px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-ink-3">
             Futuro
           </span>
         ) : details.cell.isToday ? (
-          <span className="rounded-full border border-accent/25 bg-accent/10 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-accent">
+          <span className="shrink-0 rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-accent">
             Oggi
           </span>
         ) : null}
       </div>
 
-      <div className="mt-4 grid gap-2 sm:grid-cols-2">
-        <div className="rounded-2xl border border-line-soft bg-surface/70 p-3">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
-            Speso davvero
-          </span>
-          <Mono className="mt-1 block text-lg font-semibold">
+      <div className="mt-2.5 space-y-1.5 text-[12px] leading-5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Speso davvero</span>
+          <Mono className="font-semibold text-foreground">
             {formatMoney(details.cell.totalRealSpent)}
           </Mono>
-          <span className="text-xs text-ink-3">
-            {details.cell.entriesCount === 1
-              ? "1 movimento"
-              : `${details.cell.entriesCount} movimenti`}
-          </span>
         </div>
-
-        <div className="rounded-2xl border border-line-soft bg-surface/70 p-3">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
-            Mese precedente
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Movimenti</span>
+          <Mono className="font-semibold text-foreground">
+            {details.cell.entriesCount}
+          </Mono>
+        </div>
+        <div className="flex items-start justify-between gap-3">
+          <span className="min-w-0 text-ink-3">
+            {details.previousLabel ?? "Mese precedente"}
           </span>
-          <Mono className="mt-1 block text-lg font-semibold">
+          <Mono className="shrink-0 font-semibold text-foreground">
             {details.previousDateExists
               ? formatMoney(details.previousTotal ?? 0)
-              : "Non disponibile"}
+              : "n.d."}
           </Mono>
-          <span className="text-xs text-ink-3">
-            {details.previousDateExists && details.previousLabel
-              ? details.hasPreviousData
-                ? `${details.previousEntriesCount} ${details.previousEntriesCount === 1 ? "movimento" : "movimenti"} · ${details.previousLabel}`
-                : `Nessun dato · ${details.previousLabel}`
-              : "Giorno non esistente"}
-          </span>
         </div>
-      </div>
-
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <div className="rounded-2xl border border-line-soft bg-surface/50 p-3">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
-            Differenza
-          </span>
-          <Mono className={cn("mt-1 block text-base font-semibold", deltaTone)}>
+        <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-1.5">
+          <span className="text-ink-3">Differenza</span>
+          <Mono className={cn("font-semibold", deltaTone)}>
             {details.delta === null ? "Non calcolabile" : formatSignedMoney(details.delta)}
           </Mono>
         </div>
-
-        <div className="rounded-2xl border border-line-soft bg-surface/50 p-3">
-          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
-            Percentuale
-          </span>
-          <Mono className={cn("mt-1 block text-base font-semibold", deltaTone)}>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-ink-3">Percentuale</span>
+          <Mono className={cn("font-semibold", deltaTone)}>
             {details.percentDelta === null
               ? "Non calcolabile"
               : formatSignedPercent(details.percentDelta)}
@@ -384,7 +372,7 @@ function DayDetailPopover({
         </div>
       </div>
 
-      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+      <p className="mt-2 border-t border-line-soft pt-2 text-[11px] leading-4 text-muted-foreground">
         {details.note}
       </p>
     </div>
@@ -429,16 +417,32 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
     return activeCell ? buildDayDetails(activeCell, data) : null;
   }, [activeDay, currentDays, data]);
 
-  function getPopoverPosition(day: number, element: HTMLElement): PopoverPosition {
+  function getPopoverPosition(
+    day: number,
+    element: HTMLElement,
+    anchor?: AnchorPoint,
+  ): PopoverPosition {
     const rect = element.getBoundingClientRect();
-    const width = Math.min(336, window.innerWidth - 32);
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const margin = 12;
+    const gap = 10;
+    const width = Math.min(282, viewportWidth - margin * 2);
+    const estimatedHeight = 190;
+    const anchorX = anchor?.x ?? rect.left + rect.width / 2;
+    const anchorY = anchor?.y ?? rect.top + rect.height / 2;
     const left = Math.min(
-      Math.max(16, rect.left + rect.width / 2 - width / 2),
-      window.innerWidth - width - 16,
+      Math.max(margin, anchorX - width / 2),
+      viewportWidth - width - margin,
     );
-    const estimatedHeight = 300;
-    const hasRoomBelow = rect.bottom + estimatedHeight + 14 < window.innerHeight;
-    const top = hasRoomBelow ? rect.bottom + 10 : rect.top - 10;
+    const hasRoomBelow = anchorY + estimatedHeight + gap < viewportHeight;
+    const unclampedTop = hasRoomBelow
+      ? anchorY + gap
+      : anchorY - estimatedHeight - gap;
+    const top = Math.min(
+      Math.max(margin, unclampedTop),
+      Math.max(margin, viewportHeight - estimatedHeight - margin),
+    );
 
     return {
       day,
@@ -449,9 +453,9 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
     };
   }
 
-  function activateDay(day: number, element: HTMLElement) {
+  function activateDay(day: number, element: HTMLElement, anchor?: AnchorPoint) {
     setActiveDay(day);
-    setPopoverPosition(getPopoverPosition(day, element));
+    setPopoverPosition(getPopoverPosition(day, element, anchor));
   }
   useEffect(() => {
     if (!activeDay || currentDays.some((cell) => cell.day === activeDay)) {
@@ -471,11 +475,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
       return;
     }
 
-    function handlePointerDown(event: PointerEvent) {
-      if (rootRef.current?.contains(event.target as Node)) {
-        return;
-      }
-
+    function handlePointerDown() {
       setActiveDay(null);
       setPopoverPosition(null);
     }
@@ -496,6 +496,8 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
     };
   }, [activeDay]);
 
+  const portalRoot = typeof document === "undefined" ? null : document.body;
+
   return (
     <section ref={rootRef} className="px-5 py-5">
       <Label className="mb-2 block">Spesa giornaliera</Label>
@@ -503,7 +505,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
 
       {!hasData ? (
         <p className="py-8 text-sm text-ink-3">
-          Nessuna spesa registrata nel mese corrente o in quello precedente.
+          Nessuna spesa registrata in questo mese o in quello precedente.
         </p>
       ) : (
         <>
@@ -524,11 +526,19 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                       aria-label={getDayAriaLabel(details)}
                       aria-describedby={isActive ? "daily-spending-heatmap-detail" : undefined}
                       aria-expanded={isActive}
-                      onClick={(event) => activateDay(cell.day, event.currentTarget)}
+                      onClick={(event) =>
+                        activateDay(cell.day, event.currentTarget, {
+                          x: event.clientX,
+                          y: event.clientY,
+                        })
+                      }
                       onFocus={(event) => activateDay(cell.day, event.currentTarget)}
                       onPointerEnter={(event) => {
                         if (event.pointerType !== "touch") {
-                          activateDay(cell.day, event.currentTarget);
+                          activateDay(cell.day, event.currentTarget, {
+                            x: event.clientX,
+                            y: event.clientY,
+                          });
                         }
                       }}
                       className={cn(
@@ -563,21 +573,20 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
             </ol>
           </div>
 
-          {activeDetails && popoverPosition?.day === activeDetails.cell.day ? (
-            <DayDetailPopover
-              details={activeDetails}
-              className="fixed z-[70]"
-              style={{
-                left: popoverPosition.left,
-                top: popoverPosition.top,
-                width: popoverPosition.width,
-                transform:
-                  popoverPosition.placement === "top"
-                    ? "translateY(-100%)"
-                    : undefined,
-              }}
-            />
-          ) : null}
+          {activeDetails && popoverPosition?.day === activeDetails.cell.day && portalRoot
+            ? createPortal(
+                <DayDetailPopover
+                  details={activeDetails}
+                  className="fixed z-[70]"
+                  style={{
+                    left: popoverPosition.left,
+                    top: popoverPosition.top,
+                    width: popoverPosition.width,
+                  }}
+                />,
+                portalRoot,
+              )
+            : null}
 
           <div className="mt-4 space-y-3 border-t border-line-soft pt-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
@@ -590,11 +599,11 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
 
             {data.monthToDateDelta !== null ? (
               <p className="text-xs leading-5 text-muted-foreground">
-                Totale progressivo: {" "}
+                Totale {data.currentMonth.days.some((cell) => cell.isToday) ? "progressivo" : "mese"}:{" "}
                 <Mono className="font-semibold text-foreground">
                   {formatCraftedCompact(data.currentMonth.totalRealSpent)}€
                 </Mono>{" "}
-                nel mese corrente, {" "}
+                in {data.currentMonth.label.toLowerCase()},{" "}
                 <Mono
                   className={cn(
                     "font-semibold",

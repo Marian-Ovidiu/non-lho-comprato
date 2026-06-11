@@ -5,7 +5,7 @@ import { CircleOff, Loader2, Receipt } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Label } from "@/components/crafted";
-import { createPreset } from "@/src/actions/presets";
+import { createPreset, updatePreset } from "@/src/actions/presets";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
 import { cn } from "@/lib/utils";
@@ -19,6 +19,17 @@ type FormState = {
   success: boolean;
   message: string;
   errors?: Record<string, string>;
+};
+
+export type CraftedPresetFormInitialValue = {
+  id?: string;
+  title: string;
+  categoryId: string;
+  mode: EntryMode;
+  savingContext: EntrySavingContext;
+  amountSpent: string;
+  comparisonAmount: string;
+  note: string;
 };
 
 const initialState: FormState = { success: false, message: "", errors: {} };
@@ -36,19 +47,58 @@ function getComparisonFieldError(errors?: Record<string, string>) {
   return errors?.comparisonAmount ?? errors?.alternativeCost;
 }
 
-export function CraftedPresetForm({ categories }: { categories: CategoryOption[] }) {
+function getInitialFormValue(
+  initialPreset?: CraftedPresetFormInitialValue,
+): CraftedPresetFormInitialValue {
+  return (
+    initialPreset ?? {
+      title: "",
+      categoryId: "",
+      mode: "spent",
+      savingContext: "none",
+      amountSpent: "",
+      comparisonAmount: "",
+      note: "",
+    }
+  );
+}
+
+function shouldShowComparison(initialPreset?: CraftedPresetFormInitialValue) {
+  return (
+    initialPreset?.mode === "spent" &&
+    initialPreset.savingContext === "comparison"
+  );
+}
+
+export function CraftedPresetForm({
+  categories,
+  initialPreset,
+}: {
+  categories: CategoryOption[];
+  initialPreset?: CraftedPresetFormInitialValue;
+}) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const refresh = useCallback(() => router.refresh(), [router]);
-  const [mode, setMode] = useState<EntryMode>("spent");
-  const [showComparison, setShowComparison] = useState(false);
-  const [title, setTitle] = useState("");
-  const [categoryId, setCategoryId] = useState("");
-  const [amountSpent, setAmountSpent] = useState("");
-  const [comparisonAmount, setComparisonAmount] = useState("");
+  const initialValue = getInitialFormValue(initialPreset);
+  const isEditing = Boolean(initialPreset?.id);
+  const [mode, setMode] = useState<EntryMode>(initialValue.mode);
+  const [showComparison, setShowComparison] = useState(
+    shouldShowComparison(initialPreset),
+  );
+  const [title, setTitle] = useState(initialValue.title);
+  const [categoryId, setCategoryId] = useState(initialValue.categoryId);
+  const [amountSpent, setAmountSpent] = useState(initialValue.amountSpent);
+  const [comparisonAmount, setComparisonAmount] = useState(
+    initialValue.comparisonAmount,
+  );
+  const [note, setNote] = useState(initialValue.note);
   const [state, formAction, pending] = useActionState(
-    async (_previousState: FormState, formData: FormData) => createPreset(formData),
+    async (_previousState: FormState, formData: FormData) =>
+      initialPreset?.id
+        ? updatePreset(initialPreset.id, formData)
+        : createPreset(formData),
     initialState,
   );
 
@@ -60,15 +110,30 @@ export function CraftedPresetForm({ categories }: { categories: CategoryOption[]
 
     if (didHandleSuccessRef.current) return;
     didHandleSuccessRef.current = true;
-    formRef.current?.reset();
-    setMode("spent");
-    setShowComparison(false);
-    setTitle("");
-    setCategoryId("");
-    setAmountSpent("");
-    setComparisonAmount("");
+
+    let frameId: number | null = null;
+
+    if (!isEditing) {
+      frameId = window.requestAnimationFrame(() => {
+        formRef.current?.reset();
+        setMode("spent");
+        setShowComparison(false);
+        setTitle("");
+        setCategoryId("");
+        setAmountSpent("");
+        setComparisonAmount("");
+        setNote("");
+      });
+    }
+
     refresh();
-  }, [refresh, state]);
+
+    return () => {
+      if (frameId !== null) {
+        window.cancelAnimationFrame(frameId);
+      }
+    };
+  }, [isEditing, refresh, state]);
 
   const savingContext: EntrySavingContext =
     mode === "avoided" ? "comparison" : showComparison ? "comparison" : "none";
@@ -103,6 +168,13 @@ export function CraftedPresetForm({ categories }: { categories: CategoryOption[]
         >
           {state.message}
         </div>
+      ) : null}
+
+      {initialPreset && !initialPreset.id ? (
+        <p className="border-y border-line py-3 text-sm leading-6 text-ink-3">
+          Stai partendo da un preset di default. Salvandolo crei un preset personale
+          modificabile.
+        </p>
       ) : null}
 
       <div className="grid grid-cols-2 gap-2 border-y border-line py-3">
@@ -245,6 +317,8 @@ export function CraftedPresetForm({ categories }: { categories: CategoryOption[]
         <textarea
           name="note"
           rows={2}
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
           placeholder="Spesso capita dopo pranzo"
           className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-ink-3/70"
         />
@@ -255,7 +329,13 @@ export function CraftedPresetForm({ categories }: { categories: CategoryOption[]
         disabled={pending}
         className="flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15.5px] font-bold text-accent-foreground disabled:opacity-50"
       >
-        {pending ? <Loader2 className="size-4 animate-spin" /> : "Salva preset"}
+        {pending ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : isEditing ? (
+          "Aggiorna preset"
+        ) : (
+          "Salva preset"
+        )}
       </button>
     </form>
   );

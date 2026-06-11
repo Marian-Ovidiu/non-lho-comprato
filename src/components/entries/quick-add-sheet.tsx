@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { createEntry, deleteEntry } from "@/src/actions/entries";
+import { getPresets, type SerializablePreset } from "@/src/actions/presets";
 import { useToast } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,10 @@ import { trackPostHogEvent } from "@/src/lib/posthog";
 import { getRomeTodayDateKey, shiftRomeDateKey } from "@/src/lib/rome-dates";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
+import {
+  DEFAULT_QUICK_ADD_PRESETS,
+  readHiddenDefaultPresetIds,
+} from "@/src/lib/quick-add-presets";
 
 type CategoryOption = {
   id: string;
@@ -66,10 +71,16 @@ type CategoryOption = {
 
 type QuickAddPreset = {
   id: string;
+  source: "default" | "saved";
+  presetId: string;
   emoji: string;
   title: string;
-  categorySlug: string;
-  amount: number;
+  categoryId?: string;
+  categorySlug?: string;
+  amountSpent: string;
+  comparisonAmount: string;
+  mode: EntryMode;
+  savingContext: EntrySavingContext;
   rangeLabel: string;
   shared?: boolean;
 };
@@ -101,51 +112,6 @@ const initialState: QuickAddState = {
   errors: {},
 };
 
-const presets: QuickAddPreset[] = [
-  {
-    id: "coffee",
-    emoji: "☕",
-    title: "Caffè",
-    categorySlug: "caffe",
-    amount: 4,
-    rangeLabel: "2 - 5 €",
-  },
-  {
-    id: "delivery",
-    emoji: "🍔",
-    title: "Delivery",
-    categorySlug: "delivery",
-    amount: 24,
-    rangeLabel: "15 - 30 €",
-    shared: true,
-  },
-  {
-    id: "grocery",
-    emoji: "🛒",
-    title: "Spesa",
-    categorySlug: "spesa",
-    amount: 28,
-    rangeLabel: "20 - 45 €",
-    shared: true,
-  },
-  {
-    id: "smoke",
-    emoji: "🚬",
-    title: "Sigarette",
-    categorySlug: "salute",
-    amount: 12,
-    rangeLabel: "8 - 15 €",
-  },
-  {
-    id: "shopping",
-    emoji: "🛍️",
-    title: "Shopping",
-    categorySlug: "shopping",
-    amount: 36,
-    rangeLabel: "20 - 60 €",
-  },
-];
-
 function getTodayLocal() {
   return getRomeTodayDateKey();
 }
@@ -167,8 +133,78 @@ function getInitialDraft(
   };
 }
 
-function getMoneyValue(amount: number) {
-  return amount.toFixed(2);
+function getPresetAmountLabel(amount: string) {
+  const parsed = Number(amount.replace(",", "."));
+
+  if (!Number.isFinite(parsed)) {
+    return `${amount} €`;
+  }
+
+  return `${new Intl.NumberFormat("it-IT", {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
+  }).format(parsed)} €`;
+}
+
+function buildDefaultQuickPreset(
+  preset: (typeof DEFAULT_QUICK_ADD_PRESETS)[number],
+  mode: EntryMode,
+): QuickAddPreset {
+  const amount = preset.amount.toFixed(2);
+
+  return {
+    id: `default:${preset.id}`,
+    source: "default",
+    presetId: preset.id,
+    emoji: preset.emoji,
+    title: preset.title,
+    categorySlug: preset.categorySlug,
+    amountSpent: mode === "spent" ? amount : "",
+    comparisonAmount: mode === "avoided" ? amount : "",
+    mode,
+    savingContext: mode === "avoided" ? "comparison" : "none",
+    rangeLabel: preset.rangeLabel,
+    shared: preset.shared,
+  };
+}
+
+function getSavedPresetEmoji(preset: SerializablePreset) {
+  if (preset.mode === "avoided") {
+    return "✋";
+  }
+
+  if (preset.savingContext === "comparison") {
+    return "↘";
+  }
+
+  return "•";
+}
+
+function buildSavedQuickPreset(preset: SerializablePreset): QuickAddPreset {
+  const amountLabel =
+    preset.mode === "avoided"
+      ? getPresetAmountLabel(preset.comparisonAmount)
+      : getPresetAmountLabel(preset.amountSpent);
+
+  return {
+    id: `saved:${preset.id}`,
+    source: "saved",
+    presetId: preset.id,
+    emoji: getSavedPresetEmoji(preset),
+    title: preset.title,
+    categoryId: preset.category.id,
+    categorySlug: preset.category.slug,
+    amountSpent: preset.amountSpent,
+    comparisonAmount: preset.comparisonAmount,
+    mode: preset.mode,
+    savingContext: preset.savingContext,
+    rangeLabel:
+      preset.mode === "avoided"
+        ? `${amountLabel} evitati`
+        : preset.savingContext === "comparison"
+          ? `${amountLabel} con confronto`
+          : amountLabel,
+  };
 }
 
 function getSearchHref(
@@ -252,6 +288,11 @@ export function QuickAddSheet({
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+  const [savedPresets, setSavedPresets] = useState<SerializablePreset[]>([]);
+  const [presetsLoading, setPresetsLoading] = useState(false);
+  const [hiddenDefaultPresetIds, setHiddenDefaultPresetIds] = useState<string[]>(
+    () => readHiddenDefaultPresetIds(),
+  );
   const [draft, setDraft] = useState<QuickAddDraft>(() =>
     getInitialDraft([], currentUserId),
   );
@@ -286,9 +327,17 @@ export function QuickAddSheet({
       ),
     [categories],
   );
+  const quickAddPresets = useMemo(() => {
+    const hiddenDefaultIds = new Set(hiddenDefaultPresetIds);
+    const visibleDefaults = DEFAULT_QUICK_ADD_PRESETS.filter(
+      (preset) => !hiddenDefaultIds.has(preset.id),
+    ).map((preset) => buildDefaultQuickPreset(preset, mode));
+
+    return [...savedPresets.map(buildSavedQuickPreset), ...visibleDefaults];
+  }, [hiddenDefaultPresetIds, mode, savedPresets]);
   const presetMap = useMemo(
-    () => new Map(presets.map((preset) => [preset.id, preset])),
-    [],
+    () => new Map(quickAddPresets.map((preset) => [preset.id, preset])),
+    [quickAddPresets],
   );
   const activeMembers = useMemo(
     () =>
@@ -371,6 +420,38 @@ export function QuickAddSheet({
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadPresets() {
+      setPresetsLoading(true);
+
+      try {
+        const loadedPresets = await getPresets();
+
+        if (active) {
+          setSavedPresets(loadedPresets);
+        }
+      } catch (error) {
+        console.error("Failed to load quick-add presets:", error);
+      } finally {
+        if (active) {
+          setPresetsLoading(false);
+        }
+      }
+    }
+
+    void loadPresets();
+
+    return () => {
+      active = false;
+    };
+  }, [open]);
 
   useEffect(() => {
     if (membersLoading || hasDraftBeenEditedRef.current) {
@@ -497,6 +578,7 @@ export function QuickAddSheet({
 
     hasDraftBeenEditedRef.current = true;
     setActivePreset(preset.id);
+    setMode(preset.mode);
     const paidByUserId = getDefaultPaidByUserId(activeMembers, currentUserId);
     const beneficiaryUserIds = preset.shared
       ? activeMembers.map((member) => member.userId)
@@ -504,15 +586,22 @@ export function QuickAddSheet({
 
     setDraft({
       title: preset.title,
-      categoryId: resolveCategoryId(preset.categorySlug),
-      amountSpent: mode === "spent" ? getMoneyValue(preset.amount) : "",
-      comparisonAmount: mode === "avoided" ? getMoneyValue(preset.amount) : "",
+      categoryId: preset.categoryId ?? resolveCategoryId(preset.categorySlug ?? ""),
+      amountSpent: preset.mode === "spent" ? preset.amountSpent : "",
+      comparisonAmount:
+        preset.mode === "avoided" || preset.savingContext === "comparison"
+          ? preset.comparisonAmount
+          : "",
       paidByUserId,
       beneficiaryUserIds,
       date: getTodayLocal(),
     });
-    setComparisonEnabled(false);
-    setComparisonAmountTouched(mode === "avoided");
+    setComparisonEnabled(
+      preset.mode === "spent" && preset.savingContext === "comparison",
+    );
+    setComparisonAmountTouched(
+      preset.mode === "avoided" || preset.savingContext === "comparison",
+    );
     focusTitleSoon();
   }
 
@@ -569,6 +658,10 @@ export function QuickAddSheet({
       open={open}
       onOpenChange={(nextOpen) => {
         setOpen(nextOpen);
+
+        if (nextOpen) {
+          setHiddenDefaultPresetIds(readHiddenDefaultPresetIds());
+        }
 
         if (!nextOpen) {
           setActivePreset(null);
@@ -699,11 +792,17 @@ export function QuickAddSheet({
               </div>
             </div>
 
-            {presets.map((preset, index) => {
+            {presetsLoading ? (
+              <p className="sm:col-span-2 rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm text-muted-text">
+                Carico i preset salvati…
+              </p>
+            ) : null}
+
+            {quickAddPresets.map((preset, index) => {
               const isActive = activePreset === preset.id;
               const presetIdentity = getCategoryIdentity({
                 name: preset.title,
-                slug: preset.categorySlug,
+                slug: preset.categorySlug ?? preset.categoryId ?? "altro",
               });
 
               return (
@@ -714,7 +813,7 @@ export function QuickAddSheet({
                   onClick={() => applyPreset(preset.id)}
                   className={cn(
                     "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
-                    "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
+                    "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                     presetIdentity.subtleSurfaceClassName,
                     isActive &&
                       "border-primary/25 bg-primary/8 ring-1 ring-primary/20",
@@ -767,6 +866,19 @@ export function QuickAddSheet({
 
               <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-text" aria-hidden="true" />
             </button>
+
+            <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background px-4 py-3">
+              <span className="text-xs leading-5 text-muted-text">
+                Per creare, modificare o eliminare preset vai alla pagina dedicata.
+              </span>
+              <Link
+                href="/presets"
+                onClick={() => setOpen(false)}
+                className="rounded-full border border-border/70 px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-surface-muted"
+              >
+                Gestisci preset
+              </Link>
+            </div>
           </div>
 
           <form
@@ -1073,7 +1185,9 @@ export function QuickAddSheet({
               </Button>
 
               <Button asChild variant="outline" className="h-11 w-full sm:flex-1">
-                <Link href={fullFormHref}>Vai al form completo</Link>
+                <Link href={fullFormHref} onClick={() => setOpen(false)}>
+                  Vai al form completo
+                </Link>
               </Button>
             </div>
           </form>

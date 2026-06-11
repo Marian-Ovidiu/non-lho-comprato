@@ -55,7 +55,9 @@ export type SerializablePreset = {
   person: LegacyPersonValue | null;
   createdAt: string;
   category: {
+    id: string;
     name: string;
+    slug: string;
   };
 };
 
@@ -486,6 +488,102 @@ export async function createPreset(
   }
 }
 
+export async function updatePreset(
+  id: string,
+  formData: FormData,
+): Promise<PresetActionResult> {
+  const presetId = id.trim();
+  const errors: Record<string, string> = {};
+
+  if (!presetId) {
+    return {
+      success: false,
+      message: "ID preset non valido",
+    };
+  }
+
+  const title = getText(formData, "title");
+  const categoryId = getText(formData, "categoryId");
+  const note = getText(formData, "note");
+  const money = resolvePresetMoney(formData);
+
+  if (!title) {
+    errors.title = "Il titolo è obbligatorio";
+  }
+
+  if (title && title.length < 2) {
+    errors.title = "Il titolo deve avere almeno 2 caratteri";
+  }
+
+  if (!categoryId) {
+    errors.categoryId = "Seleziona una categoria";
+  }
+
+  Object.assign(errors, money.errors);
+
+  if (Object.keys(errors).length > 0 || !money.money) {
+    return {
+      success: false,
+      message: "Controlla i campi evidenziati",
+      errors,
+    };
+  }
+
+  try {
+    const preset = await prisma.quickPreset.findUnique({
+      where: { id: presetId },
+      select: {
+        id: true,
+        workspaceId: true,
+      },
+    });
+
+    if (!preset) {
+      return {
+        success: false,
+        message: "Preset non trovato",
+      };
+    }
+
+    await requireWorkspaceAccessForRecord(preset, "Preset");
+
+    const workspaceId = await getCurrentWorkspaceId();
+    const category = await resolveCategory(categoryId, workspaceId);
+
+    if (!category) {
+      return {
+        success: false,
+        message: "Seleziona una categoria valida",
+      };
+    }
+
+    await prisma.quickPreset.update({
+      where: { id: presetId },
+      data: {
+        title,
+        categoryId: category.id,
+        realCost: money.money.realCost.toFixed(2),
+        alternativeCost: money.money.alternativeCost.toFixed(2),
+        note: note || null,
+      },
+    });
+
+    revalidatePresetPaths();
+
+    return {
+      success: true,
+      message: "Preset aggiornato",
+    };
+  } catch (error) {
+    console.error("Failed to update preset:", error);
+    return {
+      success: false,
+      message:
+        "Non riesco ad aggiornare il preset adesso. Riprova tra poco.",
+    };
+  }
+}
+
 function serializePreset(preset: {
   id: string;
   title: string;
@@ -495,7 +593,9 @@ function serializePreset(preset: {
   person: LegacyPersonValue | null;
   createdAt: Date;
   category: {
+    id: string;
     name: string;
+    slug: string;
   };
 }): SerializablePreset {
   const money = toEntryMoneyView({
@@ -518,7 +618,9 @@ function serializePreset(preset: {
     person: preset.person,
     createdAt: preset.createdAt.toISOString(),
     category: {
+      id: preset.category.id,
       name: preset.category.name,
+      slug: preset.category.slug,
     },
   };
 }
@@ -542,7 +644,9 @@ export async function getPresets(): Promise<SerializablePreset[]> {
         createdAt: true,
         category: {
           select: {
+            id: true,
             name: true,
+            slug: true,
           },
         },
       },

@@ -83,6 +83,27 @@ function buildMonthKey(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, "0")}`;
 }
 
+function parseMonthKey(monthKey: string): { year: number; month: number } | null {
+  const match = monthKey.match(/^(\d{4})-(\d{2})$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month)) {
+    return null;
+  }
+
+  if (month < 1 || month > 12) {
+    return null;
+  }
+
+  return { year, month };
+}
+
 function aggregateDailyTotals(entries: readonly DailySpendingEntry[]): {
   dayTotals: Map<string, number>;
   dayEntryCounts: Map<string, number>;
@@ -123,8 +144,8 @@ function buildMonthRow(
   dayTotals: Map<string, number>,
   dayEntryCounts: Map<string, number>,
   options: {
-    isCurrentMonth: boolean;
     todayKey: string;
+    todayMonthKey: string;
   },
 ): DailySpendingMonthRow {
   const monthKey = buildMonthKey(year, month);
@@ -149,7 +170,9 @@ function buildMonthRow(
     const totalRealSpentForDay = dayTotals.get(dateKey) ?? 0;
     const entriesCount = dayEntryCounts.get(dateKey) ?? 0;
     const isToday = dateKey === options.todayKey;
-    const isFuture = options.isCurrentMonth && dateKey > options.todayKey;
+    const isFuture =
+      monthKey > options.todayMonthKey ||
+      (monthKey === options.todayMonthKey && dateKey > options.todayKey);
 
     totalRealSpent = round2(totalRealSpent + totalRealSpentForDay);
 
@@ -188,14 +211,9 @@ function computeMaxDailySpent(rows: DailySpendingMonthRow[]): number {
 function computeMonthToDateDelta(
   currentMonth: DailySpendingMonthRow,
   previousMonth: DailySpendingMonthRow | null,
-  todayDay: number,
+  dayLimit: number,
 ): number | null {
   if (!previousMonth) {
-    return null;
-  }
-
-  const todayCell = currentMonth.days.find((cell) => cell.isToday);
-  if (!todayCell?.dateKey) {
     return null;
   }
 
@@ -203,7 +221,7 @@ function computeMonthToDateDelta(
   let previousSum = 0;
 
   for (const cell of currentMonth.days) {
-    if (!cell.dateKey || cell.day > todayDay) {
+    if (!cell.dateKey || cell.day > dayLimit) {
       continue;
     }
 
@@ -211,7 +229,7 @@ function computeMonthToDateDelta(
   }
 
   for (const cell of previousMonth.days) {
-    if (!cell.dateKey || cell.day > todayDay) {
+    if (!cell.dateKey || cell.day > dayLimit) {
       continue;
     }
 
@@ -224,12 +242,17 @@ function computeMonthToDateDelta(
 export function buildDailySpendingComparison(
   entries: readonly DailySpendingEntry[],
   now: Date = new Date(),
+  selectedMonthKey?: string,
 ): DailySpendingComparison {
   const todayParts = getRomeDateParts(now);
   const todayKey = getRomeDateKey(now);
+  const todayMonthKey = buildMonthKey(todayParts.year, todayParts.month);
   const { dayTotals, dayEntryCounts } = aggregateDailyTotals(entries);
 
-  const currentMonthParts = {
+  const selectedMonthParts = selectedMonthKey
+    ? parseMonthKey(selectedMonthKey)
+    : null;
+  const currentMonthParts = selectedMonthParts ?? {
     year: todayParts.year,
     month: todayParts.month,
   };
@@ -248,8 +271,8 @@ export function buildDailySpendingComparison(
     dayTotals,
     dayEntryCounts,
     {
-      isCurrentMonth: true,
       todayKey,
+      todayMonthKey,
     },
   );
 
@@ -260,8 +283,8 @@ export function buildDailySpendingComparison(
         dayTotals,
         dayEntryCounts,
         {
-          isCurrentMonth: false,
           todayKey,
+          todayMonthKey,
         },
       )
     : null;
@@ -277,7 +300,7 @@ export function buildDailySpendingComparison(
     monthToDateDelta: computeMonthToDateDelta(
       currentMonth,
       previousMonth,
-      todayParts.day,
+      currentMonth.monthKey === todayMonthKey ? todayParts.day : 31,
     ),
   };
 }

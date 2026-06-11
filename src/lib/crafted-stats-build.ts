@@ -147,19 +147,26 @@ export function buildCraftedStatsProps({
   categoryStats,
   insights,
   dailySpendingComparison,
+  currentMonthLabel: selectedMonthLabel,
+  periodTotalSpent: selectedPeriodTotalSpent,
 }: {
   overview: StatsOverview;
   monthlyStats: CraftedStatsMonthlyItem[];
   categoryStats: CraftedStatsCategoryItem[];
   insights: StatsInsight[];
   dailySpendingComparison: DailySpendingComparison;
+  currentMonthLabel?: string;
+  periodTotalSpent?: number;
 }): CraftedStatsProps {
   const currentMonthLabel =
-    monthlyStats.at(-1)?.label ??
+    selectedMonthLabel ??
+    monthlyStats.find(
+      (month) => month.month === dailySpendingComparison.currentMonth.monthKey,
+    )?.label ??
     dailySpendingComparison.currentMonth.label;
 
   const periodTotalSpent =
-    monthlyStats.at(-1)?.totalRealSpent ?? overview.totalRealSpent;
+    selectedPeriodTotalSpent ?? monthlyStats.at(-1)?.totalRealSpent ?? overview.totalRealSpent;
 
   return {
     overview,
@@ -252,37 +259,28 @@ export function getPeriodOverview({
 
 export function getPeriodHero({
   period,
-  monthlyStats,
   overview,
   currentMonthLabel,
+  selectedYear,
 }: {
   period: CraftedStatsPeriod;
-  monthlyStats: CraftedStatsMonthlyItem[];
   overview: StatsOverview;
   currentMonthLabel: string;
+  selectedYear?: string;
 }) {
-  const currentYear = getCurrentYearKey();
-  const latestMonth = monthlyStats.at(-1);
-
   if (period === "month") {
     return {
       label: `Speso a ${currentMonthLabel.split(" ")[0]?.toLowerCase() ?? currentMonthLabel.toLowerCase()}`,
-      amount: latestMonth?.totalRealSpent ?? 0,
-      entriesCount: latestMonth?.entriesCount ?? 0,
+      amount: overview.totalRealSpent,
+      entriesCount: overview.entriesCount,
     };
   }
 
   if (period === "year") {
-    const yearMonths = monthlyStats.filter((month) => month.month.startsWith(currentYear));
-    const amount = round2(
-      yearMonths.reduce((sum, month) => sum + month.totalRealSpent, 0),
-    );
-    const entriesCount = yearMonths.reduce((sum, month) => sum + month.entriesCount, 0);
-
     return {
-      label: `Speso nel ${currentYear}`,
-      amount,
-      entriesCount,
+      label: `Speso nel ${selectedYear ?? getCurrentYearKey()}`,
+      amount: overview.totalRealSpent,
+      entriesCount: overview.entriesCount,
     };
   }
 
@@ -306,16 +304,34 @@ export function getTrendAboveAverage({
   period,
   monthlyStats,
   heroAmount,
+  selectedMonthKey,
 }: {
   period: CraftedStatsPeriod;
   monthlyStats: CraftedStatsMonthlyItem[];
   heroAmount: number;
+  selectedMonthKey?: string;
 }) {
   if (period !== "month" || monthlyStats.length < 2) {
     return null;
   }
 
-  const previousMonths = monthlyStats.slice(0, -1);
+  const sortedMonths = [...monthlyStats].sort((left, right) =>
+    left.month.localeCompare(right.month),
+  );
+  const selectedIndex = selectedMonthKey
+    ? sortedMonths.findIndex((month) => month.month === selectedMonthKey)
+    : sortedMonths.length - 1;
+  const previousMonths =
+    selectedIndex > 0
+      ? sortedMonths.slice(0, selectedIndex)
+      : sortedMonths.filter((month) =>
+          selectedMonthKey ? month.month < selectedMonthKey : false,
+        );
+
+  if (previousMonths.length === 0) {
+    return null;
+  }
+
   const average = getAverageMonthlySpent(previousMonths);
 
   if (average <= 0) {
@@ -331,12 +347,15 @@ export function getActiveDays(dailySpendingComparison: DailySpendingComparison) 
   ).length;
 }
 
-export function getMonthChartData(monthlyStats: CraftedStatsMonthlyItem[]) {
+export function getMonthChartData(
+  monthlyStats: CraftedStatsMonthlyItem[],
+  activeMonthKey?: string,
+) {
   const last12 = [...monthlyStats]
     .sort((left, right) => left.month.localeCompare(right.month))
     .slice(-12);
   const maxSpent = Math.max(...last12.map((month) => month.totalRealSpent), 1);
-  const activeMonth = last12.at(-1)?.month;
+  const activeMonth = activeMonthKey ?? last12.at(-1)?.month;
 
   return last12.map((month) => ({
     month: month.month,
