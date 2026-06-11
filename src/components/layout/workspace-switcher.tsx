@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
@@ -114,14 +114,33 @@ export function WorkspaceSwitcher({
   );
   const [switchError, setSwitchError] = useState<string | null>(null);
   const [isRoutePending, startSwitchTransition] = useTransition();
+  const switchingWorkspaceIdRef = useRef<string | null>(null);
   const hasMultipleWorkspaces = availableWorkspaces.length > 1;
   const isSwitching = Boolean(switchingWorkspaceId) || isRoutePending;
-  const showSwitchingState = Boolean(switchingWorkspaceId);
+  const showSwitchingState = Boolean(switchingWorkspaceId) || isRoutePending;
 
   const returnTo = useMemo(() => {
     const query = searchParams.toString();
     return query ? `${pathname}?${query}` : pathname;
   }, [pathname, searchParams]);
+
+  const endWorkspaceSwitch = useCallback(() => {
+    switchingWorkspaceIdRef.current = null;
+    setSwitchingWorkspaceId(null);
+    emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+  }, []);
+
+  const beginWorkspaceSwitch = useCallback((workspaceId: string) => {
+    if (switchingWorkspaceIdRef.current === workspaceId) {
+      return;
+    }
+
+    switchingWorkspaceIdRef.current = workspaceId;
+    setSwitchingWorkspaceId(workspaceId);
+    setSwitchError(null);
+    setOpen(false);
+    emitWorkspaceSwitchEvent("nlc:workspace-switch-start", { workspaceId });
+  }, []);
 
   useEffect(() => {
     if (!switchingWorkspaceId || currentWorkspace.id !== switchingWorkspaceId) {
@@ -129,30 +148,30 @@ export function WorkspaceSwitcher({
     }
 
     const frameId = window.requestAnimationFrame(() => {
-      setSwitchingWorkspaceId(null);
       setSwitchError(null);
-      emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+      endWorkspaceSwitch();
     });
 
     return () => window.cancelAnimationFrame(frameId);
-  }, [currentWorkspace.id, switchingWorkspaceId]);
+  }, [currentWorkspace.id, endWorkspaceSwitch, switchingWorkspaceId]);
 
   async function handleWorkspaceSwitch(
     formData: FormData,
     workspace: WorkspaceOption,
     isCurrent: boolean,
   ) {
-    if (isSwitching || isCurrent) {
+    if (isCurrent) {
       return;
     }
 
-    setSwitchingWorkspaceId(workspace.id);
-    setSwitchError(null);
-    setOpen(false);
+    if (
+      switchingWorkspaceIdRef.current &&
+      switchingWorkspaceIdRef.current !== workspace.id
+    ) {
+      return;
+    }
 
-    emitWorkspaceSwitchEvent("nlc:workspace-switch-start", {
-      workspaceId: workspace.id,
-    });
+    beginWorkspaceSwitch(workspace.id);
 
     trackPostHogEvent("workspace_switched");
 
@@ -161,8 +180,7 @@ export function WorkspaceSwitcher({
 
       if (!result.success) {
         setSwitchError("Non riesco a cambiare workspace. Riprova tra poco.");
-        setSwitchingWorkspaceId(null);
-        emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+        endWorkspaceSwitch();
         return;
       }
 
@@ -173,8 +191,7 @@ export function WorkspaceSwitcher({
     } catch (error) {
       console.error("Failed to switch workspace:", error);
       setSwitchError("Cambio workspace non riuscito. Riprova.");
-      setSwitchingWorkspaceId(null);
-      emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+      endWorkspaceSwitch();
     }
   }
 
@@ -279,8 +296,16 @@ export function WorkspaceSwitcher({
 
                     <button
                       type="submit"
-                      disabled={isSwitching || isCurrent}
+                      disabled={
+                        isCurrent ||
+                        (isSwitching && switchingWorkspaceId !== workspace.id)
+                      }
                       aria-busy={isSubmitting}
+                      onClick={() => {
+                        if (!isCurrent) {
+                          beginWorkspaceSwitch(workspace.id);
+                        }
+                      }}
                       className={cn(
                         "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
                         "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",

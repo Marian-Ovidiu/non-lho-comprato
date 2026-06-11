@@ -45,13 +45,15 @@ function BottomNavLink({
       aria-current={active ? "page" : undefined}
       onClick={() => !active && triggerHaptic("subtle")}
       className={cn(
-        "nlc-press relative flex min-h-12 min-w-0 flex-1 items-center justify-center rounded-2xl px-2 text-center text-xs leading-none outline-none transition-[background-color,color,opacity,transform] focus-visible:ring-2 focus-visible:ring-ring/50",
+        "nlc-press relative flex h-14 min-w-0 flex-1 basis-0 items-center justify-center rounded-2xl px-3 text-center text-xs leading-none outline-none transition-[background-color,color,opacity,transform] focus-visible:ring-2 focus-visible:ring-ring/50",
         active
           ? "bg-surface-muted font-semibold text-foreground"
           : "font-[450] text-ink-3 hover:bg-surface-muted/55 hover:text-foreground",
       )}
     >
-      <span>{label}</span>
+      <span className="pointer-events-none flex h-full w-full items-center justify-center">
+        {label}
+      </span>
       <span
         className={cn(
           "nlc-tab-dot absolute bottom-1.5 left-1/2 h-1 w-4 -translate-x-1/2 rounded-full bg-accent",

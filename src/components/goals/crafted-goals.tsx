@@ -25,9 +25,11 @@ import { cn } from "@/lib/utils";
 function GoalActions({
   goalId,
   isActive,
+  showToggle = true,
 }: {
   goalId: string;
   isActive: boolean;
+  showToggle?: boolean;
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -68,14 +70,16 @@ function GoalActions({
 
   return (
     <div className="mt-3 flex gap-3">
-      <button
-        type="button"
-        onClick={handleToggleActive}
-        disabled={isPending}
-        className="text-[12px] text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
-      >
-        {isActive ? "Metti in pausa" : "Riattiva"}
-      </button>
+      {showToggle ? (
+        <button
+          type="button"
+          onClick={handleToggleActive}
+          disabled={isPending}
+          className="text-[12px] text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
+        >
+          {isActive ? "Metti in pausa" : "Riattiva"}
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={handleDelete}
@@ -249,10 +253,13 @@ export function CraftedGoals({
               <div key={goal.id}>
                 <div className="flex items-center gap-3 py-3">
                   <CraftedIcon name="check" size={18} strokeWidth={2} className="text-green" />
-                  <span className="min-w-0 flex-1 text-sm font-[450] text-muted-foreground">
-                    {goal.title}
-                  </span>
-                  <Mono className="text-[13px] whitespace-nowrap text-ink-3">
+                  <div className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-[450] text-muted-foreground">
+                      {goal.title}
+                    </span>
+                    <GoalActions goalId={goal.id} isActive={false} showToggle={false} />
+                  </div>
+                  <Mono className="shrink-0 text-[13px] whitespace-nowrap text-ink-3">
                     {formatCraftedCompact(goal.amount)}€
                   </Mono>
                 </div>

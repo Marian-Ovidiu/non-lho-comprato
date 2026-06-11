@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 
 import { Label, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,14 @@ type DayDetails = {
   delta: number | null;
   percentDelta: number | null;
   note: string;
+};
+
+type PopoverPosition = {
+  day: number;
+  left: number;
+  top: number;
+  placement: "top" | "bottom";
+  width: number;
 };
 
 const INTENSITY_CLASS = [
@@ -271,15 +279,15 @@ function getDayAriaLabel(details: DayDetails): string {
   return parts.join(". ");
 }
 
-function DayDetailPanel({ details }: { details: DayDetails | null }) {
-  if (!details) {
-    return (
-      <div className="rounded-3xl border border-dashed border-line bg-surface/60 px-4 py-4 text-sm text-ink-3">
-        Tocca, passa sopra o usa Tab su un giorno per vedere il confronto con il mese precedente.
-      </div>
-    );
-  }
-
+function DayDetailPopover({
+  details,
+  className,
+  style,
+}: {
+  details: DayDetails;
+  className?: string;
+  style?: CSSProperties;
+}) {
   const deltaTone =
     details.delta === null
       ? "text-ink-3"
@@ -294,7 +302,11 @@ function DayDetailPanel({ details }: { details: DayDetails | null }) {
       id="daily-spending-heatmap-detail"
       role="tooltip"
       aria-live="polite"
-      className="rounded-3xl border border-line bg-background px-4 py-4 shadow-sm"
+      className={cn(
+        "rounded-3xl border border-line bg-background px-4 py-4 shadow-[0_20px_60px_rgba(0,0,0,0.18)]",
+        className,
+      )}
+      style={style}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
@@ -403,6 +415,9 @@ function IntensityLegend({ maxDailySpent }: { maxDailySpent: number }) {
 export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatmapProps) {
   const rootRef = useRef<HTMLElement | null>(null);
   const [activeDay, setActiveDay] = useState<number | null>(null);
+  const [popoverPosition, setPopoverPosition] = useState<PopoverPosition | null>(
+    null,
+  );
   const hasData = hasHeatmapData(data);
   const currentDays = useMemo(() => getCurrentMonthDays(data), [data]);
   const maxCurrentDailySpent = useMemo(
@@ -414,12 +429,39 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
     return activeCell ? buildDayDetails(activeCell, data) : null;
   }, [activeDay, currentDays, data]);
 
+  function getPopoverPosition(day: number, element: HTMLElement): PopoverPosition {
+    const rect = element.getBoundingClientRect();
+    const width = Math.min(336, window.innerWidth - 32);
+    const left = Math.min(
+      Math.max(16, rect.left + rect.width / 2 - width / 2),
+      window.innerWidth - width - 16,
+    );
+    const estimatedHeight = 300;
+    const hasRoomBelow = rect.bottom + estimatedHeight + 14 < window.innerHeight;
+    const top = hasRoomBelow ? rect.bottom + 10 : rect.top - 10;
+
+    return {
+      day,
+      left,
+      top,
+      placement: hasRoomBelow ? "bottom" : "top",
+      width,
+    };
+  }
+
+  function activateDay(day: number, element: HTMLElement) {
+    setActiveDay(day);
+    setPopoverPosition(getPopoverPosition(day, element));
+  }
   useEffect(() => {
     if (!activeDay || currentDays.some((cell) => cell.day === activeDay)) {
       return;
     }
 
-    const frameId = window.requestAnimationFrame(() => setActiveDay(null));
+    const frameId = window.requestAnimationFrame(() => {
+      setActiveDay(null);
+      setPopoverPosition(null);
+    });
 
     return () => window.cancelAnimationFrame(frameId);
   }, [activeDay, currentDays]);
@@ -435,11 +477,13 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
       }
 
       setActiveDay(null);
+      setPopoverPosition(null);
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setActiveDay(null);
+        setPopoverPosition(null);
       }
     }
 
@@ -463,64 +507,86 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
         </p>
       ) : (
         <>
-          <ol className="grid grid-cols-7 gap-1.5" aria-label={`Heatmap di ${data.currentMonth.label}`}>
-            {currentDays.map((cell) => {
-              const details = buildDayDetails(cell, data);
-              const level = getIntensityLevel(cell.totalRealSpent, maxCurrentDailySpent);
-              const isActive = activeDay === cell.day;
+          <div className="-mx-1 overflow-x-auto px-1 pb-2">
+            <ol
+              className="grid min-w-[21rem] grid-cols-7 gap-1.5 sm:min-w-0 sm:gap-2"
+              aria-label={`Heatmap di ${data.currentMonth.label}`}
+            >
+              {currentDays.map((cell) => {
+                const details = buildDayDetails(cell, data);
+                const level = getIntensityLevel(cell.totalRealSpent, maxCurrentDailySpent);
+                const isActive = activeDay === cell.day;
 
-              return (
-                <li key={cell.dateKey} className="min-w-0">
-                  <button
-                    type="button"
-                    aria-label={getDayAriaLabel(details)}
-                    aria-describedby={isActive ? "daily-spending-heatmap-detail" : undefined}
-                    aria-expanded={isActive}
-                    onClick={() => setActiveDay(cell.day)}
-                    onFocus={() => setActiveDay(cell.day)}
-                    onPointerEnter={(event) => {
-                      if (event.pointerType !== "touch") {
-                        setActiveDay(cell.day);
-                      }
-                    }}
-                    className={cn(
-                      "group flex aspect-square min-h-9 w-full touch-manipulation flex-col items-start justify-between rounded-xl border p-2 text-left outline-none transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-11 sm:rounded-2xl",
-                      INTENSITY_CLASS[level],
-                      cell.isToday && "ring-2 ring-accent/45 ring-offset-2 ring-offset-background",
-                      cell.isFuture && "border-line-soft bg-surface-muted text-ink-3 opacity-55",
-                      isActive && "border-foreground/40 shadow-sm ring-2 ring-foreground/10 ring-offset-2 ring-offset-background",
-                    )}
-                  >
-                    <Mono className="text-[10px] font-semibold leading-none sm:text-[11px]">
-                      {cell.day}
-                    </Mono>
-                    <span className="flex w-full items-end justify-between gap-1">
-                      {cell.entriesCount > 0 ? (
-                        <span className="size-1.5 rounded-full bg-current opacity-75" />
-                      ) : (
-                        <span className="size-1.5 rounded-full bg-current opacity-20" />
+                return (
+                  <li key={cell.dateKey} className="relative min-w-0">
+                    <button
+                      type="button"
+                      aria-label={getDayAriaLabel(details)}
+                      aria-describedby={isActive ? "daily-spending-heatmap-detail" : undefined}
+                      aria-expanded={isActive}
+                      onClick={(event) => activateDay(cell.day, event.currentTarget)}
+                      onFocus={(event) => activateDay(cell.day, event.currentTarget)}
+                      onPointerEnter={(event) => {
+                        if (event.pointerType !== "touch") {
+                          activateDay(cell.day, event.currentTarget);
+                        }
+                      }}
+                      className={cn(
+                        "group flex aspect-square min-h-11 w-full touch-manipulation flex-col items-start justify-between rounded-2xl border p-2.5 text-left outline-none transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-14 sm:p-3",
+                        INTENSITY_CLASS[level],
+                        cell.isToday &&
+                          "ring-2 ring-accent/45 ring-offset-2 ring-offset-background",
+                        cell.isFuture && "border-line-soft bg-surface-muted text-ink-3 opacity-55",
+                        isActive &&
+                          "border-foreground/40 shadow-sm ring-2 ring-foreground/10 ring-offset-2 ring-offset-background",
                       )}
-                      {cell.isFuture ? (
-                        <span className="text-[8px] uppercase tracking-[0.12em] opacity-80">
-                          Fut
-                        </span>
-                      ) : null}
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ol>
+                    >
+                      <Mono className="text-[11px] font-semibold leading-none sm:text-xs">
+                        {cell.day}
+                      </Mono>
+                      <span className="flex w-full items-end justify-between gap-1">
+                        {cell.entriesCount > 0 ? (
+                          <span className="size-1.5 rounded-full bg-current opacity-75" />
+                        ) : (
+                          <span className="size-1.5 rounded-full bg-current opacity-20" />
+                        )}
+                        {cell.isFuture ? (
+                          <span className="text-[8px] uppercase tracking-[0.12em] opacity-80">
+                            Fut
+                          </span>
+                        ) : null}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          {activeDetails && popoverPosition?.day === activeDetails.cell.day ? (
+            <DayDetailPopover
+              details={activeDetails}
+              className="fixed z-[70]"
+              style={{
+                left: popoverPosition.left,
+                top: popoverPosition.top,
+                width: popoverPosition.width,
+                transform:
+                  popoverPosition.placement === "top"
+                    ? "translateY(-100%)"
+                    : undefined,
+              }}
+            />
+          ) : null}
 
           <div className="mt-4 space-y-3 border-t border-line-soft pt-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs leading-5 text-muted-foreground">
-                Ogni quadrato e un giorno di {data.currentMonth.label.toLowerCase()}.
+                Ogni quadrato e un giorno di{" "}
+                {data.currentMonth.label.toLowerCase()}. Tocca un giorno per vedere il confronto.
               </p>
               <IntensityLegend maxDailySpent={maxCurrentDailySpent} />
             </div>
-
-            <DayDetailPanel details={activeDetails} />
 
             {data.monthToDateDelta !== null ? (
               <p className="text-xs leading-5 text-muted-foreground">
