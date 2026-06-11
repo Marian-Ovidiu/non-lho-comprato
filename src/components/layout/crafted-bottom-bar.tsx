@@ -45,10 +45,10 @@ function BottomNavLink({
       aria-current={active ? "page" : undefined}
       onClick={() => !active && triggerHaptic("subtle")}
       className={cn(
-        "min-w-0 flex-1 text-center text-xs leading-none transition-opacity active:opacity-70",
+        "flex min-h-12 min-w-0 flex-1 touch-manipulation items-center justify-center rounded-2xl px-2 text-center text-xs leading-none outline-none transition-[background-color,color,opacity,transform] active:scale-[0.98] active:opacity-75 focus-visible:ring-2 focus-visible:ring-ring/50",
         active
-          ? "font-semibold text-foreground"
-          : "font-[450] text-ink-3",
+          ? "bg-surface-muted font-semibold text-foreground"
+          : "font-[450] text-ink-3 hover:bg-surface-muted/55 hover:text-foreground",
       )}
     >
       {label}
@@ -72,7 +72,7 @@ export function CraftedBottomBar({
       aria-label="Navigazione principale"
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-background md:hidden"
     >
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-6 pb-[calc(env(safe-area-inset-bottom)+1.625rem)] pt-3">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] pt-2.5">
         {leftNavItems.map((item) => (
           <BottomNavLink
             key={item.href}

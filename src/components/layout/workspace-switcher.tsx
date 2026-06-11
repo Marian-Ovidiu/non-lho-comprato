@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   Check,
@@ -29,6 +29,13 @@ type WorkspaceOption = {
   kind: "private" | "shared";
   isShared: boolean;
 };
+
+function emitWorkspaceSwitchEvent(
+  name: "nlc:workspace-switch-start" | "nlc:workspace-switch-end",
+  detail?: { workspaceId: string },
+) {
+  window.dispatchEvent(new CustomEvent(name, { detail }));
+}
 
 function WorkspaceMark({ isShared }: { isShared: boolean }) {
   return (
@@ -105,21 +112,67 @@ export function WorkspaceSwitcher({
   const [switchingWorkspaceId, setSwitchingWorkspaceId] = useState<string | null>(
     null,
   );
-  const [isSwitching, startSwitchTransition] = useTransition();
+  const [switchError, setSwitchError] = useState<string | null>(null);
+  const [isRoutePending, startSwitchTransition] = useTransition();
   const hasMultipleWorkspaces = availableWorkspaces.length > 1;
-  const showSwitchingState = isSwitching && Boolean(switchingWorkspaceId);
-
-  function emitWorkspaceSwitchEvent(
-    name: "nlc:workspace-switch-start" | "nlc:workspace-switch-end",
-    detail?: { workspaceId: string },
-  ) {
-    window.dispatchEvent(new CustomEvent(name, { detail }));
-  }
+  const isSwitching = Boolean(switchingWorkspaceId) || isRoutePending;
+  const showSwitchingState = Boolean(switchingWorkspaceId);
 
   const returnTo = useMemo(() => {
     const query = searchParams.toString();
     return query ? `${pathname}?${query}` : pathname;
   }, [pathname, searchParams]);
+
+  useEffect(() => {
+    if (!switchingWorkspaceId || currentWorkspace.id !== switchingWorkspaceId) {
+      return;
+    }
+
+    setSwitchingWorkspaceId(null);
+    setSwitchError(null);
+    emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+  }, [currentWorkspace.id, switchingWorkspaceId]);
+
+  async function handleWorkspaceSwitch(
+    formData: FormData,
+    workspace: WorkspaceOption,
+    isCurrent: boolean,
+  ) {
+    if (isSwitching || isCurrent) {
+      return;
+    }
+
+    setSwitchingWorkspaceId(workspace.id);
+    setSwitchError(null);
+    setOpen(false);
+
+    emitWorkspaceSwitchEvent("nlc:workspace-switch-start", {
+      workspaceId: workspace.id,
+    });
+
+    trackPostHogEvent("workspace_switched");
+
+    try {
+      const result = await switchWorkspaceAction(formData);
+
+      if (!result.success) {
+        setSwitchError("Non riesco a cambiare workspace. Riprova tra poco.");
+        setSwitchingWorkspaceId(null);
+        emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+        return;
+      }
+
+      startSwitchTransition(() => {
+        router.replace(returnTo, { scroll: false });
+        router.refresh();
+      });
+    } catch (error) {
+      console.error("Failed to switch workspace:", error);
+      setSwitchError("Cambio workspace non riuscito. Riprova.");
+      setSwitchingWorkspaceId(null);
+      emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+    }
+  }
 
   if (!hasMultipleWorkspaces) {
     return (
@@ -133,7 +186,14 @@ export function WorkspaceSwitcher({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!isSwitching) {
+          setOpen(nextOpen);
+        }
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           type="button"
@@ -150,6 +210,15 @@ export function WorkspaceSwitcher({
           />
         </Button>
       </DialogTrigger>
+      {switchError ? (
+        <p
+          className="mt-1 text-xs leading-4 text-destructive"
+          role="alert"
+          aria-live="polite"
+        >
+          {switchError}
+        </p>
+      ) : null}
 
       <DialogContent
         showCloseButton={false}
@@ -197,42 +266,20 @@ export function WorkspaceSwitcher({
                 return (
                   <form
                     key={workspace.id}
-                    action={(formData) => {
-                      startSwitchTransition(async () => {
-                        setSwitchingWorkspaceId(workspace.id);
-                        setOpen(false);
-
-                        emitWorkspaceSwitchEvent("nlc:workspace-switch-start", {
-                          workspaceId: workspace.id,
-                        });
-
-                        if (!isCurrent) {
-                          trackPostHogEvent("workspace_switched");
-                        }
-
-                        try {
-                          const result = await switchWorkspaceAction(formData);
-
-                          if (result.success) {
-                            router.replace(returnTo, { scroll: false });
-                            router.refresh();
-                          }
-                        } finally {
-                          emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
-                        }
-                      });
-                    }}
+                    action={(formData) =>
+                      handleWorkspaceSwitch(formData, workspace, isCurrent)
+                    }
                   >
                     <input type="hidden" name="workspaceId" value={workspace.id} />
                     <input type="hidden" name="returnTo" value={returnTo} />
 
                     <button
                       type="submit"
-                      disabled={isSwitching}
+                      disabled={isSwitching || isCurrent}
                       aria-busy={isSubmitting}
                       className={cn(
                         "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
-                        "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
+                        "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-60",
                         isCurrent
                           ? "border-primary/25 bg-primary/8 ring-1 ring-primary/20"
                           : "border-border bg-background",

@@ -1,12 +1,13 @@
 "use client";
 
+import { useEffect, useMemo, useRef, useState } from "react";
+
 import { Label, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type {
   DailySpendingCell,
   DailySpendingComparison,
-  DailySpendingMonthRow,
 } from "@/src/lib/daily-spending-comparison";
 import { formatMoney } from "@/src/lib/formatters";
 
@@ -14,17 +15,36 @@ type CraftedDailySpendingHeatmapProps = {
   data: DailySpendingComparison;
 };
 
-const DAY_AXIS = Array.from({ length: 31 }, (_, index) => index + 1);
-const DAY_LABELS = [1, 5, 10, 15, 20, 25, 30];
+type MonthParts = {
+  year: number;
+  month: number;
+};
+
+type DayDetails = {
+  cell: DailySpendingCell;
+  currentLabel: string;
+  previousDateExists: boolean;
+  previousLabel: string | null;
+  previousTotal: number | null;
+  previousEntriesCount: number;
+  hasPreviousData: boolean;
+  delta: number | null;
+  percentDelta: number | null;
+  note: string;
+};
 
 const INTENSITY_CLASS = [
-  "bg-line",
-  "bg-accent/20",
-  "bg-accent/35",
-  "bg-accent/50",
-  "bg-accent/65",
-  "bg-accent/80",
+  "border-line-soft bg-surface-muted text-ink-3",
+  "border-accent/15 bg-accent/10 text-foreground",
+  "border-accent/20 bg-accent/20 text-foreground",
+  "border-accent/25 bg-accent/30 text-foreground",
+  "border-accent/30 bg-accent/45 text-foreground",
+  "border-accent/35 bg-accent/60 text-foreground",
 ] as const;
+
+function round2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
 
 function formatSignedMoney(value: number): string {
   const normalized = formatMoney(Math.abs(value));
@@ -40,28 +60,115 @@ function formatSignedMoney(value: number): string {
   return normalized;
 }
 
+function formatSignedPercent(value: number): string {
+  const normalized = new Intl.NumberFormat("it-IT", {
+    maximumFractionDigits: 1,
+    minimumFractionDigits: 0,
+  }).format(Math.abs(value));
+
+  if (value > 0) {
+    return `+${normalized}%`;
+  }
+
+  if (value < 0) {
+    return `-${normalized}%`;
+  }
+
+  return `${normalized}%`;
+}
+
+function parseMonthKey(monthKey: string): MonthParts | null {
+  const [yearPart, monthPart] = monthKey.split("-");
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month)) {
+    return null;
+  }
+
+  if (month < 1 || month > 12) {
+    return null;
+  }
+
+  return { year, month };
+}
+
+function getPreviousMonthParts(parts: MonthParts): MonthParts {
+  if (parts.month === 1) {
+    return { year: parts.year - 1, month: 12 };
+  }
+
+  return { year: parts.year, month: parts.month - 1 };
+}
+
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+function buildDateKey(parts: MonthParts, day: number): string {
+  return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function formatMonthLabel(parts: MonthParts): string {
+  const raw = new Intl.DateTimeFormat("it-IT", {
+    month: "short",
+    year: "numeric",
+    timeZone: "Europe/Rome",
+  }).format(new Date(Date.UTC(parts.year, parts.month - 1, 1, 12, 0, 0)));
+
+  const normalized = raw.replace(/\./g, "").trim();
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+}
+
+function formatDateKeyLong(dateKey: string | null): string {
+  if (!dateKey) {
+    return "Data non disponibile";
+  }
+
+  const [yearPart, monthPart, dayPart] = dateKey.split("-");
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+  const day = Number(dayPart);
+
+  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
+    return dateKey;
+  }
+
+  return new Intl.DateTimeFormat("it-IT", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Rome",
+  }).format(new Date(Date.UTC(year, month - 1, day, 12, 0, 0)));
+}
+
 function getMonthAbbrev(label: string): string {
   return label.split(" ")[0]?.slice(0, 3) ?? "";
 }
 
 function hasHeatmapData(data: DailySpendingComparison): boolean {
   return (
-    data.currentMonth.totalRealSpent > 0 ||
-    (data.previousMonth?.totalRealSpent ?? 0) > 0
+    data.currentMonth.days.some((cell) => cell.entriesCount > 0) ||
+    Boolean(data.previousMonth?.days.some((cell) => cell.entriesCount > 0))
   );
 }
 
 function getSubtitle(data: DailySpendingComparison): string {
-  const { currentMonth, previousMonth, monthToDateDelta } = data;
-  const todayDay = currentMonth.days.find((cell) => cell.isToday)?.day;
+  const previousLabel =
+    data.previousMonth?.label ??
+    (() => {
+      const currentParts = parseMonthKey(data.currentMonth.monthKey);
+      return currentParts
+        ? formatMonthLabel(getPreviousMonthParts(currentParts))
+        : "mese precedente";
+    })();
+  const previousAbbrev = getMonthAbbrev(previousLabel).toLowerCase();
 
-  if (monthToDateDelta === null || !previousMonth || !todayDay) {
-    return currentMonth.label;
+  if (data.monthToDateDelta === null) {
+    return `${data.currentMonth.label} · confronto giorno per giorno con ${previousAbbrev}`;
   }
 
-  const previousAbbrev = getMonthAbbrev(previousMonth.label).toLowerCase();
-
-  return `${currentMonth.label} · ${formatSignedMoney(monthToDateDelta)} fino al ${todayDay} vs ${previousAbbrev}`;
+  return `${data.currentMonth.label} · ${formatSignedMoney(data.monthToDateDelta)} finora vs ${previousAbbrev}`;
 }
 
 function getIntensityLevel(spent: number, maxDailySpent: number): number {
@@ -69,7 +176,7 @@ function getIntensityLevel(spent: number, maxDailySpent: number): number {
     return 0;
   }
 
-  const ratio = spent / maxDailySpent;
+  const ratio = spent / Math.max(maxDailySpent, 1);
 
   if (ratio <= 0.2) return 1;
   if (ratio <= 0.4) return 2;
@@ -78,211 +185,196 @@ function getIntensityLevel(spent: number, maxDailySpent: number): number {
   return 5;
 }
 
-function getDayDelta(
-  currentCell: DailySpendingCell | null | undefined,
-  previousCell: DailySpendingCell | null | undefined,
-): number | null {
-  if (!currentCell?.dateKey || !previousCell?.dateKey) {
-    return null;
-  }
-
-  const delta = currentCell.totalRealSpent - previousCell.totalRealSpent;
-  return delta === 0 ? null : delta;
+function getCurrentMonthDays(data: DailySpendingComparison): DailySpendingCell[] {
+  return data.currentMonth.days.filter((cell) => Boolean(cell.dateKey));
 }
 
-function getDeltaTone(delta: number | null): "warning" | "success" | null {
-  if (delta === null) return null;
-  return delta > 0 ? "warning" : "success";
+function getMaxCurrentDailySpent(days: DailySpendingCell[]): number {
+  return Math.max(1, ...days.map((cell) => cell.totalRealSpent));
 }
 
-function getMonthToDateSummary(data: DailySpendingComparison): {
-  todayDay: number;
-  monthAbbrev: string;
-  previousAbbrev: string;
-  currentTotal: number;
-  previousTotal: number;
-  delta: number;
-} | null {
-  const { currentMonth, previousMonth, monthToDateDelta } = data;
+function buildDayDetails(
+  cell: DailySpendingCell,
+  data: DailySpendingComparison,
+): DayDetails {
+  const currentParts = parseMonthKey(data.currentMonth.monthKey);
+  const previousParts = currentParts ? getPreviousMonthParts(currentParts) : null;
+  const previousMonthLength = previousParts
+    ? getDaysInMonth(previousParts.year, previousParts.month)
+    : 0;
+  const previousDateExists = Boolean(previousParts && cell.day <= previousMonthLength);
+  const previousDateKey = previousDateExists && previousParts
+    ? buildDateKey(previousParts, cell.day)
+    : null;
+  const previousCell = data.previousMonth?.days.find((day) => day.day === cell.day);
+  const hasPreviousData = Boolean(
+    previousDateExists && previousCell?.dateKey && previousCell.entriesCount > 0,
+  );
+  const previousTotal = previousDateExists ? previousCell?.totalRealSpent ?? 0 : null;
+  const previousEntriesCount = previousDateExists
+    ? previousCell?.entriesCount ?? 0
+    : 0;
+  const canCompare = !cell.isFuture && previousDateExists && hasPreviousData;
+  const delta = canCompare && previousTotal !== null
+    ? round2(cell.totalRealSpent - previousTotal)
+    : null;
+  const percentDelta = delta !== null && previousTotal && previousTotal > 0
+    ? round2((delta / previousTotal) * 100)
+    : null;
 
-  if (!previousMonth || monthToDateDelta === null) {
-    return null;
-  }
+  let note = "Confronto con lo stesso giorno del mese precedente.";
 
-  const todayDay = currentMonth.days.find((cell) => cell.isToday)?.day;
-  if (!todayDay) {
-    return null;
-  }
-
-  let currentTotal = 0;
-  let previousTotal = 0;
-
-  for (const cell of currentMonth.days) {
-    if (cell.dateKey && cell.day <= todayDay) {
-      currentTotal += cell.totalRealSpent;
-    }
-  }
-
-  for (const cell of previousMonth.days) {
-    if (cell.dateKey && cell.day <= todayDay) {
-      previousTotal += cell.totalRealSpent;
-    }
+  if (cell.isFuture) {
+    note = "Giorno futuro: il totale corrente non e ancora consolidato.";
+  } else if (!previousDateExists) {
+    note = `Nel mese precedente non esiste il giorno ${cell.day}.`;
+  } else if (!hasPreviousData) {
+    note = `Nessun dato registrato il ${formatDateKeyLong(previousDateKey)}.`;
+  } else if (percentDelta === null) {
+    note = "Differenza percentuale non calcolabile perche il dato precedente e 0,00 €.";
   }
 
   return {
-    todayDay,
-    monthAbbrev: getMonthAbbrev(currentMonth.label).toLowerCase(),
-    previousAbbrev: getMonthAbbrev(previousMonth.label).toLowerCase(),
-    currentTotal,
+    cell,
+    currentLabel: formatDateKeyLong(cell.dateKey),
+    previousDateExists,
+    previousLabel: previousDateExists ? formatDateKeyLong(previousDateKey) : null,
     previousTotal,
-    delta: monthToDateDelta,
+    previousEntriesCount,
+    hasPreviousData,
+    delta,
+    percentDelta,
+    note,
   };
 }
 
-function buildComparisonTooltip(
-  currentCell: DailySpendingCell | null | undefined,
-  currentAbbrev: string,
-  previousCell: DailySpendingCell | null | undefined,
-  previousAbbrev: string,
-): string {
-  if (currentCell?.dateKey && previousCell?.dateKey) {
-    const delta = currentCell.totalRealSpent - previousCell.totalRealSpent;
+function getDayAriaLabel(details: DayDetails): string {
+  const parts = [
+    details.currentLabel,
+    `${formatMoney(details.cell.totalRealSpent)} spesi davvero`,
+  ];
 
-    return `${currentCell.day} ${currentAbbrev.toLowerCase()} · ${formatMoney(currentCell.totalRealSpent)} · ${previousCell.day} ${previousAbbrev.toLowerCase()} · ${formatMoney(previousCell.totalRealSpent)} · ${formatSignedMoney(delta)}`;
+  if (details.previousDateExists && details.previousLabel) {
+    parts.push(
+      details.hasPreviousData
+        ? `${details.previousLabel}: ${formatMoney(details.previousTotal ?? 0)}`
+        : `${details.previousLabel}: nessun dato`,
+    );
+  } else {
+    parts.push("giorno corrispondente del mese precedente non esistente");
   }
 
-  if (currentCell?.dateKey) {
-    return `${currentCell.day} ${currentAbbrev.toLowerCase()} · ${formatMoney(currentCell.totalRealSpent)}`;
+  if (details.delta !== null) {
+    parts.push(`differenza ${formatSignedMoney(details.delta)}`);
   }
 
-  if (previousCell?.dateKey) {
-    return `${previousCell.day} ${previousAbbrev.toLowerCase()} · ${formatMoney(previousCell.totalRealSpent)}`;
-  }
-
-  return "";
+  return parts.join(". ");
 }
 
-function HeatmapCell({
-  cell,
-  maxDailySpent,
-  tooltip,
-  interactive,
-  deltaTone,
-}: {
-  cell: DailySpendingCell;
-  maxDailySpent: number;
-  tooltip: string;
-  interactive: boolean;
-  deltaTone?: "warning" | "success" | null;
-}) {
-  if (!cell.dateKey) {
-    return <div className="size-3 shrink-0" aria-hidden="true" />;
-  }
-
-  const level = getIntensityLevel(cell.totalRealSpent, maxDailySpent);
-
-  return (
-    <div className="relative size-3 shrink-0">
-      <div
-        className={cn(
-          "size-3 rounded-[2px]",
-          INTENSITY_CLASS[level],
-          cell.isToday && "ring-1 ring-accent ring-offset-1 ring-offset-background",
-          cell.isFuture && "opacity-25",
-          !interactive && "pointer-events-none",
-        )}
-        title={interactive ? tooltip : undefined}
-        aria-label={interactive ? tooltip : undefined}
-        role={interactive ? "img" : undefined}
-      />
-      {deltaTone === "warning" ? (
-        <span
-          className="absolute -top-0.5 -right-0.5 size-1 rounded-full bg-destructive ring-1 ring-background"
-          aria-hidden="true"
-        />
-      ) : null}
-      {deltaTone === "success" ? (
-        <span
-          className="absolute -top-0.5 -right-0.5 size-1 rounded-full bg-green ring-1 ring-background"
-          aria-hidden="true"
-        />
-      ) : null}
-    </div>
-  );
-}
-
-function MonthRow({
-  row,
-  compareRow,
-  maxDailySpent,
-  isCurrentMonth,
-  showDeltaIndicators,
-}: {
-  row: DailySpendingMonthRow;
-  compareRow: DailySpendingMonthRow | null;
-  maxDailySpent: number;
-  isCurrentMonth: boolean;
-  showDeltaIndicators: boolean;
-}) {
-  const monthAbbrev = getMonthAbbrev(row.label);
-  const compareAbbrev = compareRow ? getMonthAbbrev(compareRow.label) : "";
-  const currentRow = isCurrentMonth ? row : compareRow;
-  const previousRow = isCurrentMonth ? compareRow : row;
-  const currentAbbrev = currentRow ? getMonthAbbrev(currentRow.label) : monthAbbrev;
-  const previousAbbrev = previousRow ? getMonthAbbrev(previousRow.label) : compareAbbrev;
-
-  return (
-    <div className="flex items-center gap-2">
-      <Mono className="w-7 shrink-0 text-[9px] uppercase text-ink-3">{monthAbbrev}</Mono>
-      <div className="flex gap-0.5">
-        {row.days.map((cell) => {
-          const currentCell = currentRow?.days.find((day) => day.day === cell.day);
-          const previousCell = previousRow?.days.find((day) => day.day === cell.day);
-          const tooltip = buildComparisonTooltip(
-            currentCell,
-            currentAbbrev,
-            previousCell,
-            previousAbbrev,
-          );
-          const interactive =
-            Boolean(cell.dateKey) && (isCurrentMonth ? !cell.isFuture : true);
-          const deltaTone =
-            showDeltaIndicators && isCurrentMonth && !cell.isFuture
-              ? getDeltaTone(getDayDelta(currentCell, previousCell))
-              : null;
-
-          return (
-            <HeatmapCell
-              key={`${row.monthKey}-${cell.day}`}
-              cell={cell}
-              maxDailySpent={maxDailySpent}
-              tooltip={tooltip}
-              interactive={interactive}
-              deltaTone={deltaTone}
-            />
-          );
-        })}
+function DayDetailPanel({ details }: { details: DayDetails | null }) {
+  if (!details) {
+    return (
+      <div className="rounded-3xl border border-dashed border-line bg-surface/60 px-4 py-4 text-sm text-ink-3">
+        Tocca, passa sopra o usa Tab su un giorno per vedere il confronto con il mese precedente.
       </div>
-    </div>
-  );
-}
+    );
+  }
 
-function DayAxisLabels() {
+  const deltaTone =
+    details.delta === null
+      ? "text-ink-3"
+      : details.delta > 0
+        ? "text-destructive"
+        : details.delta < 0
+          ? "text-green"
+          : "text-foreground";
+
   return (
-    <div className="flex items-center gap-2">
-      <span className="w-7 shrink-0" aria-hidden="true" />
-      <div className="flex gap-0.5">
-        {DAY_AXIS.map((day) => (
-          <div
-            key={day}
-            className="flex size-3 shrink-0 items-start justify-center"
-          >
-            {DAY_LABELS.includes(day) ? (
-              <Mono className="text-[8px] leading-none text-ink-3">{day}</Mono>
-            ) : null}
-          </div>
-        ))}
+    <div
+      id="daily-spending-heatmap-detail"
+      role="tooltip"
+      aria-live="polite"
+      className="rounded-3xl border border-line bg-background px-4 py-4 shadow-sm"
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <Mono className="block text-[11px] uppercase tracking-[0.18em] text-ink-3">
+            Giorno selezionato
+          </Mono>
+          <p className="mt-1 text-sm font-semibold text-foreground">
+            {details.currentLabel}
+          </p>
+        </div>
+        {details.cell.isFuture ? (
+          <span className="rounded-full border border-line bg-surface-muted px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-ink-3">
+            Futuro
+          </span>
+        ) : details.cell.isToday ? (
+          <span className="rounded-full border border-accent/25 bg-accent/10 px-2 py-1 text-[10px] font-medium uppercase tracking-[0.16em] text-accent">
+            Oggi
+          </span>
+        ) : null}
       </div>
+
+      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-2xl border border-line-soft bg-surface/70 p-3">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
+            Speso davvero
+          </span>
+          <Mono className="mt-1 block text-lg font-semibold">
+            {formatMoney(details.cell.totalRealSpent)}
+          </Mono>
+          <span className="text-xs text-ink-3">
+            {details.cell.entriesCount === 1
+              ? "1 movimento"
+              : `${details.cell.entriesCount} movimenti`}
+          </span>
+        </div>
+
+        <div className="rounded-2xl border border-line-soft bg-surface/70 p-3">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
+            Mese precedente
+          </span>
+          <Mono className="mt-1 block text-lg font-semibold">
+            {details.previousDateExists
+              ? formatMoney(details.previousTotal ?? 0)
+              : "Non disponibile"}
+          </Mono>
+          <span className="text-xs text-ink-3">
+            {details.previousDateExists && details.previousLabel
+              ? details.hasPreviousData
+                ? `${details.previousEntriesCount} ${details.previousEntriesCount === 1 ? "movimento" : "movimenti"} · ${details.previousLabel}`
+                : `Nessun dato · ${details.previousLabel}`
+              : "Giorno non esistente"}
+          </span>
+        </div>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <div className="rounded-2xl border border-line-soft bg-surface/50 p-3">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
+            Differenza
+          </span>
+          <Mono className={cn("mt-1 block text-base font-semibold", deltaTone)}>
+            {details.delta === null ? "Non calcolabile" : formatSignedMoney(details.delta)}
+          </Mono>
+        </div>
+
+        <div className="rounded-2xl border border-line-soft bg-surface/50 p-3">
+          <span className="text-[11px] uppercase tracking-[0.16em] text-ink-3">
+            Percentuale
+          </span>
+          <Mono className={cn("mt-1 block text-base font-semibold", deltaTone)}>
+            {details.percentDelta === null
+              ? "Non calcolabile"
+              : formatSignedPercent(details.percentDelta)}
+          </Mono>
+        </div>
+      </div>
+
+      <p className="mt-3 text-xs leading-5 text-muted-foreground">
+        {details.note}
+      </p>
     </div>
   );
 }
@@ -291,11 +383,11 @@ function IntensityLegend({ maxDailySpent }: { maxDailySpent: number }) {
   return (
     <div className="flex items-center justify-end gap-2 text-[10px] text-ink-3">
       <span>Meno</span>
-      <div className="flex gap-0.5">
+      <div className="flex gap-1">
         {INTENSITY_CLASS.map((className, level) => (
           <div
             key={level}
-            className={cn("size-3 rounded-[2px]", className)}
+            className={cn("size-4 rounded-md border", className)}
             title={
               level === 0 ? "Nessuna spesa" : formatMoney((maxDailySpent * level) / 5)
             }
@@ -309,11 +401,57 @@ function IntensityLegend({ maxDailySpent }: { maxDailySpent: number }) {
 }
 
 export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatmapProps) {
+  const rootRef = useRef<HTMLElement | null>(null);
+  const [activeDay, setActiveDay] = useState<number | null>(null);
   const hasData = hasHeatmapData(data);
-  const monthToDateSummary = getMonthToDateSummary(data);
+  const currentDays = useMemo(() => getCurrentMonthDays(data), [data]);
+  const maxCurrentDailySpent = useMemo(
+    () => getMaxCurrentDailySpent(currentDays),
+    [currentDays],
+  );
+  const activeDetails = useMemo(() => {
+    const activeCell = currentDays.find((cell) => cell.day === activeDay);
+    return activeCell ? buildDayDetails(activeCell, data) : null;
+  }, [activeDay, currentDays, data]);
+
+  useEffect(() => {
+    if (!activeDay || currentDays.some((cell) => cell.day === activeDay)) {
+      return;
+    }
+
+    setActiveDay(null);
+  }, [activeDay, currentDays]);
+
+  useEffect(() => {
+    if (activeDay === null) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      if (rootRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      setActiveDay(null);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        setActiveDay(null);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [activeDay]);
 
   return (
-    <section className="px-5 py-5">
+    <section ref={rootRef} className="px-5 py-5">
       <Label className="mb-2 block">Spesa giornaliera</Label>
       <Serif className="mb-4 block text-sm text-ink-3">{getSubtitle(data)}</Serif>
 
@@ -323,57 +461,85 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
         </p>
       ) : (
         <>
-          <div className="-mx-1 overflow-x-auto px-1">
-            <div className="min-w-max space-y-1.5 pb-1">
-              {data.previousMonth ? (
-                <MonthRow
-                  row={data.previousMonth}
-                  compareRow={data.currentMonth}
-                  maxDailySpent={data.maxDailySpent}
-                  isCurrentMonth={false}
-                  showDeltaIndicators={false}
-                />
-              ) : null}
-              <MonthRow
-                row={data.currentMonth}
-                compareRow={data.previousMonth}
-                maxDailySpent={data.maxDailySpent}
-                isCurrentMonth
-                showDeltaIndicators={Boolean(data.previousMonth)}
-              />
-              <DayAxisLabels />
-            </div>
-          </div>
+          <ol className="grid grid-cols-7 gap-1.5" aria-label={`Heatmap di ${data.currentMonth.label}`}>
+            {currentDays.map((cell) => {
+              const details = buildDayDetails(cell, data);
+              const level = getIntensityLevel(cell.totalRealSpent, maxCurrentDailySpent);
+              const isActive = activeDay === cell.day;
+
+              return (
+                <li key={cell.dateKey} className="min-w-0">
+                  <button
+                    type="button"
+                    aria-label={getDayAriaLabel(details)}
+                    aria-describedby={isActive ? "daily-spending-heatmap-detail" : undefined}
+                    aria-expanded={isActive}
+                    onClick={() => setActiveDay(cell.day)}
+                    onFocus={() => setActiveDay(cell.day)}
+                    onPointerEnter={(event) => {
+                      if (event.pointerType !== "touch") {
+                        setActiveDay(cell.day);
+                      }
+                    }}
+                    className={cn(
+                      "group flex aspect-square min-h-9 w-full touch-manipulation flex-col items-start justify-between rounded-xl border p-2 text-left outline-none transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-11 sm:rounded-2xl",
+                      INTENSITY_CLASS[level],
+                      cell.isToday && "ring-2 ring-accent/45 ring-offset-2 ring-offset-background",
+                      cell.isFuture && "border-line-soft bg-surface-muted text-ink-3 opacity-55",
+                      isActive && "border-foreground/40 shadow-sm ring-2 ring-foreground/10 ring-offset-2 ring-offset-background",
+                    )}
+                  >
+                    <Mono className="text-[10px] font-semibold leading-none sm:text-[11px]">
+                      {cell.day}
+                    </Mono>
+                    <span className="flex w-full items-end justify-between gap-1">
+                      {cell.entriesCount > 0 ? (
+                        <span className="size-1.5 rounded-full bg-current opacity-75" />
+                      ) : (
+                        <span className="size-1.5 rounded-full bg-current opacity-20" />
+                      )}
+                      {cell.isFuture ? (
+                        <span className="text-[8px] uppercase tracking-[0.12em] opacity-80">
+                          Fut
+                        </span>
+                      ) : null}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
 
           <div className="mt-4 space-y-3 border-t border-line-soft pt-4">
-            <IntensityLegend maxDailySpent={data.maxDailySpent} />
-            {monthToDateSummary ? (
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs leading-5 text-muted-foreground">
-                Fino al{" "}
-                <span className="font-medium text-foreground">
-                  {monthToDateSummary.todayDay} {monthToDateSummary.monthAbbrev}
-                </span>
-                :{" "}
+                Ogni quadrato e un giorno di {data.currentMonth.label.toLowerCase()}.
+              </p>
+              <IntensityLegend maxDailySpent={maxCurrentDailySpent} />
+            </div>
+
+            <DayDetailPanel details={activeDetails} />
+
+            {data.monthToDateDelta !== null ? (
+              <p className="text-xs leading-5 text-muted-foreground">
+                Totale progressivo: {" "}
                 <Mono className="font-semibold text-foreground">
-                  {formatCraftedCompact(monthToDateSummary.currentTotal)}€
+                  {formatCraftedCompact(data.currentMonth.totalRealSpent)}€
                 </Mono>{" "}
-                vs{" "}
-                <Mono className="font-semibold text-foreground">
-                  {formatCraftedCompact(monthToDateSummary.previousTotal)}€
-                </Mono>{" "}
-                {monthToDateSummary.previousAbbrev}{" "}
+                nel mese corrente, {" "}
                 <Mono
                   className={cn(
                     "font-semibold",
-                    monthToDateSummary.delta > 0
+                    data.monthToDateDelta > 0
                       ? "text-destructive"
-                      : monthToDateSummary.delta < 0
+                      : data.monthToDateDelta < 0
                         ? "text-green"
                         : "text-foreground",
                   )}
                 >
-                  ({formatSignedMoney(monthToDateSummary.delta)})
-                </Mono>
+                  {formatSignedMoney(data.monthToDateDelta)}
+                </Mono>{" "}
+                rispetto allo stesso periodo del mese precedente.
               </p>
             ) : null}
           </div>
