@@ -19,42 +19,16 @@ import {
   getCurrentWorkspaceScopedWhere,
 } from "@/src/lib/workspace-context";
 import { getRomeDayRangeForDate } from "@/src/lib/rome-dates";
+import { aggregateEntryMetrics } from "@/src/lib/entry-metrics";
 
 type TodayDashboardSummary = {
   totalSavedToday: number;
   totalRealSpentToday: number;
   entriesTodayCount: number;
+  avoidedAmountToday: number;
+  comparisonSavedToday: number;
+  netImpactToday: number;
 };
-
-type DecimalLike = {
-  toString?: () => string;
-};
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as DecimalLike;
-
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 async function buildEntryWhere(
   person?: PersonFilterValue,
@@ -80,22 +54,22 @@ export async function getTodayDashboardSummary(
       where: await buildEntryWhere(person),
       select: {
         realCost: true,
+        alternativeCost: true,
         savedAmount: true,
+        mode: true,
+        savingContext: true,
       },
     });
 
-    let totalRealSpentToday = 0;
-    let totalSavedToday = 0;
-
-    for (const entry of entries) {
-      totalRealSpentToday += toNumber(entry.realCost);
-      totalSavedToday += toNumber(entry.savedAmount);
-    }
+    const agg = aggregateEntryMetrics(entries);
 
     return {
-      totalRealSpentToday: round2(totalRealSpentToday),
-      totalSavedToday: round2(totalSavedToday),
-      entriesTodayCount: entries.length,
+      totalRealSpentToday: agg.totalSpentReal,
+      totalSavedToday: agg.totalNetImpact,
+      entriesTodayCount: agg.entriesCount,
+      avoidedAmountToday: agg.totalAvoidedAmount,
+      comparisonSavedToday: agg.totalComparisonSaved,
+      netImpactToday: agg.totalNetImpact,
     };
   } catch (error) {
     unstable_rethrow(error);
@@ -104,6 +78,9 @@ export async function getTodayDashboardSummary(
       totalRealSpentToday: 0,
       totalSavedToday: 0,
       entriesTodayCount: 0,
+      avoidedAmountToday: 0,
+      comparisonSavedToday: 0,
+      netImpactToday: 0,
     };
   }
 }

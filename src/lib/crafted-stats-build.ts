@@ -8,9 +8,16 @@ export type CraftedStatsPeriod = "month" | "year" | "all";
 export type CraftedStatsMonthlyItem = {
   month: string;
   label: string;
-  totalSaved: number;
   totalRealSpent: number;
   totalAlternativeCost: number;
+  totalSaved: number;
+  netImpact: number;
+  avoidedAmount: number;
+  comparisonSaved: number;
+  comparisonOverspent: number;
+  grossPositiveImpact: number;
+  largeComparisonImpact: number;
+  ordinaryImpact: number;
   entriesCount: number;
 };
 
@@ -21,6 +28,11 @@ export type CraftedStatsCategoryItem = {
   totalRealSpent: number;
   totalAlternativeCost: number;
   totalSaved: number;
+  netImpact: number;
+  avoidedAmount: number;
+  comparisonSaved: number;
+  comparisonOverspent: number;
+  grossPositiveImpact: number;
   entriesCount: number;
 };
 
@@ -188,6 +200,7 @@ export type CraftedPeriodOverview = {
   totalRealSpent: number;
   totalAlternativeCost: number;
   totalSaved: number;
+  netImpact: number;
   entriesCount: number;
   averageSavedPerEntry: number;
   savingRatePercent: number;
@@ -203,6 +216,7 @@ function computePeriodOverview(
     totalRealSpent,
     totalAlternativeCost,
     totalSaved,
+    netImpact: totalSaved,
     entriesCount,
     averageSavedPerEntry:
       entriesCount === 0 ? 0 : round2(totalSaved / entriesCount),

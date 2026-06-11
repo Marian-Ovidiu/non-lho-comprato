@@ -2,15 +2,15 @@
 
 import dynamic from "next/dynamic";
 
-const PwaInstallContent = dynamic(
+const PwaInstallSection = dynamic(
   () =>
     import("@/src/components/pwa/install-button").then(
-      (module) => module.PwaInstallContent,
+      (module) => module.PwaInstallSection,
     ),
   {
     ssr: false,
-    loading: () => <div className="min-h-11 w-full rounded-2xl bg-surface-muted" />,
+    loading: () => null,
   },
 );
 
-export { PwaInstallContent };
+export { PwaInstallSection };

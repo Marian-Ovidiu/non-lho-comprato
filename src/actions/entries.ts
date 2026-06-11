@@ -11,6 +11,8 @@ import {
   type EntryMode,
   type EntrySavingContext,
 } from "@/src/lib/entry-domain";
+import { aggregateEntryMetrics } from "@/src/lib/entry-metrics";
+import { getRomeMonthKey, getRomeMonthRangeForMonthKey } from "@/src/lib/rome-dates";
 import { resolveIsFirstEntryOfDay } from "@/src/lib/entry-first-of-day";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import {
@@ -166,10 +168,19 @@ type EntryEditRecord = {
 };
 
 type MonthlySummary = {
+  // Legacy fields kept for caller compatibility
   totalRealSpent: number;
   totalAlternativeCost: number;
-  totalSaved: number;
+  totalSaved: number;   // = netImpact (was: raw sum of savedAmount)
   entriesCount: number;
+  // Unified metric breakdown
+  avoidedAmount: number;
+  comparisonSaved: number;
+  comparisonOverspent: number;
+  grossPositiveImpact: number;
+  netImpact: number;
+  largeComparisonImpact: number;
+  ordinaryImpact: number;
 };
 
 type ExpenseSuggestionRequest = ExpenseSuggestionInput;
@@ -220,14 +231,6 @@ type EntriesPageOptions = {
 
 function toDecimalString(value: number): string {
   return value.toFixed(2);
-}
-
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1, 0, 0, 0, 0);
-}
-
-function startOfNextMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth() + 1, 1, 0, 0, 0, 0);
 }
 
 function tryRevalidatePath(path: string) {
@@ -891,13 +894,13 @@ export async function getDashboardSummary(
   person?: PersonFilterValue,
 ): Promise<MonthlySummary> {
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const nextMonthStart = startOfNextMonth(now);
+  const { start, end } = getRomeMonthRangeForMonthKey(getRomeMonthKey(now));
+
   const workspaceWhere = await getCurrentWorkspaceScopedWhere({
     ...buildPersonWhere(person),
     date: {
-      gte: monthStart,
-      lt: nextMonthStart,
+      gte: start,
+      lt: end,
     },
   });
 
@@ -907,6 +910,8 @@ export async function getDashboardSummary(
       realCost: true,
       alternativeCost: true,
       savedAmount: true,
+      mode: true,
+      savingContext: true,
     },
   });
 
@@ -920,32 +925,27 @@ export async function getDashboardSummary(
     logWorkspaceDebug("getDashboardSummary", {
       workspaceId: workspaceWhere.workspaceId,
       personFilter: person ?? "all",
-      monthStart: monthStart.toISOString(),
-      nextMonthStart: nextMonthStart.toISOString(),
+      monthStart: start.toISOString(),
+      nextMonthStart: end.toISOString(),
       entriesThisMonth: entries.length,
       entriesAllTimeInWorkspace: allTimeCount,
     });
   }
 
-  const summary: MonthlySummary = {
-    totalRealSpent: 0,
-    totalAlternativeCost: 0,
-    totalSaved: 0,
-    entriesCount: 0,
-  };
-
-  for (const entry of entries) {
-    summary.totalRealSpent += Number(entry.realCost);
-    summary.totalAlternativeCost += Number(entry.alternativeCost);
-    summary.totalSaved += Number(entry.savedAmount);
-    summary.entriesCount += 1;
-  }
+  const agg = aggregateEntryMetrics(entries);
 
   return {
-    totalRealSpent: Number(summary.totalRealSpent.toFixed(2)),
-    totalAlternativeCost: Number(summary.totalAlternativeCost.toFixed(2)),
-    totalSaved: Number(summary.totalSaved.toFixed(2)),
-    entriesCount: summary.entriesCount,
+    totalRealSpent: agg.totalSpentReal,
+    totalAlternativeCost: agg.totalWouldHaveSpent,
+    totalSaved: agg.totalNetImpact,
+    entriesCount: agg.entriesCount,
+    avoidedAmount: agg.totalAvoidedAmount,
+    comparisonSaved: agg.totalComparisonSaved,
+    comparisonOverspent: agg.totalComparisonOverspent,
+    grossPositiveImpact: agg.totalGrossPositiveImpact,
+    netImpact: agg.totalNetImpact,
+    largeComparisonImpact: agg.largeComparisonImpact,
+    ordinaryImpact: agg.ordinaryImpact,
   };
 }
 

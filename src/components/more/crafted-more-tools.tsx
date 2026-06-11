@@ -2,7 +2,7 @@
 
 import { Label } from "@/components/crafted";
 import { AiAnalysisExportCard } from "@/src/components/more/ai-analysis-export-card-lazy";
-import { PwaInstallContent } from "@/src/components/pwa/install-content-lazy";
+import { PwaInstallSection } from "@/src/components/pwa/install-content-lazy";
 import { ThemeSelector } from "@/src/components/theme/theme-selector-lazy";
 import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button-lazy";
 import { JoinWorkspaceForm } from "@/src/components/workspace/join-workspace-form-lazy";
@@ -29,10 +29,7 @@ export function CraftedMoreAppTools() {
         <Label className="mb-3 block">Tema</Label>
         <ThemeSelector variant="crafted" />
       </div>
-      <div className="py-4">
-        <Label className="mb-3 block">Installa app</Label>
-        <PwaInstallContent />
-      </div>
+      <PwaInstallSection />
       <div className="py-4">
         <Label className="mb-3 block">Export AI</Label>
         <AiAnalysisExportCard />

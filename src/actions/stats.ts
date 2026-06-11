@@ -18,6 +18,11 @@ import {
   type DailySpendingComparison,
 } from "@/src/lib/daily-spending-comparison";
 import { getRomeMonthKey } from "@/src/lib/rome-dates";
+import type { StatsOverview } from "@/src/lib/stats-overview";
+import {
+  aggregateEntryMetrics,
+  calculateEntryMetrics,
+} from "@/src/lib/entry-metrics";
 import {
   getCurrentStatsMonthKey,
   getStatsMonthLabel,
@@ -27,21 +32,19 @@ import {
   type StatsPeriod,
 } from "@/src/lib/stats-period";
 
-type StatsOverview = {
-  totalRealSpent: number;
-  totalAlternativeCost: number;
-  totalSaved: number;
-  entriesCount: number;
-  averageSavedPerEntry: number;
-  savingRatePercent: number;
-};
-
 type MonthlyStatsItem = {
   month: string;
   label: string;
   totalRealSpent: number;
   totalAlternativeCost: number;
   totalSaved: number;
+  netImpact: number;
+  avoidedAmount: number;
+  comparisonSaved: number;
+  comparisonOverspent: number;
+  grossPositiveImpact: number;
+  largeComparisonImpact: number;
+  ordinaryImpact: number;
   entriesCount: number;
 };
 
@@ -52,6 +55,11 @@ type CategoryStatsItem = {
   totalRealSpent: number;
   totalAlternativeCost: number;
   totalSaved: number;
+  netImpact: number;
+  avoidedAmount: number;
+  comparisonSaved: number;
+  comparisonOverspent: number;
+  grossPositiveImpact: number;
   entriesCount: number;
   averageSaved: number;
 };
@@ -110,6 +118,8 @@ type StatsEntryRow = {
   realCost: unknown;
   alternativeCost: unknown;
   savedAmount: unknown;
+  mode: "spent" | "avoided";
+  savingContext: "none" | "comparison";
   source: "manual" | "habit";
   categoryId: string;
   category: {
@@ -193,6 +203,13 @@ function buildOverviewFromTotals(input: {
     totalRealSpent,
     totalAlternativeCost,
     totalSaved,
+    netImpact: totalSaved,
+    avoidedAmount: 0,
+    comparisonSaved: 0,
+    comparisonOverspent: 0,
+    grossPositiveImpact: 0,
+    largeComparisonImpact: 0,
+    ordinaryImpact: totalSaved,
     entriesCount: input.entriesCount,
     averageSavedPerEntry: round2(totalSaved / input.entriesCount),
     savingRatePercent:
@@ -269,6 +286,13 @@ function emptyOverview(): StatsOverview {
     totalRealSpent: 0,
     totalAlternativeCost: 0,
     totalSaved: 0,
+    netImpact: 0,
+    avoidedAmount: 0,
+    comparisonSaved: 0,
+    comparisonOverspent: 0,
+    grossPositiveImpact: 0,
+    largeComparisonImpact: 0,
+    ordinaryImpact: 0,
     entriesCount: 0,
     averageSavedPerEntry: 0,
     savingRatePercent: 0,
@@ -539,146 +563,108 @@ function getStatsFromEntries(
     };
   }
 
-  const overview = emptyOverview();
-  const monthlyGrouped = new Map<
+  // Group entries for aggregation
+  const byMonth = new Map<string, StatsEntryRow[]>();
+  const byCategoryId = new Map<
     string,
-    {
-      totalRealSpent: number;
-      totalAlternativeCost: number;
-      totalSaved: number;
-      entriesCount: number;
-    }
+    { name: string; slug: string; entries: StatsEntryRow[] }
   >();
-  const categoryGrouped = new Map<
-    string,
-    {
-      categoryName: string;
-      categorySlug: string;
-      totalRealSpent: number;
-      totalAlternativeCost: number;
-      totalSaved: number;
-      entriesCount: number;
-    }
-  >();
-  const monthlyCategoryGrouped = new Map<
-    string,
-    Map<string, StatsMonthlyCategoryRow>
-  >();
-  const topSavings: TopSavingsItem[] = [];
+  const byMonthByCategory = new Map<string, Map<string, StatsEntryRow[]>>();
 
   for (const entry of entries) {
-    const realCost = toNumber(entry.realCost);
-    const alternativeCost = toNumber(entry.alternativeCost);
-    const savedAmount = toNumber(entry.savedAmount);
-
-    overview.totalRealSpent = round2(overview.totalRealSpent + realCost);
-    overview.totalAlternativeCost = round2(
-      overview.totalAlternativeCost + alternativeCost,
-    );
-    overview.totalSaved = round2(overview.totalSaved + savedAmount);
-    overview.entriesCount += 1;
-
     const monthKey = getRomeMonthKey(entry.date);
-    const monthlyCurrent = monthlyGrouped.get(monthKey) ?? {
-      totalRealSpent: 0,
-      totalAlternativeCost: 0,
-      totalSaved: 0,
-      entriesCount: 0,
+
+    const monthGroup = byMonth.get(monthKey) ?? [];
+    monthGroup.push(entry);
+    byMonth.set(monthKey, monthGroup);
+
+    const catGroup = byCategoryId.get(entry.categoryId) ?? {
+      name: entry.category.name,
+      slug: entry.category.slug,
+      entries: [],
     };
+    catGroup.entries.push(entry);
+    byCategoryId.set(entry.categoryId, catGroup);
 
-    monthlyCurrent.totalRealSpent = round2(
-      monthlyCurrent.totalRealSpent + realCost,
-    );
-    monthlyCurrent.totalAlternativeCost = round2(
-      monthlyCurrent.totalAlternativeCost + alternativeCost,
-    );
-    monthlyCurrent.totalSaved = round2(monthlyCurrent.totalSaved + savedAmount);
-    monthlyCurrent.entriesCount += 1;
-    monthlyGrouped.set(monthKey, monthlyCurrent);
-
-    const monthlyCategoryCurrent =
-      monthlyCategoryGrouped.get(monthKey) ??
-      new Map<string, StatsMonthlyCategoryRow>();
-    const monthlyCategoryTotals = monthlyCategoryCurrent.get(entry.categoryId) ?? {
-      categoryName: entry.category.name,
-      categorySlug: entry.category.slug,
-      totalRealSpent: 0,
-      totalAlternativeCost: 0,
-      totalSaved: 0,
-      entriesCount: 0,
-    };
-
-    monthlyCategoryTotals.totalRealSpent = round2(
-      monthlyCategoryTotals.totalRealSpent + realCost,
-    );
-    monthlyCategoryTotals.totalAlternativeCost = round2(
-      monthlyCategoryTotals.totalAlternativeCost + alternativeCost,
-    );
-    monthlyCategoryTotals.totalSaved = round2(
-      monthlyCategoryTotals.totalSaved + savedAmount,
-    );
-    monthlyCategoryTotals.entriesCount += 1;
-    monthlyCategoryCurrent.set(entry.categoryId, monthlyCategoryTotals);
-    monthlyCategoryGrouped.set(monthKey, monthlyCategoryCurrent);
-
-    const categoryCurrent = categoryGrouped.get(entry.categoryId) ?? {
-      categoryName: entry.category.name,
-      categorySlug: entry.category.slug,
-      totalRealSpent: 0,
-      totalAlternativeCost: 0,
-      totalSaved: 0,
-      entriesCount: 0,
-    };
-
-    categoryCurrent.totalRealSpent = round2(
-      categoryCurrent.totalRealSpent + realCost,
-    );
-    categoryCurrent.totalAlternativeCost = round2(
-      categoryCurrent.totalAlternativeCost + alternativeCost,
-    );
-    categoryCurrent.totalSaved = round2(categoryCurrent.totalSaved + savedAmount);
-    categoryCurrent.entriesCount += 1;
-    categoryGrouped.set(entry.categoryId, categoryCurrent);
-
-    if (savedAmount > 0) {
-      topSavings.push({
-        id: entry.id,
-        title: entry.title,
-        categoryName: entry.category.name,
-        date: entry.date,
-        realCost,
-        alternativeCost,
-        savedAmount,
-        source: entry.source,
-      });
-    }
+    const monthCatMap =
+      byMonthByCategory.get(monthKey) ?? new Map<string, StatsEntryRow[]>();
+    const monthCatGroup = monthCatMap.get(entry.categoryId) ?? [];
+    monthCatGroup.push(entry);
+    monthCatMap.set(entry.categoryId, monthCatGroup);
+    byMonthByCategory.set(monthKey, monthCatMap);
   }
 
-  const monthlyStats = Array.from(monthlyGrouped.entries())
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([month, totals]) => ({
-      month,
-      label: getMonthLabelFromKey(month),
-      totalRealSpent: totals.totalRealSpent,
-      totalAlternativeCost: totals.totalAlternativeCost,
-      totalSaved: totals.totalSaved,
-      entriesCount: totals.entriesCount,
-    }));
+  // Overall aggregate
+  const overallAgg = aggregateEntryMetrics(entries);
+  const overview: StatsOverview = {
+    totalRealSpent: overallAgg.totalSpentReal,
+    totalAlternativeCost: overallAgg.totalWouldHaveSpent,
+    totalSaved: overallAgg.totalNetImpact,
+    netImpact: overallAgg.totalNetImpact,
+    avoidedAmount: overallAgg.totalAvoidedAmount,
+    comparisonSaved: overallAgg.totalComparisonSaved,
+    comparisonOverspent: overallAgg.totalComparisonOverspent,
+    grossPositiveImpact: overallAgg.totalGrossPositiveImpact,
+    largeComparisonImpact: overallAgg.largeComparisonImpact,
+    ordinaryImpact: overallAgg.ordinaryImpact,
+    entriesCount: overallAgg.entriesCount,
+    averageSavedPerEntry:
+      overallAgg.entriesCount === 0
+        ? 0
+        : round2(overallAgg.totalNetImpact / overallAgg.entriesCount),
+    savingRatePercent:
+      overallAgg.totalWouldHaveSpent === 0
+        ? 0
+        : round2(
+            (overallAgg.totalNetImpact / overallAgg.totalWouldHaveSpent) * 100,
+          ),
+  };
 
-  const categoryStats = Array.from(categoryGrouped.entries())
-    .map(([categoryId, totals]) => ({
-      categoryId,
-      categoryName: totals.categoryName,
-      categorySlug: totals.categorySlug,
-      totalRealSpent: totals.totalRealSpent,
-      totalAlternativeCost: totals.totalAlternativeCost,
-      totalSaved: totals.totalSaved,
-      entriesCount: totals.entriesCount,
-      averageSaved:
-        totals.entriesCount === 0
-          ? 0
-          : round2(totals.totalSaved / totals.entriesCount),
-    }))
+  // Monthly stats
+  const monthlyStats = Array.from(byMonth.entries())
+    .sort(([left], [right]) => left.localeCompare(right))
+    .map(([month, monthEntries]) => {
+      const agg = aggregateEntryMetrics(monthEntries);
+      return {
+        month,
+        label: getMonthLabelFromKey(month),
+        totalRealSpent: agg.totalSpentReal,
+        totalAlternativeCost: agg.totalWouldHaveSpent,
+        totalSaved: agg.totalNetImpact,
+        netImpact: agg.totalNetImpact,
+        avoidedAmount: agg.totalAvoidedAmount,
+        comparisonSaved: agg.totalComparisonSaved,
+        comparisonOverspent: agg.totalComparisonOverspent,
+        grossPositiveImpact: agg.totalGrossPositiveImpact,
+        largeComparisonImpact: agg.largeComparisonImpact,
+        ordinaryImpact: agg.ordinaryImpact,
+        entriesCount: agg.entriesCount,
+      };
+    });
+
+  // Category stats
+  const categoryStats = Array.from(byCategoryId.entries())
+    .map(([categoryId, group]) => {
+      const agg = aggregateEntryMetrics(group.entries);
+      return {
+        categoryId,
+        categoryName: group.name,
+        categorySlug: group.slug,
+        totalRealSpent: agg.totalSpentReal,
+        totalAlternativeCost: agg.totalWouldHaveSpent,
+        totalSaved: agg.totalNetImpact,
+        netImpact: agg.totalNetImpact,
+        avoidedAmount: agg.totalAvoidedAmount,
+        comparisonSaved: agg.totalComparisonSaved,
+        comparisonOverspent: agg.totalComparisonOverspent,
+        grossPositiveImpact: agg.totalGrossPositiveImpact,
+        entriesCount: agg.entriesCount,
+        averageSaved:
+          agg.entriesCount === 0
+            ? 0
+            : round2(agg.totalNetImpact / agg.entriesCount),
+      };
+    })
     .sort(
       (left, right) =>
         right.totalRealSpent - left.totalRealSpent ||
@@ -686,11 +672,49 @@ function getStatsFromEntries(
         left.categoryName.localeCompare(right.categoryName, "it"),
     );
 
+  // Top savings: entries with positive netImpact, computed from entry costs
+  const topSavings: TopSavingsItem[] = [];
+  for (const entry of entries) {
+    const entryMetrics = calculateEntryMetrics(entry);
+    if (entryMetrics.netImpact > 0) {
+      topSavings.push({
+        id: entry.id,
+        title: entry.title,
+        categoryName: entry.category.name,
+        date: entry.date,
+        realCost: entryMetrics.spentReal,
+        alternativeCost: entryMetrics.wouldHaveSpent,
+        savedAmount: entryMetrics.netImpact,
+        source: entry.source,
+      });
+    }
+  }
   topSavings.sort(
     (left, right) =>
       right.savedAmount - left.savedAmount ||
       right.date.getTime() - left.date.getTime(),
   );
+
+  // Build monthly-category grouping for insight functions
+  const monthlyCategoryGrouped = new Map<
+    string,
+    Map<string, StatsMonthlyCategoryRow>
+  >();
+  for (const [monthKey, monthCatMap] of byMonthByCategory.entries()) {
+    const catRows = new Map<string, StatsMonthlyCategoryRow>();
+    for (const [catId, catEntries] of monthCatMap.entries()) {
+      const agg = aggregateEntryMetrics(catEntries);
+      catRows.set(catId, {
+        categoryName: catEntries[0]!.category.name,
+        categorySlug: catEntries[0]!.category.slug,
+        totalRealSpent: agg.totalSpentReal,
+        totalAlternativeCost: agg.totalWouldHaveSpent,
+        totalSaved: agg.totalNetImpact,
+        entriesCount: agg.entriesCount,
+      });
+    }
+    monthlyCategoryGrouped.set(monthKey, catRows);
+  }
 
   const insights = [
     buildSpendingCategoryInsight(monthlyStats, monthlyCategoryGrouped, categoryStats),
@@ -699,17 +723,7 @@ function getStatsFromEntries(
   ];
 
   return {
-    overview: {
-      ...overview,
-      averageSavedPerEntry:
-        overview.entriesCount === 0
-          ? 0
-          : round2(overview.totalSaved / overview.entriesCount),
-      savingRatePercent:
-        overview.totalAlternativeCost === 0
-          ? 0
-          : round2((overview.totalSaved / overview.totalAlternativeCost) * 100),
-    },
+    overview,
     monthlyStats,
     categoryStats,
     topSavings: topSavings.slice(0, 10),
@@ -897,6 +911,8 @@ export async function getStatsPageData(
       realCost: true,
       alternativeCost: true,
       savedAmount: true,
+      mode: true,
+      savingContext: true,
       source: true,
       categoryId: true,
       category: {
@@ -1036,6 +1052,13 @@ export async function getMonthlyStats(
         totalRealSpent: totals.totalRealSpent,
         totalAlternativeCost: totals.totalAlternativeCost,
         totalSaved: totals.totalSaved,
+        netImpact: totals.totalSaved,
+        avoidedAmount: 0,
+        comparisonSaved: 0,
+        comparisonOverspent: 0,
+        grossPositiveImpact: 0,
+        largeComparisonImpact: 0,
+        ordinaryImpact: totals.totalSaved,
         entriesCount: totals.entriesCount,
       }));
   } catch (error) {
@@ -1095,6 +1118,11 @@ export async function getCategoryStats(
           totalRealSpent: round2(toNumber(totals._sum.realCost)),
           totalAlternativeCost: round2(toNumber(totals._sum.alternativeCost)),
           totalSaved,
+          netImpact: totalSaved,
+          avoidedAmount: 0,
+          comparisonSaved: 0,
+          comparisonOverspent: 0,
+          grossPositiveImpact: 0,
           entriesCount,
           averageSaved:
             entriesCount === 0 ? 0 : round2(totalSaved / entriesCount),

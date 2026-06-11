@@ -104,6 +104,10 @@ function usePwaInstallState() {
   return useSyncExternalStore(subscribe, readSnapshot, readSnapshot);
 }
 
+function shouldShowInstallSection(snapshot: PwaInstallSnapshot) {
+  return !snapshot.installed && (snapshot.canPrompt || snapshot.ios);
+}
+
 async function promptInstall() {
   const promptEvent = deferredPrompt;
   if (!promptEvent) return;
@@ -125,17 +129,12 @@ async function promptInstall() {
   }
 }
 
-export function CraftedPwaInstall() {
-  const { canPrompt, installed, ios } = usePwaInstallState();
-
-  if (installed) {
-    return (
-      <div className="border-y border-line py-3">
-        <Label className="mb-1 block">App installata</Label>
-        <p className="text-sm text-ink-3">La trovi già nella schermata Home.</p>
-      </div>
-    );
-  }
+function CraftedPwaInstallBody({
+  snapshot,
+}: {
+  snapshot: PwaInstallSnapshot;
+}) {
+  const { canPrompt, ios } = snapshot;
 
   if (ios) {
     return (
@@ -183,10 +182,31 @@ export function CraftedPwaInstall() {
     );
   }
 
+  return null;
+}
+
+export function CraftedPwaInstall() {
+  const snapshot = usePwaInstallState();
+
+  if (!shouldShowInstallSection(snapshot)) {
+    return null;
+  }
+
+  return <CraftedPwaInstallBody snapshot={snapshot} />;
+}
+
+export function PwaInstallSection() {
+  const snapshot = usePwaInstallState();
+
+  if (!shouldShowInstallSection(snapshot)) {
+    return null;
+  }
+
   return (
-    <p className="text-sm leading-6 text-ink-3">
-      Apri il sito in Chrome, Edge o Safari per vedere l&apos;opzione di installazione.
-    </p>
+    <div className="py-4">
+      <Label className="mb-3 block">Installa app</Label>
+      <CraftedPwaInstallBody snapshot={snapshot} />
+    </div>
   );
 }
 

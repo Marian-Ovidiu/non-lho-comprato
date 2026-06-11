@@ -40,7 +40,7 @@ export function CraftedMonthlyReportHeader({
           <StatTrio
             items={[
               {
-                label: "Evitato/risparmiato",
+                label: "Impatto netto",
                 value: formatCraftedCompact(report.overview?.totalSaved ?? 0),
                 suffix: "€",
               },

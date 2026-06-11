@@ -59,6 +59,13 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     totalRealSpent: 0,
     totalAlternativeCost: 0,
     totalSaved: 0,
+    netImpact: 0,
+    avoidedAmount: 0,
+    comparisonSaved: 0,
+    comparisonOverspent: 0,
+    grossPositiveImpact: 0,
+    largeComparisonImpact: 0,
+    ordinaryImpact: 0,
     averageSavedPerEntry: 0,
     savingRatePercent: 0,
   };

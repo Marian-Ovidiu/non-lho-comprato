@@ -1,5 +1,9 @@
 import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
 import { getMemberLabel, type WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import {
+  aggregateEntryMetrics,
+  calculateEntryMetrics,
+} from "@/src/lib/entry-metrics";
 
 export type MonthlyReportAnalyticsEntry = {
   id: string;
@@ -8,6 +12,8 @@ export type MonthlyReportAnalyticsEntry = {
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
+  mode: string;
+  savingContext: string;
   note: string | null;
   source: string;
   person: string;
@@ -33,7 +39,14 @@ export type MonthlyReportAnalyticsCategory = {
 export type MonthlyReportAnalyticsOverview = {
   totalRealSpent: number;
   totalAlternativeCost: number;
-  totalSaved: number;
+  totalSaved: number;        // = netImpact (kept for compat)
+  netImpact: number;
+  avoidedAmount: number;
+  comparisonSaved: number;
+  comparisonOverspent: number;
+  grossPositiveImpact: number;
+  largeComparisonImpact: number;
+  ordinaryImpact: number;
   entriesCount: number;
   savingRatePercent: number;
 };
@@ -226,6 +239,13 @@ function buildEmptySnapshot(
       totalRealSpent: 0,
       totalAlternativeCost: 0,
       totalSaved: 0,
+      netImpact: 0,
+      avoidedAmount: 0,
+      comparisonSaved: 0,
+      comparisonOverspent: 0,
+      grossPositiveImpact: 0,
+      largeComparisonImpact: 0,
+      ordinaryImpact: 0,
       entriesCount: 0,
       savingRatePercent: 0,
     },
@@ -286,9 +306,10 @@ export function buildMonthlyReportAnalyticsSnapshot(
   const biggestSavingCandidates: MonthlyReportAnalyticsSavingCandidate[] = [];
 
   for (const entry of entries) {
-    const realCost = round2(toNumber(entry.realCost));
-    const alternativeCost = round2(toNumber(entry.alternativeCost));
-    const savedAmount = round2(toNumber(entry.savedAmount));
+    const entryMetrics = calculateEntryMetrics(entry);
+    const realCost = entryMetrics.spentReal;
+    const alternativeCost = entryMetrics.wouldHaveSpent;
+    const netImpact = entryMetrics.netImpact;
     const categoryId = entry.category.id || entry.category.slug || entry.category.name;
     const categoryName = normalizeCategoryName(entry.category.name);
     const categorySlug = entry.category.slug;
@@ -304,13 +325,11 @@ export function buildMonthlyReportAnalyticsSnapshot(
       averageSaved: 0,
     };
 
-    categoryTotals.totalRealSpent = round2(
-      categoryTotals.totalRealSpent + realCost,
-    );
+    categoryTotals.totalRealSpent = round2(categoryTotals.totalRealSpent + realCost);
     categoryTotals.totalAlternativeCost = round2(
       categoryTotals.totalAlternativeCost + alternativeCost,
     );
-    categoryTotals.totalSaved = round2(categoryTotals.totalSaved + savedAmount);
+    categoryTotals.totalSaved = round2(categoryTotals.totalSaved + netImpact);
     categoryTotals.entriesCount += 1;
     categoryMap.set(categoryId, categoryTotals);
 
@@ -336,11 +355,11 @@ export function buildMonthlyReportAnalyticsSnapshot(
       }
     }
 
-    if (savedAmount > 0) {
+    if (netImpact > 0) {
       biggestSavingCandidates.push({
         id: entry.id,
         title: entry.title,
-        savedAmount,
+        savedAmount: netImpact,
         date: entry.date,
         ownershipLabel:
           payerUserId && members.find((member) => member.userId === payerUserId)
@@ -369,16 +388,11 @@ export function buildMonthlyReportAnalyticsSnapshot(
     );
   }
 
-  const totalRealSpent = round2(
-    entries.reduce((total, entry) => total + toNumber(entry.realCost), 0),
-  );
-  const totalAlternativeCost = round2(
-    entries.reduce((total, entry) => total + toNumber(entry.alternativeCost), 0),
-  );
-  const totalSaved = round2(
-    entries.reduce((total, entry) => total + toNumber(entry.savedAmount), 0),
-  );
-  const entriesCount = entries.length;
+  const overallAgg = aggregateEntryMetrics(entries);
+  const totalRealSpent = overallAgg.totalSpentReal;
+  const totalAlternativeCost = overallAgg.totalWouldHaveSpent;
+  const totalSaved = overallAgg.totalNetImpact;
+  const entriesCount = overallAgg.entriesCount;
   const savingRatePercent =
     totalAlternativeCost === 0
       ? 0
@@ -490,6 +504,13 @@ export function buildMonthlyReportAnalyticsSnapshot(
       totalRealSpent,
       totalAlternativeCost,
       totalSaved,
+      netImpact: overallAgg.totalNetImpact,
+      avoidedAmount: overallAgg.totalAvoidedAmount,
+      comparisonSaved: overallAgg.totalComparisonSaved,
+      comparisonOverspent: overallAgg.totalComparisonOverspent,
+      grossPositiveImpact: overallAgg.totalGrossPositiveImpact,
+      largeComparisonImpact: overallAgg.largeComparisonImpact,
+      ordinaryImpact: overallAgg.ordinaryImpact,
       entriesCount,
       savingRatePercent,
     },

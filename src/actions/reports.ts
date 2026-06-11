@@ -19,6 +19,10 @@ import {
 } from "@/src/lib/workspace-context";
 import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
 import { getMemberLabel, resolveEntryPeopleFromRecord } from "@/src/lib/workspace-members";
+import {
+  aggregateEntryMetrics,
+  calculateEntryMetrics,
+} from "@/src/lib/entry-metrics";
 
 type DecimalLike = {
   toString?: () => string;
@@ -32,7 +36,14 @@ export type MonthlyReportMonthOption = {
 export type MonthlyReportOverview = {
   totalRealSpent: number;
   totalAlternativeCost: number;
-  totalSaved: number;
+  totalSaved: number;        // = netImpact (kept for compat)
+  netImpact: number;
+  avoidedAmount: number;
+  comparisonSaved: number;
+  comparisonOverspent: number;
+  grossPositiveImpact: number;
+  largeComparisonImpact: number;
+  ordinaryImpact: number;
   entriesCount: number;
   savingRatePercent: number;
 };
@@ -41,7 +52,8 @@ export type MonthlyReportMemberSummary = {
   userId: string | null;
   label: string;
   totalRealSpent: number;
-  totalSaved: number;
+  totalSaved: number;        // = netImpact (kept for compat)
+  netImpact: number;
   entriesCount: number;
 };
 
@@ -96,6 +108,8 @@ export type MonthlyReportEntry = {
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
+  mode: string;
+  savingContext: string;
   note: string | null;
   source: string;
   person: string;
@@ -238,6 +252,8 @@ function serializeMonthlyReportEntry(entry: {
   realCost: unknown;
   alternativeCost: unknown;
   savedAmount: unknown;
+  mode: string;
+  savingContext: string;
   note: string | null;
   source: string;
   person: string;
@@ -256,6 +272,8 @@ function serializeMonthlyReportEntry(entry: {
     realCost: toNumber(entry.realCost),
     alternativeCost: toNumber(entry.alternativeCost),
     savedAmount: toNumber(entry.savedAmount),
+    mode: entry.mode,
+    savingContext: entry.savingContext,
     note: entry.note,
     source: entry.source,
     person: entry.person,
@@ -309,6 +327,7 @@ function createMonthlyReportMemberSummary(
     label,
     totalRealSpent: round2(totalRealSpent),
     totalSaved: round2(totalSaved),
+    netImpact: round2(totalSaved),
     entriesCount,
   };
 }
@@ -336,7 +355,10 @@ function buildMemberSplit(
     paidByUserId: string | null;
     beneficiaries: Array<{ userId: string }>;
     realCost: unknown;
+    alternativeCost: unknown;
     savedAmount: unknown;
+    mode: unknown;
+    savingContext: unknown;
   }>,
   members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
   totalRealSpent: number,
@@ -361,12 +383,13 @@ function buildMemberSplit(
   for (const entry of entries) {
     const resolved = resolveEntryPeopleFromRecord(entry, members);
     const expenseKind = getEntryExpenseKind(resolved.beneficiaryUserIds);
-    const realCost = toNumber(entry.realCost);
-    const savedAmount = toNumber(entry.savedAmount);
+    const entryMetrics = calculateEntryMetrics(entry);
+    const realCost = entryMetrics.spentReal;
+    const netImpact = entryMetrics.netImpact;
 
     if (expenseKind === "shared") {
       shared.totalRealSpent = round2(shared.totalRealSpent + realCost);
-      shared.totalSaved = round2(shared.totalSaved + savedAmount);
+      shared.totalSaved = round2(shared.totalSaved + netImpact);
       shared.entriesCount += 1;
       continue;
     }
@@ -376,13 +399,13 @@ function buildMemberSplit(
 
     if (beneficiaryUserId && beneficiaryUserId === slots.secondaryUserId) {
       secondary.totalRealSpent = round2(secondary.totalRealSpent + realCost);
-      secondary.totalSaved = round2(secondary.totalSaved + savedAmount);
+      secondary.totalSaved = round2(secondary.totalSaved + netImpact);
       secondary.entriesCount += 1;
       continue;
     }
 
     primary.totalRealSpent = round2(primary.totalRealSpent + realCost);
-    primary.totalSaved = round2(primary.totalSaved + savedAmount);
+    primary.totalSaved = round2(primary.totalSaved + netImpact);
     primary.entriesCount += 1;
   }
 
@@ -430,6 +453,13 @@ function buildEmptyReport(
       totalRealSpent: 0,
       totalAlternativeCost: 0,
       totalSaved: 0,
+      netImpact: 0,
+      avoidedAmount: 0,
+      comparisonSaved: 0,
+      comparisonOverspent: 0,
+      grossPositiveImpact: 0,
+      largeComparisonImpact: 0,
+      ordinaryImpact: 0,
       entriesCount: 0,
       savingRatePercent: 0,
     },
@@ -515,6 +545,8 @@ export async function getMonthlyReport(
           realCost: true,
           alternativeCost: true,
           savedAmount: true,
+          mode: true,
+          savingContext: true,
           note: true,
           source: true,
           person: true,
@@ -545,6 +577,8 @@ export async function getMonthlyReport(
           realCost: true,
           alternativeCost: true,
           savedAmount: true,
+          mode: true,
+          savingContext: true,
           note: true,
           source: true,
           person: true,
@@ -604,19 +638,11 @@ export async function getMonthlyReport(
       };
     }
 
-    const totalRealSpent = round2(
-      monthEntries.reduce((total, entry) => total + toNumber(entry.realCost), 0),
-    );
-    const totalAlternativeCost = round2(
-      monthEntries.reduce(
-        (total, entry) => total + toNumber(entry.alternativeCost),
-        0,
-      ),
-    );
-    const totalSaved = round2(
-      monthEntries.reduce((total, entry) => total + toNumber(entry.savedAmount), 0),
-    );
-    const entriesCount = monthEntries.length;
+    const agg = aggregateEntryMetrics(monthEntries);
+    const totalRealSpent = agg.totalSpentReal;
+    const totalAlternativeCost = agg.totalWouldHaveSpent;
+    const totalSaved = agg.totalNetImpact;
+    const entriesCount = agg.entriesCount;
     const savingRatePercent =
       totalAlternativeCost === 0
         ? 0
@@ -644,6 +670,7 @@ export async function getMonthlyReport(
     let biggestSaving: MonthlyReportBiggestSaving = null;
 
     for (const entry of monthEntries) {
+      const entryMetrics = calculateEntryMetrics(entry);
       const current = categoryMap.get(entry.category.slug) ?? {
         categoryName: entry.category.name,
         categorySlug: entry.category.slug,
@@ -652,26 +679,23 @@ export async function getMonthlyReport(
         entriesCount: 0,
       };
 
-      current.totalRealSpent = round2(
-        current.totalRealSpent + toNumber(entry.realCost),
-      );
-      current.totalSaved = round2(current.totalSaved + toNumber(entry.savedAmount));
+      current.totalRealSpent = round2(current.totalRealSpent + entryMetrics.spentReal);
+      current.totalSaved = round2(current.totalSaved + entryMetrics.netImpact);
       current.entriesCount += 1;
       categoryMap.set(entry.category.slug, current);
 
       if (
-        toNumber(entry.savedAmount) > 0 &&
-        (!biggestSaving ||
-          toNumber(entry.savedAmount) > biggestSaving.savedAmount)
+        entryMetrics.netImpact > 0 &&
+        (!biggestSaving || entryMetrics.netImpact > biggestSaving.savedAmount)
       ) {
         biggestSaving = {
           id: entry.id,
           title: entry.title,
           categoryName: entry.category.name,
           date: entry.date.toISOString(),
-          realCost: toNumber(entry.realCost),
-          alternativeCost: toNumber(entry.alternativeCost),
-          savedAmount: toNumber(entry.savedAmount),
+          realCost: entryMetrics.spentReal,
+          alternativeCost: entryMetrics.wouldHaveSpent,
+          savedAmount: entryMetrics.netImpact,
           ownershipLabel: getEntryOwnershipLabelFromMembers(entry, members),
           note: entry.note,
         };
@@ -837,6 +861,13 @@ export async function getMonthlyReport(
           totalRealSpent,
           totalAlternativeCost,
           totalSaved,
+          netImpact: agg.totalNetImpact,
+          avoidedAmount: agg.totalAvoidedAmount,
+          comparisonSaved: agg.totalComparisonSaved,
+          comparisonOverspent: agg.totalComparisonOverspent,
+          grossPositiveImpact: agg.totalGrossPositiveImpact,
+          largeComparisonImpact: agg.largeComparisonImpact,
+          ordinaryImpact: agg.ordinaryImpact,
           entriesCount,
           savingRatePercent,
         },

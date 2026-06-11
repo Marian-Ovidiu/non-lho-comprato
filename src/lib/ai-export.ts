@@ -1,5 +1,6 @@
 import { getEntryOwnershipLabel } from "@/src/lib/person-labels";
 import { toEntryMoneyView } from "@/src/lib/entry-domain";
+import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 
 const ROME_TIME_ZONE = "Europe/Rome";
 
@@ -34,6 +35,25 @@ export const AI_EXPENSE_EXPORT_COLUMNS = [
   "amountSpent",
   "comparisonAmount",
   "savingImpact",
+  // Unified metric breakdown columns
+  "spentReal",
+  "wouldHaveSpentMetric",
+  "avoidedAmount",
+  "comparisonSaved",
+  "comparisonOverspent",
+  "grossPositiveImpact",
+  "netImpact",
+  "ordinaryImpact",
+  "largeComparisonImpact",
+  "isLargeComparison",
+  // Sharing/audit columns
+  "paidByUserId",
+  "paidByName",
+  "beneficiaryUserIds",
+  "beneficiaryNames",
+  "beneficiaryCount",
+  "sharePerBeneficiary",
+  "isShared",
 ] as const;
 
 export type AiExpenseExportEntry = {
@@ -53,6 +73,11 @@ export type AiExpenseExportEntry = {
   amountSpent?: unknown;
   comparisonAmount?: unknown;
   savingImpact?: unknown;
+  // Sharing fields (present for new entries; absent for legacy entries)
+  paidByUserId?: string | null;
+  paidByUserName?: string | null;
+  paidByUserEmail?: string | null;
+  beneficiaries?: Array<{ userId: string; userName?: string | null; userEmail?: string | null }>;
   category: {
     name: string;
   };
@@ -95,6 +120,25 @@ export type AiExpenseExportRow = {
   amountSpent: string;
   comparisonAmount: string;
   savingImpact: string;
+  // Unified metric breakdown columns
+  spentReal: string;
+  wouldHaveSpentMetric: string;
+  avoidedAmount: string;
+  comparisonSaved: string;
+  comparisonOverspent: string;
+  grossPositiveImpact: string;
+  netImpact: string;
+  ordinaryImpact: string;
+  largeComparisonImpact: string;
+  isLargeComparison: boolean;
+  // Sharing/audit columns
+  paidByUserId: string;
+  paidByName: string;
+  beneficiaryUserIds: string;
+  beneficiaryNames: string;
+  beneficiaryCount: number;
+  sharePerBeneficiary: string;
+  isShared: boolean;
 };
 
 export type AiExpenseExportSummary = {
@@ -103,11 +147,14 @@ export type AiExpenseExportSummary = {
   dateRangeEnd: string;
   totalSpentReally: number;
   totalWouldHaveSpent: number;
-  totalSaved: number;
+  totalSaved: number;        // legacy: from savedAmount column
+  totalNetImpact: number;    // from unified metric module
   habitGeneratedEntries: number;
   categoriesByFrequency: Map<string, { count: number; spend: number }>;
   categoriesBySpend: Map<string, { count: number; spend: number }>;
 };
+
+export type AiExpenseExportRange = "current-month" | "all";
 
 function round2(value: number): number {
   const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
@@ -187,6 +234,7 @@ export function createAiExpenseExportSummary(): AiExpenseExportSummary {
     totalSpentReally: 0,
     totalWouldHaveSpent: 0,
     totalSaved: 0,
+    totalNetImpact: 0,
     habitGeneratedEntries: 0,
     categoriesByFrequency: new Map(),
     categoriesBySpend: new Map(),
@@ -205,7 +253,28 @@ export function buildAiExpenseExportRow(
   const habitName = entry.habitOccurrence?.habit?.name ?? "";
   const isHabitGenerated = Boolean(habitId);
 
+  // Unified metric columns
+  const entryMetrics = calculateEntryMetrics(entry);
+  const perEntryLargeComparisonImpact = entryMetrics.isLargeComparison
+    ? entryMetrics.netImpact
+    : 0;
+  const perEntryOrdinaryImpact = entryMetrics.isLargeComparison
+    ? 0
+    : entryMetrics.netImpact;
+
+  // Sharing columns
+  const beneficiariesArr = entry.beneficiaries ?? [];
+  const paidByName =
+    entry.paidByUserName ??
+    entry.paidByUserEmail ??
+    (entry.paidByUserId ?? "");
+  const beneficiaryUserIds = entryMetrics.beneficiaryUserIds.join("|");
+  const beneficiaryNames = beneficiariesArr
+    .map((b) => b.userName ?? b.userEmail ?? b.userId)
+    .join("|");
+
   return {
+    // Legacy columns (preserved for backward compatibility)
     id: entry.id,
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
@@ -236,7 +305,44 @@ export function buildAiExpenseExportRow(
     amountSpent: formatMoneyValue(money.amountSpent),
     comparisonAmount: formatMoneyValue(money.comparisonAmount),
     savingImpact: formatMoneyValue(money.savingImpact),
+    // Unified metric breakdown columns
+    spentReal: formatMoneyValue(entryMetrics.spentReal),
+    wouldHaveSpentMetric: formatMoneyValue(entryMetrics.wouldHaveSpent),
+    avoidedAmount: formatMoneyValue(entryMetrics.avoidedAmount),
+    comparisonSaved: formatMoneyValue(entryMetrics.comparisonSaved),
+    comparisonOverspent: formatMoneyValue(entryMetrics.comparisonOverspent),
+    grossPositiveImpact: formatMoneyValue(entryMetrics.grossPositiveImpact),
+    netImpact: formatMoneyValue(entryMetrics.netImpact),
+    ordinaryImpact: formatMoneyValue(perEntryOrdinaryImpact),
+    largeComparisonImpact: formatMoneyValue(perEntryLargeComparisonImpact),
+    isLargeComparison: entryMetrics.isLargeComparison,
+    // Sharing/audit columns
+    paidByUserId: entryMetrics.paidByUserId ?? "",
+    paidByName,
+    beneficiaryUserIds,
+    beneficiaryNames,
+    beneficiaryCount: entryMetrics.beneficiaryCount,
+    sharePerBeneficiary: formatMoneyValue(entryMetrics.sharePerBeneficiary),
+    isShared: entryMetrics.isShared,
   };
+}
+
+export function isExportableAiExpenseExportEntry(
+  entry: Partial<AiExpenseExportEntry> | null | undefined,
+): entry is AiExpenseExportEntry {
+  const id = typeof entry?.id === "string" ? entry.id.trim() : "";
+  const date = entry?.date;
+
+  return id.length > 0 && date instanceof Date && Number.isFinite(date.getTime());
+}
+
+export function buildAiExpenseExportRows(
+  entries: ReadonlyArray<AiExpenseExportEntry>,
+  workspaceName: string,
+): AiExpenseExportRow[] {
+  return entries
+    .filter(isExportableAiExpenseExportEntry)
+    .map((entry) => buildAiExpenseExportRow(entry, workspaceName));
 }
 
 export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
@@ -271,7 +377,35 @@ export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
     row.amountSpent,
     row.comparisonAmount,
     row.savingImpact,
+    // Unified metric breakdown
+    row.spentReal,
+    row.wouldHaveSpentMetric,
+    row.avoidedAmount,
+    row.comparisonSaved,
+    row.comparisonOverspent,
+    row.grossPositiveImpact,
+    row.netImpact,
+    row.ordinaryImpact,
+    row.largeComparisonImpact,
+    row.isLargeComparison,
+    // Sharing/audit
+    row.paidByUserId,
+    row.paidByName,
+    row.beneficiaryUserIds,
+    row.beneficiaryNames,
+    row.beneficiaryCount,
+    row.sharePerBeneficiary,
+    row.isShared,
   ]);
+}
+
+export function serializeAiExpenseExportEntries(
+  entries: ReadonlyArray<AiExpenseExportEntry>,
+  workspaceName: string,
+): string {
+  return buildAiExpenseExportRows(entries, workspaceName)
+    .map(serializeAiExpenseExportRow)
+    .join("");
 }
 
 export function updateAiExpenseExportSummary(
@@ -281,6 +415,7 @@ export function updateAiExpenseExportSummary(
   const spentReally = Number(row.spentReally) || 0;
   const wouldHaveSpent = Number(row.wouldHaveSpent) || 0;
   const savedAmount = Number(row.savedAmount) || 0;
+  const netImpact = Number(row.netImpact) || 0;
   const categoryName = row.category;
 
   summary.totalEntries += 1;
@@ -289,6 +424,7 @@ export function updateAiExpenseExportSummary(
     summary.totalWouldHaveSpent + wouldHaveSpent,
   );
   summary.totalSaved = round2(summary.totalSaved + savedAmount);
+  summary.totalNetImpact = round2(summary.totalNetImpact + netImpact);
   summary.habitGeneratedEntries += row.isHabitGenerated ? 1 : 0;
 
   if (!summary.dateRangeStart) {
@@ -360,6 +496,7 @@ export function buildAiExpenseExportSummaryBlock(
       formatMoneyValue(summary.totalWouldHaveSpent),
     ]).trimEnd(),
     csvLine(["totalSaved", formatMoneyValue(summary.totalSaved)]).trimEnd(),
+    csvLine(["totalNetImpact", formatMoneyValue(summary.totalNetImpact)]).trimEnd(),
     csvLine([
       "topCategoriesByFrequency",
       buildTopCategoriesJson(summary.categoriesByFrequency, "count"),
@@ -373,7 +510,10 @@ export function buildAiExpenseExportSummaryBlock(
   ].join("\n");
 }
 
-export function getAiExpenseExportFilename(date = new Date()): string {
+export function getAiExpenseExportFilename(
+  date = new Date(),
+  range: AiExpenseExportRange = "all",
+): string {
   const formatter = new Intl.DateTimeFormat("en-CA", {
     timeZone: ROME_TIME_ZONE,
     year: "numeric",
@@ -385,6 +525,7 @@ export function getAiExpenseExportFilename(date = new Date()): string {
   const year = parts.find((part) => part.type === "year")?.value ?? "0000";
   const month = parts.find((part) => part.type === "month")?.value ?? "00";
   const day = parts.find((part) => part.type === "day")?.value ?? "00";
+  const scope = range === "current-month" ? "mese-corrente" : "tutti";
 
-  return `nlc-expenses-${year}-${month}-${day}.csv`;
+  return `nlc-expenses-${scope}-${year}-${month}-${day}.csv`;
 }

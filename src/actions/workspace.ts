@@ -12,6 +12,7 @@ import {
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import {
   getCurrentWorkspaceId,
+  getCurrentWorkspace,
   getCurrentUser,
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
@@ -52,7 +53,21 @@ export async function createWorkspaceAction(
   }
 
   try {
-    const user = await getCurrentUser();
+    const [user, currentWorkspace] = await Promise.all([
+      getCurrentUser(),
+      getCurrentWorkspace(),
+    ]);
+
+    if (
+      currentWorkspace.kind !== "private" ||
+      currentWorkspace.ownerUserId !== user.id
+    ) {
+      return {
+        success: false,
+        message:
+          "Puoi creare un nuovo workspace solo partendo dal tuo workspace privato.",
+      };
+    }
 
     const workspace = await prisma.$transaction(async (tx) => {
       const ws = await tx.workspace.create({

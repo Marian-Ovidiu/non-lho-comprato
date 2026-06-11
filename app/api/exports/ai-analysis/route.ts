@@ -1,15 +1,16 @@
+import type { NextRequest } from "next/server";
+import type { Prisma } from "@/src/lib/generated/prisma/client";
+
 import { prisma } from "@/src/lib/prisma";
 import { getCurrentWorkspace } from "@/src/lib/auth/session";
 import {
   AI_EXPENSE_EXPORT_COLUMNS,
-  buildAiExpenseExportRow,
-  buildAiExpenseExportSummaryBlock,
-  createAiExpenseExportSummary,
   getAiExpenseExportFilename,
-  serializeAiExpenseExportRow,
-  updateAiExpenseExportSummary,
+  serializeAiExpenseExportEntries,
   type AiExpenseExportEntry,
+  type AiExpenseExportRange,
 } from "@/src/lib/ai-export";
+import { getRomeMonthKey, getRomeMonthRangeForMonthKey } from "@/src/lib/rome-dates";
 
 export const dynamic = "force-dynamic";
 
@@ -27,6 +28,26 @@ const exportSelect = {
   realCost: true,
   alternativeCost: true,
   savedAmount: true,
+  mode: true,
+  savingContext: true,
+  paidByUserId: true,
+  paidByUser: {
+    select: {
+      name: true,
+      email: true,
+    },
+  },
+  beneficiaries: {
+    select: {
+      userId: true,
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+    },
+  },
   category: {
     select: {
       name: true,
@@ -50,12 +71,38 @@ const orderBy = [
   { id: "asc" as const },
 ] as const;
 
-async function fetchEntriesBatch(
+function getExportRange(request: NextRequest): AiExpenseExportRange {
+  return request.nextUrl.searchParams.get("range") === "current-month"
+    ? "current-month"
+    : "all";
+}
+
+function buildExportWhere(
   workspaceId: string,
+  range: AiExpenseExportRange,
+): Prisma.EntryWhereInput {
+  if (range !== "current-month") {
+    return { workspaceId };
+  }
+
+  const monthKey = getRomeMonthKey(new Date());
+  const { start, end } = getRomeMonthRangeForMonthKey(monthKey);
+
+  return {
+    workspaceId,
+    date: {
+      gte: start,
+      lt: end,
+    },
+  };
+}
+
+async function fetchEntriesBatch(
+  where: Prisma.EntryWhereInput,
   cursor?: string,
 ): Promise<AiExpenseExportEntry[]> {
   const query = {
-    where: { workspaceId },
+    where,
     take: BATCH_SIZE,
     orderBy: [...orderBy],
     select: exportSelect,
@@ -81,6 +128,16 @@ async function fetchEntriesBatch(
     realCost: entry.realCost,
     alternativeCost: entry.alternativeCost,
     savedAmount: entry.savedAmount,
+    mode: entry.mode,
+    savingContext: entry.savingContext,
+    paidByUserId: entry.paidByUserId,
+    paidByUserName: entry.paidByUser?.name ?? null,
+    paidByUserEmail: entry.paidByUser?.email ?? null,
+    beneficiaries: entry.beneficiaries.map((b) => ({
+      userId: b.userId,
+      userName: b.user?.name ?? null,
+      userEmail: b.user?.email ?? null,
+    })),
     category: {
       name: entry.category.name,
     },
@@ -97,7 +154,7 @@ async function fetchEntriesBatch(
   }));
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   let workspace: Awaited<ReturnType<typeof getCurrentWorkspace>>;
 
   try {
@@ -107,8 +164,9 @@ export async function GET() {
   }
 
   const encoder = new TextEncoder();
-  const summary = createAiExpenseExportSummary();
-  const filename = getAiExpenseExportFilename();
+  const range = getExportRange(request);
+  const where = buildExportWhere(workspace.id, range);
+  const filename = getAiExpenseExportFilename(new Date(), range);
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
@@ -119,7 +177,7 @@ export async function GET() {
         let cursor: string | undefined;
 
         while (true) {
-          const entries = await fetchEntriesBatch(workspace.id, cursor);
+          const entries = await fetchEntriesBatch(where, cursor);
 
           if (entries.length === 0) {
             break;
@@ -127,11 +185,7 @@ export async function GET() {
 
           let chunk = "";
 
-          for (const entry of entries) {
-            const row = buildAiExpenseExportRow(entry, workspace.name);
-            updateAiExpenseExportSummary(summary, row);
-            chunk += serializeAiExpenseExportRow(row);
-          }
+          chunk += serializeAiExpenseExportEntries(entries, workspace.name);
 
           controller.enqueue(encoder.encode(chunk));
 
@@ -142,9 +196,6 @@ export async function GET() {
           cursor = entries[entries.length - 1]?.id;
         }
 
-        controller.enqueue(
-          encoder.encode(buildAiExpenseExportSummaryBlock(summary)),
-        );
         controller.close();
       } catch (error) {
         controller.error(error);

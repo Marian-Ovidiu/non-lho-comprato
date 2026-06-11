@@ -3,6 +3,7 @@ import { differenceInCalendarDays } from "date-fns";
 
 import { CraftedIcon, Mono, Rule } from "@/components/crafted";
 import { formatCraftedEntryAmount } from "@/src/lib/crafted-money";
+import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -55,7 +56,7 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
   const mode = entry.mode === "avoided" ? "avoided" : "spent";
   const savingContext =
     entry.savingContext === "comparison" ? "comparison" : "none";
-  const savedAmount = toFiniteNumber(entry.savedAmount);
+  const savedAmount = calculateEntryMetrics(entry).netImpact;
   const alternativeCost = toFiniteNumber(entry.alternativeCost);
 
   if (mode === "avoided") {

@@ -11,7 +11,6 @@ import {
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
-import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +18,6 @@ type WorkspaceNextStep = NonNullable<CraftedMoreProps["workspaceNextStep"]>;
 
 function getWorkspaceNextStep(
   workspace: Awaited<ReturnType<typeof getCurrentWorkspace>>,
-  memberCount: number,
 ): WorkspaceNextStep | null {
   if (workspace.kind === "private") {
     return {
@@ -31,16 +29,6 @@ function getWorkspaceNextStep(
     };
   }
 
-  if (memberCount <= 2) {
-    return {
-      title: "Workspace quasi vuoto",
-      description:
-        "Siete ancora in pochi. Invita almeno un'altra persona per iniziare a condividere i movimenti.",
-      actionLabel: "Invita persone",
-      href: "/workspace/members",
-    };
-  }
-
   return null;
 }
 
@@ -48,7 +36,6 @@ export default async function MorePage() {
   let loadError: string | null = null;
   let authUser: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
   let workspaceResult: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
-  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
   let monthSummary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
   let streakResult: Awaited<ReturnType<typeof getGlobalStreak>> = {
     currentStreak: 0,
@@ -57,10 +44,9 @@ export default async function MorePage() {
   };
 
   try {
-    [authUser, workspaceResult, members, monthSummary, streakResult] = await Promise.all([
+    [authUser, workspaceResult, monthSummary, streakResult] = await Promise.all([
       getAuthenticatedUser(),
       getCurrentWorkspace().catch(() => null),
-      getCurrentWorkspaceMembers().catch(() => []),
       getDashboardSummary().catch(() => null),
       getGlobalStreak().catch(() => ({ currentStreak: 0, bestStreak: 0, streakDates: [] })),
     ]);
@@ -86,7 +72,7 @@ export default async function MorePage() {
         .toUpperCase()
     : "NL";
   const workspaceNextStep = workspace
-    ? getWorkspaceNextStep(workspace, members.length)
+    ? getWorkspaceNextStep(workspace)
     : null;
 
   return (

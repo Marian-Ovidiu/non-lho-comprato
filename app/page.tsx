@@ -250,11 +250,15 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   let monthSaved = 0;
   let monthRealSpent = 0;
+  let monthLargeComparisonImpact = 0;
   let entriesCountMonth = 0;
   let todaySummary = {
     totalSavedToday: 0,
     totalRealSpentToday: 0,
     entriesTodayCount: 0,
+    avoidedAmountToday: 0,
+    comparisonSavedToday: 0,
+    netImpactToday: 0,
   };
   let entryCount = 0;
   let firstEntryDate: Date | null = null;
@@ -313,6 +317,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
     monthSaved = metrics.summary.totalSaved;
     monthRealSpent = metrics.summary.totalRealSpent;
+    monthLargeComparisonImpact = metrics.summary.largeComparisonImpact;
     entriesCountMonth = metrics.summary.entriesCount;
     todaySummary = metrics.todaySummary;
     workspaceBalance = metrics.workspaceBalance;
@@ -353,6 +358,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   const craftedProps = buildCraftedDashboardProps({
     monthRealSpent,
     monthSaved,
+    monthLargeComparisonImpact,
     spentToday: todaySummary.totalRealSpentToday,
     entriesCountMonth,
     entriesTodayCount: todaySummary.entriesTodayCount,

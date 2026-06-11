@@ -61,6 +61,7 @@ export type CraftedDashboardProps = {
   monthLabel: string;
   monthRealSpent: number;
   monthSaved: number;
+  monthLargeComparisonImpact: number;
   monthDelta: number | null;
   monthTrend: number[];
   spentToday: number;
@@ -196,6 +197,7 @@ export function CraftedDashboard({
   monthLabel,
   monthRealSpent,
   monthSaved,
+  monthLargeComparisonImpact,
   monthDelta,
   monthTrend,
   spentToday,
@@ -233,11 +235,16 @@ export function CraftedDashboard({
 
         <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <Label className="mb-1.5 block">{monthLabel} — evitato / risparmio</Label>
+            <Label className="mb-1.5 block">{monthLabel} — impatto netto</Label>
             <Mono className="text-xl font-medium">
               <CraftedAmount value={monthSaved} />
               <span className="text-xs text-accent">€</span>
             </Mono>
+            {monthLargeComparisonImpact > 0 ? (
+              <Mono className="mt-1 block text-[11px] text-ink-3">
+                di cui {formatCraftedCompact(monthLargeComparisonImpact)}€ da grandi confronti
+              </Mono>
+            ) : null}
           </div>
 
           {monthDelta !== null && monthDelta !== 0 ? (
@@ -271,7 +278,7 @@ export function CraftedDashboard({
             suffix: "€",
           },
           {
-            label: "Evitato oggi",
+            label: "Impatto oggi",
             value: <CraftedAmount value={savedToday} />,
             suffix: "€",
           },

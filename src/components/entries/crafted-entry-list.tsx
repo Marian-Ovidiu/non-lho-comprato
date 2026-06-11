@@ -13,6 +13,7 @@ import {
   getRomeDateKey,
   shiftRomeDateKey,
 } from "@/src/lib/rome-dates";
+import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { cn } from "@/lib/utils";
 
 type EntryItem = {
@@ -156,7 +157,7 @@ function groupEntries(entries: EntryItem[]): DayGroup[] {
     }
 
     const realSpent = Number(entry.realCost) || 0;
-    const saved = Number(entry.savedAmount) || 0;
+    const saved = calculateEntryMetrics(entry).netImpact;
 
     if (currentGroup && currentGroup.dateKey === dateKey) {
       currentGroup.entries.push(entry);

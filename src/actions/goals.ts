@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 
-import { toEntryMoneyView, type EntryMoneyLike } from "@/src/lib/entry-domain";
+import { type EntryMoneyLike } from "@/src/lib/entry-domain";
+import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { prisma } from "@/src/lib/prisma";
 import {
   isSharedPerson,
@@ -131,18 +132,7 @@ function getProgressAmount(
 }
 
 function getGoalContribution(entry: EntryMoneyLike): number {
-  const money = toEntryMoneyView(entry);
-
-  if (money.savingImpact <= 0) {
-    return 0;
-  }
-
-  // Goals advance only on positive saving semantics: avoided entries or positive comparisons.
-  if (money.mode === "avoided" || money.savingContext === "comparison") {
-    return money.savingImpact;
-  }
-
-  return 0;
+  return Math.max(0, calculateEntryMetrics(entry).netImpact);
 }
 
 export async function createGoal(

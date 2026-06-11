@@ -91,7 +91,7 @@ function CraftedCategoryBars({
           </div>
           {category.saved > 0 ? (
             <Serif className="mb-2 block text-[12.5px] text-ink-3">
-              {formatCraftedCompact(category.saved)}€ evitati / risparmiati
+              {formatCraftedCompact(category.saved)}€ impatto netto
             </Serif>
           ) : null}
           <ProgressLine
@@ -209,7 +209,7 @@ export function CraftedStats({
             suffix: "€",
           },
           {
-            label: "Evitato/risparmiato",
+            label: "Impatto netto",
             value: <CraftedAmount value={periodOverview.totalSaved} />,
             suffix: "€",
           },

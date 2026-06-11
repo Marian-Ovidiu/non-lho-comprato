@@ -3,7 +3,13 @@ import type { NextConfig } from "next";
 
 import { shouldUploadSourcemaps } from "./src/lib/sentry";
 
+const allowedDevOrigins =
+  process.env.NEXT_ALLOWED_DEV_ORIGINS?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean) ?? ["192.168.1.46:3000"];
+
 const nextConfig: NextConfig = {
+  allowedDevOrigins,
   productionBrowserSourceMaps: shouldUploadSourcemaps(),
 };
 

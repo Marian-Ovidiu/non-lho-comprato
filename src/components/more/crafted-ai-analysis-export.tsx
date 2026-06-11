@@ -5,7 +5,10 @@ import { FileDown, Loader2 } from "lucide-react";
 
 import { CraftedIcon, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
-import { getAiExpenseExportFilename } from "@/src/lib/ai-export";
+import {
+  getAiExpenseExportFilename,
+  type AiExpenseExportRange,
+} from "@/src/lib/ai-export";
 
 type ToastState = {
   kind: "success" | "error";
@@ -13,6 +16,19 @@ type ToastState = {
 } | null;
 
 const EXPORT_URL = "/api/exports/ai-analysis";
+const EXPORT_OPTIONS: Array<{
+  range: AiExpenseExportRange;
+  label: string;
+}> = [
+  {
+    range: "current-month",
+    label: "Export mese corrente",
+  },
+  {
+    range: "all",
+    label: "Export tutti i movimenti",
+  },
+];
 
 function getFilenameFromContentDisposition(header: string | null): string | null {
   if (!header) return null;
@@ -31,7 +47,7 @@ function getFilenameFromContentDisposition(header: string | null): string | null
 }
 
 export function CraftedAiAnalysisExport() {
-  const [isExporting, setIsExporting] = useState(false);
+  const [exportingRange, setExportingRange] = useState<AiExpenseExportRange | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
@@ -40,11 +56,12 @@ export function CraftedAiAnalysisExport() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  async function handleExport() {
-    setIsExporting(true);
+  async function handleExport(range: AiExpenseExportRange) {
+    setExportingRange(range);
 
     try {
-      const response = await fetch(EXPORT_URL, {
+      const searchParams = new URLSearchParams({ range });
+      const response = await fetch(`${EXPORT_URL}?${searchParams.toString()}`, {
         method: "GET",
         credentials: "same-origin",
       });
@@ -56,7 +73,7 @@ export function CraftedAiAnalysisExport() {
       const blob = await response.blob();
       const fileName =
         getFilenameFromContentDisposition(response.headers.get("content-disposition")) ??
-        getAiExpenseExportFilename();
+        getAiExpenseExportFilename(new Date(), range);
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
 
@@ -75,7 +92,7 @@ export function CraftedAiAnalysisExport() {
     } catch {
       setToast({ kind: "error", message: "Export non riuscito" });
     } finally {
-      setIsExporting(false);
+      setExportingRange(null);
     }
   }
 
@@ -89,23 +106,33 @@ export function CraftedAiAnalysisExport() {
               Export per analisi AI
             </Serif>
             <p className="mt-1 text-xs leading-5 text-ink-3">
-              Scarica lo storico del workspace in CSV pronto per analisi.
+              Scarica un CSV pronto per analisi, scegliendo tra mese corrente e
+              storico completo.
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          disabled={isExporting}
-          onClick={handleExport}
-          className="flex h-11 w-full items-center justify-center gap-2 border border-line text-[14px] font-semibold transition-opacity hover:opacity-80 disabled:opacity-50"
-        >
-          {isExporting ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <FileDown className="size-4" aria-hidden="true" />
-          )}
-          {isExporting ? "Export in corso..." : "Scarica CSV"}
-        </button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {EXPORT_OPTIONS.map((option) => {
+            const isCurrentExport = exportingRange === option.range;
+
+            return (
+              <button
+                key={option.range}
+                type="button"
+                disabled={exportingRange !== null}
+                onClick={() => handleExport(option.range)}
+                className="flex min-h-11 w-full items-center justify-center gap-2 border border-line px-3 text-[14px] font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isCurrentExport ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <FileDown className="size-4" aria-hidden="true" />
+                )}
+                {isCurrentExport ? "Export in corso..." : option.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {toast ? (

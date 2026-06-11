@@ -103,7 +103,7 @@ function getSummaryText({
 
   const savingText =
     snapshot.overview.totalSaved > 0
-      ? ` ${formatMoney(snapshot.overview.totalSaved)} evitati / risparmiati.`
+      ? ` ${formatMoney(snapshot.overview.totalSaved)} impatto netto.`
       : "";
 
   return `${categoryPrefix}${formatMoney(snapshot.overview.totalRealSpent)} spesi nel mese.${savingText} ${balancedText} ${deltaText}`;

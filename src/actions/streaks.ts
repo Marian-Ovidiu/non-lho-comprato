@@ -5,6 +5,7 @@ import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filte
 import { prisma } from "@/src/lib/prisma";
 import { buildRomeStreakResult, getRomeDateKey } from "@/src/lib/rome-dates";
 import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 
 type StreakResult = {
   currentStreak: number;
@@ -17,36 +18,10 @@ type TodaySavingStatus = {
   totalSavedToday: number;
 };
 
-type DecimalLike = {
-  toString?: () => string;
-};
-
 type StreakScope = {
   person?: PersonFilterValue;
   categoryId?: string;
 };
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as DecimalLike;
-
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
 
 function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -79,7 +54,11 @@ async function loadStreakData(scope: StreakScope = {}): Promise<{
       where: await buildEntryWhere(scope),
       select: {
         date: true,
+        realCost: true,
+        alternativeCost: true,
         savedAmount: true,
+        mode: true,
+        savingContext: true,
       },
       orderBy: {
         date: "asc",
@@ -94,7 +73,7 @@ async function loadStreakData(scope: StreakScope = {}): Promise<{
         continue;
       }
 
-      dayTotals.set(dateKey, round2((dayTotals.get(dateKey) ?? 0) + toNumber(entry.savedAmount)));
+      dayTotals.set(dateKey, round2((dayTotals.get(dateKey) ?? 0) + calculateEntryMetrics(entry).netImpact));
     }
 
     const streak = buildStreakResult(dayTotals);
