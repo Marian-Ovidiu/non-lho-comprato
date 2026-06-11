@@ -1,5 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { formatMoney } from "@/src/lib/formatters";
+import { CraftedOdometer } from "@/components/crafted/motion";
 import type { WorkspaceBalanceCardState } from "@/src/lib/workspace-balance";
 
 type CoupleBalanceCardProps = {
@@ -7,15 +7,14 @@ type CoupleBalanceCardProps = {
 };
 
 export function CoupleBalanceCard({ balance }: CoupleBalanceCardProps) {
-  const headline =
-    !balance.supported
-      ? "Bilancio disponibile solo per spazi condivisi a 2 persone"
-      : balance.status === "balanced"
-        ? "Siete in pari"
-        : balance.status === "they-owe"
-          ? `${balance.counterpartLabel ?? "L'altra persona"} ti deve ${formatMoney(balance.amount)}`
-          : `Devi ${formatMoney(balance.amount)} a ${balance.counterpartLabel ?? "l'altra persona"}`;
-
+  const counterpartLabel = balance.counterpartLabel ?? "l'altra persona";
+  const headline = !balance.supported
+    ? "Bilancio disponibile solo per spazi condivisi a 2 persone"
+    : balance.status === "balanced"
+      ? "Siete in pari"
+      : balance.status === "they-owe"
+        ? `${counterpartLabel} ti deve`
+        : `Devi a ${counterpartLabel}`;
   const detail = !balance.supported
     ? "La card si attiva solo quando il workspace ha esattamente due persone."
     : "Calcolato solo sulle spese condivise.";
@@ -29,6 +28,15 @@ export function CoupleBalanceCard({ balance }: CoupleBalanceCardProps) {
         <p className="text-lg font-semibold tracking-tight text-foreground">
           {headline}
         </p>
+        {balance.supported && balance.status !== "balanced" ? (
+          <CraftedOdometer
+            value={balance.amount}
+            integerClassName="text-[34px] font-semibold leading-none tracking-[-0.05em]"
+            fractionWrapperClassName="mt-0.5"
+            fractionClassName="text-base font-medium text-muted-text"
+            suffixClassName="text-base font-medium text-accent"
+          />
+        ) : null}
         <p className="text-sm leading-6 text-muted-text">{detail}</p>
       </CardContent>
     </Card>

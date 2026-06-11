@@ -8,7 +8,10 @@ function CraftedSkeletonLine({
 }) {
   return (
     <div
-      className={cn("animate-pulse rounded-[1px] bg-line", className)}
+      className={cn(
+        "animate-pulse rounded-[1px] bg-line-soft motion-reduce:animate-none",
+        className,
+      )}
       aria-hidden="true"
     />
   );
@@ -74,7 +77,7 @@ export function CraftedDashboardLoadingSkeleton() {
     <main className="pb-6">
       <CraftedSkeletonHero />
       <CraftedSkeletonTrio />
-      <CraftedSkeletonRows rows={5} />
+      <CraftedSkeletonRows rows={3} />
     </main>
   );
 }
@@ -93,16 +96,12 @@ function CraftedSkeletonHeatmap() {
     <section className="-mx-4 px-5 py-5 sm:-mx-6 lg:-mx-8">
       <CraftedSkeletonLine className="mb-4 h-3 w-32" />
       <CraftedSkeletonLine className="mb-5 h-4 w-56 max-w-full" />
-      <div className="space-y-1.5">
-        {[0, 1].map((row) => (
-          <div key={row} className="flex items-center gap-2">
-            <CraftedSkeletonLine className="h-3 w-7 shrink-0" />
-            <div className="flex gap-0.5">
-              {Array.from({ length: 31 }).map((_, index) => (
-                <CraftedSkeletonLine key={index} className="size-3 shrink-0" />
-              ))}
-            </div>
-          </div>
+      <div className="grid grid-cols-7 gap-1.5">
+        {Array.from({ length: 31 }).map((_, index) => (
+          <CraftedSkeletonLine
+            key={index}
+            className="aspect-square min-h-9 rounded-xl sm:min-h-11 sm:rounded-2xl"
+          />
         ))}
       </div>
     </section>
@@ -123,7 +122,7 @@ export function CraftedStatsLoadingSkeleton() {
       <CraftedSkeletonHero />
       <Rule className="mt-0" />
       <CraftedSkeletonHeatmap />
-      <CraftedSkeletonRows rows={4} />
+      <CraftedSkeletonRows rows={3} />
     </main>
   );
 }

@@ -419,7 +419,9 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
       return;
     }
 
-    setActiveDay(null);
+    const frameId = window.requestAnimationFrame(() => setActiveDay(null));
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [activeDay, currentDays]);
 
   useEffect(() => {

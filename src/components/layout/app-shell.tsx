@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 
 import { Rule } from "@/components/crafted";
+import { PullToRefresh, ToastProvider } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CraftedBottomBar } from "@/src/components/layout/crafted-bottom-bar";
@@ -126,11 +127,17 @@ export function AppShell({
   auth: AppShellAuth;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [isWorkspaceSwitching, setIsWorkspaceSwitching] = useState(false);
   const workspaceSwitchEndTimerRef = useRef<number | null>(null);
   const pendingWorkspaceSwitchIdRef = useRef<string | null>(null);
   const previousWorkspaceIdRef = useRef(workspace.id);
   useDailyReminderOnOpen();
+
+  const handleShellRefresh = useCallback(() => {
+    router.refresh();
+    return Promise.resolve();
+  }, [router]);
 
   useEffect(() => {
     function handleWorkspaceSwitchStart(event: Event) {
@@ -180,80 +187,84 @@ export function AppShell({
   }, [workspace.id]);
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground">
-      <header className="sticky top-0 z-30 bg-background">
-        <div className="mx-auto w-full max-w-5xl">
-          <CraftedMasthead
-            trailing={
-              <div className="hidden items-center gap-1 sm:flex">
+    <ToastProvider>
+      <div className="min-h-[100dvh] bg-background text-foreground">
+        <header className="sticky top-0 z-30 bg-background">
+          <div className="mx-auto w-full max-w-5xl">
+            <CraftedMasthead
+              trailing={
+                <div className="hidden items-center gap-1 sm:flex">
+                  <InstallButton compact />
+                  <AccountButton
+                    isAuthenticated={auth.isAuthenticated}
+                    userLabel={auth.userLabel}
+                  />
+                </div>
+              }
+            />
+            <Rule />
+
+            <div className="flex items-center justify-between gap-3 px-5 py-2.5">
+              <div className="min-w-0 flex-1 space-y-1">
+                <WorkspaceSwitcher
+                  currentWorkspace={workspace}
+                  availableWorkspaces={availableWorkspaces}
+                />
+                {isWorkspaceSwitching ? (
+                  <p
+                    className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.16em] text-accent"
+                    aria-live="polite"
+                  >
+                    <Loader2
+                      className="size-3 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Cambio spazio…
+                  </p>
+                ) : null}
+              </div>
+
+              <div className="flex shrink-0 items-center gap-1 sm:hidden">
                 <InstallButton compact />
                 <AccountButton
                   isAuthenticated={auth.isAuthenticated}
                   userLabel={auth.userLabel}
                 />
               </div>
-            }
-          />
-          <Rule />
-
-          <div className="flex items-center justify-between gap-3 px-5 py-2.5">
-            <div className="min-w-0 flex-1 space-y-1">
-              <WorkspaceSwitcher
-                currentWorkspace={workspace}
-                availableWorkspaces={availableWorkspaces}
-              />
-              {isWorkspaceSwitching ? (
-                <p
-                  className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.16em] text-accent"
-                  aria-live="polite"
-                >
-                  <Loader2
-                    className="size-3 animate-spin motion-reduce:animate-none"
-                    aria-hidden="true"
-                  />
-                  Cambio spazio…
-                </p>
-              ) : null}
             </div>
 
-            <div className="flex shrink-0 items-center gap-1 sm:hidden">
-              <InstallButton compact />
-              <AccountButton
-                isAuthenticated={auth.isAuthenticated}
-                userLabel={auth.userLabel}
-              />
-            </div>
+            <nav
+              aria-label="Navigazione desktop"
+              className="hidden gap-5 overflow-x-auto px-5 pb-3 md:flex"
+            >
+              {desktopNavItems.map((item) => (
+                <DesktopNavLink
+                  key={item.href}
+                  href={item.href}
+                  label={item.label}
+                  active={isActivePath(pathname, item.href)}
+                />
+              ))}
+            </nav>
+
+            <Rule />
           </div>
+        </header>
 
-          <nav
-            aria-label="Navigazione desktop"
-            className="hidden gap-5 overflow-x-auto px-5 pb-3 md:flex"
+        <PullToRefresh onRefresh={handleShellRefresh}>
+          <div
+            className={cn(
+              "mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8",
+              "transition-[opacity,filter] duration-150 ease-out motion-reduce:transition-none",
+              isWorkspaceSwitching && "pointer-events-none opacity-75 blur-[0.5px]",
+            )}
           >
-            {desktopNavItems.map((item) => (
-              <DesktopNavLink
-                key={item.href}
-                href={item.href}
-                label={item.label}
-                active={isActivePath(pathname, item.href)}
-              />
-            ))}
-          </nav>
+            {children}
+          </div>
+        </PullToRefresh>
 
-          <Rule />
-        </div>
-      </header>
-
-      <div
-        className={cn(
-          "mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8",
-          "transition-[opacity,filter] duration-150 ease-out motion-reduce:transition-none",
-          isWorkspaceSwitching && "pointer-events-none opacity-75 blur-[0.5px]",
-        )}
-      >
-        {children}
+        <CraftedBottomBar workspace={workspace} currentUserId={currentUserId} />
       </div>
-
-      <CraftedBottomBar workspace={workspace} currentUserId={currentUserId} />
-    </div>
+    </ToastProvider>
   );
 }

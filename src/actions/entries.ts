@@ -63,6 +63,7 @@ import { isWorkspaceDebugEnabled, logWorkspaceDebug } from "@/src/lib/workspace-
 type CreateEntryResult = {
   success: boolean;
   message: string;
+  entryId?: string;
   errors?: Record<string, string>;
   isFirstEntryCreated?: boolean;
   isFirstEntryOfDay?: boolean;
@@ -1235,7 +1236,7 @@ export async function createEntry(
       streakFrom = (await getGlobalStreak()).currentStreak;
     }
 
-    await prisma.entry.create({
+    const entry = await prisma.entry.create({
       data: {
         workspaceId,
         title,
@@ -1271,6 +1272,7 @@ export async function createEntry(
     return {
       success: true,
       message: "Entrata salvata con successo",
+      entryId: entry.id,
       isFirstEntryCreated: existingEntryCount === 0,
       isFirstEntryOfDay,
       streakFrom,

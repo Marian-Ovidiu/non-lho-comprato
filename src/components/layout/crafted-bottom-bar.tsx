@@ -45,13 +45,20 @@ function BottomNavLink({
       aria-current={active ? "page" : undefined}
       onClick={() => !active && triggerHaptic("subtle")}
       className={cn(
-        "flex min-h-12 min-w-0 flex-1 touch-manipulation items-center justify-center rounded-2xl px-2 text-center text-xs leading-none outline-none transition-[background-color,color,opacity,transform] active:scale-[0.98] active:opacity-75 focus-visible:ring-2 focus-visible:ring-ring/50",
+        "nlc-press relative flex min-h-12 min-w-0 flex-1 items-center justify-center rounded-2xl px-2 text-center text-xs leading-none outline-none transition-[background-color,color,opacity,transform] focus-visible:ring-2 focus-visible:ring-ring/50",
         active
           ? "bg-surface-muted font-semibold text-foreground"
           : "font-[450] text-ink-3 hover:bg-surface-muted/55 hover:text-foreground",
       )}
     >
-      {label}
+      <span>{label}</span>
+      <span
+        className={cn(
+          "nlc-tab-dot absolute bottom-1.5 left-1/2 h-1 w-4 -translate-x-1/2 rounded-full bg-accent",
+          active ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0",
+        )}
+        aria-hidden="true"
+      />
     </Link>
   );
 }

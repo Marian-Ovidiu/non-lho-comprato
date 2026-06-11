@@ -17,8 +17,12 @@ import { Button } from "@/components/ui/button";
 import {
   formatCraftedCompact,
   formatCraftedEntryAmount,
-  splitCraftedAmount,
 } from "@/src/lib/crafted-money";
+import {
+  CraftedAmount,
+  CraftedOdometer,
+  Stagger,
+} from "@/components/crafted/motion";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
 import { cn } from "@/lib/utils";
@@ -210,25 +214,19 @@ export function CraftedDashboard({
   emptyState,
   coupleBalance,
 }: CraftedDashboardProps) {
-  const heroAmount = splitCraftedAmount(monthRealSpent);
-
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
+    <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-5 pb-5 pt-5">
         <div className="flex items-start justify-between gap-4">
           <div>
             <Label className="mb-4 block">Speso questo mese</Label>
-            <div className="flex items-start gap-1.5">
-              <Mono className="text-[clamp(3.5rem,18vw,5.25rem)] font-semibold leading-[0.84] tracking-[-0.055em]">
-                {heroAmount.whole}
-              </Mono>
-              <div className="mt-1 flex flex-col">
-                <Mono className="text-[27px] font-medium leading-none text-muted-foreground">
-                  ,{heroAmount.decimals}
-                </Mono>
-                <Mono className="mt-1 text-lg text-accent">€</Mono>
-              </div>
-            </div>
+            <CraftedOdometer
+              value={monthRealSpent}
+              integerClassName="text-[clamp(3.5rem,18vw,5.25rem)] font-semibold leading-[0.84] tracking-[-0.055em]"
+              fractionWrapperClassName="mt-1 flex flex-col"
+              fractionClassName="text-[27px] font-medium leading-none text-muted-foreground"
+              suffixClassName="mt-1 text-lg text-accent"
+            />
           </div>
           <CraftedSparkline values={monthTrend} />
         </div>
@@ -237,14 +235,16 @@ export function CraftedDashboard({
           <div>
             <Label className="mb-1.5 block">{monthLabel} — evitato / risparmio</Label>
             <Mono className="text-xl font-medium">
-              {formatCraftedCompact(monthSaved)}
+              <CraftedAmount value={monthSaved} />
               <span className="text-xs text-accent">€</span>
             </Mono>
           </div>
 
           {monthDelta !== null && monthDelta !== 0 ? (
             <span className="text-[12.5px] text-muted-foreground">
-              <Mono>{formatCraftedCompact(Math.abs(monthDelta))}</Mono>
+              <Mono>
+                <CraftedAmount value={Math.abs(monthDelta)} />
+              </Mono>
               {monthDelta > 0 ? "€ in più" : "€ in meno"} del mese scorso
             </span>
           ) : null}
@@ -265,9 +265,25 @@ export function CraftedDashboard({
 
       <StatTrio
         items={[
-          { label: "Speso oggi", value: formatCraftedCompact(spentToday), suffix: "€" },
-          { label: "Evitato oggi", value: formatCraftedCompact(savedToday), suffix: "€" },
-          { label: "Movimenti oggi", value: String(entriesTodayCount) },
+          {
+            label: "Speso oggi",
+            value: <CraftedAmount value={spentToday} />,
+            suffix: "€",
+          },
+          {
+            label: "Evitato oggi",
+            value: <CraftedAmount value={savedToday} />,
+            suffix: "€",
+          },
+          {
+            label: "Movimenti oggi",
+            value: (
+              <CraftedAmount
+                value={entriesTodayCount}
+                maximumFractionDigits={0}
+              />
+            ),
+          },
         ]}
       />
 
@@ -283,7 +299,7 @@ export function CraftedDashboard({
             <Mono className="text-[11px] text-ink-3">{categories.length} categorie</Mono>
           </div>
           <div className="px-5 pb-1">
-            <div className="mb-4 flex h-[9px] gap-0.5">
+            <div className="nlc-grow-x mb-4 flex h-[9px] gap-0.5 overflow-hidden">
               {categories.map((category) => (
                 <div
                   key={category.slug}
@@ -517,6 +533,6 @@ export function CraftedDashboard({
           </Button>
         </div>
       ) : null}
-    </div>
+    </Stagger>
   );
 }

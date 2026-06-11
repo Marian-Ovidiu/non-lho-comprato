@@ -6,6 +6,7 @@ import {
   CraftedIcon,
   Label,
   Mono,
+  ProgressLine,
   Rule,
   Serif,
   StatTrio,
@@ -29,9 +30,12 @@ import {
 } from "@/src/lib/crafted-stats-build";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import {
-  formatCraftedCompact,
-  splitCraftedAmount,
-} from "@/src/lib/crafted-money";
+  CraftedAmount,
+  CraftedOdometer,
+  GrowBar,
+  Stagger,
+} from "@/components/crafted/motion";
+import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { cn } from "@/lib/utils";
 import { getRomeDateKey } from "@/src/lib/rome-dates";
 import type { CraftedStatsPeriod } from "@/src/lib/crafted-stats-build";
@@ -41,13 +45,6 @@ const PERIOD_TABS: Array<{ id: CraftedStatsPeriod; label: string }> = [
   { id: "year", label: "Anno" },
   { id: "all", label: "Sempre" },
 ];
-
-function formatOverviewPercent(value: number): string {
-  return new Intl.NumberFormat("it-IT", {
-    maximumFractionDigits: 1,
-    minimumFractionDigits: 0,
-  }).format(value);
-}
 
 type CraftedStatsComponentProps = CraftedStatsProps & {
   topSavings?: CraftedTopSavingsItem[];
@@ -100,15 +97,11 @@ function CraftedCategoryBars({
               {formatCraftedCompact(category.saved)}€ evitati / risparmiati
             </Serif>
           ) : null}
-          <div className="relative h-0.5 overflow-hidden rounded-[1px] bg-line">
-            <div
-              className={cn(
-                "absolute inset-y-0 left-0 max-w-full",
-                CATEGORY_TONE_CLASS[category.tone],
-              )}
-              style={{ width: `${Math.min(Math.max(category.pct, 0), 100)}%` }}
-            />
-          </div>
+          <ProgressLine
+            value={category.pct}
+            className="rounded-[1px]"
+            indicatorClassName={CATEGORY_TONE_CLASS[category.tone]}
+          />
         </div>
       ))}
     </div>
@@ -140,7 +133,6 @@ export function CraftedStats({
     [period, monthlyStats, overview, currentMonthLabel],
   );
 
-  const heroAmount = splitCraftedAmount(hero.amount);
   const periodOverview = useMemo(
     () =>
       getPeriodOverview({
@@ -199,7 +191,7 @@ export function CraftedStats({
     currentMonthLabel.split(" ")[0]?.toLowerCase() ?? currentMonthLabel.toLowerCase();
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
+    <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       <div className="flex gap-5 overflow-x-auto px-5 pt-6 pb-0">
         {PERIOD_TABS.map((tab) => {
           const selected = period === tab.id;
@@ -225,14 +217,13 @@ export function CraftedStats({
 
       <section className="px-5 py-6">
         <Label className="mb-3.5 block">{hero.label}</Label>
-        <div className="flex items-start gap-1.5">
-          <Mono className="text-[clamp(3rem,16vw,4.5rem)] font-semibold leading-[0.85] tracking-[-0.055em]">
-            {heroAmount.whole}
-          </Mono>
-          <Mono className="mt-1.5 text-2xl font-medium text-muted-foreground">
-            ,{heroAmount.decimals}€
-          </Mono>
-        </div>
+        <CraftedOdometer
+          value={hero.amount}
+          integerClassName="text-[clamp(3rem,16vw,4.5rem)] font-semibold leading-[0.85] tracking-[-0.055em]"
+          fractionWrapperClassName="mt-1.5"
+          fractionClassName="text-2xl font-medium text-muted-foreground"
+          suffixClassName="text-2xl font-medium text-muted-foreground"
+        />
         {trendPct !== null && trendPct !== 0 ? (
           <div className="mt-3 flex items-center gap-1.5">
             <CraftedIcon
@@ -256,17 +247,22 @@ export function CraftedStats({
         items={[
           {
             label: "Speso",
-            value: formatCraftedCompact(periodOverview.totalRealSpent),
+            value: <CraftedAmount value={periodOverview.totalRealSpent} />,
             suffix: "€",
           },
           {
             label: "Evitato/risparmiato",
-            value: formatCraftedCompact(periodOverview.totalSaved),
+            value: <CraftedAmount value={periodOverview.totalSaved} />,
             suffix: "€",
           },
           {
             label: "Movimenti",
-            value: period === "all" ? overview.entriesCount : hero.entriesCount,
+            value: (
+              <CraftedAmount
+                value={period === "all" ? overview.entriesCount : hero.entriesCount}
+                maximumFractionDigits={0}
+              />
+            ),
           },
         ]}
       />
@@ -274,17 +270,22 @@ export function CraftedStats({
         items={[
           {
             label: "Confronto stimato",
-            value: formatCraftedCompact(periodOverview.totalAlternativeCost),
+            value: <CraftedAmount value={periodOverview.totalAlternativeCost} />,
             suffix: "€",
           },
           {
             label: "Impatto medio",
-            value: formatCraftedCompact(periodOverview.averageSavedPerEntry),
+            value: <CraftedAmount value={periodOverview.averageSavedPerEntry} />,
             suffix: "€",
           },
           {
             label: "Efficienza",
-            value: formatOverviewPercent(periodOverview.savingRatePercent),
+            value: (
+              <CraftedAmount
+                value={periodOverview.savingRatePercent}
+                maximumFractionDigits={1}
+              />
+            ),
             suffix: "%",
           },
         ]}
@@ -310,8 +311,9 @@ export function CraftedStats({
                 key={month.month}
                 className="flex min-w-0 flex-1 flex-col items-center gap-2"
               >
-                <div
-                  className={cn(
+                <GrowBar
+                  className="flex w-full flex-1 items-end"
+                  barClassName={cn(
                     "w-full min-h-[3px] rounded-[1px]",
                     month.isActive ? "bg-accent" : "bg-ink-3",
                   )}
@@ -389,16 +391,21 @@ export function CraftedStats({
         items={[
           {
             label: "Media spesa/mese",
-            value: formatCraftedCompact(averageMonthlySpent),
+            value: <CraftedAmount value={averageMonthlySpent} />,
             suffix: "€",
           },
           {
             label: "Giorni attivi",
-            value: activeDays,
+            value: <CraftedAmount value={activeDays} maximumFractionDigits={0} />,
           },
           {
             label: "Movimenti",
-            value: period === "all" ? overview.entriesCount : hero.entriesCount,
+            value: (
+              <CraftedAmount
+                value={period === "all" ? overview.entriesCount : hero.entriesCount}
+                maximumFractionDigits={0}
+              />
+            ),
           },
         ]}
       />
@@ -433,6 +440,6 @@ export function CraftedStats({
           </section>
         </>
       ) : null}
-    </div>
+    </Stagger>
   );
 }

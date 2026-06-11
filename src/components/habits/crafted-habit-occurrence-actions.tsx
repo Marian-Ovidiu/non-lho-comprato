@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 
-import { CraftedIcon } from "@/components/crafted";
 import {
   markHabitOccurrenceAvoided,
   markHabitOccurrenceSkipped,
@@ -19,6 +18,26 @@ type CraftedHabitOccurrenceActionsProps = {
 };
 
 type ActionStatus = Exclude<CraftedHabitOccurrenceActionsProps["currentStatus"], "pending">;
+
+function DrawnCheck({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={cn("size-3.5", className)}
+    >
+      <path
+        className="nlc-check-draw"
+        d="M5 12.5l4.2 4.2L19 7"
+        stroke="currentColor"
+        strokeWidth="2.4"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export function CraftedHabitOccurrenceActions({
   occurrenceId,
@@ -52,6 +71,7 @@ export function CraftedHabitOccurrenceActions({
         }
 
         onStatusChange?.(nextStatus);
+        triggerHaptic(nextStatus === "avoided" ? "success" : "light");
         setPendingStatus(null);
       } catch {
         setFeedback("Non riesco ad aggiornare la ricorrente adesso. Riprova tra poco.");
@@ -65,7 +85,7 @@ export function CraftedHabitOccurrenceActions({
   if (currentStatus === "avoided") {
     return (
       <span className="inline-flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-accent">
-        <CraftedIcon name="check" size={14} strokeWidth={2.2} className="text-accent" />
+        <DrawnCheck className="text-accent" />
         Evitata
       </span>
     );
@@ -110,7 +130,7 @@ export function CraftedHabitOccurrenceActions({
           )}
         >
           {pendingStatus === "avoided" ? (
-            <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+            <DrawnCheck className="text-accent" />
           ) : (
             "Evitata"
           )}

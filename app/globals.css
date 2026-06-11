@@ -506,9 +506,204 @@ html.nlc-splash-pending #nlc-splash-shell {
   }
 }
 
+/* Premium motion: shared durations, easing and micro-feedback utilities. */
+:root {
+  --t-instant: 110ms;
+  --t-fast: 190ms;
+  --t-base: 320ms;
+  --t-slow: 460ms;
+  --t-count: 760ms;
+  --stagger: 46ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: cubic-bezier(0.34, 1.42, 0.5, 1);
+  --ease-snap: cubic-bezier(0.4, 0, 0.2, 1);
+  --press-scale: 0.965;
+}
+
+.nlc-press {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--t-instant) var(--ease-snap),
+    opacity var(--t-instant) var(--ease-snap),
+    background-color var(--t-fast) var(--ease-out),
+    border-color var(--t-fast) var(--ease-out),
+    box-shadow var(--t-fast) var(--ease-out),
+    color var(--t-fast) var(--ease-out);
+}
+
+.nlc-press:active {
+  transform: scale(var(--press-scale));
+  opacity: 0.8;
+}
+
+.nlc-reveal {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.nlc-reveal.is-in {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity var(--t-base) var(--ease-out),
+    transform var(--t-base) var(--ease-out);
+}
+
 @keyframes nlc-pop {
-  0%   { transform: scale(1); }
-  40%  { transform: scale(1.06); }
+  0% { transform: scale(1); }
+  38% { transform: scale(1.07); }
   100% { transform: scale(1); }
 }
-.nlc-pop { animation: nlc-pop 360ms ease-out; }
+
+.nlc-pop {
+  animation: nlc-pop var(--t-fast) var(--ease-spring);
+}
+
+@keyframes nlc-shine {
+  from { transform: translateX(-130%) skewX(-16deg); }
+  to { transform: translateX(240%) skewX(-16deg); }
+}
+
+.nlc-odo-shine {
+  position: absolute;
+  top: -6%;
+  bottom: -6%;
+  left: 0;
+  width: 36%;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 35%, white 45%),
+    transparent
+  );
+  mix-blend-mode: plus-lighter;
+  opacity: 0;
+}
+
+.nlc-odo-shine.go {
+  animation: nlc-shine 760ms var(--ease-out) both;
+}
+
+@keyframes nlc-float-up {
+  0% { opacity: 0; transform: translateY(8px) scale(0.86); }
+  16% { opacity: 1; transform: none; }
+  100% { opacity: 0; transform: translateY(-30px); }
+}
+
+.nlc-odo-delta {
+  position: absolute;
+  top: -10px;
+  left: 2px;
+  white-space: nowrap;
+  animation: nlc-float-up 1150ms var(--ease-out) both;
+}
+
+.nlc-odo-column {
+  transition: transform var(--t-count) var(--ease-out);
+}
+
+.nlc-tab-dot {
+  transition:
+    opacity var(--t-base) var(--ease-spring),
+    transform var(--t-base) var(--ease-spring);
+}
+
+@keyframes nlc-grow-x {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes nlc-grow-y {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.nlc-grow-x {
+  transform-origin: left center;
+  animation: nlc-grow-x var(--t-slow) var(--ease-out) both;
+}
+
+.nlc-grow-y {
+  transform-origin: bottom center;
+  animation: nlc-grow-y var(--t-slow) var(--ease-out) both;
+}
+
+@keyframes nlc-row-in {
+  from { opacity: 0; transform: translateY(-8px); max-height: 0; }
+  to { opacity: 1; transform: none; max-height: 140px; }
+}
+
+@keyframes nlc-flash {
+  0% { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+  100% { background: transparent; }
+}
+
+.nlc-row-in {
+  overflow: hidden;
+  animation: nlc-row-in var(--t-slow) var(--ease-out) both;
+}
+
+.nlc-flash {
+  animation: nlc-flash 1.4s var(--ease-out) both;
+}
+
+@keyframes nlc-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.nlc-check-draw {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 30;
+  animation: nlc-draw var(--t-base) var(--ease-out) forwards;
+}
+
+.nlc-spark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--accent);
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nlc-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .nlc-odo-shine.go,
+  .nlc-odo-delta,
+  .nlc-pop,
+  .nlc-grow-x,
+  .nlc-grow-y,
+  .nlc-row-in,
+  .nlc-flash,
+  .nlc-check-draw {
+    animation: none !important;
+  }
+
+  .nlc-press {
+    transition: none;
+  }
+
+  .nlc-check-draw {
+    stroke-dashoffset: 0 !important;
+  }
+
+  .nlc-odo-column,
+  .nlc-tab-dot {
+    transition: none;
+  }
+}
+
+@media (scripting: none) {
+  .nlc-reveal {
+    opacity: 1;
+    transform: none;
+  }
+}

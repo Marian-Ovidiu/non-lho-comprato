@@ -4,15 +4,23 @@ type ProgressLineProps = {
   value: number;
   thick?: boolean;
   className?: string;
+  indicatorClassName?: string;
+  animate?: boolean;
 };
 
-export function ProgressLine({ value, thick = false, className }: ProgressLineProps) {
+export function ProgressLine({
+  value,
+  thick = false,
+  className,
+  indicatorClassName,
+  animate = true,
+}: ProgressLineProps) {
   const clamped = Math.min(100, Math.max(0, value));
 
   return (
     <div
       className={cn(
-        "relative w-full bg-line",
+        "relative w-full overflow-hidden bg-line",
         thick ? "h-1" : "h-0.5",
         className,
       )}
@@ -22,7 +30,11 @@ export function ProgressLine({ value, thick = false, className }: ProgressLinePr
       aria-valuemax={100}
     >
       <div
-        className="absolute inset-y-0 left-0 bg-accent"
+        className={cn(
+          "absolute inset-y-0 left-0 bg-accent motion-reduce:transform-none",
+          animate && "nlc-grow-x",
+          indicatorClassName,
+        )}
         style={{ width: `${clamped}%` }}
       />
     </div>

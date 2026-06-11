@@ -14,9 +14,11 @@ import {
 } from "@/components/crafted";
 import { deleteGoal, toggleGoalActive } from "@/src/actions/goals";
 import {
-  formatCraftedCompact,
-  splitCraftedAmount,
-} from "@/src/lib/crafted-money";
+  CraftedAmount,
+  CraftedOdometer,
+  Stagger,
+} from "@/components/crafted/motion";
+import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type { CraftedGoalRow, CraftedGoalsProps } from "@/src/lib/crafted-goals-build";
 import { cn } from "@/lib/utils";
 
@@ -87,7 +89,6 @@ function GoalActions({
 }
 
 function FeaturedGoal({ goal }: { goal: CraftedGoalRow }) {
-  const progress = splitCraftedAmount(goal.progressAmount);
   const target = formatCraftedCompact(goal.targetAmount);
 
   return (
@@ -98,9 +99,13 @@ function FeaturedGoal({ goal }: { goal: CraftedGoalRow }) {
       </div>
       <h2 className="mb-4 text-[27px] font-semibold tracking-[-0.025em]">{goal.title}</h2>
       <div className="mb-4 flex items-baseline gap-1.5">
-        <Mono className="text-[clamp(2.5rem,12vw,3.25rem)] font-semibold leading-[0.9] tracking-[-0.05em] text-accent">
-          {progress.whole}
-        </Mono>
+        <CraftedOdometer
+          value={goal.progressAmount}
+          suffix=""
+          maximumFractionDigits={0}
+          minimumFractionDigits={0}
+          integerClassName="text-[clamp(2.5rem,12vw,3.25rem)] font-semibold leading-[0.9] tracking-[-0.05em] text-accent"
+        />
         <Mono className="text-[19px] whitespace-nowrap text-muted-foreground">
           / {target}€
         </Mono>
@@ -146,7 +151,7 @@ export function CraftedGoals({
   trio,
 }: CraftedGoalsProps) {
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
+    <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       {featured ? (
         <>
           <FeaturedGoal goal={featured} />
@@ -209,16 +214,26 @@ export function CraftedGoals({
         items={[
           {
             label: "Da risparmi positivi",
-            value: formatCraftedCompact(trio.towardGoals),
+            value: <CraftedAmount value={trio.towardGoals} />,
             suffix: "€",
           },
           {
             label: "Completati",
-            value: trio.completedCount,
+            value: (
+              <CraftedAmount
+                value={trio.completedCount}
+                maximumFractionDigits={0}
+              />
+            ),
           },
           {
             label: "Risparmio mese",
-            value: trio.monthSaved > 0 ? `+${formatCraftedCompact(trio.monthSaved)}` : "0",
+            value: (
+              <CraftedAmount
+                value={trio.monthSaved > 0 ? trio.monthSaved : 0}
+                prefix={trio.monthSaved > 0 ? "+" : ""}
+              />
+            ),
             suffix: trio.monthSaved > 0 ? "€" : undefined,
           },
         ]}
@@ -247,6 +262,6 @@ export function CraftedGoals({
           </div>
         </>
       ) : null}
-    </div>
+    </Stagger>
   );
 }

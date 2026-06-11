@@ -35,6 +35,7 @@ type EntryItem = {
   source: string;
   paidByUserId: string;
   beneficiaryUserIds: string[];
+  createdAt?: string;
 };
 
 type CategoryFilter = {
@@ -66,6 +67,7 @@ type DayGroup = {
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 250;
+const RECENT_ENTRY_HIGHLIGHT_MS = 2_000;
 
 const CATEGORY_FILTERS: CategoryFilter[] = [
   { id: "all", label: "Tutti" },
@@ -175,6 +177,36 @@ function groupEntries(entries: EntryItem[]): DayGroup[] {
   return groups;
 }
 
+function getRecentEntryHighlight(
+  entries: EntryItem[],
+  now = Date.now(),
+): { ids: string[]; duration: number } {
+  let duration = 0;
+  const ids = entries.flatMap((entry) => {
+    if (!entry.createdAt) {
+      return [];
+    }
+
+    const createdAt = Date.parse(entry.createdAt);
+    if (!Number.isFinite(createdAt)) {
+      return [];
+    }
+
+    const age = now - createdAt;
+    if (age < 0 || age > RECENT_ENTRY_HIGHLIGHT_MS) {
+      return [];
+    }
+
+    duration = Math.max(duration, RECENT_ENTRY_HIGHLIGHT_MS - age);
+    return [entry.id];
+  });
+
+  return {
+    ids,
+    duration: Math.max(320, duration),
+  };
+}
+
 export function CraftedEntryList({
   initialEntries,
   initialNextCursor,
@@ -192,6 +224,9 @@ export function CraftedEntryList({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [highlightedRecentEntryIds, setHighlightedRecentEntryIds] = useState<
+    string[]
+  >([]);
   const initialSearchHandledRef = useRef(false);
   const requestIdRef = useRef(0);
   const initialEntriesRef = useRef(initialEntries);
@@ -209,6 +244,30 @@ export function CraftedEntryList({
 
   const groups = useMemo(() => groupEntries(filteredEntries), [filteredEntries]);
   const hasSearchTerm = searchValue.trim().length > 0;
+
+  useEffect(() => {
+    const highlight = getRecentEntryHighlight(entries);
+    let timeoutId = 0;
+    const frameId = window.requestAnimationFrame(() => {
+      setHighlightedRecentEntryIds(highlight.ids);
+    });
+
+    if (highlight.ids.length > 0) {
+      timeoutId = window.setTimeout(() => {
+        setHighlightedRecentEntryIds((current) =>
+          current.filter((id) => !highlight.ids.includes(id)),
+        );
+      }, highlight.duration);
+    }
+
+    return () => {
+      window.cancelAnimationFrame(frameId);
+
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+  }, [entries]);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
@@ -437,6 +496,10 @@ export function CraftedEntryList({
                 <CraftedEntryRow
                   key={entry.id}
                   entry={entry}
+                  className={cn(
+                    highlightedRecentEntryIds.includes(entry.id) &&
+                      "nlc-row-in nlc-flash",
+                  )}
                   showDivider={index < group.entries.length - 1}
                 />
               ))}

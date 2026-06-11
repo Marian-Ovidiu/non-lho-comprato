@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { celebrate } from "@/components/crafted/motion";
 import {
   CraftedIcon,
   Label,
@@ -28,6 +29,11 @@ export function CraftedHabits({
   monthLabel,
 }: CraftedHabitsComponentProps) {
   const [today, setToday] = useState(initialToday);
+  const didMountRef = useRef(false);
+  const wasAllConfirmedRef = useRef(
+    initialToday.length > 0 &&
+      initialToday.every((item) => item.status !== "pending"),
+  );
 
   function handleStatusChange(
     occurrenceId: string,
@@ -42,6 +48,24 @@ export function CraftedHabits({
 
   const liveAvoided = today.filter((item) => item.status === "avoided").length;
   const livePending = today.filter((item) => item.status === "pending").length;
+  const allTodayConfirmed = today.length > 0 && livePending === 0;
+
+  useEffect(() => {
+    if (!didMountRef.current) {
+      didMountRef.current = true;
+      wasAllConfirmedRef.current = allTodayConfirmed;
+      return;
+    }
+
+    if (allTodayConfirmed && !wasAllConfirmedRef.current) {
+      celebrate({
+        count: Math.min(26, Math.max(14, today.length * 5)),
+        spread: 88,
+      });
+    }
+
+    wasAllConfirmedRef.current = allTodayConfirmed;
+  }, [allTodayConfirmed, today.length]);
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">

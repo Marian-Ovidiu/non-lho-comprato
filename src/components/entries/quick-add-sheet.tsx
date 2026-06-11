@@ -17,7 +17,8 @@ import {
   Users2,
 } from "lucide-react";
 
-import { createEntry } from "@/src/actions/entries";
+import { createEntry, deleteEntry } from "@/src/actions/entries";
+import { useToast } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -76,6 +77,7 @@ type QuickAddPreset = {
 type QuickAddState = {
   success: boolean;
   message: string;
+  entryId?: string;
   errors?: Record<string, string>;
   isFirstEntryCreated?: boolean;
   isFirstEntryOfDay?: boolean;
@@ -268,6 +270,7 @@ export function QuickAddSheet({
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
   });
+  const { push: pushToast } = useToast();
   const categoryOptions = useMemo(
     () =>
       (categories?.length ? categories : DEFAULT_CATEGORIES).map((category) =>
@@ -411,6 +414,33 @@ export function QuickAddSheet({
       triggerHaptic("light");
     }
 
+    pushToast({
+      title: "Tenuto",
+      description: "Movimento salvato. Puoi annullarlo per qualche secondo.",
+      tone: "success",
+      action: state.entryId
+        ? {
+            label: "Annulla",
+            onClick: async () => {
+              const result = await deleteEntry(state.entryId ?? "");
+
+              pushToast({
+                title: result.success
+                  ? "Movimento annullato"
+                  : "Annullamento non riuscito",
+                description: result.message,
+                tone: result.success ? "default" : "error",
+                duration: result.success ? 3200 : 5200,
+              });
+
+              if (result.success) {
+                router.refresh();
+              }
+            },
+          }
+        : undefined,
+    });
+
     closeTimerRef.current = window.setTimeout(() => {
       setSuccessStage("closing");
     }, 120);
@@ -428,7 +458,7 @@ export function QuickAddSheet({
         router.refresh();
       }
     }, 240);
-  }, [activeMembers, currentUserId, router, state, tryTrigger]);
+  }, [activeMembers, currentUserId, pushToast, router, state, tryTrigger]);
 
   useEffect(() => {
     return () => {

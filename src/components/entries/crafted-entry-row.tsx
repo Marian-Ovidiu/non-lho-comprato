@@ -22,6 +22,7 @@ type CraftedEntryRowProps = {
     alternativeCost?: unknown;
     savedAmount: unknown;
   };
+  className?: string;
   showDivider?: boolean;
 };
 
@@ -94,15 +95,16 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
 
 export function CraftedEntryRow({
   entry,
+  className,
   showDivider = true,
 }: CraftedEntryRowProps) {
   const meta = getSecondaryMeta(entry);
 
   return (
-    <div>
+    <div className={className}>
       <Link
         href={`/entries/${entry.id}/edit`}
-        className="flex items-center gap-4 py-3.5 transition-opacity hover:opacity-80"
+        className="nlc-press flex items-center gap-4 py-3.5 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/50"
       >
         <CraftedIcon
           name={getCategoryCraftedIcon(entry.category)}

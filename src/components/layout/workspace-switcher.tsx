@@ -128,9 +128,13 @@ export function WorkspaceSwitcher({
       return;
     }
 
-    setSwitchingWorkspaceId(null);
-    setSwitchError(null);
-    emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+    const frameId = window.requestAnimationFrame(() => {
+      setSwitchingWorkspaceId(null);
+      setSwitchError(null);
+      emitWorkspaceSwitchEvent("nlc:workspace-switch-end");
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
   }, [currentWorkspace.id, switchingWorkspaceId]);
 
   async function handleWorkspaceSwitch(

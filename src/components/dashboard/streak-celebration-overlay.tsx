@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { CraftedIcon, Serif } from "@/components/crafted";
+import { celebrate } from "@/components/crafted/motion";
 import { cn } from "@/lib/utils";
 
 const ENTER_MS = 280;
@@ -35,7 +36,9 @@ export function StreakCelebrationOverlay({
   const [isEntering, setIsEntering] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
   const [didPop, setDidPop] = useState(false);
+  const didCelebrateRef = useRef(false);
   const exitTimerRef = useRef<number | null>(null);
+  const flameRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
@@ -90,6 +93,27 @@ export function StreakCelebrationOverlay({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isEntering || didCelebrateRef.current) {
+      return;
+    }
+
+    didCelebrateRef.current = true;
+
+    const frameId = window.requestAnimationFrame(() => {
+      const rect = flameRef.current?.getBoundingClientRect();
+
+      celebrate({
+        x: rect ? rect.left + rect.width / 2 : undefined,
+        y: rect ? rect.top + rect.height / 2 : undefined,
+        count: streakTo >= 7 ? 24 : 18,
+        spread: streakTo >= 7 ? 112 : 92,
+      });
+    });
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [isEntering, streakTo]);
+
   function closeOverlay() {
     if (isExiting) return;
     setIsExiting(true);
@@ -118,12 +142,14 @@ export function StreakCelebrationOverlay({
           Traguardo
         </p>
 
-        <CraftedIcon
-          name="flame"
-          size={72}
-          className="my-8 text-accent"
-          aria-hidden="true"
-        />
+        <div ref={flameRef} className="my-8 text-accent">
+          <CraftedIcon
+            name="flame"
+            size={72}
+            className="streak-celebration-flame-pulse"
+            aria-hidden="true"
+          />
+        </div>
 
         <Serif className="text-[22px] leading-[1.35] text-muted-foreground">
           {getMilestoneLabel(streakTo)}
