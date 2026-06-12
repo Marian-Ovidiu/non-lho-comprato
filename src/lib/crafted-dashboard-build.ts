@@ -127,7 +127,6 @@ export function buildCraftedDashboardProps(input: {
   monthSaved: number;
   monthLargeComparisonImpact: number;
   spentToday: number;
-  savedToday: number;
   entriesTodayCount: number;
   entriesCountMonth: number;
   monthlyStats: MonthlyStatsItem[];
@@ -159,7 +158,6 @@ export function buildCraftedDashboardProps(input: {
     monthDelta,
     monthTrend,
     spentToday: input.spentToday,
-    savedToday: input.savedToday,
     entriesTodayCount: input.entriesTodayCount,
     entriesCountMonth: input.entriesCountMonth,
     categories: buildCraftedCategories(input.categoryStats),

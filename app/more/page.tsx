@@ -1,7 +1,5 @@
 import Link from "next/link";
 
-import { getDashboardSummary } from "@/src/actions/entries";
-import { getGlobalStreak } from "@/src/actions/streaks";
 import {
   CraftedMore,
   type CraftedMoreProps,
@@ -40,19 +38,11 @@ export default async function MorePage() {
   let loadError: string | null = null;
   let authUser: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
   let workspaceResult: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
-  let monthSummary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
-  let streakResult: Awaited<ReturnType<typeof getGlobalStreak>> = {
-    currentStreak: 0,
-    bestStreak: 0,
-    streakDates: [],
-  };
 
   try {
-    [authUser, workspaceResult, monthSummary, streakResult] = await Promise.all([
+    [authUser, workspaceResult] = await Promise.all([
       getAuthenticatedUser(),
       getCurrentWorkspace().catch(() => null),
-      getDashboardSummary().catch(() => null),
-      getGlobalStreak().catch(() => ({ currentStreak: 0, bestStreak: 0, streakDates: [] })),
     ]);
   } catch (error) {
     loadError = formatEntryLoadError(error);
@@ -95,9 +85,6 @@ export default async function MorePage() {
         workspaceLabel={workspaceLabel}
         workspaceInitials={workspaceInitials}
         isAuthenticated={Boolean(authUser)}
-        monthSaved={monthSummary?.totalSaved ?? 0}
-        entriesCount={monthSummary?.entriesCount ?? 0}
-        streak={streakResult.currentStreak}
         workspaceNextStep={workspaceNextStep}
         showWorkspaceTools={Boolean(workspace)}
         workspaceSection={<CraftedMoreWorkspaceTools />}

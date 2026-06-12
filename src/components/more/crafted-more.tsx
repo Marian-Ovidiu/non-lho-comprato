@@ -1,9 +1,8 @@
 import Link from "next/link";
 
 import { signOutAction } from "@/src/actions/auth";
-import { CraftedIcon, Label, Rule, Serif, StatTrio } from "@/components/crafted";
+import { CraftedIcon, Label, Rule, Serif } from "@/components/crafted";
 import { CraftedMoreRow, CraftedMoreSection } from "@/src/components/more/crafted-more-row";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { cn } from "@/lib/utils";
 
 type WorkspaceNextStep = {
@@ -19,9 +18,6 @@ export type CraftedMoreProps = {
   workspaceLabel: string;
   workspaceInitials: string;
   isAuthenticated: boolean;
-  monthSaved: number;
-  entriesCount: number;
-  streak: number;
   workspaceNextStep: WorkspaceNextStep | null;
   showWorkspaceTools: boolean;
   workspaceSection: React.ReactNode;
@@ -34,9 +30,6 @@ export function CraftedMore({
   workspaceLabel,
   workspaceInitials,
   isAuthenticated,
-  monthSaved,
-  entriesCount,
-  streak,
   workspaceNextStep,
   showWorkspaceTools,
   workspaceSection,
@@ -65,29 +58,6 @@ export function CraftedMore({
           <CraftedIcon name="flame" size={18} className="mt-1 shrink-0 text-accent" />
         </div>
       </section>
-
-      {isAuthenticated ? (
-        <>
-          <StatTrio
-            items={[
-              {
-                label: "Impatto netto",
-                value: formatCraftedCompact(monthSaved),
-                suffix: "€",
-              },
-              {
-                label: "Movimenti",
-                value: entriesCount,
-              },
-              {
-                label: "Streak",
-                value: streak,
-              },
-            ]}
-          />
-          <Rule />
-        </>
-      ) : null}
 
       {!isAuthenticated ? (
         <section className="px-5 py-6">

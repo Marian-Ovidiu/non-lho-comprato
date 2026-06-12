@@ -37,23 +37,28 @@ export function CraftedMonthlyReportHeader({
               <Mono className="mt-1.5 text-2xl text-muted-foreground">,{hero.decimals}€</Mono>
             </div>
           </section>
-          <StatTrio
-            items={[
-              {
-                label: "Impatto netto",
-                value: formatCraftedCompact(report.overview?.totalSaved ?? 0),
-                suffix: "€",
-              },
-              {
-                label: "Movimenti",
-                value: report.overview?.entriesCount ?? 0,
-              },
-              {
-                label: "Indice netto",
-                value: `${Math.round(report.overview?.savingRatePercent ?? 0)}%`,
-              },
-            ]}
-          />
+          <details>
+            <summary className="cursor-pointer list-none px-5 py-3 font-num text-[10px] uppercase tracking-[0.22em] text-ink-3 hover:text-foreground [&::-webkit-details-marker]:hidden">
+              Riepilogo del mese
+            </summary>
+            <StatTrio
+              items={[
+                {
+                  label: "Impatto netto",
+                  value: formatCraftedCompact(report.overview?.totalSaved ?? 0),
+                  suffix: "€",
+                },
+                {
+                  label: "Movimenti",
+                  value: report.overview?.entriesCount ?? 0,
+                },
+                {
+                  label: "Indice netto",
+                  value: `${Math.round(report.overview?.savingRatePercent ?? 0)}%`,
+                },
+              ]}
+            />
+          </details>
           <Rule />
         </>
       ) : (

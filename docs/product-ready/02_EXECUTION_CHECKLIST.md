@@ -488,6 +488,115 @@ Completion notes (Phase 9 — Private debug page):
 - No new DB schema changes. No new migration.
 - Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓, `npm run build` ✓.
 
+## Phase 10 — Legacy data normalization audit
+
+Status: `[x]`
+
+Output required:
+
+- Audit all entries for missing `paidByUserId`, missing beneficiaries, legacy-only entries.
+- Create `docs/product-ready/10_LEGACY_DATA_NORMALIZATION_AUDIT.md`.
+- Add `scripts/audit-legacy-data.ts` (read-only).
+- No code or data changes.
+
+Completion notes (Phase 10):
+
+- Audit script ran against local production-mirror DB (148 entries).
+- Found: 2 entries missing `paidByUserId`, 1 entry with zero beneficiaries, 1 fully legacy entry.
+- Found: 0 `person`/`beneficiaries` mismatches, 0 misclassified `mode`/`savingContext`.
+- Identified entry `cmp4b2ayr000904laxr9pouwr` (TUTTI, paidBy=MARIAN, 2 beneficiaries, paidByUserId=null) as direct cause of balance asymmetry.
+- Full root cause analysis documented in `10_LEGACY_DATA_NORMALIZATION_AUDIT.md`.
+- No application code, data, or schema changed.
+- Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓.
+
+## Phase 11 — Targeted legacy sharing repair
+
+Status: `[x]`
+
+Output required:
+
+- Create `scripts/repair-legacy-sharing.ts` with dry-run default and `--apply` mode.
+- Add `repair:legacy-sharing` npm script.
+- Add cross-field guard to `src/lib/entry-ownership.ts`.
+- Add balance invariant tests in `src/lib/workspace-balance.test.ts`.
+- Create `docs/product-ready/11_LEGACY_SHARING_REPAIR_NOTES.md`.
+
+Completion notes (Phase 11):
+
+- Repair script created: dry-run confirms 2 repairs planned, 0 skipped. Maps legacy `paidBy`/`person` enums to modern user IDs via workspace member sort order. Transactional writes.
+- Cross-field guard added: `validateEntryOwnership` now explicitly rejects shared entries (beneficiaries > 1) without a payer, with Italian error message.
+- 18 balance invariant tests added in `src/lib/workspace-balance.test.ts`: single payer, combined payers, orphan entry (documents asymmetry bug), post-repair antisymmetry, edge cases.
+- No application data modified by Phase 11 itself. Repair must be applied separately via `npm run repair:legacy-sharing -- --apply`.
+- Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (142 pass, 18 added), `npm run build` ✓.
+
+## Phase 12 — Shared balance closure
+
+Status: `[x]`
+
+Output required:
+
+- Apply repair (data fix).
+- Confirm post-repair audit shows all ownership gaps resolved.
+- Confirm dashboard balance is symmetric for both users.
+- Create `docs/product-ready/12_SHARED_BALANCE_CLOSURE_NOTES.md`.
+- Update this checklist.
+
+Completion notes (Phase 12):
+
+- `npm run repair:legacy-sharing -- --apply` applied. 2 entries repaired: 2 `paidByUserId` backfilled, 1 `EntryBeneficiary` row created.
+- Post-repair audit: `missingPaidByUserId=0`, `zeroBeneficiaries=0`, `fullyModern=148`, `fullyLegacy=0`.
+- Manual verification confirmed: Marian/Martina dashboard balance is now symmetric (same amount, opposite directions).
+- No remaining blocking follow-ups. Legacy `person`/`paidBy` columns remain in sync and are non-blocking.
+- No application code, schema, or tests changed by Phase 12 itself.
+
+## Phase 13 — Information architecture and data distribution audit
+
+Status: `[x]`
+
+Output required:
+
+- Audit how financial/product data is distributed across pages.
+- Propose a simpler, psychologically clear information architecture.
+- Create `docs/product-ready/13_INFORMATION_ARCHITECTURE_RECOMMENDATIONS.md`.
+- No code, schema, UI, or test changes.
+
+Completion notes (Phase 13):
+
+- Read `crafted-dashboard.tsx`, `crafted-stats.tsx`, `crafted-monthly-report-detail.tsx`,
+  `crafted-top-savings-list.tsx`, and all prior phase docs to map current page-by-page data layout.
+- Identified 5 structural failure modes: dashboard overload, stats as a dumping ground,
+  couple balance buried too low, `Indice netto` shown at primary weight, report duplicating
+  dashboard overview numbers.
+- Recommended concrete moves: promote couple balance to position 3 on dashboard; remove
+  `Impatto oggi` from dashboard today strip; remove per-category `impatto netto` micro-labels
+  from dashboard; move `Avresti speso`/`Impatto medio`/`Indice netto` to collapsible in Stats;
+  remove StatTrio from More page; demote report numeric header in favour of the narrative summary.
+- Produced a priority implementation plan (7 items, all UI-only — no schema or API changes needed).
+- No application code, schema, tests, or UI modified by this phase.
+- Validation: no commands required (no code touched).
+
+## Phase 14 — UI data distribution cleanup
+
+Status: `[x]`
+
+Output required:
+
+- Apply 7 UI-only data distribution fixes from Phase 13 recommendations.
+- Update checklist.
+- Create `docs/product-ready/14_DATA_DISTRIBUTION_CLEANUP_NOTES.md`.
+
+Completion notes (Phase 14):
+
+- Fix 1: Couple balance promoted to position 3 on dashboard (after quick actions, before categories). Visibility logic unchanged.
+- Fix 2: "Impatto oggi" removed from dashboard today StatTrio. `savedToday` prop removed from `CraftedDashboardProps`, `buildCraftedDashboardProps` input, and the `buildCraftedDashboardProps` call in `app/page.tsx`. `DailyCheckinOverlay` is unaffected (receives `savedToday` directly from `app/page.tsx`).
+- Fix 3: Per-category `impatto netto` micro-labels removed from dashboard category list. Category impact remains in Stats `CraftedCategoryBars`.
+- Fix 4: StatTrio (Impatto netto / Movimenti / Streak) removed from More page. Removed `monthSaved`, `entriesCount`, `streak` props from `CraftedMoreProps`. Removed `getDashboardSummary` and `getGlobalStreak` calls from `app/more/page.tsx` (page is now lighter, two fewer server actions).
+- Fix 5: Second StatTrio in Stats (Avresti speso / Impatto medio / Indice netto) wrapped in native `<details>/<summary>` collapsed by default under label "Dettagli del periodo".
+- Fix 6: StatTrio in monthly report header (Impatto netto / Movimenti / Indice netto) wrapped in native `<details>/<summary>` collapsed by default under label "Riepilogo del mese".
+- Fix 7: Impact-source note added at top of `CraftedGoals`: "Le mete avanzano con l'impatto positivo: cose non comprate e confronti dove hai speso meno del riferimento."
+- No metric formulas, Prisma schema, server actions, tests, auth/workspace behavior, feedback/debug, or form logic changed.
+- Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (142 pass), `npm run build` ✓.
+
 ## Deferred decisions
 
 These must be resolved during or after Phase 1 before implementation if the existing model is ambiguous:

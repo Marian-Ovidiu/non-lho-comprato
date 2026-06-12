@@ -224,30 +224,35 @@ export function CraftedStats({
           },
         ]}
       />
-      <StatTrio
-        items={[
-          {
-            label: "Avresti speso",
-            value: <CraftedAmount value={periodOverview.totalAlternativeCost} />,
-            suffix: "€",
-          },
-          {
-            label: "Impatto medio",
-            value: <CraftedAmount value={periodOverview.averageSavedPerEntry} />,
-            suffix: "€",
-          },
-          {
-            label: "Indice netto",
-            value: (
-              <CraftedAmount
-                value={periodOverview.savingRatePercent}
-                maximumFractionDigits={1}
-              />
-            ),
-            suffix: "%",
-          },
-        ]}
-      />
+      <details>
+        <summary className="cursor-pointer list-none px-5 py-3 font-num text-[10px] uppercase tracking-[0.22em] text-ink-3 hover:text-foreground [&::-webkit-details-marker]:hidden">
+          Dettagli del periodo
+        </summary>
+        <StatTrio
+          items={[
+            {
+              label: "Avresti speso",
+              value: <CraftedAmount value={periodOverview.totalAlternativeCost} />,
+              suffix: "€",
+            },
+            {
+              label: "Impatto medio",
+              value: <CraftedAmount value={periodOverview.averageSavedPerEntry} />,
+              suffix: "€",
+            },
+            {
+              label: "Indice netto",
+              value: (
+                <CraftedAmount
+                  value={periodOverview.savingRatePercent}
+                  maximumFractionDigits={1}
+                />
+              ),
+              suffix: "%",
+            },
+          ]}
+        />
+      </details>
       <Rule />
 
       <section className="px-5 pb-2">

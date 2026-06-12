@@ -65,7 +65,6 @@ export type CraftedDashboardProps = {
   monthDelta: number | null;
   monthTrend: number[];
   spentToday: number;
-  savedToday: number;
   entriesTodayCount: number;
   entriesCountMonth: number;
   categories: CraftedCategoryRow[];
@@ -201,7 +200,6 @@ export function CraftedDashboard({
   monthDelta,
   monthTrend,
   spentToday,
-  savedToday,
   entriesTodayCount,
   entriesCountMonth,
   categories,
@@ -278,11 +276,6 @@ export function CraftedDashboard({
             suffix: "€",
           },
           {
-            label: "Impatto oggi",
-            value: <CraftedAmount value={savedToday} />,
-            suffix: "€",
-          },
-          {
             label: "Movimenti oggi",
             value: (
               <CraftedAmount
@@ -298,6 +291,26 @@ export function CraftedDashboard({
         <DashboardQuickActions />
       </div>
       <Rule />
+
+      {coupleBalance.supported && coupleBalance.amount !== 0 ? (
+        <>
+          <div className="px-5 py-5">
+            <Label className="mb-2 block">Bilancio coppia</Label>
+            <Mono className="text-xl font-medium">
+              {formatCraftedCompact(Math.abs(coupleBalance.amount))}
+              <span className="text-xs text-accent">€</span>
+            </Mono>
+            {coupleBalance.counterpartLabel ? (
+              <Serif className="mt-2 block text-sm text-ink-3">
+                {coupleBalance.amount > 0
+                  ? `A favore di ${coupleBalance.counterpartLabel}`
+                  : `A tuo favore rispetto a ${coupleBalance.counterpartLabel}`}
+              </Serif>
+            ) : null}
+          </div>
+          <Rule />
+        </>
+      ) : null}
 
       {categories.length > 0 ? (
         <>
@@ -331,12 +344,6 @@ export function CraftedDashboard({
                   />
                   <div className="flex-1">
                     <span className="block text-sm font-[450]">{category.name}</span>
-                    {category.saved !== 0 ? (
-                      <Mono className="mt-0.5 block text-[11px] text-ink-3">
-                        {category.saved > 0 ? "+" : ""}
-                        {formatCraftedCompact(category.saved)}€ impatto netto
-                      </Mono>
-                    ) : null}
                   </div>
                   <Mono className="mr-3 whitespace-nowrap text-[11px] text-ink-3">
                     {category.count} mov.
@@ -398,26 +405,6 @@ export function CraftedDashboard({
         </div>
       </div>
       <Rule />
-
-      {coupleBalance.supported && coupleBalance.amount !== 0 ? (
-        <>
-          <div className="px-5 py-5">
-            <Label className="mb-2 block">Bilancio coppia</Label>
-            <Mono className="text-xl font-medium">
-              {formatCraftedCompact(Math.abs(coupleBalance.amount))}
-              <span className="text-xs text-accent">€</span>
-            </Mono>
-            {coupleBalance.counterpartLabel ? (
-              <Serif className="mt-2 block text-sm text-ink-3">
-                {coupleBalance.amount > 0
-                  ? `A favore di ${coupleBalance.counterpartLabel}`
-                  : `A tuo favore rispetto a ${coupleBalance.counterpartLabel}`}
-              </Serif>
-            ) : null}
-          </div>
-          <Rule />
-        </>
-      ) : null}
 
       {goals.length > 0 ? (
         <>

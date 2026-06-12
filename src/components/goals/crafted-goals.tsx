@@ -156,6 +156,12 @@ export function CraftedGoals({
 }: CraftedGoalsProps) {
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
+      <section className="px-5 pb-1 pt-5">
+        <Serif className="block text-[13px] text-ink-3">
+          Le mete avanzano con l&apos;impatto positivo: cose non comprate e confronti dove hai speso meno del riferimento.
+        </Serif>
+      </section>
+
       {featured ? (
         <>
           <FeaturedGoal goal={featured} />
