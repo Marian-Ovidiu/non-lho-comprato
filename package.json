@@ -15,6 +15,7 @@
     "check": "npm run prisma:validate && npm run lint && npm run typecheck && npm run test && npm run build",
     "backfill:multi-account": "tsx prisma/backfill-multi-account.ts",
     "verify:auth-provisioning": "tsx scripts/verify-auth-provisioning.ts",
+    "repair:legacy-sharing": "tsx scripts/repair-legacy-sharing.ts",
     "release:archive": "sh -c 'mkdir -p release && out=release/non-lho-comprato-$(git rev-parse --short HEAD).zip && git archive --format=zip --output=\"$out\" --add-file=.env.example HEAD -- . \":(exclude).env\" \":(exclude).env.*\" \":(exclude).env-backup\" \":(exclude).env-backup/**\" \":(exclude)backups\" \":(exclude)backups/**\" \":(exclude)**/*.dump\" \":(exclude).git\" \":(exclude).idea\" \":(exclude).idea/**\" \":(exclude).claude\" \":(exclude).claude/**\" \":(exclude).agents\" \":(exclude).agents/**\" \":(exclude).next\" \":(exclude).next/**\" \":(exclude)node_modules\" \":(exclude)node_modules/**\" \":(exclude)__MACOSX\" \":(exclude)__MACOSX/**\" \":(exclude).DS_Store\" \":(exclude)**/.DS_Store\" \":(exclude)tsconfig.tsbuildinfo\" \":(exclude)**/*.tsbuildinfo\" \":(exclude)release\" \":(exclude)release/**\"'",
     "db:preflight:workspace": "psql \"$DATABASE_URL\" -f scripts/db/preflight-workspace.sql",
     "db:postflight:workspace": "psql \"$DATABASE_URL\" -f scripts/db/postflight-workspace.sql",

@@ -25,6 +25,8 @@ export type EntryOwnershipValidationResult =
     };
 
 const PAID_BY_REQUIRED_MESSAGE = "Seleziona chi ha pagato";
+const PAID_BY_REQUIRED_FOR_SHARED_MESSAGE =
+  "Chi ha pagato è obbligatorio per le spese condivise";
 const BENEFICIARIES_REQUIRED_MESSAGE = "Seleziona almeno un beneficiario";
 const BENEFICIARIES_INVALID_MESSAGE = "Seleziona beneficiari validi";
 const NO_MEMBERS_MESSAGE = "Nessun membro disponibile nel workspace";
@@ -109,6 +111,13 @@ export function validateEntryOwnership(
     if (invalidBeneficiary) {
       errors.beneficiaryUserIds = BENEFICIARIES_INVALID_MESSAGE;
     }
+  }
+
+  // Cross-field invariant: shared entries (multiple beneficiaries) must always
+  // have a payer. Catches the case where beneficiaryUserIds are set but
+  // paidByUserId is absent — which would break balance antisymmetry.
+  if (beneficiaryUserIds.length > 1 && !errors.paidByUserId && !paidByUserId) {
+    errors.paidByUserId = PAID_BY_REQUIRED_FOR_SHARED_MESSAGE;
   }
 
   if (Object.keys(errors).length > 0) {
