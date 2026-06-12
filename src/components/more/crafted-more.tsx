@@ -101,6 +101,12 @@ export function CraftedMore({
                 icon="shield"
               />
               <CraftedMoreRow
+                href="/workspace/categories"
+                label="Gestisci categorie"
+                detail="Crea, modifica e archivia le categorie"
+                icon="receipt"
+              />
+              <CraftedMoreRow
                 href="/workspace/new"
                 label="Crea workspace"
                 detail="Spazio condiviso per la coppia o il team"

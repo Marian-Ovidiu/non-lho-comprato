@@ -738,6 +738,34 @@ Completion notes (Phase 16B):
 - Revalidation: `revalidatePath("/", "layout")` cascades to all form pages.
 - Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (173 pass, 12 new), `npm run build` ✓.
 
+## Phase 16C — Category management UI
+
+Status: `[x]`
+
+Output required:
+
+- `app/workspace/categories/page.tsx` — owner-visible server page.
+- `src/components/workspace/crafted-category-management.tsx` — client component with full management UI.
+- Add "Gestisci categorie" `CraftedMoreRow` in `src/components/more/crafted-more.tsx`.
+- Create `docs/product-ready/16C_CATEGORY_MANAGEMENT_UI_NOTES.md`.
+
+Rules:
+
+- No schema changes.
+- No new server actions (Phase 16B scope).
+- No metric formula changes.
+
+Completion notes (Phase 16C):
+
+- `app/workspace/categories/page.tsx`: server page with `force-dynamic`; loads `getWorkspaceCategories()` in try/catch; renders `CraftedSubpageHeader` (backHref="/more", eyebrow="Workspace", title="Gestisci categorie", context="Le categorie valgono solo..."); delegates to `CraftedCategoryManagement`; `DataLoadErrorBanner` on failure.
+- `src/components/workspace/crafted-category-management.tsx`: client component with `useTransition` pattern throughout:
+  - `CategoryCreateForm`: creates category via `createCategory(FormData)`; name/icon/color fields; shows error inline.
+  - `CategoryEditForm`: edits name/icon/color via `updateCategory(id, FormData)`; inline per-row; cancel closes.
+  - `CategoryRow`: per-row `useTransition`; Modifica (toggle edit), Archivia/Ripristina, Elimina (with `window.confirm`); shows destructive error messages inline; shows archived badge for archived categories.
+  - Main component: active/archived split; archived section collapsed by default with chevron toggle; reset section with `resetDefaultCategories`; `router.refresh()` after every successful action.
+- `src/components/more/crafted-more.tsx`: added `CraftedMoreRow` for `/workspace/categories` between Partecipanti and Crea workspace; uses `icon="receipt"`.
+- Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (173 pass, unchanged), `npm run build` ✓ (`/workspace/categories` in route table).
+
 ## Deferred decisions
 
 These must be resolved during or after Phase 1 before implementation if the existing model is ambiguous:
