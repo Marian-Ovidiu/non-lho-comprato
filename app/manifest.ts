@@ -6,7 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Non l'ho comprato",
     short_name: "NLC",
-    description: "Traccia le spese e tieni visibile il risparmio reale.",
+    description: "Traccia le spese e tieni visibile l'impatto netto.",
     lang: "it",
     start_url: "/",
     scope: "/",

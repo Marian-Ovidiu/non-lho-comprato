@@ -60,10 +60,10 @@ export function buildFeaturedGoalNote(goal: CraftedGoalSource) {
   }
 
   if (goal.remainingAmount <= 0) {
-    return "alimentato dai risparmi positivi.";
+    return "alimentato dall'impatto positivo.";
   }
 
-  return `ti mancano ${formatCraftedCompact(goal.remainingAmount)}€ di risparmio positivo.`;
+  return `ti mancano ${formatCraftedCompact(goal.remainingAmount)}€ di impatto positivo.`;
 }
 
 export function buildSecondaryGoalNote(goal: CraftedGoalSource) {
@@ -72,7 +72,7 @@ export function buildSecondaryGoalNote(goal: CraftedGoalSource) {
   }
 
   if (goal.progressPercent >= 50 || goal.remainingAmount <= 0) {
-    return "si muove con risparmi ed evitati";
+    return "si muove con l'impatto positivo";
   }
 
   return `partita a ${getCreatedMonthLabel(goal.createdAt)}`;

@@ -83,7 +83,7 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
 
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Evitato / risparmio
+                Impatto netto
               </p>
               <p className="mt-1 truncate text-base font-semibold text-foreground sm:text-lg">
                 {formatMoney(report.overview.totalSaved)}

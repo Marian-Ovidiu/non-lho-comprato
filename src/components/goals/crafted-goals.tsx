@@ -169,7 +169,7 @@ export function CraftedGoals({
             <Label className="mb-2 block">Obiettivi attivi</Label>
             <Serif className="text-sm text-ink-3">
               Nessuna meta attiva al momento. Riattivane una per tornare a raccogliere
-              risparmi ed evitati.
+              impatto positivo.
             </Serif>
           </section>
           <Rule />
@@ -217,7 +217,7 @@ export function CraftedGoals({
       <StatTrio
         items={[
           {
-            label: "Da risparmi positivi",
+            label: "Da impatto positivo",
             value: <CraftedAmount value={trio.towardGoals} />,
             suffix: "€",
           },
@@ -231,7 +231,7 @@ export function CraftedGoals({
             ),
           },
           {
-            label: "Risparmio mese",
+            label: "Impatto netto mese",
             value: (
               <CraftedAmount
                 value={trio.monthSaved > 0 ? trio.monthSaved : 0}

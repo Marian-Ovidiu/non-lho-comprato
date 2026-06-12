@@ -21,8 +21,8 @@ export function CraftedOnboardingScreen() {
           La dashboard è pronta.
         </Serif>
         <p className="mt-5 max-w-[320px] text-base leading-relaxed text-ink-3">
-          Parti dalle spese. Se qualcosa viene evitato o confrontato, il risparmio si
-          aggiunge da solo.
+          Parti dalle spese. Se qualcosa viene evitato o confrontato, l&apos;impatto
+          netto si aggiorna da solo.
         </p>
       </div>
 

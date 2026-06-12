@@ -62,7 +62,7 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
   if (mode === "avoided") {
     return {
       badge: "Evitata",
-      detail: `${formatCraftedEntryAmount(alternativeCost)}€ evitati`,
+      detail: `${formatCraftedEntryAmount(alternativeCost)}€ non comprati`,
       tone: "accent" as const,
     };
   }
@@ -71,7 +71,7 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
     if (savedAmount > 0) {
       return {
         badge: "Confronto",
-        detail: `${formatCraftedEntryAmount(savedAmount)}€ sotto il confronto`,
+        detail: `${formatCraftedEntryAmount(savedAmount)}€ risparmiati scegliendo meglio`,
         tone: "accent" as const,
       };
     }
@@ -79,7 +79,7 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
     if (savedAmount < 0) {
       return {
         badge: "Confronto",
-        detail: `${formatCraftedEntryAmount(savedAmount)}€ sopra il confronto`,
+        detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}€ spesi in più del confronto`,
         tone: "default" as const,
       };
     }

@@ -487,7 +487,7 @@ export function CraftedEntryList({
                   {group.totalSaved > 0 ? "+" : ""}
                   {formatCraftedCompact(group.totalSaved)}€
                   <span className="ml-1 font-normal text-ink-3">
-                    {group.totalSaved < 0 ? "impatto confronto" : "evitati / risparmio"}
+                    impatto netto
                   </span>
                 </Mono>
               </div>
@@ -516,7 +516,7 @@ export function CraftedEntryList({
             {previousMonthSummary.label.toLowerCase()} —{" "}
             {formatCraftedCompact(previousMonthSummary.totalRealSpent)}€ spesi
             {previousMonthSummary.totalSaved > 0
-              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}€ evitati / risparmio`
+              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}€ impatto netto`
               : ""}{" "}
             in {previousMonthSummary.entriesCount} movimenti
           </Serif>

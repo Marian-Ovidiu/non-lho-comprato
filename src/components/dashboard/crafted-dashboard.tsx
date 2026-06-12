@@ -169,7 +169,7 @@ function getRecentEntryMeta(entry: CraftedRecentEntry) {
   if (realCost === 0 && alternativeCost > 0 && savedAmount > 0) {
     return {
       label: "Evitata",
-      detail: `${formatCraftedEntryAmount(alternativeCost)}€ evitati`,
+      detail: `${formatCraftedEntryAmount(alternativeCost)}€ non comprati`,
       tone: "accent" as const,
     };
   }
@@ -177,7 +177,7 @@ function getRecentEntryMeta(entry: CraftedRecentEntry) {
   if (savedAmount > 0) {
     return {
       label: "Confronto",
-      detail: `${formatCraftedEntryAmount(savedAmount)}€ sotto il confronto`,
+      detail: `${formatCraftedEntryAmount(savedAmount)}€ risparmiati scegliendo meglio`,
       tone: "accent" as const,
     };
   }
@@ -185,7 +185,7 @@ function getRecentEntryMeta(entry: CraftedRecentEntry) {
   if (savedAmount < 0) {
     return {
       label: "Confronto",
-      detail: `${formatCraftedEntryAmount(savedAmount)}€ sopra il confronto`,
+      detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}€ spesi in più del confronto`,
       tone: "default" as const,
     };
   }
@@ -241,8 +241,8 @@ export function CraftedDashboard({
               <span className="text-xs text-accent">€</span>
             </Mono>
             {monthLargeComparisonImpact > 0 ? (
-              <Mono className="mt-1 block text-[11px] text-ink-3">
-                di cui {formatCraftedCompact(monthLargeComparisonImpact)}€ da grandi confronti
+            <Mono className="mt-1 block text-[11px] text-ink-3">
+                Grandi confronti: {formatCraftedCompact(monthLargeComparisonImpact)}€
               </Mono>
             ) : null}
           </div>
@@ -334,7 +334,7 @@ export function CraftedDashboard({
                     {category.saved !== 0 ? (
                       <Mono className="mt-0.5 block text-[11px] text-ink-3">
                         {category.saved > 0 ? "+" : ""}
-                        {formatCraftedCompact(category.saved)}€ evitati / risparmio
+                        {formatCraftedCompact(category.saved)}€ impatto netto
                       </Mono>
                     ) : null}
                   </div>

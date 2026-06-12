@@ -227,7 +227,7 @@ export function CraftedStats({
       <StatTrio
         items={[
           {
-            label: "Confronto stimato",
+            label: "Avresti speso",
             value: <CraftedAmount value={periodOverview.totalAlternativeCost} />,
             suffix: "€",
           },
@@ -237,7 +237,7 @@ export function CraftedStats({
             suffix: "€",
           },
           {
-            label: "Efficienza",
+            label: "Indice netto",
             value: (
               <CraftedAmount
                 value={periodOverview.savingRatePercent}
@@ -326,7 +326,7 @@ export function CraftedStats({
                   il {initialQueen.pct}% di tutto, in {initialQueen.entriesCount}{" "}
                   {initialQueen.entriesCount === 1 ? "movimento" : "movimenti"}.
                   {initialQueen.saved > 0
-                    ? ` ${formatCraftedCompact(initialQueen.saved)}€ evitati / risparmiati.`
+                    ? ` ${formatCraftedCompact(initialQueen.saved)}€ impatto netto.`
                     : ""}
                 </Serif>
               </div>

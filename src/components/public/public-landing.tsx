@@ -7,7 +7,7 @@ import { TrustCopy } from "@/src/components/shared/trust-copy";
 const steps = [
   "Registra una spesa",
   "Aggiungi il confronto solo quando serve",
-  "Vedi spesa e risparmio insieme",
+  "Vedi spesa e impatto netto insieme",
 ] as const;
 
 const benefitCards = [
@@ -16,12 +16,12 @@ const benefitCards = [
     description: "Capisci subito dove va il tuo denaro.",
   },
   {
-    title: "Risparmio visibile",
-    description: "Quando eviti un acquisto, il vantaggio resta in vista.",
+    title: "Impatto chiaro",
+    description: "Non comprato e confronti restano separati dalla spesa reale.",
   },
   {
     title: "Obiettivi utili",
-    description: "Il risparmio può alimentare le tue mete.",
+    description: "L'impatto positivo può alimentare le tue mete.",
   },
 ] as const;
 
@@ -43,7 +43,7 @@ export function PublicLanding() {
               className="font-bold leading-[0.95] tracking-[-0.045em] text-foreground"
               style={{ fontSize: "clamp(52px, 9vw, 80px)" }}
             >
-              poi il risparmio
+              poi l&apos;impatto
               <br />
               <span className="text-accent">resta visibile.</span>
             </h1>
@@ -51,7 +51,7 @@ export function PublicLanding() {
 
           <p className="max-w-xl text-[16px] leading-7 text-muted-foreground">
             Registra quello che spendi ogni giorno. Se un acquisto viene evitato o
-            confrontato, il risparmio si aggiunge senza spostare il focus.
+            confrontato, l&apos;impatto netto resta chiaro senza spostare il focus.
           </p>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -84,7 +84,7 @@ export function PublicLanding() {
                 </p>
               </div>
               <div className="rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-[11px] font-semibold text-accent">
-                +18% risparmiato
+                +18% impatto netto
               </div>
             </div>
 
@@ -173,11 +173,11 @@ export function PublicLanding() {
             >
               Inizia a tracciare
               <br />
-              spese e risparmio.
+              spese e impatto.
             </h2>
             <p className="max-w-xl text-[14px] leading-6 text-muted-foreground">
-              Il totale speso resta al centro. Il risparmio entra come valore
-              aggiunto, quando c&apos;è.
+              Il totale speso resta al centro. Non comprato e confronti entrano
+              come impatto netto, quando ci sono.
             </p>
           </div>
 

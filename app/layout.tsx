@@ -35,7 +35,7 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: "Non l'ho comprato",
-  description: "Traccia le spese e tieni visibile il risparmio reale.",
+  description: "Traccia le spese e tieni visibile l'impatto netto.",
   icons: {
     icon: [
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },

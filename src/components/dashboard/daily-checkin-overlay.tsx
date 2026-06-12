@@ -72,8 +72,8 @@ export function DailyCheckinOverlay({
   const lede = hasSpent
     ? `Oggi hai già registrato ${spentHero.whole},${spentHero.decimals}€ di spesa reale.`
     : hasSaved
-      ? "Oggi non hai ancora speso, ma hai già segnato qualcosa di evitato."
-      : "Oggi è ancora aperto. Puoi registrare una spesa o un movimento evitato quando serve.";
+      ? "Oggi non hai ancora speso, ma hai già segnato impatto netto positivo."
+      : "Oggi è ancora aperto. Puoi registrare una spesa o un non comprato quando serve.";
 
   return (
     <div
@@ -126,7 +126,7 @@ export function DailyCheckinOverlay({
 
         {hasSaved ? (
           <div className="mt-3">
-            <Label className="mb-1.5 block">Evitato / risparmio oggi</Label>
+            <Label className="mb-1.5 block">Impatto netto oggi</Label>
             <Mono className="text-lg font-medium text-accent">
               {savedToday.toLocaleString("it-IT", {
                 minimumFractionDigits: 2,

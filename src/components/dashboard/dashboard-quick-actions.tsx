@@ -25,7 +25,7 @@ const actions = [
   {
     href: "/stats",
     title: "Statistiche",
-    description: "Guarda spesa e risparmio",
+    description: "Guarda spesa e impatto netto",
     icon: BarChart3,
   },
 ] as const;
@@ -36,7 +36,7 @@ export function DashboardQuickActions() {
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-foreground">Azioni rapide</h2>
         <p className="text-sm text-muted-text">
-          Parti da una spesa normale, poi aggiungi confronto o evitato solo quando serve.
+          Parti da una spesa normale, poi aggiungi confronto o non comprato solo quando serve.
         </p>
       </div>
 

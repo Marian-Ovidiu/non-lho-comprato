@@ -30,8 +30,8 @@ function getPresetMoneySummary(preset: SerializablePreset) {
   if (preset.mode === "avoided") {
     return {
       primaryAmount: `${formatCraftedCompact(comparisonAmount)}€`,
-      detail: "Spesa evitata",
-      note: `${formatCraftedCompact(comparisonAmount)}€ non spesi`,
+      detail: "Non comprato",
+      note: `${formatCraftedCompact(comparisonAmount)}€ non comprati`,
     };
   }
 
@@ -41,8 +41,8 @@ function getPresetMoneySummary(preset: SerializablePreset) {
       detail: `${formatCraftedCompact(comparisonAmount)}€ di confronto`,
       note:
         savingImpact >= 0
-          ? `${formatCraftedCompact(savingImpact)}€ sotto il confronto`
-          : `${formatCraftedCompact(Math.abs(savingImpact))}€ sopra il confronto`,
+          ? `${formatCraftedCompact(savingImpact)}€ risparmiati scegliendo meglio`
+          : `${formatCraftedCompact(Math.abs(savingImpact))}€ spesi in più del confronto`,
     };
   }
 
@@ -148,7 +148,7 @@ export function CraftedPresetList({
   if (presets.length === 0) {
     return (
       <p className="border-y border-line py-8 text-center text-sm text-ink-3">
-        Ancora nessun preset. Salva una spesa o un confronto per riusarlo in un tocco.
+        Ancora nessun preset. Salva una spesa, un confronto o un non comprato per riusarlo in un tocco.
       </p>
     );
   }

@@ -49,7 +49,7 @@ export function CraftedMonthlyReportHeader({
                 value: report.overview?.entriesCount ?? 0,
               },
               {
-                label: "Efficienza",
+                label: "Indice netto",
                 value: `${Math.round(report.overview?.savingRatePercent ?? 0)}%`,
               },
             ]}

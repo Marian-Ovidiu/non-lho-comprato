@@ -79,6 +79,8 @@ type EntryFormInitialValues = {
   note?: string;
 };
 
+type EntryIntent = "spent" | "comparison" | "avoided";
+
 export type CraftedEntryFormProps = {
   categories: CategoryOption[];
   members: WorkspaceMemberOption[];
@@ -118,7 +120,7 @@ function getComparisonFieldError(errors?: Record<string, string>) {
 }
 
 function formatPrimaryFieldLabel(mode: EntryMode) {
-  return mode === "avoided" ? "Avresti speso" : "Hai speso";
+  return mode === "avoided" ? "Avresti speso" : "Quanto hai speso";
 }
 
 function formatPrimaryPlaceholder(mode: EntryMode) {
@@ -132,24 +134,35 @@ function getSummaryText(
   comparisonInput: string,
 ) {
   if (mode === "avoided") {
-    return "spesa evitata";
+    return "Non comprato";
   }
 
   if (savingContext === "comparison") {
     const delta = getMoneyDelta(amountSpentInput, comparisonInput);
 
     if (delta > 0) {
-      return `${formatMoneyValue(delta)}€ sotto il confronto`;
+      return `${formatMoneyValue(delta)}€ risparmiati scegliendo meglio`;
     }
 
     if (delta < 0) {
-      return `${formatMoneyValue(delta)}€ sopra il confronto`;
+      return `${formatMoneyValue(Math.abs(delta))}€ spesi in più del confronto`;
     }
 
     return "in linea con il confronto";
   }
 
   return "spesa registrata";
+}
+
+function getEntryIntent(
+  mode: EntryMode,
+  showComparison: boolean,
+): EntryIntent {
+  if (mode === "avoided") {
+    return "avoided";
+  }
+
+  return showComparison ? "comparison" : "spent";
 }
 
 function getSummaryAmount(
@@ -266,8 +279,15 @@ export function CraftedEntryForm({
 
   const savingContext: EntrySavingContext =
     mode === "avoided" ? "comparison" : showComparison ? "comparison" : "none";
+  const entryIntent = getEntryIntent(mode, showComparison);
   const primaryFieldError = getPrimaryFieldError(state.errors);
   const comparisonFieldError = getComparisonFieldError(state.errors);
+  const comparisonDelta = getMoneyDelta(amountSpentInput, comparisonInput);
+  const showLargeComparisonWarning =
+    mode === "spent" &&
+    showComparison &&
+    comparisonInput.trim().length > 0 &&
+    Math.abs(comparisonDelta) >= 100;
   const hiddenAmountSpent = mode === "spent" ? toHiddenMoneyValue(amountSpentInput) : "";
   const hiddenComparisonAmount =
     mode === "avoided" || showComparison ? toHiddenMoneyValue(comparisonInput) : "";
@@ -294,6 +314,20 @@ export function CraftedEntryForm({
     }
 
     setAmountSpentInput((current) => current || comparisonInput);
+  }
+
+  function handleIntentChange(nextIntent: EntryIntent) {
+    if (nextIntent === "avoided") {
+      handleModeChange("avoided");
+      return;
+    }
+
+    handleModeChange("spent");
+    setShowComparison(nextIntent === "comparison");
+
+    if (nextIntent === "comparison") {
+      setComparisonInput((current) => current || amountSpentInput);
+    }
   }
 
   function toggleComparison() {
@@ -360,36 +394,60 @@ export function CraftedEntryForm({
         ) : null}
 
         <div className="px-5 pb-4 pt-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <button
               type="button"
-              onClick={() => handleModeChange("spent")}
+              onClick={() => handleIntentChange("spent")}
               className={cn(
-                "flex min-h-12 items-center justify-center gap-2 border-b-[1.5px] px-3 py-2 text-sm transition-colors",
-                mode === "spent"
+                "flex min-h-12 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                entryIntent === "spent"
                   ? "border-accent text-foreground"
                   : "border-transparent text-ink-3 hover:text-foreground",
               )}
-              aria-pressed={mode === "spent"}
+              aria-pressed={entryIntent === "spent"}
             >
               <Receipt className="size-4" aria-hidden="true" />
               Ho speso
             </button>
             <button
               type="button"
-              onClick={() => handleModeChange("avoided")}
+              onClick={() => handleIntentChange("comparison")}
               className={cn(
-                "flex min-h-12 items-center justify-center gap-2 border-b-[1.5px] px-3 py-2 text-sm transition-colors",
-                mode === "avoided"
+                "flex min-h-12 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                entryIntent === "comparison"
                   ? "border-accent text-foreground"
                   : "border-transparent text-ink-3 hover:text-foreground",
               )}
-              aria-pressed={mode === "avoided"}
+              aria-pressed={entryIntent === "comparison"}
+              aria-label="Ho speso e voglio confrontarlo"
+            >
+              <span className="font-num text-sm" aria-hidden="true">
+                ↘
+              </span>
+              Speso + confronto
+            </button>
+            <button
+              type="button"
+              onClick={() => handleIntentChange("avoided")}
+              className={cn(
+                "flex min-h-12 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                entryIntent === "avoided"
+                  ? "border-accent text-foreground"
+                  : "border-transparent text-ink-3 hover:text-foreground",
+              )}
+              aria-pressed={entryIntent === "avoided"}
             >
               <CircleOff className="size-4" aria-hidden="true" />
               Non l&apos;ho comprato
             </button>
           </div>
+          <p className="mt-3 text-center text-xs leading-5 text-ink-3">
+            {entryIntent === "spent"
+              ? "Registra solo il denaro uscito davvero."
+              : entryIntent === "comparison"
+                ? "Usalo quando hai scelto un'opzione più economica."
+                : "Segna quanto avresti speso se l'avessi comprato."}
+          </p>
         </div>
 
         <section className="px-5 pb-5 pt-2 text-center">
@@ -412,7 +470,11 @@ export function CraftedEntryForm({
           ) : (
             <>
               <Serif className="mb-3 text-[16px] text-muted-foreground">
-                {mode === "avoided" ? "stai evitando una spesa" : "stai registrando una spesa"}
+                {entryIntent === "avoided"
+                  ? "stai segnando un non comprato"
+                  : entryIntent === "comparison"
+                    ? "stai confrontando una spesa"
+                    : "stai registrando una spesa"}
               </Serif>
               <div className="flex items-baseline justify-center gap-2">
                 <Mono className="text-[clamp(3rem,16vw,5rem)] font-semibold leading-[0.9] text-accent">
@@ -525,7 +587,9 @@ export function CraftedEntryForm({
                   )}
                   aria-hidden="true"
                 />
-                {showComparison ? "Nascondi confronto" : "Aggiungi confronto"}
+                {showComparison
+                  ? "Nascondi confronto"
+                  : "Ho speso e voglio confrontarlo"}
               </button>
 
               {showComparison ? (
@@ -542,11 +606,16 @@ export function CraftedEntryForm({
                       className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-ink-3/70"
                       aria-invalid={Boolean(comparisonFieldError)}
                     />
-                    <Label>Quanto sarebbe costato</Label>
+                    <Label>Quanto avresti speso di solito?</Label>
                   </label>
                   <p className="mt-2 text-xs text-ink-3">
-                    Serve solo se vuoi confrontare la spesa con un importo di riferimento.
+                    Usalo quando hai scelto un&apos;opzione più economica.
                   </p>
+                  {showLargeComparisonWarning ? (
+                    <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                      Questo confronto pesa molto sulle statistiche.
+                    </p>
+                  ) : null}
                   <FormFieldError
                     message={comparisonFieldError}
                     className="mt-2 text-xs"
@@ -556,7 +625,7 @@ export function CraftedEntryForm({
             </>
           ) : (
             <p className="text-[13px] text-ink-3">
-              Registriamo una spesa evitata: non verrà contato nulla come speso.
+              Segna quanto avresti speso se l&apos;avessi comprato. Non verrà contato nulla come speso davvero.
             </p>
           )}
         </div>
@@ -574,7 +643,7 @@ export function CraftedEntryForm({
               )}
               aria-hidden="true"
             />
-            {showAdvanced ? "Nascondi dettagli" : "Data, nota e ripartizione"}
+            {showAdvanced ? "Nascondi dettagli" : "Data, nota, chi paga e vale per"}
           </button>
 
           {showAdvanced ? (

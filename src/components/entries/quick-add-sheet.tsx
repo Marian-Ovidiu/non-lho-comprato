@@ -106,6 +106,8 @@ type QuickAddDraft = {
   date: string;
 };
 
+type QuickAddIntent = "spent" | "comparison" | "avoided";
+
 const initialState: QuickAddState = {
   success: false,
   message: "",
@@ -200,7 +202,7 @@ function buildSavedQuickPreset(preset: SerializablePreset): QuickAddPreset {
     savingContext: preset.savingContext,
     rangeLabel:
       preset.mode === "avoided"
-        ? `${amountLabel} evitati`
+        ? `${amountLabel} non comprati`
         : preset.savingContext === "comparison"
           ? `${amountLabel} con confronto`
           : amountLabel,
@@ -264,6 +266,28 @@ function getSearchHref(
 
   const query = params.toString();
   return query ? `/entries/new?${query}` : "/entries/new";
+}
+
+function getQuickAddIntent(
+  mode: EntryMode,
+  comparisonEnabled: boolean,
+): QuickAddIntent {
+  if (mode === "avoided") {
+    return "avoided";
+  }
+
+  return comparisonEnabled ? "comparison" : "spent";
+}
+
+function getMoneyDelta(amountSpent: string, comparisonAmount: string): number {
+  const amount = Number(amountSpent.replace(",", "."));
+  const comparison = Number(comparisonAmount.replace(",", "."));
+
+  if (!Number.isFinite(amount) || !Number.isFinite(comparison)) {
+    return 0;
+  }
+
+  return Math.round((comparison - amount + Number.EPSILON) * 100) / 100;
 }
 
 export function QuickAddSheet({
@@ -377,6 +401,7 @@ export function QuickAddSheet({
   const yesterdayKey = shiftRomeDateKey(todayKey, -1);
   const savingContext: EntrySavingContext =
     mode === "avoided" ? "comparison" : comparisonEnabled ? "comparison" : "none";
+  const quickAddIntent = getQuickAddIntent(mode, comparisonEnabled);
   const hiddenAmountSpent =
     mode === "spent" ? toHiddenMoneyValue(draft.amountSpent) : "";
   const hiddenComparisonAmount =
@@ -392,6 +417,12 @@ export function QuickAddSheet({
     expenseSuggestion.suggestion.confidence >= 0.75
       ? expenseSuggestion.suggestion
       : null;
+  const comparisonDelta = getMoneyDelta(draft.amountSpent, draft.comparisonAmount);
+  const showLargeComparisonWarning =
+    mode === "spent" &&
+    comparisonEnabled &&
+    draft.comparisonAmount.trim().length > 0 &&
+    Math.abs(comparisonDelta) >= 100;
 
   useEffect(() => {
     let active = true;
@@ -635,6 +666,26 @@ export function QuickAddSheet({
     }));
   }
 
+  function handleIntentChange(nextIntent: QuickAddIntent) {
+    if (nextIntent === "avoided") {
+      handleModeChange("avoided");
+      return;
+    }
+
+    handleModeChange("spent");
+    setComparisonEnabled(nextIntent === "comparison");
+
+    if (nextIntent === "comparison") {
+      setComparisonAmountTouched(true);
+      setDraft((current) => ({
+        ...current,
+        comparisonAmount: current.comparisonAmount || current.amountSpent,
+      }));
+    } else {
+      setComparisonAmountTouched(false);
+    }
+  }
+
   const handlePaidByUserIdChange = useCallback((value: string) => {
     hasDraftBeenEditedRef.current = true;
     setDraft((current) => ({
@@ -760,36 +811,60 @@ export function QuickAddSheet({
 
           <div className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
             <div className="sm:col-span-2">
-              <div className="grid grid-cols-2 gap-2 rounded-2xl border border-border/70 bg-background p-1">
+              <div className="grid grid-cols-3 gap-1 rounded-2xl border border-border/70 bg-background p-1">
                 <button
                   type="button"
-                  onClick={() => handleModeChange("spent")}
+                  onClick={() => handleIntentChange("spent")}
                   className={cn(
-                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
-                    mode === "spent"
+                    "flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                    quickAddIntent === "spent"
                       ? "bg-accent text-accent-foreground"
                       : "text-foreground hover:bg-surface-muted",
                   )}
-                  aria-pressed={mode === "spent"}
+                  aria-pressed={quickAddIntent === "spent"}
                 >
                   <Receipt className="size-4" aria-hidden="true" />
                   Ho speso
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleModeChange("avoided")}
+                  onClick={() => handleIntentChange("comparison")}
                   className={cn(
-                    "flex min-h-11 items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
-                    mode === "avoided"
+                    "flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                    quickAddIntent === "comparison"
                       ? "bg-accent text-accent-foreground"
                       : "text-foreground hover:bg-surface-muted",
                   )}
-                  aria-pressed={mode === "avoided"}
+                  aria-pressed={quickAddIntent === "comparison"}
+                  aria-label="Ho speso e voglio confrontarlo"
+                >
+                  <span className="font-num text-sm" aria-hidden="true">
+                    ↘
+                  </span>
+                  Speso + confronto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleIntentChange("avoided")}
+                  className={cn(
+                    "flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                    quickAddIntent === "avoided"
+                      ? "bg-accent text-accent-foreground"
+                      : "text-foreground hover:bg-surface-muted",
+                  )}
+                  aria-pressed={quickAddIntent === "avoided"}
                 >
                   <CircleOff className="size-4" aria-hidden="true" />
                   Non l&apos;ho comprato
                 </button>
               </div>
+              <p className="mt-2 text-center text-xs leading-5 text-muted-text">
+                {quickAddIntent === "spent"
+                  ? "Solo denaro uscito davvero."
+                  : quickAddIntent === "comparison"
+                    ? "Usalo quando hai scelto un'opzione più economica."
+                    : "Segna quanto avresti speso se l'avessi comprato."}
+              </p>
             </div>
 
             {presetsLoading ? (
@@ -860,7 +935,7 @@ export function QuickAddSheet({
                   Personalizza
                 </span>
                 <span className="block text-xs leading-4 text-muted-text">
-                  Compila titolo, importo e confronto se serve
+                  Compila titolo, importo e intento del movimento
                 </span>
               </span>
 
@@ -1012,6 +1087,11 @@ export function QuickAddSheet({
                     }
                     className="text-sm"
                   />
+                  {mode === "avoided" ? (
+                    <p className="text-xs leading-5 text-muted-text">
+                      Segna quanto avresti speso se l&apos;avessi comprato.
+                    </p>
+                  ) : null}
                 </div>
               </div>
 
@@ -1079,13 +1159,13 @@ export function QuickAddSheet({
                   >
                     {comparisonEnabled
                       ? "Nascondi confronto"
-                      : "Aggiungi confronto"}
+                      : "Ho speso e voglio confrontarlo"}
                   </button>
 
                   {comparisonEnabled ? (
                     <>
                       <Label htmlFor="quick-comparisonAmount">
-                        Quanto sarebbe costato
+                        Quanto avresti speso di solito?
                       </Label>
                       <Input
                         id="quick-comparisonAmount"
@@ -1109,6 +1189,14 @@ export function QuickAddSheet({
                         message={state.errors?.comparisonAmount}
                         className="text-sm"
                       />
+                      <p className="text-xs leading-5 text-muted-text">
+                        Usalo quando hai scelto un&apos;opzione più economica.
+                      </p>
+                      {showLargeComparisonWarning ? (
+                        <p className="text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
+                          Questo confronto pesa molto sulle statistiche.
+                        </p>
+                      ) : null}
                     </>
                   ) : null}
                   {showSuggestionLookupState ? (
@@ -1126,7 +1214,7 @@ export function QuickAddSheet({
                 </div>
               ) : (
                 <div className="rounded-2xl border border-border/70 bg-surface-muted/60 px-4 py-3 text-sm text-muted-text">
-                  Qui registri una spesa evitata. Se vuoi solo segnare una spesa normale,
+                  Qui registri un non comprato. Se vuoi solo segnare una spesa normale,
                   torna su <span className="font-medium text-foreground">Ho speso</span>.
                 </div>
               )}

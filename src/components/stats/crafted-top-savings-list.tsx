@@ -32,14 +32,14 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
 
   return (
     <section className="px-5 py-5">
-      <Label className="mb-2 block">Risparmi ed evitate</Label>
+      <Label className="mb-2 block">Impatto positivo</Label>
       <Serif className="mb-4 block text-sm text-ink-3">
-        I movimenti con impatto positivo sul risparmio.
+        Non comprato e confronti dove hai speso meno del riferimento.
       </Serif>
 
       {sortedEntries.length === 0 ? (
         <p className="py-6 text-sm text-ink-3">
-          Nessun risparmio positivo ancora disponibile.
+          Nessun impatto positivo ancora disponibile.
         </p>
       ) : (
         <div>

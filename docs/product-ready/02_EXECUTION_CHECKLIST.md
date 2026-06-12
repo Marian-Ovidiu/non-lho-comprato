@@ -286,7 +286,7 @@ Completion notes (Phase 4A — Dashboard migration):
 
 ## Phase 5 - Export improvement
 
-Status: `[ ]`
+Status: `[x]` (absorbed/completed by Phase 4D + pre-Phase-6 CSV fix)
 
 Output required:
 
@@ -327,9 +327,24 @@ Validation expected:
 - `npm run test`;
 - `npm run build`.
 
+Completion notes (Phase 5 — absorbed by Phase 4D + pre-Phase-6 CSV fix):
+
+- Phase 4D completed the CSV export migration before Phase 5 was started as a separate implementation phase.
+- Metric breakdown columns were added in Phase 4D: `spentReal`, `wouldHaveSpentMetric`, `avoidedAmount`, `comparisonSaved`, `comparisonOverspent`, `grossPositiveImpact`, `netImpact`, `ordinaryImpact`, `largeComparisonImpact`, `isLargeComparison`.
+- Sharing columns were added in Phase 4D: `paidByUserId`, `paidByName`, `beneficiaryUserIds`, `beneficiaryNames`, `beneficiaryCount`, `sharePerBeneficiary`, `isShared`.
+- Backward compatibility columns were preserved in Phase 4D: existing legacy export columns remained present alongside the new metric/sharing columns.
+- Unified metric module usage was added in Phase 4D: export row metric fields are derived through `calculateEntryMetrics`.
+- Pre-Phase-6 CSV fix removed empty/anomalous exported rows by filtering entries without a real `id` or valid `date` at export serialization time.
+- Pre-Phase-6 CSV fix also stopped appending the `# SUMMARY` block to the movement CSV because parsers treated it as empty movement rows.
+- Legacy valid entries without sharing data are still exported with safe empty sharing fields.
+- The original Phase 5 item “Ensure export summary uses unified aggregate metrics” is superseded by the CSV empty-row fix: the export no longer emits an inline summary block in the same movement CSV.
+- No additional Phase 5 implementation remains pending.
+- No application source code was changed by this checklist update.
+- Validation recorded for the implementation that completed this phase: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓.
+
 ## Phase 6 - UX wording/content pass
 
-Status: `[ ]`
+Status: `[x]`
 
 Output required:
 
@@ -350,11 +365,21 @@ Validation expected:
 
 - `npm run lint`;
 - `npm run typecheck`;
+- `npm run test`;
 - `npm run build`.
+
+Completion notes (Phase 6 — UX wording/content pass):
+
+- Dashboard, stats, monthly reports, entry rows/lists, goals, habits, more, onboarding, app metadata, manifest, and public landing copy were audited for ambiguous saved/risparmio wording.
+- Product labels were normalized around `Speso davvero`, `Non comprato`, `Risparmiato scegliendo meglio`, `Speso in più del confronto`, `Impatto netto`, `Grandi confronti`, and `Impatto ordinario`.
+- Helper text was clarified where metric semantics were ambiguous, especially positive impact, net impact, and large comparison notes.
+- No metric formulas, CSV export columns, DB schema, auth/workspace behavior, create/edit form logic, or visual redesign were changed.
+- Added `docs/product-ready/06_UX_WORDING_NOTES.md` with changed labels and Phase 7 follow-ups.
+- Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (109/109 pass), `npm run build` ✓.
 
 ## Phase 7 - Form logic clarity
 
-Status: `[ ]`
+Status: `[x]`
 
 Output required:
 
@@ -382,6 +407,22 @@ Validation expected:
 - `npm run typecheck`;
 - `npm run test`;
 - `npm run build`.
+
+Completion notes (Phase 7 — Form logic clarity):
+
+- Create/edit entry forms now expose three explicit movement intents: `Ho speso`, `Speso + confronto` (`aria-label="Ho speso e voglio confrontarlo"`), and `Non l'ho comprato`.
+- The third intent keeps existing persistence semantics: `mode=spent`, `savingContext=comparison`.
+- Quick-add now exposes the same three intents and preserves prefill behavior for full-form navigation.
+- Preset creation/editing now exposes the same intent model; saved preset summaries use Phase 6 metric wording.
+- Comparison microcopy added: `Quanto avresti speso di solito?` and `Usalo quando hai scelto un'opzione più economica.`
+- Avoided microcopy added: `Segna quanto avresti speso se l'avessi comprato.`
+- Large comparison warning added in create/edit entry forms, quick-add, and preset form: `Questo confronto pesa molto sulle statistiche.`
+- `Chi paga` / `Vale per` copy clarified in shared-expense fields. The details toggle now names `chi paga` and `vale per` directly instead of generic `ripartizione`.
+- Added `docs/product-ready/07_FORM_CLARITY_NOTES.md`.
+- Added form-domain tests for the three user intents in `src/features/entries/form-money.test.ts`.
+- No metric formulas, DB/schema, dashboard/stats/reports/export, auth/workspace behavior, monetization, ads, or AI features changed.
+- `npm run prisma:validate` not run because schema was not touched.
+- Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (112/112 pass), `npm run build` ✓.
 
 ## Deferred decisions
 

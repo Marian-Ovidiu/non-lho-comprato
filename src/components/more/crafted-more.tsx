@@ -71,7 +71,7 @@ export function CraftedMore({
           <StatTrio
             items={[
               {
-                label: "Risparmio",
+                label: "Impatto netto",
                 value: formatCraftedCompact(monthSaved),
                 suffix: "€",
               },
@@ -160,7 +160,7 @@ export function CraftedMore({
           <CraftedMoreRow
             href="/goals"
             label="Obiettivi"
-            detail="Mete alimentate dal risparmio"
+            detail="Mete alimentate dall'impatto positivo"
             icon="target"
           />
         </div>

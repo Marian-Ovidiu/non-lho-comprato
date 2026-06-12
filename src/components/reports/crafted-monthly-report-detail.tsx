@@ -317,7 +317,7 @@ function MonthHighlights({
       <section className="px-5 pb-0.5 pt-[22px]">
         <Label className="mb-1.5 block">Evidenze del mese</Label>
         <Serif className="block text-[13px] text-ink-3">
-          Prima la spesa reale, poi quello che hai evitato o risparmiato.
+          Prima la spesa reale, poi non comprato e confronti positivi.
         </Serif>
       </section>
 
@@ -360,7 +360,7 @@ function MonthHighlights({
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-[450]">{bestCategory.name}</p>
               <Serif className="mt-1 block text-[13px] text-ink-3">
-                dove hai evitato o risparmiato di più
+                miglior impatto netto positivo
               </Serif>
             </div>
             <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-green">
@@ -377,7 +377,7 @@ function MonthHighlights({
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-3">
               <span className="block font-num text-[10px] font-normal uppercase tracking-[0.22em] text-green">
-                Risparmio più alto
+                Miglior impatto positivo
               </span>
               <span className="shrink-0 rounded-full border border-line px-2.5 py-[3px] font-num text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
                 {biggestSaving.ownershipLabel}

@@ -31,7 +31,7 @@ export function CraftedEntriesHeader({
           </Mono>
         </div>
         <div className="text-right">
-          <Label className="mb-1.5 block">Evitato / risparmio</Label>
+          <Label className="mb-1.5 block">Impatto netto</Label>
           <Mono className="text-xl font-medium">
             {formatCraftedCompact(totalSaved)}
             <span className="text-xs text-accent">€</span>

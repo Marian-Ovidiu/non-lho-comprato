@@ -827,16 +827,16 @@ export async function getMonthlyReport(
         ? `La categoria con più spesa è stata ${worstCategory.categoryName}.`
         : "Nessuna categoria si è distinta per spesa questo mese.",
       totalSaved > 0
-        ? `Risparmiato/evitato: ${formatMoney(totalSaved)}.`
-        : "Nessun risparmio positivo da segnalare.",
+        ? `Impatto netto positivo: ${formatMoney(totalSaved)}.`
+        : "Nessun impatto positivo da segnalare.",
       bestCategory && bestCategory.totalSaved > 0
-        ? `Dove avete evitato di più: ${bestCategory.categoryName}.`
-        : "Nessuna categoria si è distinta per risparmio questo mese.",
+        ? `Miglior impatto positivo: ${bestCategory.categoryName}.`
+        : "Nessuna categoria si è distinta per impatto positivo questo mese.",
       biggestSaving
-        ? `Il risparmio più alto: ${biggestSaving.title} (+${formatMoney(
+        ? `Miglior impatto positivo: ${biggestSaving.title} (+${formatMoney(
             biggestSaving.savedAmount,
           )}).`
-        : "Nessun risparmio positivo rilevante da segnalare.",
+        : "Nessun impatto positivo rilevante da segnalare.",
     ];
 
     return {

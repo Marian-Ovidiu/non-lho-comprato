@@ -329,10 +329,10 @@ function buildSavingCategoryInsight(
   if (!latestMonth) {
     return {
       id: "best-savings-category",
-      label: "Dove hai evitato di più",
+      label: "Miglior impatto positivo",
       value: "In costruzione",
       detail:
-        "Appena ci saranno confronti o spese evitate, qui comparirà la categoria più protetta.",
+        "Appena ci saranno non comprati o confronti positivi, qui comparirà la categoria più protetta.",
       tone: "default",
     };
   }
@@ -350,10 +350,10 @@ function buildSavingCategoryInsight(
 
     return {
       id: "best-savings-category",
-      label: "Dove hai evitato di più",
+      label: "Miglior impatto positivo",
       value: fallback?.categoryName ?? "In costruzione",
       detail: fallback
-        ? `${formatMoney(fallback.totalSaved)} evitati o risparmiati finora in questa categoria.`
+        ? `${formatMoney(fallback.totalSaved)} di impatto netto positivo finora in questa categoria.`
         : "Appena compariranno dati positivi, qui vedrai la categoria più protetta.",
       tone: "success",
     };
@@ -372,9 +372,9 @@ function buildSavingCategoryInsight(
   if (!currentCategory) {
     return {
       id: "best-savings-category",
-      label: "Dove hai evitato di più",
+      label: "Miglior impatto positivo",
       value: "Nessun dato positivo",
-      detail: `Nel mese di ${latestMonth.label} non ci sono ancora confronti o evitate con impatto positivo.`,
+      detail: `Nel mese di ${latestMonth.label} non ci sono ancora non comprati o confronti positivi.`,
       tone: "default",
     };
   }
@@ -395,18 +395,18 @@ function buildSavingCategoryInsight(
 
     return {
       id: "best-savings-category",
-      label: "Dove hai evitato di più",
+      label: "Miglior impatto positivo",
       value: currentCategory.categoryName,
-      detail: `${formatMoney(currentCategory.totalSaved)} evitati o risparmiati ${monthPart}. ${deltaLabel}.`,
+      detail: `${formatMoney(currentCategory.totalSaved)} di impatto netto positivo ${monthPart}. ${deltaLabel}.`,
       tone: "success",
     };
   }
 
   return {
     id: "best-savings-category",
-    label: "Dove hai evitato di più",
+    label: "Miglior impatto positivo",
     value: currentCategory.categoryName,
-    detail: `${formatMoney(currentCategory.totalSaved)} evitati o risparmiati ${monthPart}.`,
+    detail: `${formatMoney(currentCategory.totalSaved)} di impatto netto positivo ${monthPart}.`,
     tone: "success",
   };
 }

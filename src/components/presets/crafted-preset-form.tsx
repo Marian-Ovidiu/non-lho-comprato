@@ -32,6 +32,8 @@ export type CraftedPresetFormInitialValue = {
   note: string;
 };
 
+type PresetIntent = "spent" | "comparison" | "avoided";
+
 const initialState: FormState = { success: false, message: "", errors: {} };
 
 function FieldError({ message }: { message?: string }) {
@@ -68,6 +70,28 @@ function shouldShowComparison(initialPreset?: CraftedPresetFormInitialValue) {
     initialPreset?.mode === "spent" &&
     initialPreset.savingContext === "comparison"
   );
+}
+
+function getPresetIntent(
+  mode: EntryMode,
+  showComparison: boolean,
+): PresetIntent {
+  if (mode === "avoided") {
+    return "avoided";
+  }
+
+  return showComparison ? "comparison" : "spent";
+}
+
+function getMoneyDelta(amountSpent: string, comparisonAmount: string): number {
+  const amount = Number(amountSpent.replace(",", "."));
+  const comparison = Number(comparisonAmount.replace(",", "."));
+
+  if (!Number.isFinite(amount) || !Number.isFinite(comparison)) {
+    return 0;
+  }
+
+  return Math.round((comparison - amount + Number.EPSILON) * 100) / 100;
 }
 
 export function CraftedPresetForm({
@@ -137,12 +161,36 @@ export function CraftedPresetForm({
 
   const savingContext: EntrySavingContext =
     mode === "avoided" ? "comparison" : showComparison ? "comparison" : "none";
+  const presetIntent = getPresetIntent(mode, showComparison);
   const hiddenAmountSpent =
     mode === "spent" ? toHiddenMoneyValue(amountSpent) : "";
   const hiddenComparisonAmount =
     mode === "avoided" || showComparison ? toHiddenMoneyValue(comparisonAmount) : "";
   const primaryFieldError = getPrimaryFieldError(state.errors);
   const comparisonFieldError = getComparisonFieldError(state.errors);
+  const comparisonDelta = getMoneyDelta(amountSpent, comparisonAmount);
+  const showLargeComparisonWarning =
+    mode === "spent" &&
+    showComparison &&
+    comparisonAmount.trim().length > 0 &&
+    Math.abs(comparisonDelta) >= 100;
+
+  function handleIntentChange(nextIntent: PresetIntent) {
+    if (nextIntent === "avoided") {
+      setMode("avoided");
+      setShowComparison(false);
+      setComparisonAmount((current) => current || amountSpent);
+      return;
+    }
+
+    setMode("spent");
+    setAmountSpent((current) => current || comparisonAmount);
+    setShowComparison(nextIntent === "comparison");
+
+    if (nextIntent === "comparison") {
+      setComparisonAmount((current) => current || amountSpent);
+    }
+  }
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
@@ -177,41 +225,60 @@ export function CraftedPresetForm({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-2 gap-2 border-y border-line py-3">
+      <div className="grid grid-cols-3 gap-2 border-y border-line py-3">
         <button
           type="button"
-          onClick={() => {
-            setMode("spent");
-            setAmountSpent((current) => current || comparisonAmount);
-          }}
+          onClick={() => handleIntentChange("spent")}
           className={cn(
-            "flex min-h-11 items-center justify-center gap-2 border-b px-3 py-2 text-sm transition-colors",
-            mode === "spent"
+            "flex min-h-11 items-center justify-center gap-1.5 border-b px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+            presetIntent === "spent"
               ? "border-accent text-foreground"
               : "border-transparent text-ink-3 hover:text-foreground",
           )}
+          aria-pressed={presetIntent === "spent"}
         >
           <Receipt className="size-4" aria-hidden="true" />
           Ho speso
         </button>
         <button
           type="button"
-          onClick={() => {
-            setMode("avoided");
-            setShowComparison(false);
-            setComparisonAmount((current) => current || amountSpent);
-          }}
+          onClick={() => handleIntentChange("comparison")}
           className={cn(
-            "flex min-h-11 items-center justify-center gap-2 border-b px-3 py-2 text-sm transition-colors",
-            mode === "avoided"
+            "flex min-h-11 items-center justify-center gap-1.5 border-b px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+            presetIntent === "comparison"
               ? "border-accent text-foreground"
               : "border-transparent text-ink-3 hover:text-foreground",
           )}
+          aria-pressed={presetIntent === "comparison"}
+          aria-label="Ho speso e voglio confrontarlo"
+        >
+          <span className="font-num text-sm" aria-hidden="true">
+            ↘
+          </span>
+          Speso + confronto
+        </button>
+        <button
+          type="button"
+          onClick={() => handleIntentChange("avoided")}
+          className={cn(
+            "flex min-h-11 items-center justify-center gap-1.5 border-b px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+            presetIntent === "avoided"
+              ? "border-accent text-foreground"
+              : "border-transparent text-ink-3 hover:text-foreground",
+          )}
+          aria-pressed={presetIntent === "avoided"}
         >
           <CircleOff className="size-4" aria-hidden="true" />
           Non l&apos;ho comprato
         </button>
       </div>
+      <p className="-mt-2 text-xs leading-5 text-ink-3">
+        {presetIntent === "spent"
+          ? "Preset per una spesa normale."
+          : presetIntent === "comparison"
+            ? "Usalo quando hai scelto un'opzione più economica."
+            : "Segna quanto avresti speso se l'avessi comprato."}
+      </p>
 
       <div className="border-y border-line py-3">
         <div className="flex items-center justify-between gap-4">
@@ -268,9 +335,14 @@ export function CraftedPresetForm({
             placeholder={mode === "avoided" ? "18,00" : "12,00"}
             className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
           />
-          <Label>{mode === "avoided" ? "Avresti speso" : "Hai speso"}</Label>
+          <Label>{mode === "avoided" ? "Avresti speso" : "Quanto hai speso"}</Label>
         </div>
         <FieldError message={mode === "avoided" ? comparisonFieldError : primaryFieldError} />
+        {mode === "avoided" ? (
+          <p className="mt-2 text-xs leading-5 text-ink-3">
+            Segna quanto avresti speso se l&apos;avessi comprato.
+          </p>
+        ) : null}
       </div>
 
       {mode === "spent" ? (
@@ -289,7 +361,9 @@ export function CraftedPresetForm({
             }}
             className="w-full text-left text-[13px] text-ink-3 transition-colors hover:text-foreground"
           >
-            {showComparison ? "Nascondi confronto" : "Aggiungi confronto"}
+            {showComparison
+              ? "Nascondi confronto"
+              : "Ho speso e voglio confrontarlo"}
           </button>
 
           {showComparison ? (
@@ -305,8 +379,16 @@ export function CraftedPresetForm({
                   placeholder="45,00"
                   className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
                 />
-                <Label>Confronto</Label>
+                <Label>Quanto avresti speso di solito?</Label>
               </div>
+              <p className="mt-2 text-xs leading-5 text-ink-3">
+                Usalo quando hai scelto un&apos;opzione più economica.
+              </p>
+              {showLargeComparisonWarning ? (
+                <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
+                  Questo confronto pesa molto sulle statistiche.
+                </p>
+              ) : null}
               <FieldError message={comparisonFieldError} />
             </>
           ) : null}

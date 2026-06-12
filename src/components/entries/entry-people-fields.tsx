@@ -44,11 +44,11 @@ function getExpenseHelperText(
   beneficiaryUserIds: readonly string[],
 ): string | null {
   if (beneficiaryUserIds.length === 1) {
-    return "Spesa personale";
+    return "Vale per una persona: viene trattata come spesa personale.";
   }
 
   if (beneficiaryUserIds.length > 1) {
-    return "Spesa condivisa";
+    return `Vale per ${beneficiaryUserIds.length} persone: l'importo viene diviso tra loro.`;
   }
 
   return null;
@@ -116,6 +116,9 @@ export function EntryPeopleFields({
 
       <div className="space-y-2">
         <Label htmlFor="paidByUserId">Chi paga</Label>
+        <p className="text-xs leading-5 text-muted-text">
+          È la persona che anticipa davvero i soldi.
+        </p>
         <Select
           name="paidByUserId"
           value={selectedPaidBy}
@@ -142,8 +145,11 @@ export function EntryPeopleFields({
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-foreground">
-          Per chi è la spesa
+          Vale per
         </legend>
+        <p className="text-xs leading-5 text-muted-text">
+          Seleziona chi beneficia della spesa. Questo decide se è personale o condivisa.
+        </p>
         {expenseHelperText ? (
           <p
             className="text-xs font-medium leading-5 text-foreground"

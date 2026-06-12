@@ -190,7 +190,7 @@ export function CraftedHabits({
           {monthSaved > 0 ? (
             <div className="px-5 py-4 text-center">
               <Serif className="text-sm text-ink-3">
-                {formatCraftedCompact(monthSaved)}€ evitati / risparmiati dalle ricorrenti, a{" "}
+                {formatCraftedCompact(monthSaved)}€ di impatto netto dalle ricorrenti, a{" "}
                 {monthLabel}.
               </Serif>
             </div>
