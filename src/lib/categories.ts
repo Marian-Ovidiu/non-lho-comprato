@@ -60,19 +60,23 @@ export function mergeCategoryOptions(
       workspaceId?: string | null;
       createdAt?: Date | string;
       updatedAt?: Date | string;
+      archivedAt?: Date | null;
     }
   >,
+  archivedDefaultSlugs: ReadonlySet<string> = new Set(),
 ): CategoryOption[] {
   const bySlug = new Map<string, CategoryOption>();
 
   for (const category of DEFAULT_CATEGORIES) {
-    bySlug.set(category.slug, {
-      id: category.slug,
-      name: category.name,
-      slug: category.slug,
-      color: category.color,
-      icon: category.icon,
-    });
+    if (!archivedDefaultSlugs.has(category.slug)) {
+      bySlug.set(category.slug, {
+        id: category.slug,
+        name: category.name,
+        slug: category.slug,
+        color: category.color,
+        icon: category.icon,
+      });
+    }
   }
 
   for (const category of dbCategories) {

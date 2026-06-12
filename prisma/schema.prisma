@@ -68,6 +68,8 @@ model Category {
   slug         String
   color        String?
   icon         String?
+  isDefault    Boolean       @default(false)
+  archivedAt   DateTime?
   entries      Entry[]
   habits       Habit[]
   quickPresets QuickPreset[]
@@ -77,6 +79,7 @@ model Category {
   @@unique([workspaceId, slug])
   @@unique([workspaceId, name])
   @@index([workspaceId])
+  @@index([workspaceId, archivedAt])
 }
 
 model Entry {

@@ -16,3 +16,22 @@ self.addEventListener("activate", (event) => {
 // We keep a registered fetch handler (so the app stays installable as a PWA) but
 // do not call respondWith, letting the browser handle every request natively.
 self.addEventListener("fetch", () => {});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url ?? "/";
+  event.waitUntil(
+    self.clients
+      .matchAll({ type: "window", includeUncontrolled: true })
+      .then((windowClients) => {
+        for (const client of windowClients) {
+          if ("focus" in client) {
+            return client.focus();
+          }
+        }
+        if (self.clients.openWindow) {
+          return self.clients.openWindow(targetUrl);
+        }
+      }),
+  );
+});

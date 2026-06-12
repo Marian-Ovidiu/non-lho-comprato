@@ -13,17 +13,14 @@ export async function upsertDefaultCategoryForWorkspace(
 ) {
   return db.category.upsert({
     where: getWorkspaceCategorySlugWhere(workspaceId, category.slug),
-    update: {
-      name: category.name,
-      icon: category.icon,
-      color: category.color,
-    },
+    update: {},
     create: {
       workspaceId,
       name: category.name,
       slug: category.slug,
       icon: category.icon,
       color: category.color,
+      isDefault: true,
     },
   });
 }

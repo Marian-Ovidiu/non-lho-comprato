@@ -1059,21 +1059,33 @@ export async function getDashboardEntrySnapshot(
 
 export async function getCategories() {
   try {
-    const categories = await prisma.category.findMany({
+    const allCategories = await prisma.category.findMany({
       where: await getCurrentWorkspaceScopedWhere(),
-      orderBy: {
-        name: "asc",
-      },
       select: {
         id: true,
         name: true,
         slug: true,
         color: true,
         icon: true,
+        isDefault: true,
+        archivedAt: true,
       },
     });
 
-    return mergeCategoryOptions(categories);
+    const archivedDefaultSlugs = new Set<string>();
+    const activeCategories = [];
+
+    for (const cat of allCategories) {
+      if (cat.archivedAt !== null) {
+        if (cat.isDefault) {
+          archivedDefaultSlugs.add(cat.slug);
+        }
+      } else {
+        activeCategories.push(cat);
+      }
+    }
+
+    return mergeCategoryOptions(activeCategories, archivedDefaultSlugs);
   } catch (error) {
     unstable_rethrow(error);
     console.warn("Falling back to static categories:", error);

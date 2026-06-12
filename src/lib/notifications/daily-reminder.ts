@@ -31,6 +31,12 @@ function getRomeHourMinute(date = new Date()): { hour: number; minute: number } 
   };
 }
 
+/** Current time in Rome expressed as total minutes since midnight. */
+export function getRomeNowMinutes(date = new Date()): number {
+  const { hour, minute } = getRomeHourMinute(date);
+  return hour * 60 + minute;
+}
+
 /** True when local Rome time is strictly after 18:00. */
 export function isAfterReminderHour(
   date = new Date(),
@@ -66,20 +72,38 @@ export function shouldTriggerDailyReminder({
   return true;
 }
 
-export function showDailyReminderNotification(now = new Date()): boolean {
+export async function showDailyReminderNotification(now = new Date()): Promise<boolean> {
   if (!isNotificationSupported() || Notification.permission !== "granted") {
     return false;
   }
 
+  const tag = `nlc-daily-reminder-${getRomeTodayDateKey(now)}`;
+  const options = {
+    body: DAILY_REMINDER_BODY,
+    icon: DAILY_REMINDER_ICON,
+    tag,
+    data: { url: "/" },
+  };
+
+  // Prefer service-worker-backed notification: works on installed Android PWA and iOS 16.4+ PWA.
+  // Guard with controller check to avoid a hanging .ready promise when no SW controls the page.
+  if (
+    typeof navigator !== "undefined" &&
+    "serviceWorker" in navigator &&
+    navigator.serviceWorker.controller !== null
+  ) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(DAILY_REMINDER_TITLE, options);
+      return true;
+    } catch (error) {
+      console.error("SW notification failed, falling back to direct API:", error);
+    }
+  }
+
+  // Direct Notification API fallback (desktop browsers; does not work on iOS).
   try {
-    const tag = `nlc-daily-reminder-${getRomeTodayDateKey(now)}`;
-
-    new Notification(DAILY_REMINDER_TITLE, {
-      body: DAILY_REMINDER_BODY,
-      icon: DAILY_REMINDER_ICON,
-      tag,
-    });
-
+    new Notification(DAILY_REMINDER_TITLE, options);
     return true;
   } catch (error) {
     console.error("Failed to show daily reminder notification:", error);
@@ -121,7 +145,8 @@ export async function runDailyReminderOnOpen(
     return;
   }
 
-  if (showDailyReminderNotification(now)) {
+  const notified = await showDailyReminderNotification(now);
+  if (notified) {
     markNotificationSentToday(now);
   }
 }

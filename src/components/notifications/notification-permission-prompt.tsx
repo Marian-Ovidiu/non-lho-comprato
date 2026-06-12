@@ -73,7 +73,7 @@ export function NotificationPermissionPrompt() {
           aria-hidden="true"
         />
         <p className="min-w-0 flex-1 text-sm text-foreground">
-          Attiva le notifiche per i promemoria quando l&apos;app è aperta o installata.
+          Attiva le notifiche per i promemoria. Funzionano quando l&apos;app è aperta.
         </p>
         <Button
           type="button"

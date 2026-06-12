@@ -597,6 +597,147 @@ Completion notes (Phase 14):
 - No metric formulas, Prisma schema, server actions, tests, auth/workspace behavior, feedback/debug, or form logic changed.
 - Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (142 pass), `npm run build` ✓.
 
+## Phase 15A — Habit notifications delivery audit
+
+Status: `[x]`
+
+Output required:
+
+- Audit current notification implementation end-to-end.
+- Answer 8 specific questions about the delivery infrastructure.
+- Create `docs/product-ready/15A_HABIT_NOTIFICATIONS_AUDIT.md`.
+- No application code, schema, or test changes.
+
+Completion notes (Phase 15A):
+
+- Service worker (`public/sw.js`): install + activate + no-op fetch. No `push` event listener. No `notificationclick`. Exists for PWA installability only.
+- Both notification paths (`daily-reminder.ts` and `habit-reminder-banner.tsx`) use `new Notification()` from page context — requires the page to be open. No Web Push.
+- `HabitReminderBanner` mounted only on `/habits` — habit reminders cannot fire on other routes.
+- `daily-reminder.ts` uses `Europe/Rome` timezone correctly. `habit-reminder-banner.tsx` uses device local time — inconsistency documented.
+- No `PushManager.subscribe()`, no VAPID keys, no `PushSubscription` DB model, no web-push npm package, no server-side push endpoint, no cron scheduler anywhere in the codebase.
+- Root cause of "notifications not arriving": on iOS, `new Notification()` is unsupported regardless of PWA install status; on Android/desktop, the app must be open. No background delivery mechanism exists.
+- Tier 1 fixes (no new infra needed): move `HabitReminderBanner` logic to `AppShell`, switch to `registration.showNotification()`, add `notificationclick` handler to SW, fix Rome timezone in habit banner.
+- Tier 2 (true background delivery): VAPID keys, `PushManager.subscribe()`, `PushSubscription` DB model, server push endpoint, `push` event handler in SW, Vercel Cron scheduler.
+- No application code, schema, or test modified by this phase.
+- Validation: no commands required (no code touched).
+
+## Phase 15A.1 — Notification quick fix (open-app delivery)
+
+Status: `[x]`
+
+Output required:
+
+- SW-backed notification delivery with `new Notification()` fallback.
+- `notificationclick` handler in service worker.
+- Rome timezone for habit reminder time comparison.
+- Accurate permission prompt copy.
+- Tests for Rome time helper.
+- Create `docs/product-ready/15A1_NOTIFICATION_QUICK_FIX_NOTES.md`.
+
+Completion notes (Phase 15A.1):
+
+- `public/sw.js`: added `notificationclick` handler — focuses existing app window or opens `data.url`.
+- `src/lib/notifications/daily-reminder.ts`: `showDailyReminderNotification` is now async; tries `registration.showNotification()` (guarded by `controller !== null`) then falls back to `new Notification()`; adds `data: { url: "/" }` to options. Extracted and exported `getRomeNowMinutes(date)`.
+- `src/components/notifications/habit-reminder-banner.tsx`: uses `getRomeNowMinutes` (Rome time) and `getRomeTodayDateKey` (Rome date) instead of device-local equivalents; `new Notification()` replaced with `showHabitReminderNotification` async helper (same SW-first / fallback pattern); adds `data: { url: "/habits" }` to options; removed `pad`, `getLocalDateKey`, `getNowMinutes` helpers.
+- `src/components/notifications/notification-permission-prompt.tsx`: removed "o installata" from copy — now reads "Funzionano quando l'app è aperta." Same change in habit banner in-app fallback text.
+- `src/lib/notifications/daily-reminder.test.ts`: new file, 10 tests for `getRomeNowMinutes` and `isAfterReminderHour` covering summer/winter UTC offsets and boundary conditions.
+- What still doesn't work: closed-app notifications (requires Web Push), iOS non-PWA, iOS PWA < 16.4, habit reminders on pages other than `/habits`.
+- Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (152 pass, 10 new), `npm run build` ✓.
+
+## Phase 15B — Category customization audit
+
+Status: `[x]`
+
+Output required:
+
+- Audit category model, default flow, workspace scoping, entry/category relationship.
+- Answer 15 specific questions about the current and recommended implementation.
+- Create `docs/product-ready/15B_CATEGORY_CUSTOMIZATION_AUDIT.md`.
+- No application code, schema, or test changes.
+
+Completion notes (Phase 15B):
+
+- Categories are workspace-scoped at the DB level (`workspaceId` FK, `@@unique([workspaceId, slug/name])`) but the static `DEFAULT_CATEGORIES` list is globally shared — mix of hardcoded + lazy DB.
+- Defaults are lazily provisioned per workspace: first write for a slug triggers `upsertDefaultCategoryForWorkspace`; read-time `mergeCategoryOptions` fills unprovisioned defaults with static fallback (slug as id).
+- Entry stores only `categoryId` (cuid FK); name/slug/icon/color resolved via JOIN at query time — no denormalization. Stats/reports/export read live category labels.
+- **Critical bug found:** `upsertDefaultCategoryForWorkspace` has `update: { name, icon, color }`, which silently reverts user customizations every time the lazy upsert is triggered for a default slug. Must fix to `update: {}` before exposing rename UX.
+- `onDelete: Restrict` on Entry/Habit/QuickPreset → Category blocks hard delete if any references exist. No soft-delete/archive mechanism today.
+- No `/workspace/categories` management page exists.
+- Recommended schema additions: `isDefault Boolean @default(false)` and `archivedAt DateTime?` on Category. No other FK/relation changes needed.
+- Workspace-scoped customization is sufficient; user-scoped is not needed for the current model.
+- Identified 4 implementation phases (A: schema+bug-fix, B: server actions, C: management UI, D: picker refinements).
+- **Blocking decision before Phase 16:** Confirm that in the shared workspace, Marian and Martina share the same category set (including custom categories and archives), vs. each having their own subset.
+- No application code, schema, or tests modified by this phase.
+- Validation: no commands required (no code touched).
+
+## Phase 16A — Category lifecycle foundation
+
+Status: `[x]`
+
+Output required:
+
+- Add `isDefault Boolean @default(false)` and `archivedAt DateTime?` to Category schema.
+- Add `@@index([workspaceId, archivedAt])`.
+- Create migration `20260612120000_category_lifecycle` with ADD COLUMN + backfill.
+- Fix `upsertDefaultCategoryForWorkspace`: `update: {}`, `isDefault: true` on create.
+- Update `mergeCategoryOptions` to accept `archivedDefaultSlugs` and skip those slugs in static fallback.
+- Update `getCategories` to filter archived categories and build `archivedDefaultSlugs` Set.
+- Add tests for `mergeCategoryOptions` with archived slugs.
+- Create `docs/product-ready/16A_CATEGORY_LIFECYCLE_FOUNDATION_NOTES.md`.
+
+Rules:
+
+- No UI changes.
+- No new server actions for archive/rename (Phase 16B scope).
+- No `/workspace/categories` management page (Phase 16C scope).
+
+Completion notes (Phase 16A):
+
+- Schema: added `isDefault Boolean @default(false)` and `archivedAt DateTime?` to `Category`, plus `@@index([workspaceId, archivedAt])`.
+- Migration `20260612120000_category_lifecycle`: `ALTER TABLE` for both columns, new composite index, `UPDATE` backfill for all 17 default slugs.
+- Upsert bug fixed: `update: {}` (no longer overwrites user customizations), `isDefault: true` in `create`. All lazy category creation paths (`entries/repository.ts`, `habits.ts`, `presets.ts`) route through this function — no separate changes needed there.
+- `mergeCategoryOptions`: added `archivedAt?` to `dbCategories` type; added `archivedDefaultSlugs: ReadonlySet<string> = new Set()` parameter; static fallback skips slugs in the Set.
+- `getCategories`: fetches `isDefault` + `archivedAt`; splits into `activeCategories` list and `archivedDefaultSlugs` Set; passes both to `mergeCategoryOptions`. Archived custom categories are simply excluded; archived defaults are also suppressed from the static fallback.
+- Tests: 9 new `mergeCategoryOptions` tests in `src/lib/categories.test.ts`.
+- No UI changes. No archive/rename actions. `prisma generate` run after schema change.
+- Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (161 pass, 9 new), `npm run build` ✓.
+
+## Phase 16B — Category management server actions
+
+Status: `[x]`
+
+Output required:
+
+- `generateSlugFromName` pure helper in `src/features/categories/slug.ts`.
+- `src/actions/categories.ts` with 7 server actions: `getWorkspaceCategories`, `createCategory`, `updateCategory`, `archiveCategory`, `restoreCategory`, `deleteCategory`, `resetDefaultCategories`.
+- Owner-only for all mutations.
+- Tests for pure slug helper.
+- Create `docs/product-ready/16B_CATEGORY_MANAGEMENT_ACTIONS_NOTES.md`.
+
+Rules:
+
+- No UI page (Phase 16C scope).
+- No schema changes.
+- No metric formula changes.
+- No dashboard/stats/reports/export changes.
+
+Completion notes (Phase 16B):
+
+- `src/features/categories/slug.ts`: pure `generateSlugFromName` — NFD decompose, strip diacritics, lowercase, non-alnum → single dash, trim, fallback "categoria".
+- `src/features/categories/slug.test.ts`: 12 tests covering Italian characters, diacritics, special chars, empty, fallback.
+- `src/actions/categories.ts`: 7 actions with `"use server"` directive:
+  - `getWorkspaceCategories()`: all DB-backed workspace categories with `_count` for entries/habits/presets. No owner check (read-only). Ordered active-first, defaults-first, alphabetical.
+  - `createCategory(formData)`: owner-only; validates name; auto-generates slug with numeric suffix for uniqueness; `isDefault: false`.
+  - `updateCategory(categoryId, formData)`: owner-only; name/icon/color only; slug immutable; workspace-scoped lookup before update.
+  - `archiveCategory(categoryId)`: owner-only; sets `archivedAt = now`; idempotent if already archived.
+  - `restoreCategory(categoryId)`: owner-only; clears `archivedAt`; checks for active-name conflict first.
+  - `deleteCategory(categoryId)`: owner-only; checks `_count` and returns friendly error if references exist; hard-deletes only if no entries/habits/presets.
+  - `resetDefaultCategories()`: owner-only; restores archived defaults (no-conflict only), provisions missing defaults, never overwrites active customizations.
+- All mutations use `requireWorkspaceRole(prisma, { roles: ["owner"] })` and catch `WorkspaceRbacError`.
+- `P2002` (duplicate name) and `P2003` (FK violation) caught and returned as friendly Italian messages.
+- Revalidation: `revalidatePath("/", "layout")` cascades to all form pages.
+- Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (173 pass, 12 new), `npm run build` ✓.
+
 ## Deferred decisions
 
 These must be resolved during or after Phase 1 before implementation if the existing model is ambiguous:

@@ -6,6 +6,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { getRomeNowMinutes } from "@/src/lib/notifications/daily-reminder";
+import { getRomeTodayDateKey } from "@/src/lib/notifications/daily-reminder-storage";
 
 type ReminderOccurrence = {
   id: string;
@@ -27,14 +29,6 @@ const CHANGE_EVENT = "habit-reminder-active-change";
 
 function isNotificationSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;
-}
-
-function pad(value: number): string {
-  return String(value).padStart(2, "0");
-}
-
-function getLocalDateKey(date = new Date()): string {
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
 function parseReminderMinutes(time: string | null | undefined): number | null {
@@ -61,8 +55,41 @@ function parseReminderMinutes(time: string | null | undefined): number | null {
   return hours * 60 + minutes;
 }
 
-function getNowMinutes(date = new Date()): number {
-  return date.getHours() * 60 + date.getMinutes();
+async function showHabitReminderNotification(body: string, dateKey: string): Promise<void> {
+  if (!isNotificationSupported() || Notification.permission !== "granted") {
+    return;
+  }
+
+  const title = "Controlla le abitudini di oggi";
+  const options: NotificationOptions = {
+    body,
+    icon: "/icons/icon-192.png",
+    tag: `habit-reminder-${dateKey}`,
+    data: { url: "/habits" },
+  };
+
+  if (
+    "serviceWorker" in navigator &&
+    navigator.serviceWorker.controller !== null
+  ) {
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      await registration.showNotification(title, options);
+      return;
+    } catch {
+      // fall through to direct API
+    }
+  }
+
+  try {
+    const notification = new Notification(title, options);
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  } catch {
+    // silent: Notification API unavailable on this platform (e.g. iOS browser)
+  }
 }
 
 function getStorageKey(dateKey: string): string {
@@ -185,8 +212,8 @@ export function HabitReminderBanner({ occurrences }: HabitReminderBannerProps) {
   }, []);
 
   const now = useMemo(() => new Date(tick), [tick]);
-  const nowMinutes = useMemo(() => getNowMinutes(now), [now]);
-  const dateKey = getLocalDateKey(now);
+  const nowMinutes = useMemo(() => getRomeNowMinutes(now), [now]);
+  const dateKey = getRomeTodayDateKey(now);
   const permissionGranted =
     isNotificationSupported() && Notification.permission === "granted";
   const dueReminders = useMemo(() => {
@@ -229,21 +256,11 @@ export function HabitReminderBanner({ occurrences }: HabitReminderBannerProps) {
           ? `${names[0]} è in attesa di verifica.`
           : `${names.join(", ")}${extraCount > 0 ? ` e altre ${extraCount}` : ""} sono in attesa di verifica.`;
 
-      const notification = new Notification("Controlla le abitudini di oggi", {
-        body,
-        tag: `habit-reminder-${dateKey}`,
-      });
-
-      notification.onclick = () => {
-        window.focus();
-        window.location.hash = "oggi";
-        notification.close();
-      };
-
       acknowledge(reminderIds, dateKey);
       if (activeReminderIds.length > 0) {
         writeActiveIds(dateKey, []);
       }
+      void showHabitReminderNotification(body, dateKey);
       return;
     }
 
@@ -305,7 +322,7 @@ export function HabitReminderBanner({ occurrences }: HabitReminderBannerProps) {
         <div className="min-w-0 flex-1 space-y-1">
           <p className="text-sm font-semibold text-foreground">{title}</p>
           <p className="text-sm leading-6 text-muted-text">
-            {description} I promemoria funzionano quando l&apos;app è aperta o installata.
+            {description} I promemoria funzionano quando l&apos;app è aperta.
           </p>
           <div className="flex flex-wrap gap-2 pt-1">
             <Button asChild size="sm" className="h-9 rounded-full px-3">
