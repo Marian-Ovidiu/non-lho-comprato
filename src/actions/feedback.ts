@@ -2,6 +2,7 @@
 
 import { prisma } from "@/src/lib/prisma";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
+import { ensureAppUserForAuthUser } from "@/src/lib/auth/provisioning";
 import { getCurrentWorkspaceId } from "@/src/lib/workspace-context";
 import { validateFeedback } from "@/src/features/feedback/validation";
 
@@ -45,8 +46,12 @@ export async function submitFeedback(
   let workspaceId: string | null = null;
 
   try {
-    const user = await getAuthenticatedUser();
-    userId = user?.id ?? null;
+    const authenticatedUser = await getAuthenticatedUser();
+    const appUser = authenticatedUser
+      ? await ensureAppUserForAuthUser(authenticatedUser)
+      : null;
+
+    userId = appUser?.id ?? null;
   } catch {
     // auth context unavailable — feedback still accepted anonymously
   }
