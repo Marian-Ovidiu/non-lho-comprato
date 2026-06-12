@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { getDashboardSummary } from "@/src/actions/entries";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import {
@@ -11,6 +13,8 @@ import {
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
+
+const DEVELOPER_EMAIL = "h.marian914@gmail.com";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +103,16 @@ export default async function MorePage() {
         workspaceSection={<CraftedMoreWorkspaceTools />}
         appSection={<CraftedMoreAppTools />}
       />
+      {authUser?.email === DEVELOPER_EMAIL ? (
+        <div className="px-5 pb-4 pt-2">
+          <Link
+            href="/debug"
+            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+          >
+            Debug app
+          </Link>
+        </div>
+      ) : null}
     </main>
   );
 }

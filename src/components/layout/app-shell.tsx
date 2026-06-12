@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CraftedBottomBar } from "@/src/components/layout/crafted-bottom-bar";
 import { CraftedMasthead } from "@/src/components/layout/crafted-masthead";
+import { FeedbackButton } from "@/src/components/feedback/feedback-button";
 import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-reminder-on-open";
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
@@ -264,6 +265,7 @@ export function AppShell({
         </PullToRefresh>
 
         <CraftedBottomBar workspace={workspace} currentUserId={currentUserId} />
+        <FeedbackButton />
       </div>
     </ToastProvider>
   );

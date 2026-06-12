@@ -424,6 +424,70 @@ Completion notes (Phase 7 — Form logic clarity):
 - `npm run prisma:validate` not run because schema was not touched.
 - Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (112/112 pass), `npm run build` ✓.
 
+## Phase 8 — Lightweight feedback collection (beta debugging)
+
+Status: `[x]`
+
+Output required:
+
+- Add `Feedback` Prisma model.
+- Add `submitFeedback` server action.
+- Add floating feedback button + dialog component.
+- Mount in authenticated app shell.
+- Add validation tests.
+- Add `docs/product-ready/08_FEEDBACK_BETA_DEBUGGING_NOTES.md`.
+
+Rules:
+
+- No metric formulas changed.
+- No dashboard/stats/reports/export logic changed.
+- No auth behavior changed.
+- No external services added.
+- No sensitive financial details collected.
+
+Completion notes (Phase 8 — Lightweight feedback collection):
+
+- Added `Feedback` model to `prisma/schema.prisma` with named relations `"FeedbackUser"` and `"FeedbackWorkspace"` (required because both User and Workspace have multiple pre-existing named relations). Back-references added to `User.feedbacks` and `Workspace.feedbacks`.
+- Migration: `prisma/migrations/20260612100000_add_feedback/migration.sql`.
+- Validation module: `src/features/feedback/validation.ts` — pure, no React dependency, testable.
+- Tests: `src/features/feedback/validation.test.ts` — 10 tests covering all boundary conditions.
+- Server action: `src/actions/feedback.ts` — `submitFeedback(prev, formData)`. Auth/workspace context read silently; feedback accepted even if anonymous.
+- UI: `src/components/feedback/feedback-button.tsx` — floating `PenLine` button, Dialog with pill type selector, textarea, success/error states, 1.4 s auto-close on success.
+- Mounted in `src/components/layout/app-shell.tsx` — only rendered for authenticated users.
+- Context collected: pathname, userAgent, viewport, timezone, locale, displayMode (client-side hidden fields) + userId, workspaceId (server-side, optional).
+- Intentionally excluded: entry data, financial details, localStorage, screenshots.
+- Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓, `npm run build` ✓.
+
+## Phase 9 — Private debug / app health page
+
+Status: `[x]`
+
+Output required:
+
+- Add `/debug` server page, gated to `h.marian914@gmail.com`.
+- Show session, workspace, environment, browser/PWA, recent feedback.
+- Add `docs/product-ready/09_PRIVATE_DEBUG_PAGE_NOTES.md`.
+
+Rules:
+
+- No metric formulas changed.
+- No dashboard/stats/reports/export changed.
+- No create/edit form logic changed.
+- No auth behavior changed beyond gating this route.
+- No workspace behavior changed.
+- No secrets exposed.
+- No raw financial data exposed.
+
+Completion notes (Phase 9 — Private debug page):
+
+- Access control: `getAuthenticatedUser()` + exact email match `"h.marian914@gmail.com"` → `notFound()` for all others. No role tables, no schema changes.
+- Server data module: `src/lib/debug-page-data.ts` — session, workspace (id/name/kind/role/memberCount), environment (NODE_ENV/VERCEL_ENV/version/commitSha/booleans for DB/Sentry/PostHog), recent 20 feedback rows.
+- Client component: `src/components/debug/debug-browser-info.tsx` — `DebugBrowserInfo` reads browser state in `useEffect` (pathname, viewport, displayMode, locale, timezone, online, SW controller/count, local time). `DebugTable` component shared between server and client sections.
+- Page: `app/debug/page.tsx` — six sections: Sessione, Workspace, Ambiente, Browser/PWA, Feedback recenti, Note sicurezza.
+- Navigation: developer-only `"Debug app"` link added at bottom of `app/more/page.tsx` when authenticated email matches `DEVELOPER_EMAIL`.
+- No new DB schema changes. No new migration.
+- Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓, `npm run build` ✓.
+
 ## Deferred decisions
 
 These must be resolved during or after Phase 1 before implementation if the existing model is ambiguous:

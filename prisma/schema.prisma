@@ -213,6 +213,7 @@ model User {
   paidEntries          Entry[]             @relation("EntryPaidBy")
   beneficiaryEntries   EntryBeneficiary[]
   targetHabits         Habit[]             @relation("HabitTargetUser")
+  feedbacks            Feedback[]          @relation("FeedbackUser")
 }
 
 model Workspace {
@@ -228,10 +229,35 @@ model Workspace {
   habits       Habit[]
   goals        Goal[]
   quickPresets QuickPreset[]
+  feedbacks    Feedback[]        @relation("FeedbackWorkspace")
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
   @@index([ownerUserId])
+}
+
+model Feedback {
+  id          String    @id @default(cuid())
+  userId      String?
+  workspaceId String?
+  type        String
+  message     String
+  route       String?
+  userAgent   String?
+  viewport    String?
+  timezone    String?
+  locale      String?
+  displayMode String?
+  appVersion  String?
+  createdAt   DateTime  @default(now())
+
+  user      User?      @relation("FeedbackUser", fields: [userId], references: [id], onDelete: SetNull)
+  workspace Workspace? @relation("FeedbackWorkspace", fields: [workspaceId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([createdAt])
+  @@index([type])
 }
 
 model WorkspaceMember {
