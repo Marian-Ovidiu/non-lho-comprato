@@ -51,7 +51,10 @@ export async function updateSupabaseSession(request: NextRequest) {
 
   const isPublicRoute =
     pathname === "/" ||
-    pathname === "/login";
+    pathname === "/login" ||
+    pathname === "/privacy" ||
+    pathname === "/delete-account" ||
+    pathname === "/account-deleted";
 
   // The Supabase client refreshes expired tokens during `getUser()`. We must
   // write the refreshed cookies onto BOTH the forwarded request (so the

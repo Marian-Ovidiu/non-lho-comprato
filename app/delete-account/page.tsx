@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { CraftedIcon, Label, Rule, Serif } from "@/components/crafted";
 
-const supportEmail = "support@example.com"; // TODO: sostituire con la mail reale del progetto.
+const supportEmail = "h.marian914@gmail.com";
 
 export default function PublicDeleteAccountPage() {
   return (
