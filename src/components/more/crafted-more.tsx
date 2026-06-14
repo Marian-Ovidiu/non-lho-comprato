@@ -159,6 +159,17 @@ export function CraftedMore({
 
       {isAuthenticated ? (
         <>
+          <Rule />
+          <CraftedMoreSection title="Account">
+            <div className="border-y border-line">
+              <CraftedMoreRow
+                href="/account/delete"
+                label="Elimina account"
+                detail="Cancella account e dati associati"
+                icon="del"
+              />
+            </div>
+          </CraftedMoreSection>
           <Rule className="mt-5" />
           <form action={signOutAction} className="px-5 py-5">
             <button
