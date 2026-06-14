@@ -20,7 +20,7 @@ export function CraftedMonthlyReportHeader({
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <section className="px-5 pt-5 pb-4">
+      <section className="px-[var(--sp-page-x)] pb-4 pt-[var(--sp-section-y)]">
         <Label className="mb-4 block">Report — {monthLabel.toLowerCase()}</Label>
         <CraftedMonthSelector months={months} selectedMonth={selectedMonth} />
       </section>
@@ -28,7 +28,7 @@ export function CraftedMonthlyReportHeader({
 
       {report.hasData ? (
         <>
-          <section className="px-5 py-6">
+          <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
             <Label className="mb-3 block">Speso nel mese</Label>
             <div className="flex items-start gap-1.5">
               <Mono className="text-[clamp(2.5rem,12vw,3.75rem)] font-semibold leading-[0.85] tracking-[-0.05em]">
@@ -38,8 +38,9 @@ export function CraftedMonthlyReportHeader({
             </div>
           </section>
           <details>
-            <summary className="cursor-pointer list-none px-5 py-3 font-num text-[10px] uppercase tracking-[0.22em] text-ink-3 hover:text-foreground [&::-webkit-details-marker]:hidden">
-              Riepilogo del mese
+            <summary className="flex cursor-pointer list-none items-center justify-between border-t border-line-soft px-[var(--sp-page-x)] py-[var(--sp-row-y)] font-num text-[10px] uppercase tracking-[0.22em] text-ink-3 hover:text-foreground [&::-webkit-details-marker]:hidden">
+              <span>Riepilogo del mese</span>
+              <span className="text-sm leading-none text-ink-3" aria-hidden="true">⌄</span>
             </summary>
             <StatTrio
               items={[
@@ -62,7 +63,7 @@ export function CraftedMonthlyReportHeader({
           <Rule />
         </>
       ) : (
-        <section className="px-5 py-10 text-center">
+        <section className="px-[var(--sp-page-x)] py-16 text-center">
           <Serif className="text-lg text-muted-foreground">Nessun report disponibile.</Serif>
           <p className="mt-2 text-sm text-ink-3">
             Appena ci saranno movimenti nel mese selezionato, il riepilogo comparirà qui.

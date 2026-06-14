@@ -12,7 +12,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label as CraftedLabel, Rule, Serif } from "@/components/crafted";
@@ -28,6 +27,12 @@ import {
 } from "@/src/actions/categories";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
+
+const CATEGORY_INPUT_CLASS =
+  "h-10 rounded-[var(--r-control)] border-line bg-surface-muted px-3 text-sm focus-visible:ring-2 focus-visible:ring-ring/50";
+
+const CATEGORY_BUTTON_CLASS =
+  "rounded-[var(--r-cta)] border-line px-4";
 
 function usageSummary(item: CategoryManagementItem): string {
   const parts: string[] = [];
@@ -70,11 +75,12 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-3 py-3.5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 py-[var(--sp-row-y)]">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="edit-cat-name" className="text-xs font-medium text-muted-foreground">Nome</label>
+        <label htmlFor="edit-cat-name" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Nome</label>
         <Input
           id="edit-cat-name"
+          className={CATEGORY_INPUT_CLASS}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nome categoria"
@@ -85,18 +91,20 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="edit-cat-icon" className="text-xs font-medium text-muted-foreground">Icona</label>
+          <label htmlFor="edit-cat-icon" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Icona</label>
           <Input
             id="edit-cat-icon"
+            className={CATEGORY_INPUT_CLASS}
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
             placeholder="es. coffee"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="edit-cat-color" className="text-xs font-medium text-muted-foreground">Colore</label>
+          <label htmlFor="edit-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Colore</label>
           <Input
             id="edit-cat-color"
+            className={CATEGORY_INPUT_CLASS}
             value={color}
             onChange={(e) => setColor(e.target.value)}
             placeholder="es. #a3e635"
@@ -105,7 +113,7 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
       </div>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       <div className="flex items-center gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button type="submit" size="sm" disabled={isPending} className={CATEGORY_BUTTON_CLASS}>
           {isPending ? <Loader2 className="animate-spin" aria-hidden /> : null}
           Salva modifiche
         </Button>
@@ -187,19 +195,21 @@ function CategoryRow({
 
   return (
     <div className={isPending ? "pointer-events-none opacity-60" : undefined}>
-      <div className="flex flex-col gap-2 py-3.5 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex flex-col gap-2 py-[var(--sp-row-y)] sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[15px] font-[450]">{category.name}</span>
-            <Badge variant={category.isDefault ? "secondary" : "outline"}>
+            <span className="rounded-full border border-line px-[9px] py-[3px] font-num text-[9.5px] uppercase leading-none tracking-[0.12em] text-ink-3">
               {category.isDefault ? "Default" : "Personalizzata"}
-            </Badge>
+            </span>
             {isArchived ? (
-              <Badge variant="destructive">Archiviata</Badge>
+              <span className="rounded-full border border-warm/25 bg-warm/5 px-[9px] py-[3px] font-num text-[9.5px] uppercase leading-none tracking-[0.12em] text-warm">
+                Archiviata
+              </span>
             ) : null}
           </div>
           <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5">
-            <span className="font-mono text-xs text-ink-3">{category.slug}</span>
+            <span className="font-mono text-xs leading-5 text-ink-3">{category.slug}</span>
             {counts ? (
               <span className="text-xs text-ink-3">{counts}</span>
             ) : null}
@@ -222,7 +232,7 @@ function CategoryRow({
               onClick={() => onEditToggle(category.id)}
               disabled={isPending}
               aria-label={`Modifica categoria ${category.name}`}
-              className="inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               <Pencil className="size-3.5" aria-hidden />
               Modifica
@@ -234,7 +244,7 @@ function CategoryRow({
               onClick={handleArchive}
               disabled={isPending}
               aria-label={`Archivia categoria ${category.name}`}
-              className="inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               {isPending ? (
                 <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -249,7 +259,7 @@ function CategoryRow({
               onClick={handleRestore}
               disabled={isPending}
               aria-label={`Ripristina categoria ${category.name}`}
-              className="inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               {isPending ? (
                 <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -264,7 +274,7 @@ function CategoryRow({
             onClick={handleDelete}
             disabled={isPending}
             aria-label={`Elimina categoria ${category.name}`}
-            className="inline-flex items-center gap-1 text-[13px] text-destructive underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 text-[13px] text-destructive underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
           >
             {isPending ? (
               <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -316,13 +326,14 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
   return (
     <form
       onSubmit={handleSubmit}
-      className="flex flex-col gap-3 border-y border-line py-4"
+      className="flex flex-col gap-3 border-y border-line py-[var(--sp-section-y)]"
     >
       <CraftedLabel className="block">Nuova categoria</CraftedLabel>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="create-cat-name" className="text-xs font-medium text-muted-foreground">Nome</label>
+        <label htmlFor="create-cat-name" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Nome</label>
         <Input
           id="create-cat-name"
+          className={CATEGORY_INPUT_CLASS}
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="es. Caffè, Sport, Viaggi"
@@ -333,22 +344,24 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="create-cat-icon" className="text-xs font-medium text-muted-foreground">
+          <label htmlFor="create-cat-icon" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">
             Icona (opzionale)
           </label>
           <Input
             id="create-cat-icon"
+            className={CATEGORY_INPUT_CLASS}
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
             placeholder="es. coffee"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="create-cat-color" className="text-xs font-medium text-muted-foreground">
+          <label htmlFor="create-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">
             Colore (opzionale)
           </label>
           <Input
             id="create-cat-color"
+            className={CATEGORY_INPUT_CLASS}
             value={color}
             onChange={(e) => setColor(e.target.value)}
             placeholder="es. #a3e635"
@@ -357,7 +370,7 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
       </div>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       <div className="flex items-center gap-2">
-        <Button type="submit" size="sm" disabled={isPending}>
+        <Button type="submit" size="sm" disabled={isPending} className={CATEGORY_BUTTON_CLASS}>
           {isPending ? <Loader2 className="animate-spin" aria-hidden /> : null}
           Crea categoria
         </Button>
@@ -414,7 +427,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
   return (
     <div>
       {/* Create */}
-      <section className="-mx-4 px-5 pb-4 pt-5 sm:-mx-6 lg:-mx-8">
+      <section className="-mx-4 px-[var(--sp-page-x)] pb-4 pt-5 sm:-mx-6 lg:-mx-8">
         {showCreate ? (
           <CategoryCreateForm
             onCreated={() => {
@@ -428,7 +441,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
             variant="outline"
             size="sm"
             onClick={() => setShowCreate(true)}
-            className="w-full"
+            className="w-full rounded-[var(--r-cta)] border-line"
           >
             + Crea categoria
           </Button>
@@ -438,7 +451,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
       <Rule />
 
       {/* Active */}
-      <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+      <section className="-mx-4 px-[var(--sp-page-x)] py-[var(--sp-section-y)] sm:-mx-6 lg:-mx-8">
         <CraftedLabel className="mb-4 block">Categorie attive</CraftedLabel>
         {activeCategories.length === 0 ? (
           <Serif className="text-sm text-ink-3">
@@ -465,7 +478,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
       {archivedCategories.length > 0 ? (
         <>
           <Rule />
-          <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+          <section className="-mx-4 px-[var(--sp-page-x)] py-[var(--sp-section-y)] sm:-mx-6 lg:-mx-8">
             <button
               type="button"
               onClick={() => setShowArchived((v) => !v)}
@@ -504,7 +517,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
       <Rule />
 
       {/* Reset */}
-      <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
+      <section className="-mx-4 px-[var(--sp-page-x)] py-[var(--sp-section-y)] sm:-mx-6 lg:-mx-8">
         <CraftedLabel className="mb-2 block">
           Ripristina categorie predefinite
         </CraftedLabel>
@@ -517,6 +530,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
           size="sm"
           onClick={handleReset}
           disabled={resetIsPending}
+          className="rounded-[var(--r-cta)] border-line"
         >
           {resetIsPending ? (
             <Loader2 className="animate-spin" aria-hidden />

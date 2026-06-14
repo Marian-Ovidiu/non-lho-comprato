@@ -216,10 +216,10 @@ export function CraftedDashboard({
 }: CraftedDashboardProps) {
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <section className="px-5 pb-5 pt-5">
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <Label className="mb-4 block">Speso questo mese</Label>
+            <Label className="mb-3 block">Speso questo mese</Label>
             <CraftedOdometer
               value={monthRealSpent}
               integerClassName="text-[clamp(3.5rem,18vw,5.25rem)] font-semibold leading-[0.84] tracking-[-0.055em]"
@@ -231,8 +231,8 @@ export function CraftedDashboard({
           <CraftedSparkline values={monthTrend} />
         </div>
 
-        <div className="mt-4 flex flex-wrap items-end justify-between gap-3">
-          <div>
+        <div className="mt-3 flex items-end justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <Label className="mb-1.5 block">{monthLabel} — impatto netto</Label>
             <Mono className="text-xl font-medium">
               <CraftedAmount value={monthSaved} />
@@ -246,7 +246,7 @@ export function CraftedDashboard({
           </div>
 
           {monthDelta !== null && monthDelta !== 0 ? (
-            <span className="text-[12.5px] text-muted-foreground">
+            <span className="shrink-0 rounded-full border border-line px-[9px] py-[3px] text-right text-[11.5px] text-muted-foreground">
               <Mono>
                 <CraftedAmount value={Math.abs(monthDelta)} />
               </Mono>
@@ -255,7 +255,7 @@ export function CraftedDashboard({
           ) : null}
         </div>
 
-        <p className="mt-3 text-[22px] leading-[1.15]">
+        <p className="mt-[var(--sp-stack)] text-[22px] leading-[1.15]">
           <Serif className="text-muted-foreground">la spesa reale </Serif>
           <Serif>viene prima.</Serif>
         </p>
@@ -287,14 +287,14 @@ export function CraftedDashboard({
         ]}
       />
 
-      <div className="px-5 pb-6 pt-6">
+      <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <DashboardQuickActions />
       </div>
       <Rule />
 
       {coupleBalance.supported && coupleBalance.amount !== 0 ? (
         <>
-          <div className="px-5 py-5">
+          <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
             <Label className="mb-2 block">Bilancio coppia</Label>
             <Mono className="text-xl font-medium">
               {formatCraftedCompact(Math.abs(coupleBalance.amount))}
@@ -453,7 +453,7 @@ export function CraftedDashboard({
       </div>
 
       {recentEntries.length > 0 ? (
-        <div className="px-5 pb-6">
+        <div className="px-[var(--sp-page-x)] pb-6">
           {recentEntries.map((entry, index) => {
             const meta = getRecentEntryMeta(entry);
 
@@ -461,7 +461,7 @@ export function CraftedDashboard({
               <div key={entry.id}>
                 <Link
                   href={`/entries/${entry.id}/edit`}
-                  className="flex items-center gap-4 py-3.5 transition-opacity hover:opacity-80"
+                  className="flex min-h-12 items-center gap-4 py-[var(--sp-row-y)] transition-opacity hover:opacity-80"
                 >
                   <CraftedIcon
                     name={getCategoryCraftedIcon(entry.category)}
@@ -470,14 +470,14 @@ export function CraftedDashboard({
                   />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-[450]">{entry.title}</p>
-                    <Mono className="mt-0.5 block text-[11px] tracking-[0.02em] text-ink-3">
+                    <Mono className="mt-0.5 block text-[11px] leading-4 tracking-[0.02em] text-ink-3">
                       {formatEntryMeta(entry.date, entry.category.name)}
                     </Mono>
                     {meta ? (
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
                         <span
                           className={cn(
-                            "rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em]",
+                            "rounded-full border px-[9px] py-[3px] text-[10px] font-medium uppercase leading-none tracking-[0.12em]",
                             meta.tone === "accent"
                               ? "border-accent/30 text-accent"
                               : "border-border text-foreground",
@@ -487,7 +487,7 @@ export function CraftedDashboard({
                         </span>
                         <Mono
                           className={cn(
-                            "text-[11px]",
+                            "basis-full text-[11px] leading-4 sm:basis-auto",
                             meta.tone === "accent" ? "text-accent" : "text-ink-3",
                           )}
                         >
@@ -498,7 +498,7 @@ export function CraftedDashboard({
                   </div>
                   <Mono className="shrink-0 text-[15px] font-medium">
                     {formatCraftedEntryAmount(entry.realCost)}
-                    <span className="text-[11px] text-accent">€</span>
+                    <span className="align-baseline text-[11px] text-accent">€</span>
                   </Mono>
                 </Link>
                 {index < recentEntries.length - 1 ? <Rule soft /> : null}
@@ -506,7 +506,7 @@ export function CraftedDashboard({
             );
           })}
           <div className="pt-4">
-            <Button asChild variant="outline" className="h-10 rounded-2xl border-line px-4">
+            <Button asChild variant="outline" className="h-10 rounded-[var(--r-cta)] border-line px-4">
               <Link href="/entries">Vedi tutti i movimenti</Link>
             </Button>
           </div>
@@ -521,8 +521,8 @@ export function CraftedDashboard({
       ) : null}
 
       {recentEntries.length > 0 ? (
-        <div className="border-t border-line px-5 py-5">
-          <Button asChild className="h-11 w-full rounded-2xl">
+        <div className="border-t border-line px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+          <Button asChild className="h-11 w-full rounded-[var(--r-cta)]">
             <Link href="/entries/new">Aggiungi movimento</Link>
           </Button>
         </div>

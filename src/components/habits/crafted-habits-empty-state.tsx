@@ -12,7 +12,7 @@ const habitIdeas = [
 
 export function CraftedHabitsEmptyState() {
   return (
-    <section className="-mx-4 px-5 py-8 text-center sm:-mx-6 lg:-mx-8">
+    <section className="-mx-4 px-[var(--sp-page-x)] py-16 text-center sm:-mx-6 lg:-mx-8">
       <Serif className="text-[22px] leading-snug text-muted-foreground">
         Le abitudini tengono il ritmo.
       </Serif>
@@ -35,7 +35,7 @@ export function CraftedHabitsEmptyState() {
 
       <Link
         href="#nuova-abitudine"
-        className="mt-6 inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
+        className="mt-6 inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] bg-accent text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
       >
         Crea la prima abitudine
         <Plus className="size-4" aria-hidden="true" />

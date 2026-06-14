@@ -309,7 +309,7 @@ export function CraftedEntryEditForm({
         {state.message ? (
           <div
             className={cn(
-              "mx-5 my-4 border px-4 py-3 text-sm",
+              "mx-5 my-4 rounded-[var(--r-control)] border px-4 py-3 text-sm",
               state.success
                 ? "border-green/30 text-green"
                 : "border-destructive/30 text-destructive",
@@ -416,7 +416,7 @@ export function CraftedEntryEditForm({
         </div>
 
         <div className="px-5 pb-3">
-          <label htmlFor="entry-title" className="flex items-center justify-between gap-4 border-y border-line py-3">
+          <label htmlFor="entry-title" className="flex items-center justify-between gap-4 border-y border-line py-[var(--sp-field-y)]">
             <input
               id="entry-title"
               name="title"
@@ -433,7 +433,7 @@ export function CraftedEntryEditForm({
         </div>
 
         <div className="space-y-3 px-5 pb-3">
-          <div className="border-y border-line py-3">
+          <div className="border-y border-line py-[var(--sp-field-y)]">
             <label className="flex items-center justify-between gap-4">
               <input
                 type="text"
@@ -485,7 +485,7 @@ export function CraftedEntryEditForm({
               </button>
 
               {showComparison ? (
-                <div className="border-y border-line py-3">
+                <div className="border-y border-line py-[var(--sp-field-y)]">
                   <label className="flex items-center justify-between gap-4">
                     <input
                       type="text"
@@ -504,7 +504,7 @@ export function CraftedEntryEditForm({
                     Usalo quando hai scelto un&apos;opzione più economica.
                   </p>
                   {showLargeComparisonWarning ? (
-                    <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    <p className="mt-2 rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
                       Questo confronto pesa molto sulle statistiche.
                     </p>
                   ) : null}
@@ -545,7 +545,7 @@ export function CraftedEntryEditForm({
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="w-full bg-transparent py-2 text-sm outline-none"
+                  className="w-full bg-transparent py-[var(--sp-stack-sm)] text-sm outline-none"
                   aria-describedby={state.errors?.date ? "edit-date-error" : undefined}
                 />
                 <FormFieldError id="edit-date-error" message={state.errors?.date} />
@@ -559,7 +559,7 @@ export function CraftedEntryEditForm({
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
                   rows={2}
-                  className="w-full resize-none bg-transparent py-2 text-sm outline-none placeholder:text-ink-3/70"
+                  className="w-full resize-none bg-transparent py-[var(--sp-stack-sm)] text-sm outline-none placeholder:text-ink-3/70"
                   placeholder="Nota opzionale"
                 />
               </div>
@@ -592,7 +592,7 @@ export function CraftedEntryEditForm({
               members.length === 0
             }
             className={cn(
-              "flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl text-[15.5px] font-bold",
+              "flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] text-[15.5px] font-bold",
               "bg-accent text-accent-foreground transition-opacity disabled:opacity-50",
             )}
           >
@@ -645,7 +645,7 @@ export function CraftedEntryEditForm({
               type="button"
               disabled={isDeleting}
               onClick={handleDelete}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-destructive/40 px-5 py-2.5 text-sm font-semibold text-destructive transition-opacity hover:opacity-80 disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-[var(--r-cta)] border border-destructive/40 px-5 py-2.5 text-sm font-semibold text-destructive transition-opacity hover:opacity-80 disabled:opacity-50"
             >
               {isDeleting ? (
                 <>

@@ -49,13 +49,13 @@ export function DashboardQuickActions() {
               key={action.href}
               href={action.href}
               className={cn(
-                "group flex min-h-24 flex-col justify-between rounded-3xl border border-border bg-surface p-4 shadow-sm transition-colors",
-                "hover:border-border/80 hover:bg-surface-muted active:translate-y-px",
+                "group flex min-h-24 flex-col justify-between rounded-[var(--r-card)] border border-border bg-surface p-4 shadow-none transition-colors",
+                "hover:border-border/80 hover:bg-surface-muted active:scale-[var(--state-press)]",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
               )}
               aria-label={action.title}
             >
-              <span className="flex size-10 items-center justify-center rounded-2xl bg-accent text-background transition-colors group-hover:bg-foreground group-hover:text-background dark:bg-surface-muted dark:text-foreground">
+              <span className="flex size-10 items-center justify-center rounded-[var(--r-control)] bg-accent text-background transition-colors group-hover:bg-foreground group-hover:text-background dark:bg-surface-muted dark:text-foreground">
                 <Icon className="size-5" aria-hidden="true" />
               </span>
 

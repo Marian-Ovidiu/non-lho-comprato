@@ -5,7 +5,7 @@ import { Label, Serif } from "@/components/crafted";
 
 export function CraftedStatsEmptyState() {
   return (
-    <section className="-mx-4 px-5 py-10 text-center sm:-mx-6 lg:-mx-8">
+    <section className="-mx-4 px-[var(--sp-page-x)] py-16 text-center sm:-mx-6 lg:-mx-8">
       <Serif className="text-[22px] leading-snug text-muted-foreground">
         Ancora nessun dato.
       </Serif>
@@ -14,7 +14,7 @@ export function CraftedStatsEmptyState() {
       </p>
       <Link
         href="/entries/new"
-        className="mt-6 inline-flex h-[54px] items-center justify-center gap-2 rounded-2xl bg-accent px-6 text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
+        className="mt-6 inline-flex h-[54px] items-center justify-center gap-2 rounded-[var(--r-cta)] bg-accent px-6 text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
       >
         Aggiungi il primo movimento
         <ArrowRight className="size-4" aria-hidden="true" />

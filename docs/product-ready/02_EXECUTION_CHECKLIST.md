@@ -2,9 +2,9 @@
 
 ## Current recommended next step
 
-**Phase 20 — Design / visual polish pass.**
+**Phase 20 — Design / visual polish pass is complete.**
 
-All metric, wording, form, shared-balance, category, and accessibility work is complete (Phases 1–18). The product is at 9/10 for private beta and 7/10 for public launch readiness. The weakest remaining dimension is visual polish. See `NEXT_STEPS.md` for the full scope and hard rules for Phase 20.
+All metric, wording, form, shared-balance, category, accessibility, and first-pass visual polish work is complete (Phases 1–20). Use `NEXT_STEPS.md` for later roadmap items and keep the Phase 20 hard rules in force for any follow-up visual work.
 
 ---
 
@@ -840,6 +840,41 @@ Completion notes (Phase 19 — Documentation cleanup):
 - No docs deleted. All historical phase notes preserved.
 - No application code, schema, or tests touched.
 - Validation: no commands required (docs-only).
+
+## Phase 20 — Design / visual polish pass
+
+Status: `[x]`
+
+Output required:
+
+- Apply the Phase 20 visual polish handoff to the real app components.
+- Scope the priority pass to dashboard hierarchy, entry row readability, bottom nav/app shell, create/edit form polish, and `/workspace/categories`.
+- Apply only a light consistency pass to quick-add, stats, monthly report, goals/habits, feedback dialog, and empty states.
+- Add semantic design tokens from `phase20/phase20.css` into the existing styling system.
+- Create `docs/product-ready/20_DESIGN_POLISH_IMPLEMENTATION_NOTES.md`.
+
+Rules:
+
+- No database schema, Prisma model, or migration changes.
+- No server action changes.
+- No metric formula, financial calculation, shared-balance, category behavior, or category server-action changes.
+- Preserve Phase 18 accessibility semantics.
+- Preserve Phase 14 information architecture.
+- No new dependencies, features, pages, data flows, or renamed core concepts.
+
+Completion notes (Phase 20):
+
+- Added Phase 20 semantic spacing/radius/elevation/state tokens in `app/globals.css`.
+- Dashboard: tightened hero rhythm, changed the month delta to a right-aligned muted pill, improved recent-entry row readability, unified CTA radius, and removed quick-action card shadows.
+- Entry rows: standardized row hit area, badge padding/weight, comparison detail wrapping, metadata line-height, and euro baseline alignment.
+- Bottom nav: unified item radius, locked active-dot offset, enlarged quick-add FAB target to 40px, and adjusted safe-area baseline.
+- Create/edit entry forms: standardized field rhythm, replaced off-palette amber large-comparison warning with an in-palette warm note, and unified CTA radius.
+- `/workspace/categories`: restyled inputs, badges, action links, row rhythm, and buttons without changing create/edit/archive/restore/delete/reset flows.
+- Light pass: quick-add sheet now matches the editorial intent-control and preset-card dialect; Stats/report collapsed details gained clearer affordance while staying collapsed; goals and empty states use shared rhythm/CTA radius; feedback dialog fields and CTA match Phase 20 tokens.
+- Toast and button primitive elevation adjusted to respect the Phase 20 overlay-only shadow rule.
+- No schema, Prisma, migration, server action, metric, shared-balance, or category action files changed.
+- Accessibility semantics preserved: labels, `aria-describedby`, `aria-pressed`, contextual `aria-label`, `aria-current`, `aria-invalid`, and focus-visible states remain in touched surfaces.
+- Validation: `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (173/173 pass), `npm run build` ✓.
 
 ## Deferred decisions
 

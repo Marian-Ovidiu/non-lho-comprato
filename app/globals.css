@@ -121,6 +121,23 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+  --sp-page-x: 20px;
+  --sp-section-y: 22px;
+  --sp-row-y: 14px;
+  --sp-field-y: 14px;
+  --sp-stack: 12px;
+  --sp-stack-sm: 8px;
+  --sp-inline: 10px;
+  --r-chip: 12px;
+  --r-control: 14px;
+  --r-cta: 16px;
+  --r-card: 18px;
+  --r-sheet: 28px;
+  --shadow-none: none;
+  --shadow-sheet: 0 -24px 70px rgba(0, 0, 0, 0.42);
+  --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.34);
+  --state-press: 0.965;
+  --state-hover: rgba(244, 241, 234, 0.04);
 }
 
 .dark {

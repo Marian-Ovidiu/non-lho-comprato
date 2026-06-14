@@ -385,7 +385,7 @@ export function CraftedEntryForm({
 
         {state.message && !state.success ? (
           <div
-            className="mx-5 mb-3 border border-destructive/30 px-4 py-3 text-sm text-destructive"
+            className="mx-5 mb-3 rounded-[var(--r-control)] border border-destructive/30 px-4 py-3 text-sm text-destructive"
             role="alert"
             aria-live="polite"
           >
@@ -534,7 +534,7 @@ export function CraftedEntryForm({
         </div>
 
         <div className="px-5 pb-3">
-          <label htmlFor="entry-title" className="flex items-center justify-between gap-4 border-y border-line py-3">
+          <label htmlFor="entry-title" className="flex items-center justify-between gap-4 border-y border-line py-[var(--sp-field-y)]">
             <input
               id="entry-title"
               type="text"
@@ -553,7 +553,7 @@ export function CraftedEntryForm({
         </div>
 
         <div className="space-y-3 px-5 pb-3">
-          <div className="border-y border-line py-3">
+          <div className="border-y border-line py-[var(--sp-field-y)]">
             <label className="flex items-center justify-between gap-4">
               <input
                 type="text"
@@ -596,7 +596,7 @@ export function CraftedEntryForm({
               </button>
 
               {showComparison ? (
-                <div className="border-y border-line py-3">
+                <div className="border-y border-line py-[var(--sp-field-y)]">
                   <label className="flex items-center justify-between gap-4">
                     <input
                       type="text"
@@ -615,7 +615,7 @@ export function CraftedEntryForm({
                     Usalo quando hai scelto un&apos;opzione più economica.
                   </p>
                   {showLargeComparisonWarning ? (
-                    <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    <p className="mt-2 rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
                       Questo confronto pesa molto sulle statistiche.
                     </p>
                   ) : null}
@@ -659,7 +659,7 @@ export function CraftedEntryForm({
                   name="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="w-full bg-transparent py-2 text-sm text-foreground outline-none"
+                  className="w-full bg-transparent py-[var(--sp-stack-sm)] text-sm text-foreground outline-none"
                   aria-describedby={state.errors?.date ? "entry-date-error" : undefined}
                 />
                 <FormFieldError id="entry-date-error" message={state.errors?.date} className="text-xs" />
@@ -674,7 +674,7 @@ export function CraftedEntryForm({
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Pasta al tonno invece di delivery"
                   rows={2}
-                  className="w-full resize-none bg-transparent py-2 text-sm text-foreground outline-none placeholder:text-ink-3/70"
+                  className="w-full resize-none bg-transparent py-[var(--sp-stack-sm)] text-sm text-foreground outline-none placeholder:text-ink-3/70"
                 />
               </div>
 
@@ -699,7 +699,7 @@ export function CraftedEntryForm({
             type="submit"
             disabled={!canSubmit}
             className={cn(
-              "flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl text-[15.5px] font-bold",
+              "flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] text-[15.5px] font-bold",
               "transition-[opacity,transform,background-color] duration-200",
               canSubmit
                 ? "bg-accent text-accent-foreground active:scale-[0.98] active:opacity-90"

@@ -96,7 +96,7 @@ function FeaturedGoal({ goal }: { goal: CraftedGoalRow }) {
   const target = formatCraftedCompact(goal.targetAmount);
 
   return (
-    <section className="px-5 py-6">
+    <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
       <div className="mb-4 flex items-center justify-between">
         <Label>La più vicina</Label>
         <CraftedIcon name={goal.icon} size={20} className="text-accent" />
@@ -126,7 +126,7 @@ function FeaturedGoal({ goal }: { goal: CraftedGoalRow }) {
 
 function GoalListRow({ goal }: { goal: CraftedGoalRow }) {
   return (
-    <div className="py-3">
+    <div className="py-[var(--sp-row-y)]">
       <div className="mb-2.5 flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-3">
           <CraftedIcon name={goal.icon} size={18} className="shrink-0 text-muted-foreground" />
@@ -156,7 +156,7 @@ export function CraftedGoals({
 }: CraftedGoalsProps) {
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <section className="px-5 pb-1 pt-5">
+      <section className="px-[var(--sp-page-x)] pb-1 pt-[var(--sp-section-y)]">
         <Serif className="block text-[13px] text-ink-3">
           Le mete avanzano con l&apos;impatto positivo: cose non comprate e confronti dove hai speso meno del riferimento.
         </Serif>
@@ -171,7 +171,7 @@ export function CraftedGoals({
 
       {!featured && !hasActiveGoals && (paused.length > 0 || achieved.length > 0) ? (
         <>
-          <section className="px-5 py-5">
+          <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
             <Label className="mb-2 block">Obiettivi attivi</Label>
             <Serif className="text-sm text-ink-3">
               Nessuna meta attiva al momento. Riattivane una per tornare a raccogliere

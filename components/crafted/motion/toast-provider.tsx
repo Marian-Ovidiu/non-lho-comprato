@@ -76,7 +76,7 @@ function ToastCard({
     <div
       role={toast.tone === "error" ? "alert" : "status"}
       className={cn(
-        "pointer-events-auto flex w-full items-start gap-3 rounded-[1.35rem] border border-line bg-surface/95 p-3.5 text-sm shadow-[0_18px_50px_rgba(0,0,0,0.16)] backdrop-blur-xl",
+        "pointer-events-auto flex w-full items-start gap-3 rounded-[1.35rem] border border-line bg-surface/95 p-3.5 text-sm shadow-[var(--shadow-pop)] backdrop-blur-xl",
         "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2",
         toast.tone === "success" && "border-accent/35",
         toast.tone === "error" && "border-destructive/35",

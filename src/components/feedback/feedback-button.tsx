@@ -72,7 +72,7 @@ export function FeedbackButton() {
           type="button"
           aria-label="Lascia un feedback"
           className={cn(
-            "fixed right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full shadow-lg ring-1 ring-border/50",
+            "fixed right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full shadow-[var(--shadow-pop)] ring-1 ring-border/50",
             "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-6 md:right-6",
             "bg-foreground text-background transition-opacity hover:opacity-90 active:scale-95",
             "motion-reduce:transition-none",
@@ -82,7 +82,7 @@ export function FeedbackButton() {
         </button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm rounded-[22px] bg-surface shadow-[var(--shadow-pop)]">
         <DialogHeader>
           <DialogTitle>Lascia un feedback</DialogTitle>
           <DialogDescription>
@@ -113,7 +113,7 @@ export function FeedbackButton() {
                     onClick={() => setSelectedType(value)}
                     aria-pressed={selectedType === value}
                     className={cn(
-                      "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                      "rounded-full border px-[9px] py-[3px] text-xs font-medium transition-colors",
                       selectedType === value
                         ? "border-foreground bg-foreground text-background"
                         : "border-border bg-transparent text-muted-foreground hover:border-foreground/40 hover:text-foreground",
@@ -139,6 +139,7 @@ export function FeedbackButton() {
                 maxLength={2000}
                 aria-invalid={!!state.errors?.message}
                 disabled={isPending}
+                className="rounded-[var(--r-control)] border-line bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring/50"
               />
               {state.errors?.message ? (
                 <p className="text-xs text-destructive">{state.errors.message}</p>
@@ -149,7 +150,7 @@ export function FeedbackButton() {
               <p className="text-xs text-destructive">{state.message}</p>
             ) : null}
 
-            <Button type="submit" className="w-full" disabled={isPending}>
+            <Button type="submit" className="w-full rounded-[var(--r-cta)]" disabled={isPending}>
               {isPending ? "Invio…" : "Invia feedback"}
             </Button>
           </form>

@@ -452,7 +452,7 @@ export function CraftedEntryList({
           </div>
           {!hasSearchTerm ? (
             <div className="flex justify-center">
-              <Button asChild className="h-11 rounded-2xl px-5">
+              <Button asChild className="h-11 rounded-[var(--r-cta)] px-5">
                 <Link href={newEntryHref}>Aggiungi il primo movimento</Link>
               </Button>
             </div>
@@ -532,7 +532,7 @@ export function CraftedEntryList({
           <Button
             type="button"
             variant="outline"
-            className="h-11 w-full rounded-2xl border-line"
+            className="h-11 w-full rounded-[var(--r-cta)] border-line"
             onClick={loadMore}
             disabled={isLoading}
           >

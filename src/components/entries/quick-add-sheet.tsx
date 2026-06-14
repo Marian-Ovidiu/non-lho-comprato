@@ -730,13 +730,13 @@ export function QuickAddSheet({
           size="icon"
           className={
             triggerVariant === "crafted"
-              ? "size-[38px] rounded-full border-[1.5px] border-accent bg-transparent text-accent transition-opacity active:opacity-70"
-              : "size-[52px] rounded-full bg-accent text-accent-foreground transition-[transform,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.95] active:opacity-90"
+              ? "size-10 rounded-full border-[1.5px] border-accent bg-transparent text-accent transition-opacity active:opacity-70"
+              : "size-[52px] rounded-full bg-accent text-accent-foreground transition-[transform,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] active:scale-[0.95] active:opacity-90"
           }
           style={
             triggerVariant === "crafted"
               ? undefined
-              : { boxShadow: "0 8px 24px rgba(212,255,58,0.18)" }
+              : { boxShadow: "var(--shadow-none)" }
           }
           onClick={() => trackPostHogEvent("quick_add_opened")}
         >
@@ -752,7 +752,7 @@ export function QuickAddSheet({
       <DialogContent
         showCloseButton={false}
         className={cn(
-          "inset-x-3 top-auto bottom-0 w-auto max-w-none translate-x-0 translate-y-0 overflow-x-hidden rounded-t-[1.75rem] rounded-b-none border-border bg-surface p-0 shadow-[0_-28px_80px_rgba(0,0,0,0.28)] data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4 sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl sm:rounded-b-3xl sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
+          "inset-x-3 top-auto bottom-0 w-auto max-w-none translate-x-0 translate-y-0 overflow-x-hidden rounded-t-[var(--r-sheet)] rounded-b-none border-border bg-surface p-0 shadow-[var(--shadow-sheet)] data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4 sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--r-sheet)] sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
         )}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
@@ -768,7 +768,7 @@ export function QuickAddSheet({
           <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
             <div className="flex min-w-0 items-start justify-between gap-4">
               <div className="min-w-0 flex-1 space-y-1">
-                <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
+                <p className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">
                   Aggiunta rapida
                 </p>
                 <DialogTitle className="flex items-center gap-2 text-lg tracking-tight">
@@ -779,7 +779,7 @@ export function QuickAddSheet({
                   Scorciatoie pronte e salvataggio immediato.
                 </DialogDescription>
 
-                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-border/70 bg-background/70 px-3 py-1.5">
+                <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-transparent px-3 py-1.5">
                   <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted-text">
                     {workspace.isShared ? (
                       <Users2 className="size-3.5" aria-hidden="true" />
@@ -811,15 +811,15 @@ export function QuickAddSheet({
 
           <div className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
             <div className="sm:col-span-2">
-              <div className="grid grid-cols-3 gap-1 rounded-2xl border border-border/70 bg-background p-1">
+              <div className="grid grid-cols-3 gap-2 rounded-[var(--r-control)] border border-line bg-transparent p-1">
                 <button
                   type="button"
                   onClick={() => handleIntentChange("spent")}
                   className={cn(
-                    "flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                    "flex min-h-11 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
                     quickAddIntent === "spent"
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground hover:bg-surface-muted",
+                      ? "border-accent text-foreground"
+                      : "border-transparent text-ink-3 hover:text-foreground",
                   )}
                   aria-pressed={quickAddIntent === "spent"}
                 >
@@ -830,10 +830,10 @@ export function QuickAddSheet({
                   type="button"
                   onClick={() => handleIntentChange("comparison")}
                   className={cn(
-                    "flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                    "flex min-h-11 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
                     quickAddIntent === "comparison"
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground hover:bg-surface-muted",
+                      ? "border-accent text-foreground"
+                      : "border-transparent text-ink-3 hover:text-foreground",
                   )}
                   aria-pressed={quickAddIntent === "comparison"}
                   aria-label="Ho speso e voglio confrontarlo"
@@ -847,10 +847,10 @@ export function QuickAddSheet({
                   type="button"
                   onClick={() => handleIntentChange("avoided")}
                   className={cn(
-                    "flex min-h-11 items-center justify-center gap-1.5 rounded-xl px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                    "flex min-h-11 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
                     quickAddIntent === "avoided"
-                      ? "bg-accent text-accent-foreground"
-                      : "text-foreground hover:bg-surface-muted",
+                      ? "border-accent text-foreground"
+                      : "border-transparent text-ink-3 hover:text-foreground",
                   )}
                   aria-pressed={quickAddIntent === "avoided"}
                 >
@@ -868,7 +868,7 @@ export function QuickAddSheet({
             </div>
 
             {presetsLoading ? (
-              <p className="sm:col-span-2 rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm text-muted-text">
+              <p className="sm:col-span-2 rounded-[var(--r-card)] border border-line bg-transparent px-4 py-3 text-sm text-muted-text">
                 Carico i preset salvati…
               </p>
             ) : null}
@@ -888,16 +888,16 @@ export function QuickAddSheet({
                   onClick={() => applyPreset(preset.id)}
                   aria-pressed={isActive}
                   className={cn(
-                    "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
-                    "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                    "flex min-h-20 items-start gap-3 rounded-[var(--r-card)] border px-3 py-3 text-left transition-[background-color,border-color,opacity,transform] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
+                    "hover:bg-[var(--state-hover)] active:scale-[var(--state-press)] active:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
                     presetIdentity.subtleSurfaceClassName,
                     isActive &&
-                      "border-primary/25 bg-primary/8 ring-1 ring-primary/20",
+                      "border-accent/45 bg-accent/5",
                   )}
                 >
                   <span
                     className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-2xl text-lg",
+                      "flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] text-lg",
                       presetIdentity.markerClassName,
                     )}
                   >
@@ -920,14 +920,14 @@ export function QuickAddSheet({
               type="button"
               onClick={personalize}
               className={cn(
-                "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] sm:col-span-2",
-                "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95",
+                "flex min-h-20 items-start gap-3 rounded-[var(--r-card)] border px-3 py-3 text-left transition-[background-color,border-color,opacity,transform] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] sm:col-span-2",
+                "hover:bg-[var(--state-hover)] active:scale-[var(--state-press)] active:opacity-95",
                 activePreset === "custom"
-                  ? "border-primary/25 bg-primary/8 ring-1 ring-primary/20"
+                  ? "border-accent/45 bg-accent/5"
                   : "border-border bg-background",
               )}
             >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-surface-muted text-foreground">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-foreground">
                 <SlidersHorizontal className="size-4" aria-hidden="true" />
               </span>
 
@@ -943,14 +943,14 @@ export function QuickAddSheet({
               <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-text" aria-hidden="true" />
             </button>
 
-            <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background px-4 py-3">
+            <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-card)] border border-line bg-transparent px-4 py-3">
               <span className="text-xs leading-5 text-muted-text">
                 Per creare, modificare o eliminare preset vai alla pagina dedicata.
               </span>
               <Link
                 href="/presets"
                 onClick={() => setOpen(false)}
-                className="rounded-full border border-border/70 px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-surface-muted"
+                className="rounded-full border border-line px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-surface-muted"
               >
                 Gestisci preset
               </Link>
@@ -979,7 +979,7 @@ export function QuickAddSheet({
               {state.message ? (
                 <div
                   className={cn(
-                    "rounded-2xl border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
+                    "rounded-[var(--r-control)] border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
                     state.success
                       ? "border-success/20 bg-success/10 text-success"
                       : "border-destructive/20 bg-destructive/10 text-destructive",
@@ -999,6 +999,7 @@ export function QuickAddSheet({
                 <Label htmlFor="quick-title">Titolo</Label>
                 <Input
                   id="quick-title"
+                  className="h-10 rounded-[var(--r-control)] border-line bg-surface-muted px-3 focus-visible:ring-2 focus-visible:ring-ring/50"
                   ref={titleRef}
                   name="title"
                   value={draft.title}
@@ -1032,7 +1033,7 @@ export function QuickAddSheet({
                   >
                     <SelectTrigger
                       id="quick-category"
-                      className="w-full min-w-0"
+                      className="h-10 w-full min-w-0 rounded-[var(--r-control)] border-line bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring/50"
                       aria-invalid={Boolean(state.errors?.categoryId)}
                     >
                       <SelectValue placeholder="Categoria" />
@@ -1057,6 +1058,7 @@ export function QuickAddSheet({
                   </Label>
                   <Input
                     id="quick-amount"
+                    className="h-10 rounded-[var(--r-control)] border-line bg-surface-muted px-3 focus-visible:ring-2 focus-visible:ring-ring/50"
                     type="number"
                     inputMode="decimal"
                     min="0"
@@ -1134,7 +1136,7 @@ export function QuickAddSheet({
                         date: event.target.value,
                       }));
                     }}
-                    className="w-full min-w-0 max-w-full"
+                    className="h-10 w-full min-w-0 max-w-full rounded-[var(--r-control)] border-line bg-surface-muted px-3 focus-visible:ring-2 focus-visible:ring-ring/50"
                   />
                 </div>
               </div>
@@ -1170,6 +1172,7 @@ export function QuickAddSheet({
                       </Label>
                       <Input
                         id="quick-comparisonAmount"
+                        className="h-10 rounded-[var(--r-control)] border-line bg-surface-muted px-3 focus-visible:ring-2 focus-visible:ring-ring/50"
                         type="number"
                         inputMode="decimal"
                         min="0"
@@ -1194,7 +1197,7 @@ export function QuickAddSheet({
                         Usalo quando hai scelto un&apos;opzione più economica.
                       </p>
                       {showLargeComparisonWarning ? (
-                        <p className="text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
+                        <p className="rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
                           Questo confronto pesa molto sulle statistiche.
                         </p>
                       ) : null}
@@ -1214,7 +1217,7 @@ export function QuickAddSheet({
                   ) : null}
                 </div>
               ) : (
-                <div className="rounded-2xl border border-border/70 bg-surface-muted/60 px-4 py-3 text-sm text-muted-text">
+                <div className="rounded-[var(--r-card)] border border-line bg-surface-muted/60 px-4 py-3 text-sm text-muted-text">
                   Qui registri un non comprato. Se vuoi solo segnare una spesa normale,
                   torna su <span className="font-medium text-foreground">Ho speso</span>.
                 </div>
@@ -1256,7 +1259,7 @@ export function QuickAddSheet({
             <div className="mt-4 flex flex-col gap-3 border-t border-border/70 pt-4 sm:flex-row">
               <Button
                 type="submit"
-                className="h-11 w-full px-5 sm:flex-1"
+                className="h-11 w-full rounded-[var(--r-cta)] px-5 sm:flex-1"
                 disabled={
                   pending ||
                   membersLoading ||
@@ -1273,7 +1276,7 @@ export function QuickAddSheet({
                 {pending ? "Salvataggio..." : "Salva"}
               </Button>
 
-              <Button asChild variant="outline" className="h-11 w-full sm:flex-1">
+              <Button asChild variant="outline" className="h-11 w-full rounded-[var(--r-cta)] border-line sm:flex-1">
                 <Link href={fullFormHref} onClick={() => setOpen(false)}>
                   Vai al form completo
                 </Link>

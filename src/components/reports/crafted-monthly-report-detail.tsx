@@ -168,7 +168,7 @@ function PersonBlock({
   const diff = user.differenceVsPreviousMonth;
 
   return (
-    <div className="px-5 py-[18px]">
+    <div className="px-[var(--sp-page-x)] py-[18px]">
       <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <span
@@ -456,7 +456,7 @@ export function CraftedMonthlyReportDetail({
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <section className="px-5 pb-3.5 pt-[22px]">
+      <section className="px-[var(--sp-page-x)] pb-3.5 pt-[var(--sp-section-y)]">
         <Label className="mb-3.5 block">Dettaglio</Label>
         <div className="flex gap-4 overflow-x-auto pb-0.5">
           {categoryOptions.map((option) => {
@@ -480,8 +480,8 @@ export function CraftedMonthlyReportDetail({
         </div>
       </section>
 
-      <section className="px-5 pb-[18px]">
-        <Serif className="block text-[15px] leading-[1.45] text-muted-foreground">
+      <section className="px-[var(--sp-page-x)] pb-[18px]">
+        <Serif className="block max-w-[32em] text-[15px] leading-[1.45] text-muted-foreground [text-wrap:pretty]">
           {summaryText}
         </Serif>
       </section>
@@ -489,7 +489,7 @@ export function CraftedMonthlyReportDetail({
 
       {snapshot.hasData ? (
         <>
-          <section className="px-5 pb-1 pt-[22px]">
+          <section className="px-[var(--sp-page-x)] pb-1 pt-[var(--sp-section-y)]">
             <div className="flex items-baseline justify-between gap-3">
               <Label>Per persona</Label>
               <Mono className="text-[11px] text-ink-3">

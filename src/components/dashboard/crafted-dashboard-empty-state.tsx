@@ -19,7 +19,7 @@ export function CraftedDashboardEmptyState({
   actionHref = "/entries/new",
 }: CraftedDashboardEmptyStateProps) {
   return (
-    <section className="space-y-6 px-5 pb-8 pt-2 text-center">
+    <section className="space-y-6 px-[var(--sp-page-x)] pb-8 pt-16 text-center">
       <CraftedIcon name="flame" size={36} className="mx-auto text-accent" aria-hidden="true" />
       <div className="space-y-3">
         <Serif className="text-[22px] leading-snug text-muted-foreground">{title}</Serif>
@@ -28,7 +28,7 @@ export function CraftedDashboardEmptyState({
       </div>
       <Link
         href={actionHref}
-        className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
+        className="inline-flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] bg-accent text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
       >
         {actionLabel}
         <Plus className="size-4" aria-hidden="true" />

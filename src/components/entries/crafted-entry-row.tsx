@@ -105,7 +105,7 @@ export function CraftedEntryRow({
     <div className={className}>
       <Link
         href={`/entries/${entry.id}/edit`}
-        className="nlc-press flex items-center gap-4 py-3.5 outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="nlc-press flex min-h-12 items-center gap-4 py-[var(--sp-row-y)] outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/50"
       >
         <CraftedIcon
           name={getCategoryCraftedIcon(entry.category)}
@@ -114,14 +114,14 @@ export function CraftedEntryRow({
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-[450]">{entry.title}</p>
-          <Mono className="mt-0.5 block text-[11px] tracking-[0.02em] text-ink-3">
+          <Mono className="mt-0.5 block text-[11px] leading-4 tracking-[0.02em] text-ink-3">
             {formatEntryMeta(entry.date, entry.category.name)}
           </Mono>
           {meta ? (
-            <div className="mt-1 flex flex-wrap items-center gap-2">
+            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
               <span
                 className={cn(
-                  "rounded-full border px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em]",
+                  "rounded-full border px-[9px] py-[3px] text-[10px] font-medium uppercase leading-none tracking-[0.12em]",
                   meta.tone === "accent"
                     ? "border-accent/30 text-accent"
                     : meta.tone === "muted"
@@ -133,7 +133,7 @@ export function CraftedEntryRow({
               </span>
               <Mono
                 className={cn(
-                  "text-[11px]",
+                  "basis-full text-[11px] leading-4 sm:basis-auto",
                   meta.tone === "accent" ? "text-accent" : "text-ink-3",
                 )}
               >
@@ -144,7 +144,7 @@ export function CraftedEntryRow({
         </div>
         <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
           {formatCraftedEntryAmount(entry.realCost)}
-          <span className="text-[11px] text-accent">€</span>
+          <span className="align-baseline text-[11px] text-accent">€</span>
         </Mono>
       </Link>
       {showDivider ? <Rule soft /> : null}

@@ -72,7 +72,7 @@ function CraftedCategoryBars({
         <div
           key={category.categoryId}
           className={cn(
-            "py-3",
+            "py-[var(--sp-row-y)]",
             index < categories.length - 1 && "border-b border-line-soft",
           )}
         >
@@ -173,7 +173,7 @@ export function CraftedStats({
       />
       <Rule className="mt-0" />
 
-      <section className="px-5 py-6">
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <Label className="mb-3.5 block">{hero.label}</Label>
         <CraftedOdometer
           value={hero.amount}
@@ -225,8 +225,9 @@ export function CraftedStats({
         ]}
       />
       <details>
-        <summary className="cursor-pointer list-none px-5 py-3 font-num text-[10px] uppercase tracking-[0.22em] text-ink-3 hover:text-foreground [&::-webkit-details-marker]:hidden">
-          Dettagli del periodo
+        <summary className="flex cursor-pointer list-none items-center justify-between border-t border-line-soft px-[var(--sp-page-x)] py-[var(--sp-row-y)] font-num text-[10px] uppercase tracking-[0.22em] text-ink-3 hover:text-foreground [&::-webkit-details-marker]:hidden">
+          <span>Dettagli del periodo</span>
+          <span className="text-sm leading-none text-ink-3" aria-hidden="true">⌄</span>
         </summary>
         <StatTrio
           items={[
@@ -255,7 +256,7 @@ export function CraftedStats({
       </details>
       <Rule />
 
-      <section className="px-5 pb-2">
+      <section className="px-[var(--sp-page-x)] pb-2 pt-[var(--sp-section-y)]">
         <div className="mb-3.5 flex items-baseline justify-between gap-3">
           <Label>Spesa ultimi 12 mesi</Label>
           {maxChartSpent > 0 ? (
@@ -307,7 +308,7 @@ export function CraftedStats({
 
       {initialQueen ? (
         <>
-          <section className="px-5 py-5">
+          <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
             <Label className="mb-3.5 block">
               {period === "month"
                 ? `Categoria principale di ${queenMonthLabel}`
@@ -383,7 +384,7 @@ export function CraftedStats({
                 <div
                   key={habit.habitId}
                   className={cn(
-                    "flex items-center justify-between gap-4 py-3",
+                    "flex items-center justify-between gap-4 py-[var(--sp-row-y)]",
                     index < habitStats.length - 1 && "border-b border-line-soft",
                   )}
                 >
