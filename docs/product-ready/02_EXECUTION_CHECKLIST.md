@@ -1,5 +1,13 @@
 # Execution Checklist
 
+## Current recommended next step
+
+**Phase 20 — Design / visual polish pass.**
+
+All metric, wording, form, shared-balance, category, and accessibility work is complete (Phases 1–18). The product is at 9/10 for private beta and 7/10 for public launch readiness. The weakest remaining dimension is visual polish. See `NEXT_STEPS.md` for the full scope and hard rules for Phase 20.
+
+---
+
 ## Status legend
 
 - `[ ]` Not started.
@@ -765,6 +773,73 @@ Completion notes (Phase 16C):
   - Main component: active/archived split; archived section collapsed by default with chevron toggle; reset section with `resetDefaultCategories`; `router.refresh()` after every successful action.
 - `src/components/more/crafted-more.tsx`: added `CraftedMoreRow` for `/workspace/categories` between Partecipanti and Crea workspace; uses `icon="receipt"`.
 - Validation: `npx prisma validate` ✓, `npm run lint` ✓, `npm run typecheck` ✓, `npm run test` ✓ (173 pass, unchanged), `npm run build` ✓ (`/workspace/categories` in route table).
+
+## Phase 17 — WCAG/Accessibility Audit
+
+Status: `[x]`
+
+Output required:
+
+- Audit the app against practical WCAG 2.2 AA accessibility concerns.
+- Create `docs/product-ready/17_ACCESSIBILITY_WCAG_AUDIT.md`.
+- No application code, UI, schema, or test changes.
+
+Completion notes (Phase 17 — WCAG/Accessibility Audit):
+
+- Audited 27 files covering all specified pages and components (Dashboard, Entries, Entry create/edit, Quick-add, Presets, Stats, Monthly report, Goals, Habits, More, Feedback dialog, Debug page, Workspace members, Workspace categories, Bottom nav/app shell, PWA notification prompt).
+- Confirmed `Label` from `@/components/crafted/label.tsx` is a styled `<span>`, not an HTML `<label>` — root cause of multiple unlabeled input issues.
+- Confirmed `ProgressLine` has `role="progressbar"` + `aria-valuenow/min/max` but no `aria-label` naming what is tracked.
+- Confirmed intent toggle buttons in entry form and quick-add correctly have `aria-pressed`.
+- Confirmed `<details>/<summary>` for stats and report collapsibles is natively accessible.
+- Confirmed bottom nav has `aria-label`, `aria-current`, focus rings, and adequate touch targets.
+- Key risks found: 3 critical blockers (unlabeled inputs, category selector state, error-input linking) + 10 medium/low issues documented.
+- No application code, schema, or tests modified by this phase.
+- Validation: no commands required (no code touched).
+
+## Phase 18 — UI Accessibility Hardening
+
+Status: `[x]`
+
+Output required:
+
+- Fix P1 accessibility blockers found in Phase 17.
+- Create `docs/product-ready/18_ACCESSIBILITY_HARDENING_NOTES.md`.
+- No DB/schema changes, no server action changes, no metric changes, no visual redesign.
+
+Completion notes (Phase 18 — UI Accessibility Hardening):
+
+- `FormFieldError` gained optional `id` prop enabling `aria-describedby` linking (used in entry forms and habit form).
+- `crafted-entry-form.tsx`: Title/Date/Note inputs now have real `<label htmlFor>` associations; category selector buttons have `aria-pressed` + `role="group" aria-label`; `aria-describedby` + `aria-invalid` wired to title and date error messages.
+- `crafted-entry-edit-form.tsx`: Same fixes as create form — label associations, `aria-pressed` on category buttons, error linking.
+- `crafted-habit-form.tsx`: Name/Category/Amount inputs wrapped in real `<label>` by containment; `aria-describedby` wired to name and amount error messages.
+- `crafted-category-management.tsx` (CategoryEditForm): Added `htmlFor`/`id` pairs to all three field labels (name, icon, color). (CategoryCreateForm): Same fix for all three fields. (CategoryRow): All action buttons have contextual `aria-label` — `Modifica/Archivia/Ripristina/Elimina categoria {name}`.
+- `feedback-button.tsx`: Type pill buttons have `aria-pressed={selectedType === value}`.
+- `app-shell.tsx`: `DesktopNavLink` gains `focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50`.
+- `quick-add-sheet.tsx`: Date `<Label>` gained `htmlFor="quick-date"`; preset buttons gained `aria-pressed={isActive}`.
+- `crafted-preset-form.tsx`: Title/Category/Amount/Comparison-amount inputs wrapped in real `<label htmlFor>` by containment.
+- Color-only bars: documented as follow-up (aria-hidden + adjacent text already present in most cases); no regression risk.
+- Validation: lint ✓ · typecheck ✓ · tests 173/173 ✓ · build ✓
+
+## Phase 19 — Product documentation cleanup and roadmap consolidation
+
+Status: `[x]`
+
+Output required:
+
+- Create `docs/product-ready/README.md` — phase index and navigation guide.
+- Create `docs/product-ready/CURRENT_STATUS.md` — stability rating, completed areas, known limitations, key invariants.
+- Create `docs/product-ready/NEXT_STEPS.md` — Phase 20 scope and rules, later roadmap.
+- Update `docs/product-ready/02_EXECUTION_CHECKLIST.md` — Phase 19 complete + "Current recommended next step" at top.
+- No application code, schema, test, or UI changes.
+
+Completion notes (Phase 19 — Documentation cleanup):
+
+- `docs/product-ready/README.md` created: what this folder is, phase index with one-line descriptions, distinction between historical/audit docs and current operational docs, key invariants, how to continue work safely.
+- `docs/product-ready/CURRENT_STATUS.md` created: stability ratings (9/10 private beta, 7/10 public launch), summary of all 9 completed major areas, 6 known limitations (notifications, privacy/deletion, rate limiting, design polish, production migration awareness, habit banner scope), and key invariants table.
+- `docs/product-ready/NEXT_STEPS.md` created: Phase 20 design pass scope + 8 hard rules, later roadmap (Web Push, privacy/deletion, rate limiting, monitoring, onboarding, public launch checklist), and "what not to do next" section.
+- No docs deleted. All historical phase notes preserved.
+- No application code, schema, or tests touched.
+- Validation: no commands required (docs-only).
 
 ## Deferred decisions
 

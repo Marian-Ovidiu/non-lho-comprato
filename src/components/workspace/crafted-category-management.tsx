@@ -72,8 +72,9 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 py-3.5">
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Nome</label>
+        <label htmlFor="edit-cat-name" className="text-xs font-medium text-muted-foreground">Nome</label>
         <Input
+          id="edit-cat-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Nome categoria"
@@ -84,16 +85,18 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Icona</label>
+          <label htmlFor="edit-cat-icon" className="text-xs font-medium text-muted-foreground">Icona</label>
           <Input
+            id="edit-cat-icon"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
             placeholder="es. coffee"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">Colore</label>
+          <label htmlFor="edit-cat-color" className="text-xs font-medium text-muted-foreground">Colore</label>
           <Input
+            id="edit-cat-color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
             placeholder="es. #a3e635"
@@ -218,6 +221,7 @@ function CategoryRow({
               type="button"
               onClick={() => onEditToggle(category.id)}
               disabled={isPending}
+              aria-label={`Modifica categoria ${category.name}`}
               className="inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               <Pencil className="size-3.5" aria-hidden />
@@ -229,6 +233,7 @@ function CategoryRow({
               type="button"
               onClick={handleArchive}
               disabled={isPending}
+              aria-label={`Archivia categoria ${category.name}`}
               className="inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               {isPending ? (
@@ -243,6 +248,7 @@ function CategoryRow({
               type="button"
               onClick={handleRestore}
               disabled={isPending}
+              aria-label={`Ripristina categoria ${category.name}`}
               className="inline-flex items-center gap-1 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               {isPending ? (
@@ -257,6 +263,7 @@ function CategoryRow({
             type="button"
             onClick={handleDelete}
             disabled={isPending}
+            aria-label={`Elimina categoria ${category.name}`}
             className="inline-flex items-center gap-1 text-[13px] text-destructive underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
           >
             {isPending ? (
@@ -313,8 +320,9 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
     >
       <CraftedLabel className="block">Nuova categoria</CraftedLabel>
       <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-muted-foreground">Nome</label>
+        <label htmlFor="create-cat-name" className="text-xs font-medium text-muted-foreground">Nome</label>
         <Input
+          id="create-cat-name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="es. Caffè, Sport, Viaggi"
@@ -325,20 +333,22 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <label htmlFor="create-cat-icon" className="text-xs font-medium text-muted-foreground">
             Icona (opzionale)
           </label>
           <Input
+            id="create-cat-icon"
             value={icon}
             onChange={(e) => setIcon(e.target.value)}
             placeholder="es. coffee"
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label className="text-xs font-medium text-muted-foreground">
+          <label htmlFor="create-cat-color" className="text-xs font-medium text-muted-foreground">
             Colore (opzionale)
           </label>
           <Input
+            id="create-cat-color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
             placeholder="es. #a3e635"

@@ -111,6 +111,7 @@ export function FeedbackButton() {
                     key={value}
                     type="button"
                     onClick={() => setSelectedType(value)}
+                    aria-pressed={selectedType === value}
                     className={cn(
                       "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
                       selectedType === value

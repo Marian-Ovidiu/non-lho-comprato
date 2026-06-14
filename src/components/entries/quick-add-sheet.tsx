@@ -886,6 +886,7 @@ export function QuickAddSheet({
                   ref={index === 0 ? firstPresetRef : undefined}
                   type="button"
                   onClick={() => applyPreset(preset.id)}
+                  aria-pressed={isActive}
                   className={cn(
                     "flex min-h-20 items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-[transform,background-color,border-color,box-shadow,opacity] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
                     "hover:-translate-y-px hover:border-border hover:bg-surface-muted active:translate-y-px active:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
@@ -1096,7 +1097,7 @@ export function QuickAddSheet({
               </div>
 
               <div className="min-w-0 space-y-2">
-                <Label>Data</Label>
+                <Label htmlFor="quick-date">Data</Label>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"

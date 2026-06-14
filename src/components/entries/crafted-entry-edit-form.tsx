@@ -378,7 +378,7 @@ export function CraftedEntryEditForm({
 
         <div className="px-5 pb-2">
           <Label className="mb-3 block">Categoria</Label>
-          <div className="flex gap-5 overflow-x-auto pb-1">
+          <div className="flex gap-5 overflow-x-auto pb-1" role="group" aria-label="Categoria">
             {categories.map((cat) => {
               const selected = categoryId === cat.id;
 
@@ -387,6 +387,7 @@ export function CraftedEntryEditForm({
                   key={cat.id}
                   type="button"
                   onClick={() => setCategoryId(cat.id)}
+                  aria-pressed={selected}
                   className={cn(
                     "flex shrink-0 flex-col items-center gap-2 border-b-[1.5px] pb-2",
                     selected ? "border-accent" : "border-transparent",
@@ -415,18 +416,20 @@ export function CraftedEntryEditForm({
         </div>
 
         <div className="px-5 pb-3">
-          <div className="flex items-center justify-between gap-4 border-y border-line py-3">
+          <label htmlFor="entry-title" className="flex items-center justify-between gap-4 border-y border-line py-3">
             <input
+              id="entry-title"
               name="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
               className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
               aria-invalid={Boolean(state.errors?.title)}
+              aria-describedby={state.errors?.title ? "entry-title-error" : undefined}
             />
             <Label>Cosa</Label>
-          </div>
-          <FormFieldError message={state.errors?.title} />
+          </label>
+          <FormFieldError id="entry-title-error" message={state.errors?.title} />
         </div>
 
         <div className="space-y-3 px-5 pb-3">
@@ -535,20 +538,23 @@ export function CraftedEntryEditForm({
           {showAdvanced ? (
             <div className="space-y-4 border-t border-line pt-4">
               <div className="space-y-2 border-b border-line pb-3">
-                <Label>Data</Label>
+                <label htmlFor="edit-date" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">Data</label>
                 <input
+                  id="edit-date"
                   name="date"
                   type="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
                   className="w-full bg-transparent py-2 text-sm outline-none"
+                  aria-describedby={state.errors?.date ? "edit-date-error" : undefined}
                 />
-                <FormFieldError message={state.errors?.date} />
+                <FormFieldError id="edit-date-error" message={state.errors?.date} />
               </div>
 
               <div className="space-y-2 border-b border-line pb-3">
-                <Label>Nota</Label>
+                <label htmlFor="edit-note" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">Nota</label>
                 <textarea
+                  id="edit-note"
                   name="note"
                   value={note}
                   onChange={(event) => setNote(event.target.value)}

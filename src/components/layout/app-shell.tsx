@@ -66,6 +66,7 @@ function DesktopNavLink({
       onClick={() => !active && triggerHaptic("subtle")}
       className={cn(
         "whitespace-nowrap border-b-[1.5px] pb-2 text-sm transition-colors",
+        "focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
         active
           ? "border-accent font-semibold text-foreground"
           : "border-transparent font-[450] text-ink-3 hover:text-muted-foreground",

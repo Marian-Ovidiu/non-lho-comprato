@@ -281,8 +281,9 @@ export function CraftedPresetForm({
       </p>
 
       <div className="border-y border-line py-3">
-        <div className="flex items-center justify-between gap-4">
+        <label htmlFor="preset-title" className="flex items-center justify-between gap-4">
           <input
+            id="preset-title"
             name="title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
@@ -290,13 +291,14 @@ export function CraftedPresetForm({
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
           />
           <Label>Titolo</Label>
-        </div>
+        </label>
         <FieldError message={state.errors?.title} />
       </div>
 
       <div className="border-y border-line py-3">
-        <div className="flex items-center justify-between gap-4">
+        <label htmlFor="preset-categoryId" className="flex items-center justify-between gap-4">
           <select
+            id="preset-categoryId"
             name="categoryId"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
@@ -312,13 +314,14 @@ export function CraftedPresetForm({
             ))}
           </select>
           <Label>Categoria</Label>
-        </div>
+        </label>
         <FieldError message={state.errors?.categoryId} />
       </div>
 
       <div className="border-y border-line py-3">
-        <div className="flex items-center justify-between gap-4">
+        <label htmlFor="preset-amount" className="flex items-center justify-between gap-4">
           <input
+            id="preset-amount"
             type="number"
             inputMode="decimal"
             min="0"
@@ -336,7 +339,7 @@ export function CraftedPresetForm({
             className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
           />
           <Label>{mode === "avoided" ? "Avresti speso" : "Quanto hai speso"}</Label>
-        </div>
+        </label>
         <FieldError message={mode === "avoided" ? comparisonFieldError : primaryFieldError} />
         {mode === "avoided" ? (
           <p className="mt-2 text-xs leading-5 text-ink-3">
@@ -368,8 +371,9 @@ export function CraftedPresetForm({
 
           {showComparison ? (
             <>
-              <div className="mt-3 flex items-center justify-between gap-4">
+              <label htmlFor="preset-comparison-amount" className="mt-3 flex items-center justify-between gap-4">
                 <input
+                  id="preset-comparison-amount"
                   type="number"
                   inputMode="decimal"
                   min="0"
@@ -380,7 +384,7 @@ export function CraftedPresetForm({
                   className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
                 />
                 <Label>Quanto avresti speso di solito?</Label>
-              </div>
+              </label>
               <p className="mt-2 text-xs leading-5 text-ink-3">
                 Usalo quando hai scelto un&apos;opzione più economica.
               </p>

@@ -116,21 +116,23 @@ export function CraftedHabitForm({
       ) : null}
 
       <div className="border-y border-line py-3">
-        <div className="flex items-center justify-between gap-4">
+        <label htmlFor="habit-name" className="flex items-center justify-between gap-4">
           <input
-            id="name"
+            id="habit-name"
             name="name"
             placeholder="Caffè al bar"
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
+            aria-describedby={state.errors?.name ? "habit-name-error" : undefined}
           />
           <CraftedLabel>Nome</CraftedLabel>
-        </div>
-        <FormFieldError message={state.errors?.name} />
+        </label>
+        <FormFieldError id="habit-name-error" message={state.errors?.name} />
       </div>
 
       <div className="border-y border-line py-3">
-        <div className="flex items-center justify-between gap-4">
+        <label htmlFor="habit-categoryId" className="flex items-center justify-between gap-4">
           <select
+            id="habit-categoryId"
             name="categoryId"
             value={categoryId}
             onChange={(event) => setCategoryId(event.target.value)}
@@ -143,13 +145,14 @@ export function CraftedHabitForm({
             ))}
           </select>
           <CraftedLabel>Categoria</CraftedLabel>
-        </div>
-        <FormFieldError message={state.errors?.categoryId} />
+        </label>
+        <FormFieldError id="habit-categoryId-error" message={state.errors?.categoryId} />
       </div>
 
       <div className="border-y border-line py-3">
-        <div className="flex items-center justify-between gap-4">
+        <label htmlFor="habit-amount" className="flex items-center justify-between gap-4">
           <input
+            id="habit-amount"
             name="amount"
             type="number"
             inputMode="decimal"
@@ -157,10 +160,11 @@ export function CraftedHabitForm({
             step="0.01"
             placeholder="4,00"
             className="min-w-0 flex-1 bg-transparent font-num text-[15px] outline-none"
+            aria-describedby={state.errors?.amount ? "habit-amount-error" : undefined}
           />
           <CraftedLabel>Costo €</CraftedLabel>
-        </div>
-        <FormFieldError message={state.errors?.amount} />
+        </label>
+        <FormFieldError id="habit-amount-error" message={state.errors?.amount} />
         <input type="hidden" name="defaultBehavior" value="spent" />
       </div>
 
