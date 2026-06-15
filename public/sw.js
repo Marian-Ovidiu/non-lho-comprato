@@ -1,21 +1,50 @@
+const STATIC_CACHE = "nlhc-static-v1";
+
 self.addEventListener("install", () => {
   self.skipWaiting();
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  // Purge old cache versions on deploy
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key !== STATIC_CACHE)
+            .map((key) => caches.delete(key)),
+        ),
+      )
+      .then(() => self.clients.claim()),
+  );
 });
 
-// Intentionally a no-op fetch handler.
-//
-// Previously this did `event.respondWith(fetch(event.request))`, which re-issued
-// every request through the service worker. When that re-fetch rejected (auth
-// redirects, POST server actions, transient network errors) the navigation
-// failed with "FetchEvent ... the promise was rejected" / "Failed to fetch".
-//
-// We keep a registered fetch handler (so the app stays installable as a PWA) but
-// do not call respondWith, letting the browser handle every request natively.
-self.addEventListener("fetch", () => {});
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  const response = await fetch(request);
+  if (response.ok) {
+    const cache = await caches.open(STATIC_CACHE);
+    cache.put(request, response.clone());
+  }
+  return response;
+}
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+
+  // Only intercept GET requests for Next.js static chunks.
+  // These are content-hashed (immutable) — safe to serve from cache indefinitely.
+  // Everything else (POST/Server Actions, auth, RSC payloads, API routes,
+  // navigations) passes through to the network without interference.
+  if (
+    request.method === "GET" &&
+    new URL(request.url).pathname.startsWith("/_next/static/")
+  ) {
+    event.respondWith(cacheFirst(request));
+  }
+});
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
