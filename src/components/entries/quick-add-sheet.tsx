@@ -7,7 +7,6 @@ import {
   ArrowRight,
   Check,
   ChevronLeft,
-  CircleOff,
   LockKeyhole,
   Loader2,
   Plus,
@@ -106,7 +105,7 @@ type QuickAddDraft = {
   date: string;
 };
 
-type QuickAddIntent = "spent" | "comparison" | "avoided";
+type QuickAddIntent = "spent" | "comparison";
 
 const initialState: QuickAddState = {
   success: false,
@@ -150,7 +149,6 @@ function getPresetAmountLabel(amount: string) {
 
 function buildDefaultQuickPreset(
   preset: (typeof DEFAULT_QUICK_ADD_PRESETS)[number],
-  mode: EntryMode,
 ): QuickAddPreset {
   const amount = preset.amount.toFixed(2);
 
@@ -161,20 +159,16 @@ function buildDefaultQuickPreset(
     emoji: preset.emoji,
     title: preset.title,
     categorySlug: preset.categorySlug,
-    amountSpent: mode === "spent" ? amount : "",
-    comparisonAmount: mode === "avoided" ? amount : "",
-    mode,
-    savingContext: mode === "avoided" ? "comparison" : "none",
+    amountSpent: amount,
+    comparisonAmount: "",
+    mode: "spent",
+    savingContext: "none",
     rangeLabel: preset.rangeLabel,
     shared: preset.shared,
   };
 }
 
 function getSavedPresetEmoji(preset: SerializablePreset) {
-  if (preset.mode === "avoided") {
-    return "✋";
-  }
-
   if (preset.savingContext === "comparison") {
     return "↘";
   }
@@ -183,10 +177,7 @@ function getSavedPresetEmoji(preset: SerializablePreset) {
 }
 
 function buildSavedQuickPreset(preset: SerializablePreset): QuickAddPreset {
-  const amountLabel =
-    preset.mode === "avoided"
-      ? getPresetAmountLabel(preset.comparisonAmount)
-      : getPresetAmountLabel(preset.amountSpent);
+  const amountLabel = getPresetAmountLabel(preset.amountSpent);
 
   return {
     id: `saved:${preset.id}`,
@@ -198,12 +189,10 @@ function buildSavedQuickPreset(preset: SerializablePreset): QuickAddPreset {
     categorySlug: preset.category.slug,
     amountSpent: preset.amountSpent,
     comparisonAmount: preset.comparisonAmount,
-    mode: preset.mode,
+    mode: "spent",
     savingContext: preset.savingContext,
     rangeLabel:
-      preset.mode === "avoided"
-        ? `${amountLabel} non comprati`
-        : preset.savingContext === "comparison"
+      preset.savingContext === "comparison"
           ? `${amountLabel} con confronto`
           : amountLabel,
   };
@@ -216,10 +205,9 @@ function getSearchHref(
   returnTo?: string,
 ) {
   const params = new URLSearchParams();
-  const hiddenAmountSpent =
-    mode === "spent" ? toHiddenMoneyValue(draft.amountSpent) : "";
+  const hiddenAmountSpent = toHiddenMoneyValue(draft.amountSpent);
   const hiddenComparisonAmount =
-    mode === "avoided" || savingContext === "comparison"
+    savingContext === "comparison"
       ? toHiddenMoneyValue(draft.comparisonAmount)
       : "";
 
@@ -244,10 +232,6 @@ function getSearchHref(
     params.set("alternativeCost", hiddenComparisonAmount);
   }
 
-  if (mode === "avoided") {
-    params.set("realCost", "0.00");
-  }
-
   if (draft.paidByUserId) {
     params.set("paidByUserId", draft.paidByUserId);
   }
@@ -269,13 +253,8 @@ function getSearchHref(
 }
 
 function getQuickAddIntent(
-  mode: EntryMode,
   comparisonEnabled: boolean,
 ): QuickAddIntent {
-  if (mode === "avoided") {
-    return "avoided";
-  }
-
   return comparisonEnabled ? "comparison" : "spent";
 }
 
@@ -355,10 +334,15 @@ export function QuickAddSheet({
     const hiddenDefaultIds = new Set(hiddenDefaultPresetIds);
     const visibleDefaults = DEFAULT_QUICK_ADD_PRESETS.filter(
       (preset) => !hiddenDefaultIds.has(preset.id),
-    ).map((preset) => buildDefaultQuickPreset(preset, mode));
+    ).map((preset) => buildDefaultQuickPreset(preset));
 
-    return [...savedPresets.map(buildSavedQuickPreset), ...visibleDefaults];
-  }, [hiddenDefaultPresetIds, mode, savedPresets]);
+    return [
+      ...savedPresets
+        .filter((preset) => preset.mode !== "avoided")
+        .map(buildSavedQuickPreset),
+      ...visibleDefaults,
+    ];
+  }, [hiddenDefaultPresetIds, savedPresets]);
   const presetMap = useMemo(
     () => new Map(quickAddPresets.map((preset) => [preset.id, preset])),
     [quickAddPresets],
@@ -391,7 +375,6 @@ export function QuickAddSheet({
     paidByUserId: draft.paidByUserId,
     beneficiaryUserIds: draft.beneficiaryUserIds,
     enabled:
-      mode === "spent" &&
       !comparisonEnabled &&
       !comparisonAmountTouched &&
       draft.amountSpent.trim().length > 0,
@@ -399,15 +382,12 @@ export function QuickAddSheet({
   const showSuggestionLookupState = expenseSuggestion.isLoading;
   const todayKey = getTodayLocal();
   const yesterdayKey = shiftRomeDateKey(todayKey, -1);
-  const savingContext: EntrySavingContext =
-    mode === "avoided" ? "comparison" : comparisonEnabled ? "comparison" : "none";
-  const quickAddIntent = getQuickAddIntent(mode, comparisonEnabled);
-  const hiddenAmountSpent =
-    mode === "spent" ? toHiddenMoneyValue(draft.amountSpent) : "";
-  const hiddenComparisonAmount =
-    mode === "avoided" || comparisonEnabled
-      ? toHiddenMoneyValue(draft.comparisonAmount)
-      : "";
+  const savingContext: EntrySavingContext = comparisonEnabled ? "comparison" : "none";
+  const quickAddIntent = getQuickAddIntent(comparisonEnabled);
+  const hiddenAmountSpent = toHiddenMoneyValue(draft.amountSpent);
+  const hiddenComparisonAmount = comparisonEnabled
+    ? toHiddenMoneyValue(draft.comparisonAmount)
+    : "";
   const fullFormHref = useMemo(
     () => getSearchHref(draft, mode, savingContext, pathname),
     [draft, mode, pathname, savingContext],
@@ -419,7 +399,6 @@ export function QuickAddSheet({
       : null;
   const comparisonDelta = getMoneyDelta(draft.amountSpent, draft.comparisonAmount);
   const showLargeComparisonWarning =
-    mode === "spent" &&
     comparisonEnabled &&
     draft.comparisonAmount.trim().length > 0 &&
     Math.abs(comparisonDelta) >= 100;
@@ -609,7 +588,7 @@ export function QuickAddSheet({
 
     hasDraftBeenEditedRef.current = true;
     setActivePreset(preset.id);
-    setMode(preset.mode);
+    setMode("spent");
     const paidByUserId = getDefaultPaidByUserId(activeMembers, currentUserId);
     const beneficiaryUserIds = preset.shared
       ? activeMembers.map((member) => member.userId)
@@ -618,21 +597,15 @@ export function QuickAddSheet({
     setDraft({
       title: preset.title,
       categoryId: preset.categoryId ?? resolveCategoryId(preset.categorySlug ?? ""),
-      amountSpent: preset.mode === "spent" ? preset.amountSpent : "",
+      amountSpent: preset.amountSpent,
       comparisonAmount:
-        preset.mode === "avoided" || preset.savingContext === "comparison"
-          ? preset.comparisonAmount
-          : "",
+        preset.savingContext === "comparison" ? preset.comparisonAmount : "",
       paidByUserId,
       beneficiaryUserIds,
       date: getTodayLocal(),
     });
-    setComparisonEnabled(
-      preset.mode === "spent" && preset.savingContext === "comparison",
-    );
-    setComparisonAmountTouched(
-      preset.mode === "avoided" || preset.savingContext === "comparison",
-    );
+    setComparisonEnabled(preset.savingContext === "comparison");
+    setComparisonAmountTouched(preset.savingContext === "comparison");
     focusTitleSoon();
   }
 
@@ -647,18 +620,8 @@ export function QuickAddSheet({
 
   function handleModeChange(nextMode: EntryMode) {
     hasDraftBeenEditedRef.current = true;
-    setMode(nextMode);
+    setMode(nextMode === "spent" ? "spent" : "spent");
     setActivePreset("custom");
-
-    if (nextMode === "avoided") {
-      setComparisonEnabled(false);
-      setComparisonAmountTouched(false);
-      setDraft((current) => ({
-        ...current,
-        comparisonAmount: current.comparisonAmount || current.amountSpent,
-      }));
-      return;
-    }
 
     setDraft((current) => ({
       ...current,
@@ -667,11 +630,6 @@ export function QuickAddSheet({
   }
 
   function handleIntentChange(nextIntent: QuickAddIntent) {
-    if (nextIntent === "avoided") {
-      handleModeChange("avoided");
-      return;
-    }
-
     handleModeChange("spent");
     setComparisonEnabled(nextIntent === "comparison");
 
@@ -811,7 +769,7 @@ export function QuickAddSheet({
 
           <div className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
             <div className="sm:col-span-2">
-              <div className="grid grid-cols-3 gap-2 rounded-[var(--r-control)] border border-line bg-transparent p-1">
+              <div className="grid grid-cols-2 gap-2 rounded-[var(--r-control)] border border-line bg-transparent p-1">
                 <button
                   type="button"
                   onClick={() => handleIntentChange("spent")}
@@ -843,27 +801,11 @@ export function QuickAddSheet({
                   </span>
                   Speso + confronto
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleIntentChange("avoided")}
-                  className={cn(
-                    "flex min-h-11 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
-                    quickAddIntent === "avoided"
-                      ? "border-accent text-foreground"
-                      : "border-transparent text-ink-3 hover:text-foreground",
-                  )}
-                  aria-pressed={quickAddIntent === "avoided"}
-                >
-                  <CircleOff className="size-4" aria-hidden="true" />
-                  Non l&apos;ho comprato
-                </button>
               </div>
               <p className="mt-2 text-center text-xs leading-5 text-muted-text">
                 {quickAddIntent === "spent"
                   ? "Solo denaro uscito davvero."
-                  : quickAddIntent === "comparison"
-                    ? "Usalo quando hai scelto un'opzione più economica."
-                    : "Segna quanto avresti speso se l'avessi comprato."}
+                  : "Usalo quando hai scelto un'opzione più economica."}
               </p>
             </div>
 
@@ -1010,7 +952,7 @@ export function QuickAddSheet({
                       title: event.target.value,
                     }));
                   }}
-                  placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
+                  placeholder="Pranzo"
                   autoComplete="off"
                   aria-invalid={Boolean(state.errors?.title)}
                 />
@@ -1054,7 +996,7 @@ export function QuickAddSheet({
 
                 <div className="min-w-0 space-y-2">
                   <Label htmlFor="quick-amount">
-                    {mode === "avoided" ? "Quanto avresti speso" : "Quanto hai speso"}
+                    Quanto hai speso
                   </Label>
                   <Input
                     id="quick-amount"
@@ -1063,38 +1005,21 @@ export function QuickAddSheet({
                     inputMode="decimal"
                     min="0"
                     step="0.01"
-                    value={
-                      mode === "avoided" ? draft.comparisonAmount : draft.amountSpent
-                    }
+                    value={draft.amountSpent}
                     onChange={(event) => {
                       hasDraftBeenEditedRef.current = true;
                       setDraft((current) => ({
                         ...current,
-                        ...(mode === "avoided"
-                          ? { comparisonAmount: event.target.value }
-                          : { amountSpent: event.target.value }),
+                        amountSpent: event.target.value,
                       }));
                     }}
                     placeholder="2.00"
-                    aria-invalid={Boolean(
-                      mode === "avoided"
-                        ? state.errors?.comparisonAmount
-                        : state.errors?.amountSpent,
-                    )}
+                    aria-invalid={Boolean(state.errors?.amountSpent)}
                   />
                   <FormFieldError
-                    message={
-                      mode === "avoided"
-                        ? state.errors?.comparisonAmount
-                        : state.errors?.amountSpent
-                    }
+                    message={state.errors?.amountSpent}
                     className="text-sm"
                   />
-                  {mode === "avoided" ? (
-                    <p className="text-xs leading-5 text-muted-text">
-                      Segna quanto avresti speso se l&apos;avessi comprato.
-                    </p>
-                  ) : null}
                 </div>
               </div>
 
@@ -1141,87 +1066,80 @@ export function QuickAddSheet({
                 </div>
               </div>
 
-              {mode === "spent" ? (
-                <div className="min-w-0 space-y-2">
-                  <button
-                    type="button"
-                    className="w-full text-left text-[13px] text-muted-text transition-colors hover:text-foreground"
-                    onClick={() => {
-                      setComparisonEnabled((current) => {
-                        if (current) {
-                          return false;
-                        }
+              <div className="min-w-0 space-y-2">
+                <button
+                  type="button"
+                  className="w-full text-left text-[13px] text-muted-text transition-colors hover:text-foreground"
+                  onClick={() => {
+                    setComparisonEnabled((current) => {
+                      if (current) {
+                        return false;
+                      }
 
-                        setDraft((prev) => ({
-                          ...prev,
-                          comparisonAmount: prev.comparisonAmount || prev.amountSpent,
+                      setDraft((prev) => ({
+                        ...prev,
+                        comparisonAmount: prev.comparisonAmount || prev.amountSpent,
+                      }));
+                      return true;
+                    });
+                  }}
+                >
+                  {comparisonEnabled
+                    ? "Nascondi confronto"
+                    : "Ho speso e voglio confrontarlo"}
+                </button>
+
+                {comparisonEnabled ? (
+                  <>
+                    <Label htmlFor="quick-comparisonAmount">
+                      Quanto avresti speso di solito?
+                    </Label>
+                    <Input
+                      id="quick-comparisonAmount"
+                      className="h-10 rounded-[var(--r-control)] border-line bg-surface-muted px-3 focus-visible:ring-2 focus-visible:ring-ring/50"
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.01"
+                      value={draft.comparisonAmount}
+                      onChange={(event) => {
+                        hasDraftBeenEditedRef.current = true;
+                        setComparisonAmountTouched(true);
+                        setDraft((current) => ({
+                          ...current,
+                          comparisonAmount: event.target.value,
                         }));
-                        return true;
-                      });
-                    }}
-                  >
-                    {comparisonEnabled
-                      ? "Nascondi confronto"
-                      : "Ho speso e voglio confrontarlo"}
-                  </button>
-
-                  {comparisonEnabled ? (
-                    <>
-                      <Label htmlFor="quick-comparisonAmount">
-                        Quanto avresti speso di solito?
-                      </Label>
-                      <Input
-                        id="quick-comparisonAmount"
-                        className="h-10 rounded-[var(--r-control)] border-line bg-surface-muted px-3 focus-visible:ring-2 focus-visible:ring-ring/50"
-                        type="number"
-                        inputMode="decimal"
-                        min="0"
-                        step="0.01"
-                        value={draft.comparisonAmount}
-                        onChange={(event) => {
-                          hasDraftBeenEditedRef.current = true;
-                          setComparisonAmountTouched(true);
-                          setDraft((current) => ({
-                            ...current,
-                            comparisonAmount: event.target.value,
-                          }));
-                        }}
-                        placeholder="4.00"
-                        aria-invalid={Boolean(state.errors?.comparisonAmount)}
-                      />
-                      <FormFieldError
-                        message={state.errors?.comparisonAmount}
-                        className="text-sm"
-                      />
-                      <p className="text-xs leading-5 text-muted-text">
-                        Usalo quando hai scelto un&apos;opzione più economica.
-                      </p>
-                      {showLargeComparisonWarning ? (
-                        <p className="rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
-                          Questo confronto pesa molto sulle statistiche.
-                        </p>
-                      ) : null}
-                    </>
-                  ) : null}
-                  {showSuggestionLookupState ? (
-                    <p
-                      className="flex items-center gap-2 text-xs leading-5 text-muted-text"
-                      aria-live="polite"
-                    >
-                      <Loader2
-                        className="size-3.5 animate-spin motion-reduce:animate-none"
-                        aria-hidden="true"
-                      />
-                      Cerco un confronto utile…
+                      }}
+                      placeholder="4.00"
+                      aria-invalid={Boolean(state.errors?.comparisonAmount)}
+                    />
+                    <FormFieldError
+                      message={state.errors?.comparisonAmount}
+                      className="text-sm"
+                    />
+                    <p className="text-xs leading-5 text-muted-text">
+                      Usalo quando hai scelto un&apos;opzione più economica.
                     </p>
-                  ) : null}
-                </div>
-              ) : (
-                <div className="rounded-[var(--r-card)] border border-line bg-surface-muted/60 px-4 py-3 text-sm text-muted-text">
-                  Qui registri un non comprato. Se vuoi solo segnare una spesa normale,
-                  torna su <span className="font-medium text-foreground">Ho speso</span>.
-                </div>
-              )}
+                    {showLargeComparisonWarning ? (
+                      <p className="rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
+                        Questo confronto pesa molto sulle statistiche.
+                      </p>
+                    ) : null}
+                  </>
+                ) : null}
+                {showSuggestionLookupState ? (
+                  <p
+                    className="flex items-center gap-2 text-xs leading-5 text-muted-text"
+                    aria-live="polite"
+                  >
+                    <Loader2
+                      className="size-3.5 animate-spin motion-reduce:animate-none"
+                      aria-hidden="true"
+                    />
+                    Cerco un confronto utile…
+                  </p>
+                ) : null}
+              </div>
 
               {suggestion ? (
                 <ExpenseSuggestionCard
@@ -1266,11 +1184,9 @@ export function QuickAddSheet({
                   activeMembers.length === 0 ||
                   !draft.title.trim() ||
                   !draft.categoryId.trim() ||
-                  (mode === "avoided"
-                    ? hiddenComparisonAmount === "" || hiddenComparisonAmount === "0.00"
-                    : hiddenAmountSpent === "" ||
-                      hiddenAmountSpent === "0.00" ||
-                      (comparisonEnabled && hiddenComparisonAmount === ""))
+                  hiddenAmountSpent === "" ||
+                  hiddenAmountSpent === "0.00" ||
+                  (comparisonEnabled && hiddenComparisonAmount === "")
                 }
               >
                 {pending ? "Salvataggio..." : "Salva"}

@@ -73,7 +73,7 @@ export function DailyCheckinOverlay({
     ? `Oggi hai già registrato ${spentHero.whole},${spentHero.decimals}€ di spesa reale.`
     : hasSaved
       ? "Oggi non hai ancora speso, ma hai già segnato impatto netto positivo."
-      : "Oggi è ancora aperto. Puoi registrare una spesa o un non comprato quando serve.";
+      : "Oggi è ancora aperto. Puoi registrare una spesa o aggiungere un confronto quando serve.";
 
   return (
     <div
@@ -163,13 +163,6 @@ export function DailyCheckinOverlay({
             className="h-[52px] w-full rounded-[18px] text-[15px] font-bold"
           >
             <Link href="/entries/new">Registra una spesa</Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            className="h-[52px] w-full rounded-[18px] border-line text-[15px] font-medium"
-          >
-            <Link href="/entries/new?mode=avoided&savingContext=comparison">Non l&apos;ho comprato</Link>
           </Button>
         </div>
       </div>

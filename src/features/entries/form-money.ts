@@ -167,9 +167,9 @@ function resolveTrackerFirstEntryMoney(formData: FormData): ResolvedEntryMoney {
     errors.comparisonAmount = comparisonAmount.error;
   }
 
-  const mode: EntryMode = rawMode === "avoided" ? "avoided" : "spent";
+  const mode: EntryMode = "spent";
 
-  if (rawMode && rawMode !== "spent" && rawMode !== "avoided") {
+  if (rawMode && rawMode !== "spent") {
     errors.mode = "Seleziona una modalita valida";
   }
 
@@ -188,24 +188,14 @@ function resolveTrackerFirstEntryMoney(formData: FormData): ResolvedEntryMoney {
     errors.savingContext = "Seleziona un contesto valido";
   }
 
-  if (mode === "avoided") {
-    savingContext = "comparison";
+  if (!amountSpent.provided) {
+    errors.amountSpent = "Questo campo è obbligatorio";
+  } else if (amountSpent.value <= 0) {
+    errors.amountSpent = "L'importo deve essere maggiore di 0";
+  }
 
-    if (!comparisonAmount.provided) {
-      errors.comparisonAmount = "Questo campo è obbligatorio";
-    } else if (comparisonAmount.value <= 0) {
-      errors.comparisonAmount = "L'importo deve essere maggiore di 0";
-    }
-  } else {
-    if (!amountSpent.provided) {
-      errors.amountSpent = "Questo campo è obbligatorio";
-    } else if (amountSpent.value <= 0) {
-      errors.amountSpent = "L'importo deve essere maggiore di 0";
-    }
-
-    if (savingContext === "comparison" && !comparisonAmount.provided) {
-      errors.comparisonAmount = "Questo campo è obbligatorio";
-    }
+  if (savingContext === "comparison" && !comparisonAmount.provided) {
+    errors.comparisonAmount = "Questo campo è obbligatorio";
   }
 
   if (Object.keys(errors).length > 0) {

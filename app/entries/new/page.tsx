@@ -88,8 +88,7 @@ export default async function NewEntryPage({
   const title = getSearchValue(query.title)?.trim();
   const categoryId =
     getSearchValue(query.categoryId) ?? getSearchValue(query.category) ?? "";
-  const mode =
-    getSearchValue(query.mode) === "avoided" ? "avoided" : "spent";
+  const mode = "spent";
   const savingContext =
     getSearchValue(query.savingContext) === "comparison"
       ? "comparison"

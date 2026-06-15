@@ -96,7 +96,7 @@ describe("resolveEntryMoneyFromForm", () => {
     assert.equal(result.money?.savedAmount, 7);
   });
 
-  it("resolves the Non l'ho comprato form intent as avoided spending", () => {
+  it("rejects the removed Non l'ho comprato form intent", () => {
     const result = resolveEntryMoneyFromForm(
       formData({
         mode: "avoided",
@@ -106,12 +106,9 @@ describe("resolveEntryMoneyFromForm", () => {
     );
 
     assert.equal(result.usesTrackerFields, true);
-    assert.deepEqual(result.errors, {});
-    assert.equal(result.money?.mode, "avoided");
-    assert.equal(result.money?.savingContext, "comparison");
-    assert.equal(result.money?.realCost, 0);
-    assert.equal(result.money?.alternativeCost, 18);
-    assert.equal(result.money?.savedAmount, 18);
+    assert.equal(result.money, undefined);
+    assert.equal(result.errors.mode, "Seleziona una modalita valida");
+    assert.equal(result.errors.amountSpent, "Questo campo è obbligatorio");
   });
 
   it("rejects invalid tracker-first money", () => {

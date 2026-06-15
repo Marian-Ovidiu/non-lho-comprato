@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BarChart3, CircleOff, Layers3, PlusCircle } from "lucide-react";
+import { BarChart3, Layers3, PlusCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
@@ -9,12 +9,6 @@ const actions = [
     title: "Registra una spesa",
     description: "Aggiungi movimento o confronto",
     icon: PlusCircle,
-  },
-  {
-    href: "/entries/new?mode=avoided&savingContext=comparison",
-    title: "Non l'ho comprato",
-    description: "Segna una spesa evitata",
-    icon: CircleOff,
   },
   {
     href: "/presets",
@@ -36,7 +30,7 @@ export function DashboardQuickActions() {
       <div className="space-y-1">
         <h2 className="text-lg font-semibold text-foreground">Azioni rapide</h2>
         <p className="text-sm text-muted-text">
-          Parti da una spesa normale, poi aggiungi confronto o non comprato solo quando serve.
+          Parti da una spesa normale, poi aggiungi il confronto solo quando serve.
         </p>
       </div>
 
