@@ -35,6 +35,7 @@ import {
   Stagger,
 } from "@/components/crafted/motion";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
 
@@ -58,6 +59,7 @@ function CraftedCategoryBars({
 }: {
   categories: CraftedStatsProps["categories"];
 }) {
+  const currencySymbol = useCurrencySymbol();
   if (categories.length === 0) {
     return (
       <p className="px-5 py-8 text-sm text-ink-3">
@@ -86,12 +88,12 @@ function CraftedCategoryBars({
             <Mono className="mr-3 text-[11px] text-ink-3">{category.pct}%</Mono>
             <Mono className="text-sm font-medium whitespace-nowrap">
               {formatCraftedCompact(category.spent)}
-              <span className="text-[11px] text-accent">€</span>
+              <span className="text-[11px] text-accent">{currencySymbol}</span>
             </Mono>
           </div>
           {category.saved > 0 ? (
             <Serif className="mb-2 block text-[12.5px] text-ink-3">
-              {formatCraftedCompact(category.saved)}€ impatto netto
+              {formatCraftedCompact(category.saved)}{currencySymbol} impatto netto
             </Serif>
           ) : null}
           <ProgressLine
@@ -121,6 +123,7 @@ export function CraftedStats({
   habitStats = [],
 }: CraftedStatsComponentProps) {
   const period = selectedPeriod;
+  const currencySymbol = useCurrencySymbol();
 
   const hero = useMemo(
     () =>
@@ -206,12 +209,12 @@ export function CraftedStats({
           {
             label: "Speso",
             value: <CraftedAmount value={periodOverview.totalRealSpent} />,
-            suffix: "€",
+            suffix: currencySymbol,
           },
           {
             label: "Impatto netto",
             value: <CraftedAmount value={periodOverview.totalSaved} />,
-            suffix: "€",
+            suffix: currencySymbol,
           },
           {
             label: "Movimenti",
@@ -234,12 +237,12 @@ export function CraftedStats({
             {
               label: "Avresti speso",
               value: <CraftedAmount value={periodOverview.totalAlternativeCost} />,
-              suffix: "€",
+              suffix: currencySymbol,
             },
             {
               label: "Impatto medio",
               value: <CraftedAmount value={periodOverview.averageSavedPerEntry} />,
-              suffix: "€",
+              suffix: currencySymbol,
             },
             {
               label: "Indice netto",
@@ -261,7 +264,7 @@ export function CraftedStats({
           <Label>Spesa ultimi 12 mesi</Label>
           {maxChartSpent > 0 ? (
             <Mono className="text-[11px] text-ink-3">
-              max {formatCraftedCompact(maxChartSpent)}€
+              max {formatCraftedCompact(maxChartSpent)}{currencySymbol}
             </Mono>
           ) : null}
         </div>
@@ -282,7 +285,7 @@ export function CraftedStats({
                     month.isActive ? "bg-accent" : "bg-ink-3",
                   )}
                   style={{ height: `${Math.max(month.heightPct, month.totalRealSpent > 0 ? 4 : 0)}%` }}
-                  title={`${month.initial}: ${formatCraftedCompact(month.totalRealSpent)}€ spesi`}
+                  title={`${month.initial}: ${formatCraftedCompact(month.totalRealSpent)}${currencySymbol} spesi`}
                 />
                 <Mono
                   className={cn(
@@ -324,7 +327,7 @@ export function CraftedStats({
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                   <Mono className="text-[28px] font-semibold leading-none">
-                    {formatCraftedCompact(initialQueen.spent)}€
+                    {formatCraftedCompact(initialQueen.spent)}{currencySymbol}
                   </Mono>
                   <span className="text-sm text-muted-foreground">spesi in {initialQueen.name}</span>
                 </div>
@@ -332,7 +335,7 @@ export function CraftedStats({
                   il {initialQueen.pct}% di tutto, in {initialQueen.entriesCount}{" "}
                   {initialQueen.entriesCount === 1 ? "movimento" : "movimenti"}.
                   {initialQueen.saved > 0
-                    ? ` ${formatCraftedCompact(initialQueen.saved)}€ impatto netto.`
+                    ? ` ${formatCraftedCompact(initialQueen.saved)}${currencySymbol} impatto netto.`
                     : ""}
                 </Serif>
               </div>
@@ -356,7 +359,7 @@ export function CraftedStats({
           {
             label: "Media spesa/mese",
             value: <CraftedAmount value={averageMonthlySpent} />,
-            suffix: "€",
+            suffix: currencySymbol,
           },
           {
             label: "Giorni attivi",
@@ -396,7 +399,7 @@ export function CraftedStats({
                   </div>
                   <Mono className="text-sm font-medium whitespace-nowrap">
                     {formatCraftedCompact(habit.totalSaved)}
-                    <span className="text-[11px] text-accent">€</span>
+                    <span className="text-[11px] text-accent">{currencySymbol}</span>
                   </Mono>
                 </div>
               ))}

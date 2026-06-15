@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { triggerHaptic } from "@/src/lib/haptics";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { HabitScopeReminderFields } from "@/src/components/habits/habit-scope-reminder-fields";
 import { FormFieldError } from "@/src/components/shared/form-field-error";
 import {
@@ -103,6 +104,7 @@ export function CraftedHabitCard({
   workspaceKind,
 }: CraftedHabitCardProps) {
   const router = useRouter();
+  const currencySymbol = useCurrencySymbol();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -243,7 +245,7 @@ export function CraftedHabitCard({
           </div>
           <Mono className="shrink-0 text-[15px] font-medium whitespace-nowrap">
             {formatCraftedCompact(habit.amount)}
-            <span className="text-[11px] text-accent">€</span>
+            <span className="text-[11px] text-accent">{currencySymbol}</span>
           </Mono>
           <div ref={menuRef} className="relative shrink-0">
             <button
@@ -386,7 +388,7 @@ export function CraftedHabitCard({
                     disabled={isEditing}
                     className="min-w-0 flex-1 bg-transparent font-num text-[15px] outline-none"
                   />
-                  <CraftedLabel>Costo €</CraftedLabel>
+                  <CraftedLabel>Costo {currencySymbol}</CraftedLabel>
                 </div>
                 <FormFieldError message={editErrors.amount} />
               </div>

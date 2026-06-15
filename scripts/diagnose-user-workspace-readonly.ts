@@ -24,7 +24,7 @@ async function main() {
           { members: { some: { userId: user.id } } },
         ],
       },
-      select: { id: true, name: true, kind: true, ownerUserId: true, timezone: true },
+      select: { id: true, name: true, kind: true, ownerUserId: true, timezone: true, currency: true },
     });
 
     const scenarios = [

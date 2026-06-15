@@ -1,9 +1,12 @@
+"use client";
+
 import Link from "next/link";
 
 import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate } from "@/src/lib/formatters";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 
 export type CraftedTopSavingsItem = {
@@ -26,6 +29,7 @@ function toDate(value: string | Date) {
 }
 
 export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
+  const currencySymbol = useCurrencySymbol();
   const sortedEntries = [...entries].sort(
     (left, right) => right.savedAmount - left.savedAmount,
   );
@@ -61,8 +65,8 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
                     {item.source === "habit" ? " · ricorrente" : ""}
                   </Mono>
                   <Serif className="mt-1.5 block text-[13px] text-ink-3">
-                    {formatCraftedCompact(item.realCost)}€ spesi invece di{" "}
-                    {formatCraftedCompact(item.alternativeCost)}€
+                    {formatCraftedCompact(item.realCost)}{currencySymbol} spesi invece di{" "}
+                    {formatCraftedCompact(item.alternativeCost)}{currencySymbol}
                   </Serif>
                 </div>
                 <Mono
@@ -72,7 +76,7 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
                   )}
                 >
                   {formatCraftedCompact(item.savedAmount)}
-                  <span className="text-[11px] text-accent">€</span>
+                  <span className="text-[11px] text-accent">{currencySymbol}</span>
                 </Mono>
               </Link>
               {index < sortedEntries.length - 1 ? <Rule soft /> : null}

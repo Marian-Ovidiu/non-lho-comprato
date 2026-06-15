@@ -19,8 +19,10 @@ import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import {
   getCurrentUser,
   getCurrentWorkspace,
+  getCurrentWorkspaceCurrency,
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
+import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 
 export const dynamic = "force-dynamic";
 
@@ -82,10 +84,12 @@ export default async function HabitsPage() {
           icon: category.icon,
         }));
 
+  const currency = await getCurrentWorkspaceCurrency();
   const craftedProps = buildCraftedHabitsProps({
     todayOccurrences,
     habits,
     habitStats,
+    currencySymbol: getCurrencySymbol(currency),
   });
 
   const isEmpty = habits.length === 0 && todayOccurrences.length === 0;

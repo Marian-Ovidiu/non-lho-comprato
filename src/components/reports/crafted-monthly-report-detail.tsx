@@ -6,6 +6,7 @@ import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
+import { useCurrencyCode, useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 import {
   buildMonthlyReportAnalyticsSnapshot,
@@ -37,9 +38,9 @@ function getCategoryKey(category: MonthlyReportAnalyticsCategory): string {
   return category.slug ?? category.id ?? category.name;
 }
 
-function formatSignedMoney(value: number): string {
+function formatSignedMoney(value: number, currencySymbol: string): string {
   const prefix = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${prefix}${formatCraftedCompact(Math.abs(value))}€`;
+  return `${prefix}${formatCraftedCompact(Math.abs(value))}${currencySymbol}`;
 }
 
 function getShortBalanceLabel(balanceRatio: number): string {
@@ -63,9 +64,13 @@ function getInitials(label: string): string {
 function getSummaryText({
   categoryLabel,
   snapshot,
+  currencySymbol,
+  currencyCode,
 }: {
   categoryLabel: string;
   snapshot: MonthlyReportAnalyticsSnapshot;
+  currencySymbol: string;
+  currencyCode: string;
 }): string {
   if (!snapshot.hasData) {
     return categoryLabel === "Tutte le categorie"
@@ -96,17 +101,17 @@ function getSummaryText({
     workspaceDelta === null
       ? "Il confronto col mese scorso non è disponibile."
       : workspaceDelta > 0
-        ? `Rispetto al mese scorso siete sopra di ${formatSignedMoney(workspaceDelta)}.`
+        ? `Rispetto al mese scorso siete sopra di ${formatSignedMoney(workspaceDelta, currencySymbol)}.`
         : workspaceDelta < 0
-          ? `Rispetto al mese scorso siete sotto di ${formatSignedMoney(Math.abs(workspaceDelta))}.`
+          ? `Rispetto al mese scorso siete sotto di ${formatSignedMoney(Math.abs(workspaceDelta), currencySymbol)}.`
           : "Rispetto al mese scorso siete allineati.";
 
   const savingText =
     snapshot.overview.totalSaved > 0
-      ? ` ${formatMoney(snapshot.overview.totalSaved)} impatto netto.`
+      ? ` ${formatMoney(snapshot.overview.totalSaved, currencyCode)} impatto netto.`
       : "";
 
-  return `${categoryPrefix}${formatMoney(snapshot.overview.totalRealSpent)} spesi nel mese.${savingText} ${balancedText} ${deltaText}`;
+  return `${categoryPrefix}${formatMoney(snapshot.overview.totalRealSpent, currencyCode)} spesi nel mese.${savingText} ${balancedText} ${deltaText}`;
 }
 
 function buildCategoryOptions(
@@ -162,6 +167,7 @@ function PersonBlock({
   index: number;
   showPrevious: boolean;
 }) {
+  const currencySymbol = useCurrencySymbol();
   const personalPct =
     user.totalPaid > 0 ? (user.personalSpend / user.totalPaid) * 100 : 0;
   const sharedPct = user.totalPaid > 0 ? 100 - personalPct : 0;
@@ -196,7 +202,7 @@ function PersonBlock({
           <Label className="mb-1.5 block">Totale pagato</Label>
           <Mono className="text-[30px] font-semibold leading-none">
             {formatCraftedCompact(user.totalPaid)}
-            <span className="text-[13px] text-accent">€</span>
+            <span className="text-[13px] text-accent">{currencySymbol}</span>
           </Mono>
         </div>
         {showPrevious && diff !== null && diff !== 0 ? (
@@ -212,7 +218,7 @@ function PersonBlock({
               strokeWidth={2}
               className={cn(diff < 0 && "rotate-180")}
             />
-            <Mono>{formatSignedMoney(diff)}</Mono>
+            <Mono>{formatSignedMoney(diff, currencySymbol)}</Mono>
             <span className="text-ink-3">vs mese scorso</span>
           </div>
         ) : null}
@@ -235,14 +241,14 @@ function PersonBlock({
               <span className="size-[7px] rounded-[2px] bg-foreground/85" />
               Personale{" "}
               <Mono className="text-foreground">
-                {formatCraftedCompact(user.personalSpend)}€
+                {formatCraftedCompact(user.personalSpend)}{currencySymbol}
               </Mono>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-[7px] rounded-[2px] bg-accent" />
               Condivisa{" "}
               <Mono className="text-foreground">
-                {formatCraftedCompact(user.sharedSpend)}€
+                {formatCraftedCompact(user.sharedSpend)}{currencySymbol}
               </Mono>
             </span>
           </div>
@@ -257,6 +263,7 @@ function PersonBlock({
 }
 
 function PayerCompare({ users }: { users: MonthlyReportAnalyticsUser[] }) {
+  const currencySymbol = useCurrencySymbol();
   const ranked = [...users]
     .filter((user) => user.totalPaid > 0)
     .sort((left, right) => right.totalPaid - left.totalPaid);
@@ -295,7 +302,7 @@ function PayerCompare({ users }: { users: MonthlyReportAnalyticsUser[] }) {
             </span>
             <Mono className="w-[62px] shrink-0 text-right text-[13px] font-medium">
               {formatCraftedCompact(user.totalPaid)}
-              <span className="text-[10.5px] text-accent">€</span>
+              <span className="text-[10.5px] text-accent">{currencySymbol}</span>
             </Mono>
           </div>
         ))}
@@ -310,6 +317,7 @@ function MonthHighlights({
 }: {
   snapshot: MonthlyReportAnalyticsSnapshot;
 }) {
+  const currencySymbol = useCurrencySymbol();
   const { bestCategory, worstCategory, biggestSaving } = snapshot;
 
   return (
@@ -341,7 +349,7 @@ function MonthHighlights({
             </div>
             <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
               {formatCraftedCompact(worstCategory.totalRealSpent)}
-              <span className="text-[11px] text-accent">€</span>
+              <span className="text-[11px] text-accent">{currencySymbol}</span>
             </Mono>
           </div>
         ) : null}
@@ -365,7 +373,7 @@ function MonthHighlights({
             </div>
             <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-green">
               {formatCraftedCompact(bestCategory.totalSaved)}
-              <span className="text-[11px] text-accent">€</span>
+              <span className="text-[11px] text-accent">{currencySymbol}</span>
             </Mono>
           </div>
         ) : null}
@@ -386,13 +394,13 @@ function MonthHighlights({
             <p className="mt-2 text-[15px] font-[450]">{biggestSaving.title}</p>
             <Serif className="mt-1 block text-[13px] text-ink-3">
               {biggestSaving.categoryName} · {formatDate(biggestSaving.date)} ·{" "}
-              {formatCraftedCompact(biggestSaving.realCost)}€ invece di{" "}
-              {formatCraftedCompact(biggestSaving.alternativeCost)}€
+              {formatCraftedCompact(biggestSaving.realCost)}{currencySymbol} invece di{" "}
+              {formatCraftedCompact(biggestSaving.alternativeCost)}{currencySymbol}
             </Serif>
           </div>
           <Mono className="shrink-0 whitespace-nowrap text-[17px] font-semibold text-green">
             +{formatCraftedCompact(biggestSaving.savedAmount)}
-            <span className="text-[11px] text-accent">€</span>
+            <span className="text-[11px] text-accent">{currencySymbol}</span>
           </Mono>
         </div>
       ) : null}
@@ -408,6 +416,8 @@ export function CraftedMonthlyReportDetail({
   report,
   categories,
 }: CraftedMonthlyReportDetailProps) {
+  const currencySymbol = useCurrencySymbol();
+  const currencyCode = useCurrencyCode();
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY_VALUE);
 
   const categoryOptions = useMemo(
@@ -448,8 +458,8 @@ export function CraftedMonthlyReportDetail({
   );
 
   const summaryText = useMemo(
-    () => getSummaryText({ categoryLabel: selectedCategoryLabel, snapshot }),
-    [selectedCategoryLabel, snapshot],
+    () => getSummaryText({ categoryLabel: selectedCategoryLabel, snapshot, currencySymbol, currencyCode }),
+    [selectedCategoryLabel, snapshot, currencySymbol, currencyCode],
   );
 
   const hasPreviousData = filteredPreviousEntries.length > 0;

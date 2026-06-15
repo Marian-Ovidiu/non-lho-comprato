@@ -15,6 +15,7 @@ import {
 import { CraftedHabitOccurrenceActions } from "@/src/components/habits/crafted-habit-occurrence-actions";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type { CraftedHabitsProps } from "@/src/lib/crafted-habits-build";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 
 type CraftedHabitsComponentProps = CraftedHabitsProps;
@@ -28,6 +29,7 @@ export function CraftedHabits({
   monthSaved,
   monthLabel,
 }: CraftedHabitsComponentProps) {
+  const currencySymbol = useCurrencySymbol();
   const [today, setToday] = useState(initialToday);
   const didMountRef = useRef(false);
   const wasAllConfirmedRef = useRef(
@@ -171,7 +173,7 @@ export function CraftedHabits({
                     <Mono className="text-[15px] font-medium whitespace-nowrap">
                       {habit.monthImpact > 0 ? "+" : ""}
                       {formatCraftedCompact(habit.monthImpact)}
-                      <span className="text-[11px] text-accent">€</span>
+                      <span className="text-[11px] text-accent">{currencySymbol}</span>
                     </Mono>
                     <Mono className="mt-0.5 block text-[10px] tracking-[0.06em] text-ink-3 uppercase">
                       impatto mese
@@ -190,7 +192,7 @@ export function CraftedHabits({
           {monthSaved > 0 ? (
             <div className="px-5 py-4 text-center">
               <Serif className="text-sm text-ink-3">
-                {formatCraftedCompact(monthSaved)}€ di impatto netto dalle ricorrenti, a{" "}
+                {formatCraftedCompact(monthSaved)}{currencySymbol} di impatto netto dalle ricorrenti, a{" "}
                 {monthLabel}.
               </Serif>
             </div>

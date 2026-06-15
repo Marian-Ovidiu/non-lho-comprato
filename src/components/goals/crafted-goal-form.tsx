@@ -8,6 +8,7 @@ import { Label as CraftedLabel } from "@/components/crafted";
 import { createGoal } from "@/src/actions/goals";
 import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { cn } from "@/lib/utils";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 
 type FormState = {
   success: boolean;
@@ -23,6 +24,7 @@ const initialState: FormState = {
 
 export function CraftedGoalForm() {
   const router = useRouter();
+  const currencySymbol = useCurrencySymbol();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const refresh = useCallback(() => router.refresh(), [router]);
@@ -91,7 +93,7 @@ export function CraftedGoalForm() {
             className="min-w-0 flex-1 bg-transparent font-num text-[15px] text-foreground outline-none placeholder:text-ink-3/70"
             aria-invalid={Boolean(state.errors?.targetAmount)}
           />
-          <CraftedLabel>Importo €</CraftedLabel>
+          <CraftedLabel>Importo {currencySymbol}</CraftedLabel>
         </div>
         <FormFieldError message={state.errors?.targetAmount} />
       </div>

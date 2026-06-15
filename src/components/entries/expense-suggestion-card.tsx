@@ -4,6 +4,7 @@ import { Check, Sparkles } from "lucide-react";
 
 import { Label, Mono } from "@/components/crafted";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import type { ExpenseSuggestionResult } from "@/src/lib/expense-suggestion";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ export function ExpenseSuggestionCard({
   onApply,
   className,
 }: ExpenseSuggestionCardProps) {
+  const currencySymbol = useCurrencySymbol();
   return (
     <div className={cn("border-y border-line py-3.5", className)}>
       <div className="flex items-center gap-2">
@@ -30,7 +32,7 @@ export function ExpenseSuggestionCard({
       <div className="mt-1.5 flex items-center justify-between gap-3">
         <span className="min-w-0 text-[13px] text-ink-3">
           <Mono className="text-muted-foreground">
-            {formatCraftedCompact(suggestion.alternativeCost)}€
+            {formatCraftedCompact(suggestion.alternativeCost)}{currencySymbol}
           </Mono>{" "}
           · da {suggestion.evidenceCount}{" "}
           {suggestion.evidenceCount === 1 ? "movimento simile" : "movimenti simili"}

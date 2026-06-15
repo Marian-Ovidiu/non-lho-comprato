@@ -10,6 +10,7 @@ import { HabitScopeReminderFields } from "@/src/components/habits/habit-scope-re
 import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/src/lib/haptics";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type CategoryOption = {
@@ -42,6 +43,7 @@ export function CraftedHabitForm({
   workspaceKind,
 }: CraftedHabitFormProps) {
   const router = useRouter();
+  const currencySymbol = useCurrencySymbol();
   const formRef = useRef<HTMLFormElement>(null);
   const defaultCategoryId =
     categories.find((category) => category.slug === "altro")?.id ??
@@ -162,7 +164,7 @@ export function CraftedHabitForm({
             className="min-w-0 flex-1 bg-transparent font-num text-[15px] outline-none"
             aria-describedby={state.errors?.amount ? "habit-amount-error" : undefined}
           />
-          <CraftedLabel>Costo €</CraftedLabel>
+          <CraftedLabel>Costo {currencySymbol}</CraftedLabel>
         </label>
         <FormFieldError id="habit-amount-error" message={state.errors?.amount} />
         <input type="hidden" name="defaultBehavior" value="spent" />

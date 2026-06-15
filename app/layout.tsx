@@ -98,6 +98,7 @@ export default async function RootLayout({
             <AppShell
               workspace={workspaceShell.currentWorkspace}
               availableWorkspaces={workspaceShell.availableWorkspaces}
+              currency={workspaceShell.currentWorkspace.currency ?? "EUR"}
               currentUserId={authenticatedUser.id}
               auth={{
                 isAuthenticated: true,

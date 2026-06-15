@@ -2,7 +2,11 @@ import { differenceInCalendarDays } from "date-fns";
 import { unstable_rethrow } from "next/navigation";
 
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
-import { getCurrentWorkspaceTimezone } from "@/src/lib/workspace-context";
+import {
+  getCurrentWorkspaceCurrency,
+  getCurrentWorkspaceTimezone,
+} from "@/src/lib/workspace-context";
+import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 import { PublicAccessGate } from "@/src/components/public/public-access-gate";
 import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { CraftedDashboard } from "@/src/components/dashboard/crafted-dashboard";
@@ -300,7 +304,10 @@ export default async function Home({ searchParams }: HomePageProps) {
   };
   let entriesLoadError: string | null = null;
   let dashboardLoadError: string | null = null;
-  const timeZone = await getCurrentWorkspaceTimezone();
+  const [timeZone, currency] = await Promise.all([
+    getCurrentWorkspaceTimezone(),
+    getCurrentWorkspaceCurrency(),
+  ]);
 
   try {
     const snapshot = await getDashboardEntrySnapshot();
@@ -379,6 +386,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       counterpartLabel: workspaceBalance.counterpartLabel,
     },
     timeZone,
+    currency,
   });
 
   return (

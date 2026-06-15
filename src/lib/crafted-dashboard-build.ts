@@ -7,6 +7,7 @@ import {
 } from "@/src/lib/crafted-goals-build";
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { getDateKey } from "@/src/lib/workspace-dates";
+import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 
 type CategoryStatsItem = {
   categoryName: string;
@@ -140,6 +141,7 @@ export function buildCraftedDashboardProps(input: {
   emptyState: CraftedDashboardProps["emptyState"];
   coupleBalance: CraftedDashboardProps["coupleBalance"];
   timeZone: string;
+  currency: string;
 }): CraftedDashboardProps {
   const now = new Date();
   const monthLabel = getMonthLabel(now, input.timeZone);
@@ -177,7 +179,7 @@ export function buildCraftedDashboardProps(input: {
       progressPercent: goal.progressPercent,
       note:
         index === 0
-          ? buildFeaturedGoalNote(goal)
+          ? buildFeaturedGoalNote(goal, getCurrencySymbol(input.currency))
           : buildSecondaryGoalNote(goal),
       icon: getGoalCraftedIcon(goal.title),
     })),

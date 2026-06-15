@@ -241,6 +241,7 @@ export function buildAiExpenseExportRow(
   entry: AiExpenseExportEntry,
   workspaceName: string,
   timeZone: string,
+  currency = "EUR",
 ): AiExpenseExportRow {
   const money = toEntryMoneyView(entry);
   const spentReally = round2(money.realCost);
@@ -296,7 +297,7 @@ export function buildAiExpenseExportRow(
     spentReally: formatMoneyValue(spentReally),
     wouldHaveSpent: formatMoneyValue(wouldHaveSpent),
     savedAmount: formatMoneyValue(savedAmount),
-    currency: "EUR",
+    currency,
     habitId,
     habitName,
     isHabitGenerated,
@@ -343,10 +344,11 @@ export function buildAiExpenseExportRows(
   entries: ReadonlyArray<AiExpenseExportEntry>,
   workspaceName: string,
   timeZone: string,
+  currency = "EUR",
 ): AiExpenseExportRow[] {
   return entries
     .filter(isExportableAiExpenseExportEntry)
-    .map((entry) => buildAiExpenseExportRow(entry, workspaceName, timeZone));
+    .map((entry) => buildAiExpenseExportRow(entry, workspaceName, timeZone, currency));
 }
 
 export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
@@ -407,8 +409,9 @@ export function serializeAiExpenseExportEntries(
   entries: ReadonlyArray<AiExpenseExportEntry>,
   workspaceName: string,
   timeZone: string,
+  currency = "EUR",
 ): string {
-  return buildAiExpenseExportRows(entries, workspaceName, timeZone)
+  return buildAiExpenseExportRows(entries, workspaceName, timeZone, currency)
     .map(serializeAiExpenseExportRow)
     .join("");
 }

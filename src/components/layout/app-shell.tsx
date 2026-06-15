@@ -16,6 +16,7 @@ import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-remind
 import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
 import { triggerHaptic } from "@/src/lib/haptics";
+import { CurrencyProvider } from "@/src/components/currency/currency-context";
 
 export type AppShellWorkspace = {
   id: string;
@@ -121,12 +122,14 @@ export function AppShell({
   availableWorkspaces,
   currentUserId,
   auth,
+  currency,
 }: {
   children: React.ReactNode;
   workspace: AppShellWorkspace;
   availableWorkspaces: AppShellWorkspace[];
   currentUserId: string;
   auth: AppShellAuth;
+  currency: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -189,6 +192,7 @@ export function AppShell({
   }, [workspace.id]);
 
   return (
+    <CurrencyProvider currency={currency}>
     <ToastProvider>
       <div className="min-h-[100dvh] bg-background text-foreground">
         <header className="sticky top-0 z-30 bg-background">
@@ -269,5 +273,6 @@ export function AppShell({
         <FeedbackButton />
       </div>
     </ToastProvider>
+    </CurrencyProvider>
   );
 }

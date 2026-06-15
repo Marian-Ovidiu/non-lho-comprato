@@ -39,6 +39,7 @@ import {
   normalizeEntryPaymentMode,
   type EntryPaymentModeValue,
 } from "@/src/lib/entry-payment-mode";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 
 type CategoryOption = {
   id: string;
@@ -106,16 +107,17 @@ function getSummaryText(
   savingContext: EntrySavingContext,
   amountSpentInput: string,
   comparisonInput: string,
+  currencySymbol: string,
 ) {
   if (savingContext === "comparison") {
     const delta = getMoneyDelta(amountSpentInput, comparisonInput);
 
     if (delta > 0) {
-      return `${formatMoneyValue(delta)}€ risparmiati scegliendo meglio`;
+      return `${formatMoneyValue(delta)}${currencySymbol} risparmiati scegliendo meglio`;
     }
 
     if (delta < 0) {
-      return `${formatMoneyValue(Math.abs(delta))}€ spesi in più del confronto`;
+      return `${formatMoneyValue(Math.abs(delta))}${currencySymbol} spesi in più del confronto`;
     }
 
     return "in linea con il confronto";
@@ -145,6 +147,7 @@ export function CraftedEntryEditForm({
   members: WorkspaceMemberOption[];
 }) {
   const router = useRouter();
+  const currencySymbol = useCurrencySymbol();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -287,10 +290,10 @@ export function CraftedEntryEditForm({
             <Mono className="text-[clamp(2.5rem,12vw,3.75rem)] font-semibold leading-[0.9] text-accent">
               {summaryAmount}
             </Mono>
-            <Mono className="text-xl text-muted-foreground">€</Mono>
+            <Mono className="text-xl text-muted-foreground">{currencySymbol}</Mono>
           </div>
           <Serif className="mt-3 block text-sm text-ink-3">
-            {getSummaryText(savingContext, amountSpentInput, comparisonInput)}
+            {getSummaryText(savingContext, amountSpentInput, comparisonInput, currencySymbol)}
           </Serif>
         </section>
         <Rule />

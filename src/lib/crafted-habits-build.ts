@@ -70,13 +70,13 @@ export function formatHabitFrequency(activeDays: unknown) {
   return labels.join(", ");
 }
 
-export function formatHabitSub(amount: number, activeDays: unknown) {
+export function formatHabitSub(amount: number, activeDays: unknown, currencySymbol = "€") {
   const amountLabel = amount.toLocaleString("it-IT", {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
 
-  return `${amountLabel}€ · ${formatHabitFrequency(activeDays).toLowerCase()}`;
+  return `${amountLabel}${currencySymbol} · ${formatHabitFrequency(activeDays).toLowerCase()}`;
 }
 
 export function buildHabitsNote(
@@ -114,6 +114,7 @@ export function buildCraftedHabitsProps({
   todayOccurrences,
   habits,
   habitStats,
+  currencySymbol = "€",
 }: {
   todayOccurrences: Array<{
     id: string;
@@ -148,6 +149,7 @@ export function buildCraftedHabitsProps({
     disciplineRatePercent: number;
     totalSaved: number;
   }>;
+  currencySymbol?: string;
 }): CraftedHabitsProps {
   const statsByHabitId = new Map(habitStats.map((item) => [item.habitId, item]));
   const avoidedToday = todayOccurrences.filter(
@@ -162,7 +164,7 @@ export function buildCraftedHabitsProps({
       id: occurrence.id,
       habitId: occurrence.habitId,
       name: occurrence.habit.name,
-      sub: formatHabitSub(occurrence.habit.amount, occurrence.habit.activeDays),
+      sub: formatHabitSub(occurrence.habit.amount, occurrence.habit.activeDays, currencySymbol),
       icon: getCategoryCraftedIcon(occurrence.habit.category),
       status: occurrence.status,
     })),

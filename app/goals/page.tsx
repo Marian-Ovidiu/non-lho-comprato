@@ -7,6 +7,8 @@ import { Label, Rule } from "@/components/crafted";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { buildCraftedGoalsProps } from "@/src/lib/crafted-goals-build";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
+import { getCurrentWorkspaceCurrency } from "@/src/lib/workspace-context";
+import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +28,8 @@ export default async function GoalsPage() {
   }
 
   const monthSaved = monthlyStats.at(-1)?.totalSaved ?? 0;
-  const craftedProps = buildCraftedGoalsProps(goals, monthSaved);
+  const currency = await getCurrentWorkspaceCurrency();
+  const craftedProps = buildCraftedGoalsProps(goals, monthSaved, getCurrencySymbol(currency));
 
   return (
     <main className="pb-6">

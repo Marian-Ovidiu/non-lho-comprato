@@ -1,3 +1,5 @@
+import { getCurrencySymbol } from "@/src/lib/workspace-currency";
+
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
     return value;
@@ -16,17 +18,20 @@ function toNumber(value: unknown): number {
   return Number.NaN;
 }
 
-export function formatMoney(value: unknown): string {
+export function formatMoney(value: unknown, currency = "EUR"): string {
   const amount = toNumber(value);
+  const symbol = getCurrencySymbol(currency);
 
   if (!Number.isFinite(amount)) {
-    return "0,00 €";
+    return `0,00 ${symbol}`;
   }
 
-  return new Intl.NumberFormat("it-IT", {
-    style: "currency",
-    currency: "EUR",
+  const formatted = new Intl.NumberFormat("it-IT", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
+
+  return `${formatted} ${symbol}`;
 }
 
 export function formatDate(value: string | number | Date): string {

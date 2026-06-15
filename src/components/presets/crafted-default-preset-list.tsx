@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { Mono, Rule } from "@/components/crafted";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import {
   DEFAULT_QUICK_ADD_PRESETS,
   readHiddenDefaultPresetIds,
@@ -18,6 +19,7 @@ function formatDefaultAmount(amount: number) {
 }
 
 export function CraftedDefaultPresetList() {
+  const currencySymbol = useCurrencySymbol();
   const [hiddenIds, setHiddenIds] = useState<string[]>(() =>
     readHiddenDefaultPresetIds(),
   );
@@ -56,7 +58,7 @@ export function CraftedDefaultPresetList() {
                   </p>
                 </div>
                 <Mono className="shrink-0 text-sm font-medium whitespace-nowrap">
-                  {formatDefaultAmount(preset.amount)}€
+                  {formatDefaultAmount(preset.amount)}{currencySymbol}
                 </Mono>
               </div>
 

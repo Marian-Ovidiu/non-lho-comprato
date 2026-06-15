@@ -20,6 +20,7 @@ type CurrentWorkspaceUiContext = {
   name: string;
   kind: "private" | "shared";
   isShared: boolean;
+  currency: string;
 };
 
 export type WorkspaceShellOption = {
@@ -85,6 +86,11 @@ export async function getCurrentWorkspaceId(): Promise<string> {
 export async function getCurrentWorkspaceTimezone(): Promise<string> {
   const workspace = await getCurrentWorkspace();
   return workspace.timezone ?? "Europe/Rome";
+}
+
+export async function getCurrentWorkspaceCurrency(): Promise<string> {
+  const workspace = await getCurrentWorkspace();
+  return workspace.currency ?? "EUR";
 }
 
 export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberOption[]> {
@@ -172,6 +178,7 @@ export async function getCurrentWorkspaceUiContext(): Promise<CurrentWorkspaceUi
     name: workspace.name,
     kind: workspace.kind,
     isShared: workspace.kind === "shared",
+    currency: workspace.currency ?? "EUR",
   };
 }
 

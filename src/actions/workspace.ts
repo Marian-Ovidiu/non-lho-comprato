@@ -16,6 +16,7 @@ import {
   getCurrentUser,
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
+import { isSupportedCurrency } from "@/src/lib/workspace-currency";
 import {
   buildAbsoluteAppUrl,
   generateInviteToken,
@@ -343,6 +344,38 @@ type RemoveMemberResult = {
   success: boolean;
   message: string;
 };
+
+type UpdateCurrencyResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function updateWorkspaceCurrencyAction(
+  formData: FormData,
+): Promise<UpdateCurrencyResult> {
+  const code = String(formData.get("currency") ?? "").trim().toUpperCase();
+
+  if (!isSupportedCurrency(code)) {
+    return { success: false, message: "Valuta non supportata." };
+  }
+
+  try {
+    const workspaceId = await getCurrentWorkspaceId();
+
+    await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { currency: code },
+    });
+
+    revalidatePath("/", "layout");
+
+    return { success: true, message: "Valuta aggiornata." };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to update workspace currency:", error);
+    return { success: false, message: "Non riesco ad aggiornare la valuta adesso. Riprova." };
+  }
+}
 
 export async function removeWorkspaceMemberAction(
   targetUserId: string,

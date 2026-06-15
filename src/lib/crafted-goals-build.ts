@@ -54,7 +54,7 @@ function getCreatedMonthLabel(createdAt: string) {
   return label.toLowerCase();
 }
 
-export function buildFeaturedGoalNote(goal: CraftedGoalSource) {
+export function buildFeaturedGoalNote(goal: CraftedGoalSource, currencySymbol = "€") {
   if (goal.isCompleted) {
     return "raggiunto.";
   }
@@ -63,7 +63,7 @@ export function buildFeaturedGoalNote(goal: CraftedGoalSource) {
     return "alimentato dall'impatto positivo.";
   }
 
-  return `ti mancano ${formatCraftedCompact(goal.remainingAmount)}€ di impatto positivo.`;
+  return `ti mancano ${formatCraftedCompact(goal.remainingAmount)}${currencySymbol} di impatto positivo.`;
 }
 
 export function buildSecondaryGoalNote(goal: CraftedGoalSource) {
@@ -99,6 +99,7 @@ function mapGoal(
 export function buildCraftedGoalsProps(
   goals: CraftedGoalSource[],
   monthSaved: number,
+  currencySymbol = "€",
 ): CraftedGoalsProps {
   const activeGoals = goals
     .filter((goal) => goal.isActive && !goal.isCompleted)
@@ -111,7 +112,7 @@ export function buildCraftedGoalsProps(
   const achievedGoals = goals.filter((goal) => goal.isCompleted);
 
   const featured = activeGoals[0]
-    ? mapGoal(activeGoals[0], buildFeaturedGoalNote(activeGoals[0]))
+    ? mapGoal(activeGoals[0], buildFeaturedGoalNote(activeGoals[0], currencySymbol))
     : null;
 
   return {

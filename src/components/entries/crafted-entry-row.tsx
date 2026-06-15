@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { differenceInCalendarDays } from "date-fns";
 
@@ -6,6 +8,7 @@ import { formatCraftedEntryAmount } from "@/src/lib/crafted-money";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 
 type CraftedEntryRowProps = {
@@ -52,7 +55,7 @@ function toFiniteNumber(value: unknown): number {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
+function getSecondaryMeta(entry: CraftedEntryRowProps["entry"], currencySymbol: string) {
   const mode = entry.mode === "avoided" ? "avoided" : "spent";
   const savingContext =
     entry.savingContext === "comparison" ? "comparison" : "none";
@@ -62,7 +65,7 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
   if (mode === "avoided") {
     return {
       badge: "Evitata",
-      detail: `${formatCraftedEntryAmount(alternativeCost)}€ non comprati`,
+      detail: `${formatCraftedEntryAmount(alternativeCost)}${currencySymbol} non comprati`,
       tone: "accent" as const,
     };
   }
@@ -71,7 +74,7 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
     if (savedAmount > 0) {
       return {
         badge: "Confronto",
-        detail: `${formatCraftedEntryAmount(savedAmount)}€ risparmiati scegliendo meglio`,
+        detail: `${formatCraftedEntryAmount(savedAmount)}${currencySymbol} risparmiati scegliendo meglio`,
         tone: "accent" as const,
       };
     }
@@ -79,7 +82,7 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"]) {
     if (savedAmount < 0) {
       return {
         badge: "Confronto",
-        detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}€ spesi in più del confronto`,
+        detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}${currencySymbol} spesi in più del confronto`,
         tone: "default" as const,
       };
     }
@@ -99,7 +102,8 @@ export function CraftedEntryRow({
   className,
   showDivider = true,
 }: CraftedEntryRowProps) {
-  const meta = getSecondaryMeta(entry);
+  const currencySymbol = useCurrencySymbol();
+  const meta = getSecondaryMeta(entry, currencySymbol);
 
   return (
     <div className={className}>
@@ -144,7 +148,7 @@ export function CraftedEntryRow({
         </div>
         <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
           {formatCraftedEntryAmount(entry.realCost)}
-          <span className="align-baseline text-[11px] text-accent">€</span>
+          <span className="align-baseline text-[11px] text-accent">{currencySymbol}</span>
         </Mono>
       </Link>
       {showDivider ? <Rule soft /> : null}

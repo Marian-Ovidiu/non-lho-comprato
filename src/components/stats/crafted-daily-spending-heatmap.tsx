@@ -11,6 +11,7 @@ import type {
   DailySpendingComparison,
 } from "@/src/lib/daily-spending-comparison";
 import { formatMoney } from "@/src/lib/formatters";
+import { useCurrencyCode, useCurrencySymbol } from "@/src/components/currency/currency-context";
 
 type CraftedDailySpendingHeatmapProps = {
   data: DailySpendingComparison;
@@ -214,6 +215,7 @@ function getMaxCurrentDailySpent(days: DailySpendingCell[]): number {
 function buildDayDetails(
   cell: DailySpendingCell,
   data: DailySpendingComparison,
+  currencySymbol: string,
 ): DayDetails {
   const currentParts = parseMonthKey(data.currentMonth.monthKey);
   const previousParts = currentParts ? getPreviousMonthParts(currentParts) : null;
@@ -249,7 +251,7 @@ function buildDayDetails(
   } else if (!hasPreviousData) {
     note = `Nessun dato registrato il ${formatDateKeyLong(previousDateKey)}.`;
   } else if (percentDelta === null) {
-    note = "Differenza percentuale non calcolabile perche il dato precedente e 0,00 €.";
+    note = `Differenza percentuale non calcolabile perche il dato precedente e 0,00 ${currencySymbol}.`;
   }
 
   return {
@@ -379,7 +381,7 @@ function DayDetailPopover({
   );
 }
 
-function IntensityLegend({ maxDailySpent }: { maxDailySpent: number }) {
+function IntensityLegend({ maxDailySpent, currency }: { maxDailySpent: number; currency: string }) {
   return (
     <div className="flex items-center justify-end gap-2 text-[10px] text-ink-3">
       <span>Meno</span>
@@ -389,7 +391,7 @@ function IntensityLegend({ maxDailySpent }: { maxDailySpent: number }) {
             key={level}
             className={cn("size-4 rounded-md border", className)}
             title={
-              level === 0 ? "Nessuna spesa" : formatMoney((maxDailySpent * level) / 5)
+              level === 0 ? "Nessuna spesa" : formatMoney((maxDailySpent * level) / 5, currency)
             }
             aria-hidden="true"
           />
@@ -402,6 +404,8 @@ function IntensityLegend({ maxDailySpent }: { maxDailySpent: number }) {
 
 export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatmapProps) {
   const rootRef = useRef<HTMLElement | null>(null);
+  const currencySymbol = useCurrencySymbol();
+  const currencyCode = useCurrencyCode();
   const [activeDay, setActiveDay] = useState<number | null>(null);
   const [popoverPosition, setPopoverPosition] = useState<PopoverPosition | null>(
     null,
@@ -414,8 +418,8 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
   );
   const activeDetails = useMemo(() => {
     const activeCell = currentDays.find((cell) => cell.day === activeDay);
-    return activeCell ? buildDayDetails(activeCell, data) : null;
-  }, [activeDay, currentDays, data]);
+    return activeCell ? buildDayDetails(activeCell, data, currencySymbol) : null;
+  }, [activeDay, currentDays, data, currencySymbol]);
 
   function getPopoverPosition(
     day: number,
@@ -515,7 +519,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
               aria-label={`Heatmap di ${data.currentMonth.label}`}
             >
               {currentDays.map((cell) => {
-                const details = buildDayDetails(cell, data);
+                const details = buildDayDetails(cell, data, currencySymbol);
                 const level = getIntensityLevel(cell.totalRealSpent, maxCurrentDailySpent);
                 const isActive = activeDay === cell.day;
 
@@ -594,14 +598,14 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                 Ogni quadrato e un giorno di{" "}
                 {data.currentMonth.label.toLowerCase()}. Tocca un giorno per vedere il confronto.
               </p>
-              <IntensityLegend maxDailySpent={maxCurrentDailySpent} />
+              <IntensityLegend maxDailySpent={maxCurrentDailySpent} currency={currencyCode} />
             </div>
 
             {data.monthToDateDelta !== null ? (
               <p className="text-xs leading-5 text-muted-foreground">
                 Totale {data.currentMonth.days.some((cell) => cell.isToday) ? "progressivo" : "mese"}:{" "}
                 <Mono className="font-semibold text-foreground">
-                  {formatCraftedCompact(data.currentMonth.totalRealSpent)}€
+                  {formatCraftedCompact(data.currentMonth.totalRealSpent)}{currencySymbol}
                 </Mono>{" "}
                 in {data.currentMonth.label.toLowerCase()},{" "}
                 <Mono

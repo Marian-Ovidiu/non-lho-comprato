@@ -20,6 +20,7 @@ import {
 } from "@/components/crafted/motion";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type { CraftedGoalRow, CraftedGoalsProps } from "@/src/lib/crafted-goals-build";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 
 function GoalActions({
@@ -93,6 +94,7 @@ function GoalActions({
 }
 
 function FeaturedGoal({ goal }: { goal: CraftedGoalRow }) {
+  const currencySymbol = useCurrencySymbol();
   const target = formatCraftedCompact(goal.targetAmount);
 
   return (
@@ -111,7 +113,7 @@ function FeaturedGoal({ goal }: { goal: CraftedGoalRow }) {
           integerClassName="text-[clamp(2.5rem,12vw,3.25rem)] font-semibold leading-[0.9] tracking-[-0.05em] text-accent"
         />
         <Mono className="text-[19px] whitespace-nowrap text-muted-foreground">
-          / {target}€
+          / {target}{currencySymbol}
         </Mono>
       </div>
       <ProgressLine thick value={goal.progressPercent} className="rounded-[2px]" />
@@ -154,6 +156,7 @@ export function CraftedGoals({
   hasActiveGoals,
   trio,
 }: CraftedGoalsProps) {
+  const currencySymbol = useCurrencySymbol();
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-[var(--sp-page-x)] pb-1 pt-[var(--sp-section-y)]">
@@ -225,7 +228,7 @@ export function CraftedGoals({
           {
             label: "Da impatto positivo",
             value: <CraftedAmount value={trio.towardGoals} />,
-            suffix: "€",
+            suffix: currencySymbol,
           },
           {
             label: "Completati",
@@ -244,7 +247,7 @@ export function CraftedGoals({
                 prefix={trio.monthSaved > 0 ? "+" : ""}
               />
             ),
-            suffix: trio.monthSaved > 0 ? "€" : undefined,
+            suffix: trio.monthSaved > 0 ? currencySymbol : undefined,
           },
         ]}
       />
@@ -266,7 +269,7 @@ export function CraftedGoals({
                     <GoalActions goalId={goal.id} isActive={false} showToggle={false} />
                   </div>
                   <Mono className="shrink-0 text-[13px] whitespace-nowrap text-ink-3">
-                    {formatCraftedCompact(goal.amount)}€
+                    {formatCraftedCompact(goal.amount)}{currencySymbol}
                   </Mono>
                 </div>
                 {index < achieved.length - 1 ? <Rule soft /> : null}

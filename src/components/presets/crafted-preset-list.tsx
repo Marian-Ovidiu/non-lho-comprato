@@ -15,38 +15,39 @@ import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate } from "@/src/lib/formatters";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 
 function toNumber(value: string): number {
   const parsed = Number(value.replace(",", "."));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getPresetMoneySummary(preset: SerializablePreset) {
+function getPresetMoneySummary(preset: SerializablePreset, currencySymbol: string) {
   const amountSpent = toNumber(preset.amountSpent);
   const comparisonAmount = toNumber(preset.comparisonAmount);
   const savingImpact = toNumber(preset.savingImpact);
 
   if (preset.mode === "avoided") {
     return {
-      primaryAmount: `${formatCraftedCompact(comparisonAmount)}€`,
+      primaryAmount: `${formatCraftedCompact(comparisonAmount)}${currencySymbol}`,
       detail: "Non comprato",
-      note: `${formatCraftedCompact(comparisonAmount)}€ non comprati`,
+      note: `${formatCraftedCompact(comparisonAmount)}${currencySymbol} non comprati`,
     };
   }
 
   if (preset.savingContext === "comparison") {
     return {
-      primaryAmount: `${formatCraftedCompact(amountSpent)}€`,
-      detail: `${formatCraftedCompact(comparisonAmount)}€ di confronto`,
+      primaryAmount: `${formatCraftedCompact(amountSpent)}${currencySymbol}`,
+      detail: `${formatCraftedCompact(comparisonAmount)}${currencySymbol} di confronto`,
       note:
         savingImpact >= 0
-          ? `${formatCraftedCompact(savingImpact)}€ risparmiati scegliendo meglio`
-          : `${formatCraftedCompact(Math.abs(savingImpact))}€ spesi in più del confronto`,
+          ? `${formatCraftedCompact(savingImpact)}${currencySymbol} risparmiati scegliendo meglio`
+          : `${formatCraftedCompact(Math.abs(savingImpact))}${currencySymbol} spesi in più del confronto`,
     };
   }
 
   return {
-    primaryAmount: `${formatCraftedCompact(amountSpent)}€`,
+    primaryAmount: `${formatCraftedCompact(amountSpent)}${currencySymbol}`,
     detail: "Spesa normale",
     note: "Senza confronto",
   };
@@ -58,12 +59,13 @@ type CraftedPresetRowProps = {
 
 export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
   const router = useRouter();
+  const currencySymbol = useCurrencySymbol();
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
   });
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-  const summary = getPresetMoneySummary(preset);
+  const summary = getPresetMoneySummary(preset, currencySymbol);
 
   function handleCreate() {
     startTransition(async () => {

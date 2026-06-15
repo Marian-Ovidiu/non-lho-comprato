@@ -1,6 +1,9 @@
+"use client";
+
 import { Label, Mono, Rule, Serif, StatTrio } from "@/components/crafted";
 import { CraftedMonthSelector } from "@/src/components/reports/crafted-month-selector";
 import { formatCraftedCompact, splitCraftedAmount } from "@/src/lib/crafted-money";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import type { MonthlyReportData } from "@/src/actions/reports";
 
 type CraftedMonthlyReportHeaderProps = {
@@ -14,6 +17,7 @@ export function CraftedMonthlyReportHeader({
   months,
   selectedMonth,
 }: CraftedMonthlyReportHeaderProps) {
+  const currencySymbol = useCurrencySymbol();
   const hero = splitCraftedAmount(report.overview?.totalRealSpent ?? 0);
   const monthLabel =
     months.find((month) => month.value === selectedMonth)?.label ?? "Mese";
@@ -34,7 +38,7 @@ export function CraftedMonthlyReportHeader({
               <Mono className="text-[clamp(2.5rem,12vw,3.75rem)] font-semibold leading-[0.85] tracking-[-0.05em]">
                 {hero.whole}
               </Mono>
-              <Mono className="mt-1.5 text-2xl text-muted-foreground">,{hero.decimals}€</Mono>
+              <Mono className="mt-1.5 text-2xl text-muted-foreground">,{hero.decimals}{currencySymbol}</Mono>
             </div>
           </section>
           <details>
@@ -47,7 +51,7 @@ export function CraftedMonthlyReportHeader({
                 {
                   label: "Impatto netto",
                   value: formatCraftedCompact(report.overview?.totalSaved ?? 0),
-                  suffix: "€",
+                  suffix: currencySymbol,
                 },
                 {
                   label: "Movimenti",

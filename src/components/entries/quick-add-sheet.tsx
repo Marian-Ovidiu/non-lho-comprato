@@ -53,6 +53,7 @@ import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 import { getBrowserTodayDateKey, shiftDateKey } from "@/src/lib/workspace-dates";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
 import type { EntryPaymentModeValue } from "@/src/lib/entry-payment-mode";
@@ -135,17 +136,17 @@ function getInitialDraft(
   };
 }
 
-function getPresetAmountLabel(amount: string) {
+function getPresetAmountLabel(amount: string, currencySymbol: string) {
   const parsed = Number(amount.replace(",", "."));
 
   if (!Number.isFinite(parsed)) {
-    return `${amount} €`;
+    return `${amount} ${currencySymbol}`;
   }
 
   return `${new Intl.NumberFormat("it-IT", {
     maximumFractionDigits: 2,
     minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
-  }).format(parsed)} €`;
+  }).format(parsed)} ${currencySymbol}`;
 }
 
 function buildDefaultQuickPreset(
@@ -177,8 +178,8 @@ function getSavedPresetEmoji(preset: SerializablePreset) {
   return "•";
 }
 
-function buildSavedQuickPreset(preset: SerializablePreset): QuickAddPreset {
-  const amountLabel = getPresetAmountLabel(preset.amountSpent);
+function buildSavedQuickPreset(preset: SerializablePreset, currencySymbol: string): QuickAddPreset {
+  const amountLabel = getPresetAmountLabel(preset.amountSpent, currencySymbol);
 
   return {
     id: `saved:${preset.id}`,
@@ -295,6 +296,7 @@ export function QuickAddSheet({
 }) {
   const router = useRouter();
   const pathname = usePathname();
+  const currencySymbol = useCurrencySymbol();
   const [open, setOpen] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
@@ -349,10 +351,10 @@ export function QuickAddSheet({
     return [
       ...savedPresets
         .filter((preset) => preset.mode !== "avoided")
-        .map(buildSavedQuickPreset),
+        .map((preset) => buildSavedQuickPreset(preset, currencySymbol)),
       ...visibleDefaults,
     ];
-  }, [hiddenDefaultPresetIds, savedPresets]);
+  }, [hiddenDefaultPresetIds, savedPresets, currencySymbol]);
   const presetMap = useMemo(
     () => new Map(quickAddPresets.map((preset) => [preset.id, preset])),
     [quickAddPresets],

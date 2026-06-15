@@ -15,6 +15,7 @@ import {
 } from "@/src/lib/workspace-dates";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { cn } from "@/lib/utils";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 
 type EntryItem = {
   id: string;
@@ -217,6 +218,7 @@ export function CraftedEntryList({
   newEntryHref,
   previousMonthSummary,
 }: CraftedEntryListProps) {
+  const currencySymbol = useCurrencySymbol();
   const [entries, setEntries] = useState(initialEntries);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -473,7 +475,7 @@ export function CraftedEntryList({
               </div>
               <div className="shrink-0 text-right">
                 <Mono className="block text-sm font-medium">
-                  {formatCraftedCompact(group.totalRealSpent)}€
+                  {formatCraftedCompact(group.totalRealSpent)}{currencySymbol}
                   <span className="font-normal text-ink-3"> spesi</span>
                 </Mono>
                 <Mono
@@ -487,7 +489,7 @@ export function CraftedEntryList({
                   )}
                 >
                   {group.totalSaved > 0 ? "+" : ""}
-                  {formatCraftedCompact(group.totalSaved)}€
+                  {formatCraftedCompact(group.totalSaved)}{currencySymbol}
                   <span className="ml-1 font-normal text-ink-3">
                     impatto netto
                   </span>
@@ -516,9 +518,9 @@ export function CraftedEntryList({
         <div className="px-5 py-5 text-center">
           <Serif className="text-sm text-ink-3">
             {previousMonthSummary.label.toLowerCase()} —{" "}
-            {formatCraftedCompact(previousMonthSummary.totalRealSpent)}€ spesi
+            {formatCraftedCompact(previousMonthSummary.totalRealSpent)}{currencySymbol} spesi
             {previousMonthSummary.totalSaved > 0
-              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}€ impatto netto`
+              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}${currencySymbol} impatto netto`
               : ""}{" "}
             in {previousMonthSummary.entriesCount} movimenti
           </Serif>

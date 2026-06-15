@@ -163,6 +163,7 @@ export async function GET(request: NextRequest) {
   }
 
   const timeZone = workspace.timezone ?? "Europe/Rome";
+  const currency = workspace.currency ?? "EUR";
   const encoder = new TextEncoder();
   const range = getExportRange(request);
   const where = buildExportWhere(workspace.id, timeZone, range);
@@ -185,7 +186,7 @@ export async function GET(request: NextRequest) {
 
           let chunk = "";
 
-          chunk += serializeAiExpenseExportEntries(entries, workspace.name, timeZone);
+          chunk += serializeAiExpenseExportEntries(entries, workspace.name, timeZone, currency);
 
           controller.enqueue(encoder.encode(chunk));
 

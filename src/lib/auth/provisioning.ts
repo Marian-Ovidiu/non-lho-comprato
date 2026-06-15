@@ -55,6 +55,7 @@ type WorkspaceRecord = {
   name: string;
   kind: "private" | "shared";
   timezone: string;
+  currency: string;
   ownerUserId: string;
 };
 
@@ -63,6 +64,7 @@ function toWorkspaceRecord(workspace: {
   name: string;
   kind: string;
   timezone: string;
+  currency: string;
   ownerUserId: string;
 }): WorkspaceRecord {
   return {
@@ -70,6 +72,7 @@ function toWorkspaceRecord(workspace: {
     name: workspace.name,
     kind: workspace.kind === "shared" ? "shared" : "private",
     timezone: workspace.timezone,
+    currency: workspace.currency,
     ownerUserId: workspace.ownerUserId,
   };
 }
@@ -131,6 +134,7 @@ export async function adoptProductionWorkspaceForUser(
     name: displayName,
     kind: "shared",
     timezone: workspace.timezone,
+    currency: workspace.currency,
     ownerUserId: workspace.ownerUserId,
   };
 }
@@ -437,6 +441,7 @@ export async function getAccessibleWorkspacesForUserId(userId: string) {
       name: true,
       kind: true,
       timezone: true,
+      currency: true,
       ownerUserId: true,
     },
   });

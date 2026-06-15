@@ -1,6 +1,7 @@
 "use client";
 
 import { Label } from "@/components/crafted";
+import { CurrencySelector } from "@/src/components/currency/currency-selector-lazy";
 import { AiAnalysisExportCard } from "@/src/components/more/ai-analysis-export-card-lazy";
 import { PwaInstallSection } from "@/src/components/pwa/install-content-lazy";
 import { ThemeSelector } from "@/src/components/theme/theme-selector-lazy";
@@ -11,6 +12,10 @@ export function CraftedMoreWorkspaceTools() {
   return (
     <div className="space-y-5">
       <div>
+        <Label className="mb-3 block">Valuta</Label>
+        <CurrencySelector />
+      </div>
+      <div className="border-t border-line-soft pt-5">
         <Label className="mb-3 block">Invita</Label>
         <GenerateInviteButton />
       </div>

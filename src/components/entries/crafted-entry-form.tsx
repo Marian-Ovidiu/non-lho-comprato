@@ -34,6 +34,7 @@ import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import {
   normalizeEntryPaymentMode,
   type EntryPaymentModeValue,
@@ -124,16 +125,17 @@ function getSummaryText(
   savingContext: EntrySavingContext,
   amountSpentInput: string,
   comparisonInput: string,
+  currencySymbol: string,
 ) {
   if (savingContext === "comparison") {
     const delta = getMoneyDelta(amountSpentInput, comparisonInput);
 
     if (delta > 0) {
-      return `${formatMoneyValue(delta)}€ risparmiati scegliendo meglio`;
+      return `${formatMoneyValue(delta)}${currencySymbol} risparmiati scegliendo meglio`;
     }
 
     if (delta < 0) {
-      return `${formatMoneyValue(Math.abs(delta))}€ spesi in più del confronto`;
+      return `${formatMoneyValue(Math.abs(delta))}${currencySymbol} spesi in più del confronto`;
     }
 
     return "in linea con il confronto";
@@ -166,6 +168,7 @@ export function CraftedEntryForm({
   initialValues,
 }: CraftedEntryFormProps) {
   const router = useRouter();
+  const currencySymbol = useCurrencySymbol();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const redirectTimerRef = useRef<number | null>(null);
@@ -443,7 +446,7 @@ export function CraftedEntryForm({
                 <Mono className="text-[clamp(3rem,16vw,4.5rem)] font-semibold leading-none text-accent">
                   {getSummaryAmount(amountSpentInput)}
                 </Mono>
-                <Mono className="text-[26px] text-muted-foreground">€</Mono>
+                <Mono className="text-[26px] text-muted-foreground">{currencySymbol}</Mono>
               </div>
               <p className="text-[15px] font-semibold">Movimento salvato</p>
             </div>
@@ -460,13 +463,14 @@ export function CraftedEntryForm({
                 <Mono className="text-[clamp(3rem,16vw,5rem)] font-semibold leading-[0.9] text-accent">
                   {getSummaryAmount(amountSpentInput)}
                 </Mono>
-                <Mono className="text-[28px] text-muted-foreground">€</Mono>
+                <Mono className="text-[28px] text-muted-foreground">{currencySymbol}</Mono>
               </div>
               <p className="mt-3 text-[12.5px] text-ink-3">
                 {getSummaryText(
                   savingContext,
                   amountSpentInput,
                   comparisonInput,
+                  currencySymbol,
                 )}
               </p>
             </>

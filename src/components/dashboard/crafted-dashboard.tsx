@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { differenceInCalendarDays } from "date-fns";
 
@@ -25,6 +27,7 @@ import {
 } from "@/components/crafted/motion";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 
 type CraftedCategoryRow = {
@@ -160,7 +163,7 @@ function toFiniteNumber(value: unknown) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function getRecentEntryMeta(entry: CraftedRecentEntry) {
+function getRecentEntryMeta(entry: CraftedRecentEntry, currencySymbol: string) {
   const realCost = toFiniteNumber(entry.realCost);
   const alternativeCost = toFiniteNumber(entry.alternativeCost);
   const savedAmount = toFiniteNumber(entry.savedAmount);
@@ -168,7 +171,7 @@ function getRecentEntryMeta(entry: CraftedRecentEntry) {
   if (realCost === 0 && alternativeCost > 0 && savedAmount > 0) {
     return {
       label: "Evitata",
-      detail: `${formatCraftedEntryAmount(alternativeCost)}€ non comprati`,
+      detail: `${formatCraftedEntryAmount(alternativeCost)}${currencySymbol} non comprati`,
       tone: "accent" as const,
     };
   }
@@ -176,7 +179,7 @@ function getRecentEntryMeta(entry: CraftedRecentEntry) {
   if (savedAmount > 0) {
     return {
       label: "Confronto",
-      detail: `${formatCraftedEntryAmount(savedAmount)}€ risparmiati scegliendo meglio`,
+      detail: `${formatCraftedEntryAmount(savedAmount)}${currencySymbol} risparmiati scegliendo meglio`,
       tone: "accent" as const,
     };
   }
@@ -184,7 +187,7 @@ function getRecentEntryMeta(entry: CraftedRecentEntry) {
   if (savedAmount < 0) {
     return {
       label: "Confronto",
-      detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}€ spesi in più del confronto`,
+      detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}${currencySymbol} spesi in più del confronto`,
       tone: "default" as const,
     };
   }
@@ -214,6 +217,7 @@ export function CraftedDashboard({
   emptyState,
   coupleBalance,
 }: CraftedDashboardProps) {
+  const currencySymbol = useCurrencySymbol();
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
@@ -236,11 +240,11 @@ export function CraftedDashboard({
             <Label className="mb-1.5 block">{monthLabel} — impatto netto</Label>
             <Mono className="text-xl font-medium">
               <CraftedAmount value={monthSaved} />
-              <span className="text-xs text-accent">€</span>
+              <span className="text-xs text-accent">{currencySymbol}</span>
             </Mono>
             {monthLargeComparisonImpact > 0 ? (
             <Mono className="mt-1 block text-[11px] text-ink-3">
-                Grandi confronti: {formatCraftedCompact(monthLargeComparisonImpact)}€
+                Grandi confronti: {formatCraftedCompact(monthLargeComparisonImpact)}{currencySymbol}
               </Mono>
             ) : null}
           </div>
@@ -250,7 +254,7 @@ export function CraftedDashboard({
               <Mono>
                 <CraftedAmount value={Math.abs(monthDelta)} />
               </Mono>
-              {monthDelta > 0 ? "€ in più" : "€ in meno"} del mese scorso
+              {monthDelta > 0 ? `${currencySymbol} in più` : `${currencySymbol} in meno`} del mese scorso
             </span>
           ) : null}
         </div>
@@ -273,7 +277,7 @@ export function CraftedDashboard({
           {
             label: "Speso oggi",
             value: <CraftedAmount value={spentToday} />,
-            suffix: "€",
+            suffix: currencySymbol,
           },
           {
             label: "Movimenti oggi",
@@ -298,7 +302,7 @@ export function CraftedDashboard({
             <Label className="mb-2 block">Bilancio coppia</Label>
             <Mono className="text-xl font-medium">
               {formatCraftedCompact(Math.abs(coupleBalance.amount))}
-              <span className="text-xs text-accent">€</span>
+              <span className="text-xs text-accent">{currencySymbol}</span>
             </Mono>
             {coupleBalance.counterpartLabel ? (
               <Serif className="mt-2 block text-sm text-ink-3">
@@ -350,7 +354,7 @@ export function CraftedDashboard({
                   </Mono>
                   <Mono className="whitespace-nowrap text-sm font-medium">
                     {formatCraftedCompact(category.spent)}
-                    <span className="text-[11px] text-accent">€</span>
+                    <span className="text-[11px] text-accent">{currencySymbol}</span>
                   </Mono>
                 </div>
                 {index < categories.length - 1 ? <Rule soft /> : null}
@@ -455,7 +459,7 @@ export function CraftedDashboard({
       {recentEntries.length > 0 ? (
         <div className="px-[var(--sp-page-x)] pb-6">
           {recentEntries.map((entry, index) => {
-            const meta = getRecentEntryMeta(entry);
+            const meta = getRecentEntryMeta(entry, currencySymbol);
 
             return (
               <div key={entry.id}>
@@ -498,7 +502,7 @@ export function CraftedDashboard({
                   </div>
                   <Mono className="shrink-0 text-[15px] font-medium">
                     {formatCraftedEntryAmount(entry.realCost)}
-                    <span className="align-baseline text-[11px] text-accent">€</span>
+                    <span className="align-baseline text-[11px] text-accent">{currencySymbol}</span>
                   </Mono>
                 </Link>
                 {index < recentEntries.length - 1 ? <Rule soft /> : null}

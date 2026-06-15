@@ -7,6 +7,7 @@ import { X } from "lucide-react";
 import { Label, Mono, Rule, Serif } from "@/components/crafted";
 import { Button } from "@/components/ui/button";
 import { splitCraftedAmount } from "@/src/lib/crafted-money";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
 
 type DailyCheckinOverlayProps = {
@@ -34,6 +35,7 @@ export function DailyCheckinOverlay({
   pendingHabitsCount,
   isVisible = true,
 }: DailyCheckinOverlayProps) {
+  const currencySymbol = useCurrencySymbol();
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -70,7 +72,7 @@ export function DailyCheckinOverlay({
     typeof pendingHabitsCount === "number" && pendingHabitsCount > 0;
 
   const lede = hasSpent
-    ? `Oggi hai già registrato ${spentHero.whole},${spentHero.decimals}€ di spesa reale.`
+    ? `Oggi hai già registrato ${spentHero.whole},${spentHero.decimals}${currencySymbol} di spesa reale.`
     : hasSaved
       ? "Oggi non hai ancora speso, ma hai già segnato impatto netto positivo."
       : "Oggi è ancora aperto. Puoi registrare una spesa o aggiungere un confronto quando serve.";
@@ -120,7 +122,7 @@ export function DailyCheckinOverlay({
             {spentHero.whole}
           </Mono>
           <Mono className="mt-1.5 text-xl text-muted-foreground">
-            ,{spentHero.decimals}€
+            ,{spentHero.decimals}{currencySymbol}
           </Mono>
         </div>
 
@@ -132,7 +134,7 @@ export function DailyCheckinOverlay({
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}
-              €
+              {currencySymbol}
             </Mono>
           </div>
         ) : null}
