@@ -1,27 +1,9 @@
 export const dynamic = "force-dynamic";
 
-import nextDynamic from "next/dynamic";
 import { getCategories, getEntryById } from "@/src/actions/entries";
 import { CraftedEntryNotFound } from "@/src/components/entries/crafted-entry-not-found";
+import { EntryEditForm } from "@/src/components/entries/entry-edit-form";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
-
-const EntryEditForm = nextDynamic(
-  () =>
-    import("@/src/components/entries/entry-edit-form").then((m) => ({
-      default: m.EntryEditForm,
-    })),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="animate-pulse space-y-4 px-5 pt-5">
-        <div className="h-12 rounded-xl bg-muted" />
-        <div className="h-12 rounded-xl bg-muted" />
-        <div className="h-12 rounded-xl bg-muted" />
-        <div className="h-28 rounded-xl bg-muted" />
-      </div>
-    ),
-  },
-);
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";

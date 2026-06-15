@@ -1,16 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
-import dynamic from "next/dynamic";
 
 import { AppShell } from "@/src/components/layout/app-shell";
-
-const PostHogNavigationTracker = dynamic(
-  () =>
-    import("@/src/components/analytics/posthog-navigation-tracker").then(
-      (m) => ({ default: m.PostHogNavigationTracker }),
-    ),
-  { ssr: false },
-);
+import { PostHogNavigationTrackerLoader } from "@/src/components/analytics/posthog-navigation-tracker-loader";
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { SplashBootstrapShell } from "@/src/components/splash/splash-bootstrap-shell";
 import { SplashGate } from "@/src/components/splash/splash-gate";
@@ -101,7 +93,7 @@ export default async function RootLayout({
         <SplashBootstrapShell />
         <ThemeProvider>
           <SplashGate>
-          <PostHogNavigationTracker userId={authenticatedUser?.id ?? null} />
+          <PostHogNavigationTrackerLoader userId={authenticatedUser?.id ?? null} />
           {authenticatedUser && workspaceShell ? (
             <AppShell
               workspace={workspaceShell.currentWorkspace}

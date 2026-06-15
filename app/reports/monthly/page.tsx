@@ -1,31 +1,15 @@
 export const dynamic = "force-dynamic";
 
-import nextDynamic from "next/dynamic";
 import {
   getAvailableReportMonths,
   getMonthlyReport,
 } from "@/src/actions/reports";
 import { getCategories } from "@/src/actions/entries";
+import { CraftedMonthlyReportDetail } from "@/src/components/reports/crafted-monthly-report-detail";
 import { CraftedMonthlyReportExtras } from "@/src/components/reports/crafted-monthly-report-extras";
 import { CraftedMonthlyReportHeader } from "@/src/components/reports/crafted-monthly-report-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
-
-const CraftedMonthlyReportDetail = nextDynamic(
-  () =>
-    import("@/src/components/reports/crafted-monthly-report-detail").then(
-      (m) => ({ default: m.CraftedMonthlyReportDetail }),
-    ),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="animate-pulse space-y-4 px-5">
-        <div className="h-40 rounded-xl bg-muted" />
-        <div className="h-40 rounded-xl bg-muted" />
-      </div>
-    ),
-  },
-);
 
 type MonthlyReportPageProps = {
   searchParams: Promise<{
