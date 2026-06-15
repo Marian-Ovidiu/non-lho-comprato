@@ -11,20 +11,22 @@ import { JoinWorkspaceForm } from "@/src/components/workspace/join-workspace-for
 
 export function CraftedMoreWorkspaceTools() {
   return (
-    <div className="space-y-5">
-      <div>
+    <div className="divide-y divide-line-soft border-y border-line">
+      <div className="py-4">
+        <Label className="mb-1.5 block">Valuta</Label>
+        <div className="border border-line rounded-xl px-3 py-2.5 mt-2">
+          <CurrencySelector />
+        </div>
+      </div>
+      <div className="py-4">
         <Label className="mb-3 block">Lingua categorie</Label>
         <LanguageSelector />
       </div>
-      <div className="border-t border-line-soft pt-5">
-        <Label className="mb-3 block">Valuta</Label>
-        <CurrencySelector />
-      </div>
-      <div className="border-t border-line-soft pt-5">
+      <div className="py-4">
         <Label className="mb-3 block">Invita</Label>
         <GenerateInviteButton />
       </div>
-      <div className="border-t border-line-soft pt-5">
+      <div className="py-4">
         <Label className="mb-3 block">Unisciti</Label>
         <JoinWorkspaceForm />
       </div>

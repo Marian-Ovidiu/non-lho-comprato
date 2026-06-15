@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -5,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
 import { getGoalEmoji } from "@/src/lib/visual-cues";
 import { spacing } from "@/src/lib/spacing";
+import { useCurrencyCode } from "@/src/components/currency/currency-context";
 
 type GoalsPreviewProps = {
   goals: Array<{
@@ -29,6 +32,7 @@ export function GoalsPreview({
   goals,
   description = "Le mete che avanzano con impatto netto positivo.",
 }: GoalsPreviewProps) {
+  const currencyCode = useCurrencyCode();
   const visibleGoals = goals.slice(0, 3);
 
   return (
@@ -63,7 +67,7 @@ export function GoalsPreview({
                       {goal.title}
                     </p>
                     <p className="text-xs text-muted-text">
-                      Obiettivo {formatMoney(goal.targetAmount)}
+                      Obiettivo {formatMoney(goal.targetAmount, currencyCode)}
                     </p>
                   </div>
                   <p className="shrink-0 text-sm font-semibold text-success">

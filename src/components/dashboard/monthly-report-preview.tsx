@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { ArrowRight, BarChart3, Sparkles } from "lucide-react";
 
@@ -5,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
 import { spacing } from "@/src/lib/spacing";
+import { useCurrencyCode } from "@/src/components/currency/currency-context";
 
 type MonthlyReportPreviewProps = {
   report: {
@@ -25,6 +28,7 @@ type MonthlyReportPreviewProps = {
 };
 
 export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
+  const currencyCode = useCurrencyCode();
   return (
     <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className={spacing.cardHeader}>
@@ -68,7 +72,7 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
                 Speso
               </p>
               <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">
-                {formatMoney(report.overview.totalRealSpent ?? 0)}
+                {formatMoney(report.overview.totalRealSpent ?? 0, currencyCode)}
               </p>
             </div>
 
@@ -86,7 +90,7 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
                 Impatto netto
               </p>
               <p className="mt-1 truncate text-base font-semibold text-foreground sm:text-lg">
-                {formatMoney(report.overview.totalSaved)}
+                {formatMoney(report.overview.totalSaved, currencyCode)}
               </p>
             </div>
           </div>
