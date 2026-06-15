@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 
 import { AppShell } from "@/src/components/layout/app-shell";
@@ -60,23 +61,11 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const authenticatedUser = await getAuthenticatedUser();
-  let workspaceShell: Awaited<ReturnType<typeof getWorkspaceShellContext>> | null =
-    null;
-
-  if (authenticatedUser) {
-    try {
-      workspaceShell = await getWorkspaceShellContext();
-    } catch (error) {
-      console.error("Failed to load workspace shell context:", error);
-    }
-  }
-
   return (
     <html
       lang="it"
@@ -93,28 +82,50 @@ export default async function RootLayout({
         <SplashBootstrapShell />
         <ThemeProvider>
           <SplashGate>
-          <PostHogNavigationTrackerLoader userId={authenticatedUser?.id ?? null} />
-          {authenticatedUser && workspaceShell ? (
-            <AppShell
-              workspace={workspaceShell.currentWorkspace}
-              availableWorkspaces={workspaceShell.availableWorkspaces}
-              currency={workspaceShell.currentWorkspace.currency ?? "EUR"}
-              language={workspaceShell.currentWorkspace.language ?? "it"}
-              currentUserId={authenticatedUser.id}
-              auth={{
-                isAuthenticated: true,
-                userLabel: authenticatedUser.name ?? authenticatedUser.email ?? null,
-              }}
-            >
-              {children}
-            </AppShell>
-          ) : (
-            children
-          )}
-          <RegisterSW />
+            <Suspense fallback={children}>
+              <LayoutAuthShell>{children}</LayoutAuthShell>
+            </Suspense>
+            <RegisterSW />
           </SplashGate>
         </ThemeProvider>
       </body>
     </html>
+  );
+}
+
+async function LayoutAuthShell({ children }: { children: React.ReactNode }) {
+  const authenticatedUser = await getAuthenticatedUser();
+  let workspaceShell: Awaited<ReturnType<typeof getWorkspaceShellContext>> | null =
+    null;
+
+  if (authenticatedUser) {
+    try {
+      workspaceShell = await getWorkspaceShellContext();
+    } catch (error) {
+      console.error("Failed to load workspace shell context:", error);
+    }
+  }
+
+  return (
+    <>
+      <PostHogNavigationTrackerLoader userId={authenticatedUser?.id ?? null} />
+      {authenticatedUser && workspaceShell ? (
+        <AppShell
+          workspace={workspaceShell.currentWorkspace}
+          availableWorkspaces={workspaceShell.availableWorkspaces}
+          currency={workspaceShell.currentWorkspace.currency ?? "EUR"}
+          language={workspaceShell.currentWorkspace.language ?? "it"}
+          currentUserId={authenticatedUser.id}
+          auth={{
+            isAuthenticated: true,
+            userLabel: authenticatedUser.name ?? authenticatedUser.email ?? null,
+          }}
+        >
+          {children}
+        </AppShell>
+      ) : (
+        children
+      )}
+    </>
   );
 }
