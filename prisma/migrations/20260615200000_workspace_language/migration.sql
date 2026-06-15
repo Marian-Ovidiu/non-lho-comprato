@@ -1,0 +1,1 @@
+ALTER TABLE "Workspace" ADD COLUMN "language" TEXT NOT NULL DEFAULT 'it';

@@ -42,6 +42,7 @@ import {
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
+  getCurrentWorkspaceLanguage,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
   getCurrentWorkspaceTimezone,
@@ -1084,18 +1085,21 @@ export async function getDashboardEntrySnapshot(): Promise<DashboardEntrySnapsho
 
 export async function getCategories() {
   try {
-    const allCategories = await prisma.category.findMany({
-      where: await getCurrentWorkspaceScopedWhere(),
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        color: true,
-        icon: true,
-        isDefault: true,
-        archivedAt: true,
-      },
-    });
+    const [allCategories, language] = await Promise.all([
+      prisma.category.findMany({
+        where: await getCurrentWorkspaceScopedWhere(),
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          color: true,
+          icon: true,
+          isDefault: true,
+          archivedAt: true,
+        },
+      }),
+      getCurrentWorkspaceLanguage(),
+    ]);
 
     const archivedDefaultSlugs = new Set<string>();
     const activeCategories = [];
@@ -1110,7 +1114,7 @@ export async function getCategories() {
       }
     }
 
-    return mergeCategoryOptions(activeCategories, archivedDefaultSlugs);
+    return mergeCategoryOptions(activeCategories, archivedDefaultSlugs, language);
   } catch (error) {
     unstable_rethrow(error);
     console.warn("Falling back to static categories:", error);

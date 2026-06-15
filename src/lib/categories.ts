@@ -1,3 +1,5 @@
+import { getLocalizedCategoryName } from "./category-locale";
+
 export type DefaultCategory = {
   name: string;
   slug: string;
@@ -64,6 +66,7 @@ export function mergeCategoryOptions(
     }
   >,
   archivedDefaultSlugs: ReadonlySet<string> = new Set(),
+  language = "it",
 ): CategoryOption[] {
   const bySlug = new Map<string, CategoryOption>();
 
@@ -71,7 +74,7 @@ export function mergeCategoryOptions(
     if (!archivedDefaultSlugs.has(category.slug)) {
       bySlug.set(category.slug, {
         id: category.slug,
-        name: category.name,
+        name: getLocalizedCategoryName(category.slug, language) ?? category.name,
         slug: category.slug,
         color: category.color,
         icon: category.icon,
@@ -80,10 +83,14 @@ export function mergeCategoryOptions(
   }
 
   for (const category of dbCategories) {
-    bySlug.set(category.slug, toCategoryOption(category));
+    const dbOption = toCategoryOption(category);
+    bySlug.set(category.slug, {
+      ...dbOption,
+      name: getLocalizedCategoryName(category.slug, language) ?? dbOption.name,
+    });
   }
 
   return Array.from(bySlug.values()).sort((left, right) =>
-    left.name.localeCompare(right.name, "it"),
+    left.name.localeCompare(right.name, language),
   );
 }

@@ -230,6 +230,7 @@ model Workspace {
   kind         WorkspaceKind     @default(private)
   timezone     String            @default("Europe/Rome")
   currency     String            @default("EUR")
+  language     String            @default("it")
   ownerUserId  String
   owner        User              @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
   members      WorkspaceMember[]

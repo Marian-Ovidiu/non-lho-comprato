@@ -36,6 +36,8 @@ import {
 } from "@/components/crafted/motion";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
 import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
 
@@ -60,6 +62,7 @@ function CraftedCategoryBars({
   categories: CraftedStatsProps["categories"];
 }) {
   const currencySymbol = useCurrencySymbol();
+  const language = useWorkspaceLanguage();
   if (categories.length === 0) {
     return (
       <p className="px-5 py-8 text-sm text-ink-3">
@@ -84,7 +87,7 @@ function CraftedCategoryBars({
               size={18}
               className="text-muted-foreground"
             />
-            <span className="min-w-0 flex-1 text-sm font-[450]">{category.name}</span>
+            <span className="min-w-0 flex-1 text-sm font-[450]">{getLocalizedCategoryName(category.slug, language) ?? category.name}</span>
             <Mono className="mr-3 text-[11px] text-ink-3">{category.pct}%</Mono>
             <Mono className="text-sm font-medium whitespace-nowrap">
               {formatCraftedCompact(category.spent)}

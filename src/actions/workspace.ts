@@ -17,6 +17,7 @@ import {
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
 import { isSupportedCurrency } from "@/src/lib/workspace-currency";
+import { isSupportedLanguage } from "@/src/lib/workspace-language";
 import {
   buildAbsoluteAppUrl,
   generateInviteToken,
@@ -374,6 +375,38 @@ export async function updateWorkspaceCurrencyAction(
     unstable_rethrow(error);
     console.error("Failed to update workspace currency:", error);
     return { success: false, message: "Non riesco ad aggiornare la valuta adesso. Riprova." };
+  }
+}
+
+type UpdateLanguageResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function updateWorkspaceLanguageAction(
+  formData: FormData,
+): Promise<UpdateLanguageResult> {
+  const code = String(formData.get("language") ?? "").trim().toLowerCase();
+
+  if (!isSupportedLanguage(code)) {
+    return { success: false, message: "Lingua non supportata." };
+  }
+
+  try {
+    const workspaceId = await getCurrentWorkspaceId();
+
+    await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { language: code },
+    });
+
+    revalidatePath("/", "layout");
+
+    return { success: true, message: "Lingua aggiornata." };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to update workspace language:", error);
+    return { success: false, message: "Non riesco ad aggiornare la lingua adesso. Riprova." };
   }
 }
 

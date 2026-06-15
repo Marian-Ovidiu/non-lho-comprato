@@ -17,6 +17,7 @@ import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { CurrencyProvider } from "@/src/components/currency/currency-context";
+import { LanguageProvider } from "@/src/components/language/language-context";
 
 export type AppShellWorkspace = {
   id: string;
@@ -123,6 +124,7 @@ export function AppShell({
   currentUserId,
   auth,
   currency,
+  language,
 }: {
   children: React.ReactNode;
   workspace: AppShellWorkspace;
@@ -130,6 +132,7 @@ export function AppShell({
   currentUserId: string;
   auth: AppShellAuth;
   currency: string;
+  language: string;
 }) {
   const pathname = usePathname();
   const router = useRouter();
@@ -192,6 +195,7 @@ export function AppShell({
   }, [workspace.id]);
 
   return (
+    <LanguageProvider language={language}>
     <CurrencyProvider currency={currency}>
     <ToastProvider>
       <div className="min-h-[100dvh] bg-background text-foreground">
@@ -274,5 +278,6 @@ export function AppShell({
       </div>
     </ToastProvider>
     </CurrencyProvider>
+    </LanguageProvider>
   );
 }

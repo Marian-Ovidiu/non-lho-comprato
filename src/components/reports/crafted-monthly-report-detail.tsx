@@ -7,6 +7,8 @@ import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import { useCurrencyCode, useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
 import {
   buildMonthlyReportAnalyticsSnapshot,
@@ -118,6 +120,7 @@ function buildCategoryOptions(
   categories: CategoryOption[],
   reportEntries: MonthlyReportAnalyticsEntry[],
   previousEntries: MonthlyReportAnalyticsEntry[],
+  language: string,
 ): CategoryFilterOption[] {
   const options = new Map<string, CategoryFilterOption>();
 
@@ -136,7 +139,9 @@ function buildCategoryOptions(
     if (!options.has(value)) {
       options.set(value, {
         value,
-        label: entry.category.name || "Categoria eliminata",
+        label:
+          getLocalizedCategoryName(entry.category.slug, language) ??
+          (entry.category.name || "Categoria eliminata"),
       });
     }
   }
@@ -418,12 +423,13 @@ export function CraftedMonthlyReportDetail({
 }: CraftedMonthlyReportDetailProps) {
   const currencySymbol = useCurrencySymbol();
   const currencyCode = useCurrencyCode();
+  const language = useWorkspaceLanguage();
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY_VALUE);
 
   const categoryOptions = useMemo(
     () =>
-      buildCategoryOptions(categories, report.entries, report.previousMonthEntries),
-    [categories, report.entries, report.previousMonthEntries],
+      buildCategoryOptions(categories, report.entries, report.previousMonthEntries, language),
+    [categories, report.entries, report.previousMonthEntries, language],
   );
 
   const selectedCategoryLabel = useMemo(

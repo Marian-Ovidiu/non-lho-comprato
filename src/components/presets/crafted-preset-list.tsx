@@ -16,6 +16,7 @@ import { formatDate } from "@/src/lib/formatters";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useLocalizedCategoryName } from "@/src/components/language/language-context";
 
 function toNumber(value: string): number {
   const parsed = Number(value.replace(",", "."));
@@ -60,6 +61,7 @@ type CraftedPresetRowProps = {
 export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
+  const categoryName = useLocalizedCategoryName(preset.category.slug, preset.category.name);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
     onComplete: () => router.refresh(),
   });
@@ -99,7 +101,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
           <div className="min-w-0">
             <p className="truncate text-[15px] font-[450]">{preset.title}</p>
             <p className="mt-0.5 text-xs text-ink-3">
-              {preset.category.name} · {preset.targetUserLabel} · {formatDate(preset.createdAt)}
+              {categoryName} · {preset.targetUserLabel} · {formatDate(preset.createdAt)}
             </p>
             <p className="mt-1 text-xs text-ink-3">{summary.detail} · {summary.note}</p>
           </div>

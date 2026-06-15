@@ -28,6 +28,8 @@ import {
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
 
 type CraftedCategoryRow = {
@@ -218,6 +220,7 @@ export function CraftedDashboard({
   coupleBalance,
 }: CraftedDashboardProps) {
   const currencySymbol = useCurrencySymbol();
+  const language = useWorkspaceLanguage();
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
@@ -347,7 +350,7 @@ export function CraftedDashboard({
                     className="text-muted-foreground"
                   />
                   <div className="flex-1">
-                    <span className="block text-sm font-[450]">{category.name}</span>
+                    <span className="block text-sm font-[450]">{getLocalizedCategoryName(category.slug, language) ?? category.name}</span>
                   </div>
                   <Mono className="mr-3 whitespace-nowrap text-[11px] text-ink-3">
                     {category.count} mov.
@@ -475,7 +478,7 @@ export function CraftedDashboard({
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-[15px] font-[450]">{entry.title}</p>
                     <Mono className="mt-0.5 block text-[11px] leading-4 tracking-[0.02em] text-ink-3">
-                      {formatEntryMeta(entry.date, entry.category.name)}
+                      {formatEntryMeta(entry.date, getLocalizedCategoryName(entry.category.slug, language) ?? entry.category.name)}
                     </Mono>
                     {meta ? (
                       <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">

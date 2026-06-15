@@ -9,6 +9,7 @@ import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useLocalizedCategoryName } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 
 type CraftedEntryRowProps = {
@@ -103,6 +104,7 @@ export function CraftedEntryRow({
   showDivider = true,
 }: CraftedEntryRowProps) {
   const currencySymbol = useCurrencySymbol();
+  const categoryName = useLocalizedCategoryName(entry.category.slug, entry.category.name);
   const meta = getSecondaryMeta(entry, currencySymbol);
 
   return (
@@ -119,7 +121,7 @@ export function CraftedEntryRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-[450]">{entry.title}</p>
           <Mono className="mt-0.5 block text-[11px] leading-4 tracking-[0.02em] text-ink-3">
-            {formatEntryMeta(entry.date, entry.category.name)}
+            {formatEntryMeta(entry.date, categoryName)}
           </Mono>
           {meta ? (
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
