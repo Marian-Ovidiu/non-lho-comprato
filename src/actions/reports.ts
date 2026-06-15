@@ -18,8 +18,13 @@ import {
   getCurrentWorkspaceScopedWhere,
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
-import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
-import { getMemberLabel, resolveEntryPeopleFromRecord } from "@/src/lib/workspace-members";
+import {
+  dedupeWorkspaceMemberOptions,
+  getMemberLabel,
+  resolveEntryPeopleFromRecord,
+  sortWorkspaceMembers,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 import {
   aggregateEntryMetrics,
   calculateEntryMetrics,
@@ -368,17 +373,18 @@ function buildMemberSplit(
   totalSaved: number,
   entriesCount: number,
 ): MonthlyReportMemberSplit {
-  const slots = getWorkspaceMemberSlots(members);
-  const primaryLabel = getMemberLabel(members, slots.primaryUserId) ?? "Membro";
-  const secondaryLabel =
-    getMemberLabel(members, slots.secondaryUserId) ?? "Membro";
+  const sortedMembers = sortWorkspaceMembers(dedupeWorkspaceMemberOptions(members));
+  const primaryUserId = sortedMembers[0]?.userId ?? null;
+  const secondaryUserId = sortedMembers[1]?.userId ?? null;
+  const primaryLabel = getMemberLabel(members, primaryUserId) ?? "Membro";
+  const secondaryLabel = getMemberLabel(members, secondaryUserId) ?? "Membro";
 
   const primary = createMonthlyReportMemberSummary(
-    slots.primaryUserId,
+    primaryUserId,
     primaryLabel,
   );
   const secondary = createMonthlyReportMemberSummary(
-    slots.secondaryUserId,
+    secondaryUserId,
     secondaryLabel,
   );
   const shared = createMonthlyReportMemberSummary(null, "Condivise");
@@ -400,7 +406,7 @@ function buildMemberSplit(
     const beneficiaryUserId =
       resolved.beneficiaryUserIds[0] ?? resolved.paidByUserId;
 
-    if (beneficiaryUserId && beneficiaryUserId === slots.secondaryUserId) {
+    if (beneficiaryUserId && beneficiaryUserId === secondaryUserId) {
       secondary.totalRealSpent = round2(secondary.totalRealSpent + realCost);
       secondary.totalSaved = round2(secondary.totalSaved + netImpact);
       secondary.entriesCount += 1;

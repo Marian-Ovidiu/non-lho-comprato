@@ -9,7 +9,6 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
-import { syncHabitEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import {
   getDayRangeForDateKey,
   getIsoWeekday,
@@ -25,6 +24,7 @@ import {
 } from "@/src/lib/workspace-context";
 import {
   getDefaultHabitTargetUserId,
+  getHabitTargetUserIds,
   normalizeHabitTargetScope,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
@@ -487,13 +487,17 @@ function buildEntryDataForOccurrence(
             savingContext: "none",
             amountSpent: 0,
           });
-  const { paidByUserId, beneficiaryUserIds } =
-    syncHabitEntryPersonColumns({
-      targetScope: occurrence.habit.targetScope,
-      targetUserId: occurrence.habit.targetUserId,
-      members: context.members,
-      currentUserId: context.currentUserId,
-    });
+  const resolvedBeneficiaries = getHabitTargetUserIds({
+    targetScope: occurrence.habit.targetScope,
+    targetUserId: occurrence.habit.targetUserId,
+    members: context.members,
+    currentUserId: context.currentUserId,
+  });
+  const paidByUserId = context.currentUserId;
+  const beneficiaryUserIds =
+    resolvedBeneficiaries.length > 0
+      ? resolvedBeneficiaries
+      : [context.currentUserId];
   const sharedFields = {
     workspaceId: context.workspaceId,
     createdByUserId: context.currentUserId,
