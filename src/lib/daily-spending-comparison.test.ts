@@ -18,6 +18,8 @@ function getDay(
   return row.days.find((cell) => cell.day === day);
 }
 
+const TZ = "Europe/Rome";
+
 describe("buildDailySpendingComparison", () => {
   it("sums multiple entries on the same day", () => {
     const now = romeDate(2026, 6, 8);
@@ -26,6 +28,7 @@ describe("buildDailySpendingComparison", () => {
         { date: romeDate(2026, 6, 7), realCost: 10 },
         { date: romeDate(2026, 6, 7), realCost: 17 },
       ],
+      TZ,
       now,
     );
 
@@ -41,6 +44,7 @@ describe("buildDailySpendingComparison", () => {
         { date: romeDate(2026, 5, 7), realCost: 27 },
         { date: romeDate(2026, 6, 7), realCost: 30 },
       ],
+      TZ,
       now,
     );
 
@@ -53,7 +57,7 @@ describe("buildDailySpendingComparison", () => {
 
   it("marks future days in the current month", () => {
     const now = romeDate(2026, 6, 8);
-    const comparison = buildDailySpendingComparison([], now);
+    const comparison = buildDailySpendingComparison([], TZ, now);
 
     const day8 = getDay(comparison, "current", 8);
     const day9 = getDay(comparison, "current", 9);
@@ -68,6 +72,7 @@ describe("buildDailySpendingComparison", () => {
     const now = romeDate(2026, 3, 10);
     const comparison = buildDailySpendingComparison(
       [{ date: romeDate(2026, 2, 28), realCost: 15 }],
+      TZ,
       now,
     );
 
@@ -82,7 +87,7 @@ describe("buildDailySpendingComparison", () => {
 
   it("returns zeros and no previous month when there are no entries", () => {
     const now = romeDate(2026, 6, 8);
-    const comparison = buildDailySpendingComparison([], now);
+    const comparison = buildDailySpendingComparison([], TZ, now);
 
     assert.equal(comparison.previousMonth, null);
     assert.equal(comparison.currentMonth.totalRealSpent, 0);
@@ -95,6 +100,7 @@ describe("buildDailySpendingComparison", () => {
     const now = romeDate(2026, 6, 8);
     const comparison = buildDailySpendingComparison(
       [{ date: romeDate(2026, 5, 3), realCost: 42 }],
+      TZ,
       now,
     );
 
@@ -114,6 +120,7 @@ describe("buildDailySpendingComparison", () => {
         { date: romeDate(2026, 6, 1), realCost: 15 },
         { date: romeDate(2026, 6, 7), realCost: 25 },
       ],
+      TZ,
       now,
     );
 
@@ -127,6 +134,7 @@ describe("buildDailySpendingComparison", () => {
         { date: romeDate(2026, 4, 12), realCost: 18 },
         { date: romeDate(2026, 5, 12), realCost: 30 },
       ],
+      TZ,
       now,
       "2026-05",
     );

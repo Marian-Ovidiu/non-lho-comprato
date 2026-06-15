@@ -10,7 +10,7 @@ import {
   type AiExpenseExportEntry,
   type AiExpenseExportRange,
 } from "@/src/lib/ai-export";
-import { getRomeMonthKey, getRomeMonthRangeForMonthKey } from "@/src/lib/rome-dates";
+import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,6 @@ const exportSelect = {
   title: true,
   note: true,
   source: true,
-  person: true,
   realCost: true,
   alternativeCost: true,
   savedAmount: true,
@@ -79,14 +78,15 @@ function getExportRange(request: NextRequest): AiExpenseExportRange {
 
 function buildExportWhere(
   workspaceId: string,
+  timeZone: string,
   range: AiExpenseExportRange,
 ): Prisma.EntryWhereInput {
   if (range !== "current-month") {
     return { workspaceId };
   }
 
-  const monthKey = getRomeMonthKey(new Date());
-  const { start, end } = getRomeMonthRangeForMonthKey(monthKey);
+  const monthKey = getMonthKey(new Date(), timeZone);
+  const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
 
   return {
     workspaceId,
@@ -124,7 +124,6 @@ async function fetchEntriesBatch(
     title: entry.title,
     note: entry.note,
     source: entry.source,
-    person: entry.person,
     realCost: entry.realCost,
     alternativeCost: entry.alternativeCost,
     savedAmount: entry.savedAmount,
@@ -163,10 +162,11 @@ export async function GET(request: NextRequest) {
     return new Response("Unauthorized", { status: 401 });
   }
 
+  const timeZone = workspace.timezone ?? "Europe/Rome";
   const encoder = new TextEncoder();
   const range = getExportRange(request);
-  const where = buildExportWhere(workspace.id, range);
-  const filename = getAiExpenseExportFilename(new Date(), range);
+  const where = buildExportWhere(workspace.id, timeZone, range);
+  const filename = getAiExpenseExportFilename(timeZone, new Date(), range);
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
 
           let chunk = "";
 
-          chunk += serializeAiExpenseExportEntries(entries, workspace.name);
+          chunk += serializeAiExpenseExportEntries(entries, workspace.name, timeZone);
 
           controller.enqueue(encoder.encode(chunk));
 

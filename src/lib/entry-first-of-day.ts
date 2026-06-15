@@ -1,7 +1,5 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import {
-  getRomeDayRangeForDate as getRomeDayRangeForDateInRomeDates,
-} from "@/src/lib/rome-dates";
+import { getDayRangeForDate } from "@/src/lib/workspace-dates";
 
 type EntryDayCountClient = {
   entry: {
@@ -12,15 +10,12 @@ type EntryDayCountClient = {
   };
 };
 
-export function getRomeDayRangeForDate(date: Date): { start: Date; end: Date } {
-  return getRomeDayRangeForDateInRomeDates(date);
-}
-
 export function buildEntryDateDayWhere(
   date: Date,
+  timeZone: string,
   baseWhere: Prisma.EntryWhereInput = {},
 ): Prisma.EntryWhereInput {
-  const { start, end } = getRomeDayRangeForDate(date);
+  const { start, end } = getDayRangeForDate(date, timeZone);
 
   return {
     ...baseWhere,
@@ -31,13 +26,14 @@ export function buildEntryDateDayWhere(
   };
 }
 
-export async function countEntriesOnRomeDay(
+export async function countEntriesOnDay(
   date: Date,
+  timeZone: string,
   baseWhere: Prisma.EntryWhereInput,
   client: EntryDayCountClient,
   options?: { excludeEntryId?: string },
 ): Promise<number> {
-  const where = buildEntryDateDayWhere(date, baseWhere);
+  const where = buildEntryDateDayWhere(date, timeZone, baseWhere);
 
   if (options?.excludeEntryId) {
     return client.entry.count({
@@ -53,16 +49,18 @@ export async function countEntriesOnRomeDay(
 
 export async function resolveIsFirstEntryOfDay(
   date: Date,
+  timeZone: string,
   baseWhere: Prisma.EntryWhereInput,
   client: EntryDayCountClient,
   options?: { excludeEntryId?: string },
 ): Promise<boolean> {
-  const count = await countEntriesOnRomeDay(date, baseWhere, client, options);
+  const count = await countEntriesOnDay(date, timeZone, baseWhere, client, options);
   return count === 0;
 }
 
 export async function resolveIsFirstEntryOfDayForHabitOccurrence(
   date: Date,
+  timeZone: string,
   baseWhere: Prisma.EntryWhereInput,
   client: EntryDayCountClient,
   habitOccurrenceId: string,
@@ -72,7 +70,7 @@ export async function resolveIsFirstEntryOfDayForHabitOccurrence(
     select: { id: true },
   });
 
-  return resolveIsFirstEntryOfDay(date, baseWhere, client, {
+  return resolveIsFirstEntryOfDay(date, timeZone, baseWhere, client, {
     excludeEntryId: existingEntry?.id,
   });
 }

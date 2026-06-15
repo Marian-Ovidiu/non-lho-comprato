@@ -1,4 +1,4 @@
-import { getRomeDateKey, getRomeDateParts } from "@/src/lib/rome-dates";
+import { getDateKey, getDateParts } from "@/src/lib/workspace-dates";
 
 type DecimalLike = {
   toString?: () => string;
@@ -104,7 +104,10 @@ function parseMonthKey(monthKey: string): { year: number; month: number } | null
   return { year, month };
 }
 
-function aggregateDailyTotals(entries: readonly DailySpendingEntry[]): {
+function aggregateDailyTotals(
+  entries: readonly DailySpendingEntry[],
+  timeZone: string,
+): {
   dayTotals: Map<string, number>;
   dayEntryCounts: Map<string, number>;
 } {
@@ -112,7 +115,7 @@ function aggregateDailyTotals(entries: readonly DailySpendingEntry[]): {
   const dayEntryCounts = new Map<string, number>();
 
   for (const entry of entries) {
-    const dateKey = getRomeDateKey(entry.date);
+    const dateKey = getDateKey(entry.date, timeZone);
     if (!dateKey) {
       continue;
     }
@@ -241,13 +244,14 @@ function computeMonthToDateDelta(
 
 export function buildDailySpendingComparison(
   entries: readonly DailySpendingEntry[],
+  timeZone: string,
   now: Date = new Date(),
   selectedMonthKey?: string,
 ): DailySpendingComparison {
-  const todayParts = getRomeDateParts(now);
-  const todayKey = getRomeDateKey(now);
+  const todayParts = getDateParts(now, timeZone);
+  const todayKey = getDateKey(now, timeZone);
   const todayMonthKey = buildMonthKey(todayParts.year, todayParts.month);
-  const { dayTotals, dayEntryCounts } = aggregateDailyTotals(entries);
+  const { dayTotals, dayEntryCounts } = aggregateDailyTotals(entries, timeZone);
 
   const selectedMonthParts = selectedMonthKey
     ? parseMonthKey(selectedMonthKey)

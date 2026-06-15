@@ -1,9 +1,8 @@
-const ROME_TIME_ZONE = "Europe/Rome";
 export const LAST_NOTIFICATION_DATE_KEY = "lastNotificationDate";
 
-export function getRomeTodayDateKey(date = new Date()): string {
+export function getLocalTodayDateKey(date = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -35,9 +34,9 @@ export function setLastNotificationDate(dateKey: string): void {
 }
 
 export function wasNotificationSentToday(date = new Date()): boolean {
-  return getLastNotificationDate() === getRomeTodayDateKey(date);
+  return getLastNotificationDate() === getLocalTodayDateKey(date);
 }
 
 export function markNotificationSentToday(date = new Date()): void {
-  setLastNotificationDate(getRomeTodayDateKey(date));
+  setLastNotificationDate(getLocalTodayDateKey(date));
 }

@@ -15,8 +15,9 @@ import {
   getCurrentUser,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
+  getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
-import { getRomeDayRangeForDate } from "@/src/lib/rome-dates";
+import { getDayRangeForDate } from "@/src/lib/workspace-dates";
 import { aggregateEntryMetrics } from "@/src/lib/entry-metrics";
 
 type TodayDashboardSummary = {
@@ -29,7 +30,8 @@ type TodayDashboardSummary = {
 };
 
 async function buildEntryWhere(): Promise<Prisma.EntryWhereInput> {
-  const { start, end } = getRomeDayRangeForDate(new Date());
+  const timeZone = await getCurrentWorkspaceTimezone();
+  const { start, end } = getDayRangeForDate(new Date(), timeZone);
 
   return getCurrentWorkspaceScopedWhere({
     date: {

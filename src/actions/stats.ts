@@ -11,13 +11,14 @@ import { prisma } from "@/src/lib/prisma";
 import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
+  getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import {
   buildDailySpendingComparison,
   type DailySpendingComparison,
 } from "@/src/lib/daily-spending-comparison";
-import { getRomeMonthKey } from "@/src/lib/rome-dates";
+import { getMonthKey } from "@/src/lib/workspace-dates";
 import type { StatsOverview } from "@/src/lib/stats-overview";
 import {
   aggregateEntryMetrics,
@@ -549,6 +550,7 @@ async function buildStatsHabitOccurrenceWhere(
 
 function getStatsFromEntries(
   entries: StatsEntryRow[],
+  timeZone: string,
 ): Pick<
   StatsPageData,
   "overview" | "monthlyStats" | "categoryStats" | "topSavings" | "insights"
@@ -572,7 +574,7 @@ function getStatsFromEntries(
   const byMonthByCategory = new Map<string, Map<string, StatsEntryRow[]>>();
 
   for (const entry of entries) {
-    const monthKey = getRomeMonthKey(entry.date);
+    const monthKey = getMonthKey(entry.date, timeZone);
 
     const monthGroup = byMonth.get(monthKey) ?? [];
     monthGroup.push(entry);
@@ -735,13 +737,14 @@ function buildStatsMonthOptionsFromMonthlyStats(
   monthlyStats: MonthlyStatsItem[],
   selectedMonthKey: string,
   now: Date,
+  timeZone: string,
 ): StatsMonthOption[] {
   const monthCounts = new Map(
     monthlyStats.map((month) => [month.month, month.entriesCount]),
   );
   const monthKeys = new Set(monthCounts.keys());
 
-  monthKeys.add(getCurrentStatsMonthKey(now));
+  monthKeys.add(getCurrentStatsMonthKey(timeZone, now));
   monthKeys.add(selectedMonthKey);
 
   return Array.from(monthKeys)
@@ -757,6 +760,7 @@ function filterEntriesForStatsPeriod(
   entries: StatsEntryRow[],
   period: StatsPeriod,
   selectedMonthKey: string,
+  timeZone: string,
 ): StatsEntryRow[] {
   if (period === "all") {
     return entries;
@@ -765,7 +769,7 @@ function filterEntriesForStatsPeriod(
   const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
 
   return entries.filter((entry) => {
-    const entryMonthKey = getRomeMonthKey(entry.date);
+    const entryMonthKey = getMonthKey(entry.date, timeZone);
 
     if (period === "year") {
       return entryMonthKey.startsWith(selectedYear);
@@ -889,8 +893,9 @@ export async function getStatsPageData(
   options: StatsPageDataOptions = {},
 ): Promise<StatsPageData> {
   const now = options.now ?? new Date();
+  const timeZone = await getCurrentWorkspaceTimezone();
   const selectedPeriod = options.period ?? "month";
-  const selectedMonthKey = normalizeStatsMonthKey(options.selectedMonthKey, now);
+  const selectedMonthKey = normalizeStatsMonthKey(timeZone, options.selectedMonthKey, now);
   const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
   const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
   const workspaceMembers = members ?? (await getCurrentWorkspaceMembers());
@@ -924,24 +929,27 @@ export async function getStatsPageData(
     },
   });
 
-  const allTimeEntryStats = getStatsFromEntries(entries);
+  const allTimeEntryStats = getStatsFromEntries(entries, timeZone);
   const periodEntries = filterEntriesForStatsPeriod(
     entries,
     selectedPeriod,
     selectedMonthKey,
+    timeZone,
   );
-  const entryStats = getStatsFromEntries(periodEntries);
+  const entryStats = getStatsFromEntries(periodEntries, timeZone);
   const insights = entryStats.insights.slice(0, 3);
   const monthOptions = buildStatsMonthOptionsFromMonthlyStats(
     allTimeEntryStats.monthlyStats,
     selectedMonthKey,
     now,
+    timeZone,
   );
   const dailySpendingComparison = buildDailySpendingComparison(
     entries.map((entry) => ({
       date: entry.date,
       realCost: entry.realCost,
     })),
+    timeZone,
     now,
     selectedMonthKey,
   );
@@ -995,6 +1003,7 @@ export async function getStatsOverview(
 export async function getMonthlyStats(
   memberUserId?: string,
 ): Promise<MonthlyStatsItem[]> {
+  const timeZone = await getCurrentWorkspaceTimezone();
   try {
     const entries = await prisma.entry.findMany({
       where: await buildEntryWhere(memberUserId),
@@ -1024,7 +1033,7 @@ export async function getMonthlyStats(
     >();
 
     for (const entry of entries) {
-      const monthKey = getRomeMonthKey(entry.date);
+      const monthKey = getMonthKey(entry.date, timeZone);
       const current = grouped.get(monthKey) ?? {
         totalRealSpent: 0,
         totalAlternativeCost: 0,

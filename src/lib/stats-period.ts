@@ -1,8 +1,8 @@
 import {
-  formatRomeMonthLabel,
-  getRomeMonthKey,
-  normalizeRomeMonthKey,
-} from "@/src/lib/rome-dates";
+  formatMonthLabel,
+  getMonthKey,
+  normalizeMonthKey,
+} from "@/src/lib/workspace-dates";
 
 export const STATS_PERIODS = ["month", "year", "all"] as const;
 
@@ -27,14 +27,15 @@ export function parseStatsPeriod(value?: string): StatsPeriod {
 }
 
 export function normalizeStatsMonthKey(
+  timeZone: string,
   value?: string,
   now: Date = new Date(),
 ): string {
-  return normalizeRomeMonthKey(value, now);
+  return normalizeMonthKey(timeZone, value, now);
 }
 
-export function getCurrentStatsMonthKey(now: Date = new Date()): string {
-  return getRomeMonthKey(now);
+export function getCurrentStatsMonthKey(timeZone: string, now: Date = new Date()): string {
+  return getMonthKey(now, timeZone);
 }
 
 export function getStatsYearFromMonthKey(monthKey: string): string {
@@ -42,5 +43,5 @@ export function getStatsYearFromMonthKey(monthKey: string): string {
 }
 
 export function getStatsMonthLabel(monthKey: string): string {
-  return formatRomeMonthLabel(monthKey);
+  return formatMonthLabel(monthKey);
 }

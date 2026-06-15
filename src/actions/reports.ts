@@ -5,17 +5,18 @@ import { formatMoney } from "@/src/lib/formatters";
 import { getEntryExpenseKind } from "@/src/lib/entry-ownership";
 import { prisma } from "@/src/lib/prisma";
 import {
-  buildRomeStreakResult,
-  formatRomeMonthLabel,
-  getPreviousRomeMonthKey,
-  getRomeDateKey,
-  getRomeMonthRangeForMonthKey,
-  normalizeRomeMonthKey,
-} from "@/src/lib/rome-dates";
+  buildStreakResult,
+  formatMonthLabel as formatMonthLabelFromDates,
+  getDateKey,
+  getMonthRangeForMonthKey,
+  getPreviousMonthKey as getPreviousMonthKeyFromDates,
+  normalizeMonthKey as normalizeMonthKeyFromDates,
+} from "@/src/lib/workspace-dates";
 import {
   getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
+  getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
 import { getMemberLabel, resolveEntryPeopleFromRecord } from "@/src/lib/workspace-members";
@@ -200,20 +201,23 @@ function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function normalizeMonthKey(input?: string): string {
-  return normalizeRomeMonthKey(input);
+async function normalizeMonthKey(input?: string): Promise<string> {
+  const timeZone = await getCurrentWorkspaceTimezone();
+  return normalizeMonthKeyFromDates(timeZone, input);
 }
 
 function getPreviousMonthKey(monthKey: string): string {
-  return getPreviousRomeMonthKey(monthKey);
+  return getPreviousMonthKeyFromDates(monthKey);
 }
 
 function formatMonthLabel(monthKey: string): string {
-  return formatRomeMonthLabel(monthKey);
+  return formatMonthLabelFromDates(monthKey);
 }
 
-function buildMonthOptionsFromKeys(monthKeys: string[]): MonthlyReportMonthOption[] {
-  const currentMonth = normalizeMonthKey();
+function buildMonthOptionsFromKeys(
+  monthKeys: string[],
+  currentMonth: string,
+): MonthlyReportMonthOption[] {
   const uniqueMonthKeys = new Set(
     monthKeys.filter((monthKey) => /^\d{4}-\d{2}$/.test(monthKey)),
   );
@@ -287,7 +291,8 @@ function serializeMonthlyReportEntry(entry: {
 }
 
 async function buildEntryWhere(monthKey: string): Promise<Prisma.EntryWhereInput> {
-  const { start, end } = getRomeMonthRangeForMonthKey(monthKey);
+  const timeZone = await getCurrentWorkspaceTimezone();
+  const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
 
   return getCurrentWorkspaceScopedWhere({
     date: {
@@ -298,7 +303,8 @@ async function buildEntryWhere(monthKey: string): Promise<Prisma.EntryWhereInput
 }
 
 async function buildHabitOccurrenceWhere(monthKey: string): Promise<Prisma.HabitOccurrenceWhereInput> {
-  const { start, end } = getRomeMonthRangeForMonthKey(monthKey);
+  const timeZone = await getCurrentWorkspaceTimezone();
+  const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
   const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
   return {
@@ -421,7 +427,7 @@ function buildMemberSplit(
 }
 
 function buildStreakSummary(dayTotals: Map<string, number>): MonthlyReportStreakSummary {
-  const streak = buildRomeStreakResult(dayTotals.keys());
+  const streak = buildStreakResult(dayTotals.keys());
 
   return {
     ...streak,
@@ -504,15 +510,19 @@ function buildEmptyReport(
 
 export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOption[]> {
   try {
-    const workspaceId = await getCurrentWorkspaceId();
+    const [workspaceId, timeZone] = await Promise.all([
+      getCurrentWorkspaceId(),
+      getCurrentWorkspaceTimezone(),
+    ]);
     const rows = await prisma.$queryRaw<Array<{ month: string }>>`
-      SELECT DISTINCT to_char("date" AT TIME ZONE 'Europe/Rome', 'YYYY-MM') AS month
+      SELECT DISTINCT to_char("date" AT TIME ZONE ${timeZone}, 'YYYY-MM') AS month
       FROM "Entry"
       WHERE "workspaceId" = ${workspaceId}
       ORDER BY month DESC
     `;
 
-    return buildMonthOptionsFromKeys(rows.map((row) => row.month));
+    const currentMonth = normalizeMonthKeyFromDates(timeZone);
+    return buildMonthOptionsFromKeys(rows.map((row) => row.month), currentMonth);
   } catch (error) {
     console.error("Failed to load available report months:", error);
     return [];
@@ -523,7 +533,10 @@ export async function getMonthlyReport(
   requestedMonth?: string,
   availableMonths?: MonthlyReportMonthOption[],
 ): Promise<MonthlyReportPageData> {
-  const selectedMonth = normalizeMonthKey(requestedMonth);
+  const [selectedMonth, timeZone] = await Promise.all([
+    normalizeMonthKey(requestedMonth),
+    getCurrentWorkspaceTimezone(),
+  ]);
   const previousMonth = getPreviousMonthKey(selectedMonth);
 
   try {
@@ -794,7 +807,7 @@ export async function getMonthlyReport(
 
     const dayTotals = new Map<string, number>();
     for (const entry of monthEntries) {
-      const dateKey = getRomeDateKey(entry.date);
+      const dateKey = getDateKey(entry.date, timeZone);
       if (!dateKey) {
         continue;
       }

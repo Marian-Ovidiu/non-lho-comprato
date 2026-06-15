@@ -1,7 +1,6 @@
 import { toEntryMoneyView } from "@/src/lib/entry-domain";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 
-const ROME_TIME_ZONE = "Europe/Rome";
 
 export const AI_EXPENSE_EXPORT_COLUMNS = [
   "id",
@@ -164,13 +163,12 @@ function formatMoneyValue(value: number): string {
   return round2(value).toFixed(2);
 }
 
-function getRomeDateParts(date: Date): {
-  year: number;
-  month: number;
-  day: number;
-} {
+function getLocalDateParts(
+  date: Date,
+  timeZone: string,
+): { year: number; month: number; day: number } {
   const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
@@ -184,8 +182,8 @@ function getRomeDateParts(date: Date): {
   return { year, month, day };
 }
 
-function formatRomeDate(date: Date): string {
-  const parts = getRomeDateParts(date);
+function formatLocalDate(date: Date, timeZone: string): string {
+  const parts = getLocalDateParts(date, timeZone);
 
   if (
     !Number.isFinite(parts.year) ||
@@ -201,9 +199,9 @@ function formatRomeDate(date: Date): string {
   )}-${String(parts.day).padStart(2, "0")}`;
 }
 
-function formatRomeWeekday(date: Date): string {
+function formatLocalWeekday(date: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-US", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone,
     weekday: "long",
   }).format(date);
 }
@@ -242,6 +240,7 @@ export function createAiExpenseExportSummary(): AiExpenseExportSummary {
 export function buildAiExpenseExportRow(
   entry: AiExpenseExportEntry,
   workspaceName: string,
+  timeZone: string,
 ): AiExpenseExportRow {
   const money = toEntryMoneyView(entry);
   const spentReally = round2(money.realCost);
@@ -282,10 +281,10 @@ export function buildAiExpenseExportRow(
     id: entry.id,
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),
-    date: formatRomeDate(entry.date),
-    month: getRomeDateParts(entry.date).month,
-    year: getRomeDateParts(entry.date).year,
-    dayOfWeek: formatRomeWeekday(entry.date),
+    date: formatLocalDate(entry.date, timeZone),
+    month: getLocalDateParts(entry.date, timeZone).month,
+    year: getLocalDateParts(entry.date, timeZone).year,
+    dayOfWeek: formatLocalWeekday(entry.date, timeZone),
     person: personLabel,
     workspace: workspaceName,
     title: entry.title,
@@ -343,10 +342,11 @@ export function isExportableAiExpenseExportEntry(
 export function buildAiExpenseExportRows(
   entries: ReadonlyArray<AiExpenseExportEntry>,
   workspaceName: string,
+  timeZone: string,
 ): AiExpenseExportRow[] {
   return entries
     .filter(isExportableAiExpenseExportEntry)
-    .map((entry) => buildAiExpenseExportRow(entry, workspaceName));
+    .map((entry) => buildAiExpenseExportRow(entry, workspaceName, timeZone));
 }
 
 export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
@@ -406,8 +406,9 @@ export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
 export function serializeAiExpenseExportEntries(
   entries: ReadonlyArray<AiExpenseExportEntry>,
   workspaceName: string,
+  timeZone: string,
 ): string {
-  return buildAiExpenseExportRows(entries, workspaceName)
+  return buildAiExpenseExportRows(entries, workspaceName, timeZone)
     .map(serializeAiExpenseExportRow)
     .join("");
 }
@@ -515,11 +516,12 @@ export function buildAiExpenseExportSummaryBlock(
 }
 
 export function getAiExpenseExportFilename(
+  timeZone: string,
   date = new Date(),
   range: AiExpenseExportRange = "all",
 ): string {
   const formatter = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

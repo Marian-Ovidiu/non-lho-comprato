@@ -1,9 +1,8 @@
-const ROME_TIME_ZONE = "Europe/Rome";
 const STORAGE_PREFIX = "nlc_streak_celebration_seen_";
 
 export function getStreakCelebrationDateKey(date = new Date()) {
   return new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

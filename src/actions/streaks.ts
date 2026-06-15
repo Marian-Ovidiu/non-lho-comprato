@@ -2,8 +2,8 @@
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
-import { buildRomeStreakResult, getRomeDateKey } from "@/src/lib/rome-dates";
-import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
+import { buildStreakResult as buildStreakResultFromDates, getDateKey } from "@/src/lib/workspace-dates";
+import { getCurrentWorkspaceScopedWhere, getCurrentWorkspaceTimezone } from "@/src/lib/workspace-context";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 
 type StreakResult = {
@@ -38,34 +38,33 @@ async function buildEntryWhere(scope: StreakScope = {}): Promise<Prisma.EntryWhe
   return where;
 }
 
-function buildStreakResult(dayTotals: Map<string, number>): StreakResult {
-  return buildRomeStreakResult(dayTotals.keys());
-}
-
 async function loadStreakData(scope: StreakScope = {}): Promise<{
   streak: StreakResult;
   today: TodaySavingStatus;
 }> {
   try {
-    const entries = await prisma.entry.findMany({
-      where: await buildEntryWhere(scope),
-      select: {
-        date: true,
-        realCost: true,
-        alternativeCost: true,
-        savedAmount: true,
-        mode: true,
-        savingContext: true,
-      },
-      orderBy: {
-        date: "asc",
-      },
-    });
+    const [entries, timeZone] = await Promise.all([
+      prisma.entry.findMany({
+        where: await buildEntryWhere(scope),
+        select: {
+          date: true,
+          realCost: true,
+          alternativeCost: true,
+          savedAmount: true,
+          mode: true,
+          savingContext: true,
+        },
+        orderBy: {
+          date: "asc",
+        },
+      }),
+      getCurrentWorkspaceTimezone(),
+    ]);
 
     const dayTotals = new Map<string, number>();
 
     for (const entry of entries) {
-      const dateKey = getRomeDateKey(entry.date);
+      const dateKey = getDateKey(entry.date, timeZone);
       if (!dateKey) {
         continue;
       }
@@ -73,8 +72,8 @@ async function loadStreakData(scope: StreakScope = {}): Promise<{
       dayTotals.set(dateKey, round2((dayTotals.get(dateKey) ?? 0) + calculateEntryMetrics(entry).netImpact));
     }
 
-    const streak = buildStreakResult(dayTotals);
-    const todayKey = getRomeDateKey(new Date());
+    const streak = buildStreakResultFromDates(dayTotals.keys());
+    const todayKey = getDateKey(new Date(), timeZone);
     const totalSavedToday = round2(dayTotals.get(todayKey) ?? 0);
 
     return {

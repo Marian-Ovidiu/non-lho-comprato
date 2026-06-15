@@ -12,7 +12,7 @@ import {
   type EntrySavingContext,
 } from "@/src/lib/entry-domain";
 import { aggregateEntryMetrics } from "@/src/lib/entry-metrics";
-import { getRomeMonthKey, getRomeMonthRangeForMonthKey } from "@/src/lib/rome-dates";
+import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
 import { resolveIsFirstEntryOfDay } from "@/src/lib/entry-first-of-day";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import {
@@ -44,6 +44,7 @@ import {
   getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
+  getCurrentWorkspaceTimezone,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 import {
@@ -923,7 +924,8 @@ export async function getEntryById(
 
 export async function getDashboardSummary(): Promise<MonthlySummary> {
   const now = new Date();
-  const { start, end } = getRomeMonthRangeForMonthKey(getRomeMonthKey(now));
+  const timeZone = await getCurrentWorkspaceTimezone();
+  const { start, end } = getMonthRangeForMonthKey(getMonthKey(now, timeZone), timeZone);
 
   const workspaceWhere = await getCurrentWorkspaceScopedWhere({
     date: {
@@ -1248,9 +1250,13 @@ export async function createEntry(
       };
     }
 
-    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+    const [workspaceWhere, timeZone] = await Promise.all([
+      getCurrentWorkspaceScopedWhere(),
+      getCurrentWorkspaceTimezone(),
+    ]);
     const isFirstEntryOfDay = await resolveIsFirstEntryOfDay(
       date,
+      timeZone,
       workspaceWhere,
       prisma,
     );

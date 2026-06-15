@@ -1,10 +1,9 @@
 import {
-  getRomeTodayDateKey,
+  getLocalTodayDateKey,
   markNotificationSentToday,
   wasNotificationSentToday,
 } from "@/src/lib/notifications/daily-reminder-storage";
 
-const ROME_TIME_ZONE = "Europe/Rome";
 const REMINDER_HOUR = 18;
 const REMINDER_MINUTE = 0;
 
@@ -17,9 +16,9 @@ function isNotificationSupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;
 }
 
-function getRomeHourMinute(date = new Date()): { hour: number; minute: number } {
+function getLocalHourMinute(date = new Date()): { hour: number; minute: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -31,9 +30,9 @@ function getRomeHourMinute(date = new Date()): { hour: number; minute: number } 
   };
 }
 
-/** Current time in Rome expressed as total minutes since midnight. */
-export function getRomeNowMinutes(date = new Date()): number {
-  const { hour, minute } = getRomeHourMinute(date);
+/** Current local time expressed as total minutes since midnight. */
+export function getLocalNowMinutes(date = new Date()): number {
+  const { hour, minute } = getLocalHourMinute(date);
   return hour * 60 + minute;
 }
 
@@ -43,7 +42,7 @@ export function isAfterReminderHour(
   hour = REMINDER_HOUR,
   minute = REMINDER_MINUTE,
 ): boolean {
-  const { hour: currentHour, minute: currentMinute } = getRomeHourMinute(date);
+  const { hour: currentHour, minute: currentMinute } = getLocalHourMinute(date);
   const currentTotalMinutes = currentHour * 60 + currentMinute;
   const reminderTotalMinutes = hour * 60 + minute;
 
@@ -77,7 +76,7 @@ export async function showDailyReminderNotification(now = new Date()): Promise<b
     return false;
   }
 
-  const tag = `nlc-daily-reminder-${getRomeTodayDateKey(now)}`;
+  const tag = `nlc-daily-reminder-${getLocalTodayDateKey(now)}`;
   const options = {
     body: DAILY_REMINDER_BODY,
     icon: DAILY_REMINDER_ICON,

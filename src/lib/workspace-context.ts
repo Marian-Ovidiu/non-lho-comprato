@@ -82,6 +82,11 @@ export async function getCurrentWorkspaceId(): Promise<string> {
   return getAuthCurrentWorkspaceId();
 }
 
+export async function getCurrentWorkspaceTimezone(): Promise<string> {
+  const workspace = await getCurrentWorkspace();
+  return workspace.timezone ?? "Europe/Rome";
+}
+
 export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberOption[]> {
   const workspaceId = await getCurrentWorkspaceId();
 

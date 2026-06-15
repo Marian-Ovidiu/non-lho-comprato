@@ -18,7 +18,10 @@ import {
 } from "@/src/lib/stats-period";
 import type { StatsOverview } from "@/src/lib/stats-overview";
 import { getWorkspaceMemberFilter } from "@/src/lib/workspace-member-filter";
-import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
+import {
+  getCurrentWorkspaceMembers,
+  getCurrentWorkspaceTimezone,
+} from "@/src/lib/workspace-context";
 
 export const dynamic = "force-dynamic";
 
@@ -32,10 +35,12 @@ type StatsPageProps = {
 
 export default async function StatsPage({ searchParams }: StatsPageProps) {
   const resolvedSearchParams = await searchParams;
+  const timeZone = await getCurrentWorkspaceTimezone();
   const selectedPeriod = parseStatsPeriod(
     getFirstSearchParam(resolvedSearchParams.period),
   );
   const selectedMonthKey = normalizeStatsMonthKey(
+    timeZone,
     getFirstSearchParam(resolvedSearchParams.month),
   );
   const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
@@ -76,6 +81,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   let topSavings: CraftedTopSavingsItem[] = [];
   let dailySpendingComparison = buildDailySpendingComparison(
     [],
+    timeZone,
     new Date(),
     selectedMonthKey,
   );

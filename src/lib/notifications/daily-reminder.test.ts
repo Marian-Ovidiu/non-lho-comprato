@@ -1,37 +1,34 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { getRomeNowMinutes, isAfterReminderHour } from "@/src/lib/notifications/daily-reminder";
+import { getLocalNowMinutes, isAfterReminderHour } from "@/src/lib/notifications/daily-reminder";
 
-// Europe/Rome offsets:
-//   CET  (winter): UTC+1
-//   CEST (summer): UTC+2
-//
-// These tests use noon UTC to avoid day-boundary ambiguity.
+// These tests assume TZ=Europe/Rome (CET = UTC+1, CEST = UTC+2).
+// They verify the minute-counting logic, not the timezone selection.
 
-describe("getRomeNowMinutes", () => {
-  it("converts a summer UTC time to Rome CEST minutes", () => {
+describe("getLocalNowMinutes", () => {
+  it("converts a summer UTC time to local minutes (CEST = UTC+2)", () => {
     // June 12 10:00 UTC → 12:00 Rome (CEST = UTC+2) → 720 minutes
     const date = new Date(Date.UTC(2026, 5, 12, 10, 0, 0));
-    assert.equal(getRomeNowMinutes(date), 720);
+    assert.equal(getLocalNowMinutes(date), 720);
   });
 
-  it("converts a winter UTC time to Rome CET minutes", () => {
+  it("converts a winter UTC time to local minutes (CET = UTC+1)", () => {
     // Jan 12 10:00 UTC → 11:00 Rome (CET = UTC+1) → 660 minutes
     const date = new Date(Date.UTC(2026, 0, 12, 10, 0, 0));
-    assert.equal(getRomeNowMinutes(date), 660);
+    assert.equal(getLocalNowMinutes(date), 660);
   });
 
-  it("handles Rome midnight (00:00 Rome = 22:00 UTC previous day in summer)", () => {
+  it("handles midnight (00:00 local = 22:00 UTC previous day in summer)", () => {
     // June 11 22:00 UTC → June 12 00:00 Rome (CEST) → 0 minutes
     const date = new Date(Date.UTC(2026, 5, 11, 22, 0, 0));
-    assert.equal(getRomeNowMinutes(date), 0);
+    assert.equal(getLocalNowMinutes(date), 0);
   });
 
   it("handles minutes component correctly", () => {
     // June 12 10:30 UTC → 12:30 Rome (CEST) → 750 minutes
     const date = new Date(Date.UTC(2026, 5, 12, 10, 30, 0));
-    assert.equal(getRomeNowMinutes(date), 750);
+    assert.equal(getLocalNowMinutes(date), 750);
   });
 });
 

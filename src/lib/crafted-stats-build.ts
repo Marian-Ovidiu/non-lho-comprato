@@ -1,7 +1,6 @@
 import type { StatsInsight } from "@/src/actions/stats";
 import type { StatsOverview } from "@/src/lib/stats-overview";
 import type { DailySpendingComparison } from "@/src/lib/daily-spending-comparison";
-import { getRomeDateKey } from "@/src/lib/rome-dates";
 
 export type CraftedStatsPeriod = "month" | "year" | "all";
 
@@ -87,7 +86,7 @@ function round2(value: number) {
 }
 
 function getCurrentYearKey() {
-  return getRomeDateKey(new Date()).slice(0, 4);
+  return String(new Date().getFullYear());
 }
 
 function getMonthInitial(label: string) {

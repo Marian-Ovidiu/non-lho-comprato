@@ -44,6 +44,7 @@ describe("buildAiExpenseExportRow", () => {
         savedAmount: 0,
       }),
       "Workspace",
+      "Europe/Rome",
     );
 
     // Legacy columns
@@ -76,6 +77,7 @@ describe("buildAiExpenseExportRow", () => {
         savedAmount: 18,
       }),
       "Workspace",
+      "Europe/Rome",
     );
 
     // Legacy columns
@@ -103,6 +105,7 @@ describe("buildAiExpenseExportRow", () => {
         savedAmount: -10,
       }),
       "Workspace",
+      "Europe/Rome",
     );
 
     // Legacy columns
@@ -132,6 +135,7 @@ describe("buildAiExpenseExportRow", () => {
         savingContext: "comparison",
       }),
       "Workspace",
+      "Europe/Rome",
     );
 
     assert.equal(row.isLargeComparison, true);
@@ -158,6 +162,7 @@ describe("buildAiExpenseExportRow", () => {
         ],
       }),
       "Workspace",
+      "Europe/Rome",
     );
 
     assert.equal(row.paidByUserId, "user-1");
@@ -182,6 +187,7 @@ describe("buildAiExpenseExportRow", () => {
         ],
       }),
       "Workspace",
+      "Europe/Rome",
     );
 
     assert.equal(row.beneficiaryCount, 1);
@@ -199,6 +205,7 @@ describe("buildAiExpenseExportRow", () => {
         // no paidByUserId, no beneficiaries (legacy entry)
       }),
       "Workspace",
+      "Europe/Rome",
     );
 
     assert.equal(row.paidByUserId, "");
@@ -235,6 +242,7 @@ describe("serializeAiExpenseExportEntries", () => {
     const csv = `${AI_EXPENSE_EXPORT_COLUMNS.join(",")}\n${serializeAiExpenseExportEntries(
       [emptyIdEntry, invalidDateEntry, validEntry],
       "Workspace",
+      "Europe/Rome",
     )}`;
     const dataLines = csv.trimEnd().split("\n").slice(1);
 
@@ -257,8 +265,8 @@ describe("serializeAiExpenseExportEntries", () => {
     delete legacyEntry.paidByUserEmail;
     delete legacyEntry.beneficiaries;
 
-    const rows = buildAiExpenseExportRows([legacyEntry], "Workspace");
-    const csv = serializeAiExpenseExportEntries([legacyEntry], "Workspace");
+    const rows = buildAiExpenseExportRows([legacyEntry], "Workspace", "Europe/Rome");
+    const csv = serializeAiExpenseExportEntries([legacyEntry], "Workspace", "Europe/Rome");
 
     assert.equal(rows.length, 1);
     assert.equal(rows[0]?.id, "legacy-entry");

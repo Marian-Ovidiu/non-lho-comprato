@@ -1,5 +1,3 @@
-const ROME_TIME_ZONE = "Europe/Rome";
-
 function toNumber(value: unknown): number {
   if (typeof value === "number") {
     return value;
@@ -42,6 +40,6 @@ export function formatDate(value: string | number | Date): string {
     day: "2-digit",
     month: "short",
     year: "numeric",
-    timeZone: ROME_TIME_ZONE,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   }).format(date);
 }

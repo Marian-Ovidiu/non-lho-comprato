@@ -28,7 +28,7 @@ import type {
   EntryMode,
   EntrySavingContext,
 } from "@/src/lib/entry-domain";
-import { getRomeTodayDateKey } from "@/src/lib/rome-dates";
+import { getBrowserTodayDateKey } from "@/src/lib/workspace-dates";
 import { cn } from "@/lib/utils";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
@@ -98,7 +98,7 @@ export type CraftedEntryFormProps = {
 const initialState: FormState = { success: false, message: "", errors: {} };
 
 function getTodayLocal() {
-  return getRomeTodayDateKey();
+  return getBrowserTodayDateKey();
 }
 
 function getInitialComparisonEnabled(initialValues?: EntryFormInitialValues): boolean {

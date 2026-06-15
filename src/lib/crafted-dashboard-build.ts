@@ -6,7 +6,7 @@ import {
   buildSecondaryGoalNote,
 } from "@/src/lib/crafted-goals-build";
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
-import { getRomeDateKey } from "@/src/lib/rome-dates";
+import { getDateKey } from "@/src/lib/workspace-dates";
 
 type CategoryStatsItem = {
   categoryName: string;
@@ -49,10 +49,10 @@ const CATEGORY_TONES: CraftedDashboardProps["categories"][number]["tone"][] = [
   "muted",
 ];
 
-function getMonthLabel(date: Date) {
+function getMonthLabel(date: Date, timeZone: string) {
   const label = new Intl.DateTimeFormat("it-IT", {
     month: "long",
-    timeZone: "Europe/Rome",
+    timeZone,
   }).format(date);
 
   return label.charAt(0).toUpperCase() + label.slice(1);
@@ -62,13 +62,13 @@ function round2(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function buildStreakWeek(streakDates: string[]) {
+function buildStreakWeek(streakDates: string[], timeZone: string) {
   const activeDates = new Set(streakDates);
   const today = new Date();
 
   return Array.from({ length: 7 }, (_, index) => {
     const day = subDays(today, 6 - index);
-    return activeDates.has(getRomeDateKey(day));
+    return activeDates.has(getDateKey(day, timeZone));
   });
 }
 
@@ -139,9 +139,10 @@ export function buildCraftedDashboardProps(input: {
   reflection: CraftedDashboardProps["reflection"];
   emptyState: CraftedDashboardProps["emptyState"];
   coupleBalance: CraftedDashboardProps["coupleBalance"];
+  timeZone: string;
 }): CraftedDashboardProps {
   const now = new Date();
-  const monthLabel = getMonthLabel(now);
+  const monthLabel = getMonthLabel(now, input.timeZone);
   const monthTrend = input.monthlyStats.slice(-6).map((item) => item.totalRealSpent);
   const previousMonth = input.monthlyStats.at(-2);
   const currentMonth = input.monthlyStats.at(-1);
@@ -162,7 +163,7 @@ export function buildCraftedDashboardProps(input: {
     entriesCountMonth: input.entriesCountMonth,
     categories: buildCraftedCategories(input.categoryStats),
     currentStreak: input.currentStreak,
-    streakWeek: buildStreakWeek(input.streakDates),
+    streakWeek: buildStreakWeek(input.streakDates, input.timeZone),
     habitsTotal: input.todayHabits.length,
     habitsAvoided: input.todayHabits.filter(
       (occurrence) => occurrence.status === "avoided",

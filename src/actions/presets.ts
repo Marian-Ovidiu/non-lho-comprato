@@ -23,6 +23,7 @@ import {
   getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
+  getCurrentWorkspaceTimezone,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 
@@ -72,7 +73,6 @@ type ResolvedPresetMoney = {
   errors: Record<string, string>;
 };
 
-const ROME_TIME_ZONE = "Europe/Rome";
 
 function getText(formData: FormData, name: string): string {
   const value = formData.get(name);
@@ -322,6 +322,7 @@ function buildPresetEntryFormData(params: {
   note: string | null;
   paidByUserId: string;
   beneficiaryUserIds: string[];
+  timeZone: string;
 }): FormData {
   const formData = new FormData();
   formData.append("title", params.title);
@@ -330,7 +331,7 @@ function buildPresetEntryFormData(params: {
   formData.append("savingContext", params.money.savingContext);
   formData.append("realCost", params.money.realCost.toFixed(2));
   formData.append("alternativeCost", params.money.alternativeCost.toFixed(2));
-  formData.append("date", getRomeDateInputValue(new Date()));
+  formData.append("date", getDateInputValue(new Date(), params.timeZone));
   formData.append("paidByUserId", params.paidByUserId);
 
   if (params.money.mode === "spent") {
@@ -706,9 +707,10 @@ export async function createEntryFromPreset(
 
     await requireWorkspaceAccessForRecord(preset, "Preset");
 
-    const [currentUser, members] = await Promise.all([
+    const [currentUser, members, timeZone] = await Promise.all([
       getCurrentUser(),
       getCurrentWorkspaceMembers(),
+      getCurrentWorkspaceTimezone(),
     ]);
 
     if (members.length === 0) {
@@ -734,6 +736,7 @@ export async function createEntryFromPreset(
       note: preset.note,
       paidByUserId: ownership.paidByUserId,
       beneficiaryUserIds: ownership.beneficiaryUserIds,
+      timeZone,
     });
 
     const result = await createEntry(entryFormData);
@@ -832,9 +835,9 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function getRomeDateInputValue(date: Date): string {
+function getDateInputValue(date: Date, timeZone: string): string {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

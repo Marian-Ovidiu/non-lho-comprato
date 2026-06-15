@@ -2,6 +2,7 @@ import { differenceInCalendarDays } from "date-fns";
 import { unstable_rethrow } from "next/navigation";
 
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
+import { getCurrentWorkspaceTimezone } from "@/src/lib/workspace-context";
 import { PublicAccessGate } from "@/src/components/public/public-access-gate";
 import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { CraftedDashboard } from "@/src/components/dashboard/crafted-dashboard";
@@ -299,6 +300,7 @@ export default async function Home({ searchParams }: HomePageProps) {
   };
   let entriesLoadError: string | null = null;
   let dashboardLoadError: string | null = null;
+  const timeZone = await getCurrentWorkspaceTimezone();
 
   try {
     const snapshot = await getDashboardEntrySnapshot();
@@ -376,6 +378,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       amount: workspaceBalance.amount,
       counterpartLabel: workspaceBalance.counterpartLabel,
     },
+    timeZone,
   });
 
   return (

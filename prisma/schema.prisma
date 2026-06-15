@@ -228,6 +228,7 @@ model Workspace {
   id           String            @id @default(cuid())
   name         String
   kind         WorkspaceKind     @default(private)
+  timezone     String            @default("Europe/Rome")
   ownerUserId  String
   owner        User              @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
   members      WorkspaceMember[]

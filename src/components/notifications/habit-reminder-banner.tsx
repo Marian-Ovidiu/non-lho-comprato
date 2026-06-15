@@ -6,8 +6,8 @@ import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { getRomeNowMinutes } from "@/src/lib/notifications/daily-reminder";
-import { getRomeTodayDateKey } from "@/src/lib/notifications/daily-reminder-storage";
+import { getLocalNowMinutes } from "@/src/lib/notifications/daily-reminder";
+import { getLocalTodayDateKey } from "@/src/lib/notifications/daily-reminder-storage";
 
 type ReminderOccurrence = {
   id: string;
@@ -212,8 +212,8 @@ export function HabitReminderBanner({ occurrences }: HabitReminderBannerProps) {
   }, []);
 
   const now = useMemo(() => new Date(tick), [tick]);
-  const nowMinutes = useMemo(() => getRomeNowMinutes(now), [now]);
-  const dateKey = getRomeTodayDateKey(now);
+  const nowMinutes = useMemo(() => getLocalNowMinutes(now), [now]);
+  const dateKey = getLocalTodayDateKey(now);
   const permissionGranted =
     isNotificationSupported() && Notification.permission === "granted";
   const dueReminders = useMemo(() => {

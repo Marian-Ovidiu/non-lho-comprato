@@ -76,7 +76,6 @@ type FormState = {
   errors?: Record<string, string>;
 };
 
-const ROME_TIME_ZONE = "Europe/Rome";
 const initialState: FormState = { success: false, message: "", errors: {} };
 
 function getDateValue(date: string) {
@@ -86,7 +85,7 @@ function getDateValue(date: string) {
   }
 
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: ROME_TIME_ZONE,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     year: "numeric",
     month: "2-digit",
     day: "2-digit",

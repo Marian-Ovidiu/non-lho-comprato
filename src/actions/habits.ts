@@ -11,15 +11,16 @@ import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
 import { syncHabitEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import {
-  getRomeDayRangeForDateKey,
-  getRomeIsoWeekday,
-  getRomeTodayDateKey,
-} from "@/src/lib/rome-dates";
+  getDayRangeForDateKey,
+  getIsoWeekday,
+  getTodayDateKey,
+} from "@/src/lib/workspace-dates";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
+  getCurrentWorkspaceTimezone,
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 import {
@@ -301,16 +302,12 @@ function toDecimalString(value: number): string {
   return value.toFixed(2);
 }
 
-function getTodayStart(): Date {
-  return getTodayRomeDayRange().start;
+function getTodayDayRange(timeZone: string): { start: Date; end: Date } {
+  return getDayRangeForDateKey(getTodayDateKey(timeZone), timeZone);
 }
 
-function getTodayRomeDayRange(): { start: Date; end: Date } {
-  return getRomeDayRangeForDateKey(getRomeTodayDateKey());
-}
-
-function getTodayRomeIsoWeekday(): number {
-  return getRomeIsoWeekday(new Date());
+function getTodayIsoWeekday(timeZone: string): number {
+  return getIsoWeekday(new Date(), timeZone);
 }
 
 function normalizeActiveDays(values: number[]): number[] {
@@ -599,11 +596,12 @@ async function syncOccurrenceStatus(
     await requireWorkspaceAccessForRecord(occurrence, "Occorrenza ricorrente");
     logStep("access-check");
 
-    const [currentUser, workspaceId, members, workspaceWhere] = await Promise.all([
+    const [currentUser, workspaceId, members, workspaceWhere, timeZone] = await Promise.all([
       getCurrentUser(),
       getCurrentWorkspaceId(),
       getCurrentWorkspaceMembers(),
       getCurrentWorkspaceScopedWhere(),
+      getCurrentWorkspaceTimezone(),
     ]);
     logStep("workspace-context");
 
@@ -620,6 +618,7 @@ async function syncOccurrenceStatus(
 
       const isFirstEntryOfDay = await resolveIsFirstEntryOfDayForHabitOccurrence(
         occurrence.date,
+        timeZone,
         workspaceWhere,
         tx,
         id,
@@ -1126,7 +1125,8 @@ export async function getHabits(): Promise<HabitListItem[]> {
 }
 
 export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
-  const todayStart = getTodayStart();
+  const timeZone = await getCurrentWorkspaceTimezone();
+  const todayStart = getTodayDayRange(timeZone).start;
 
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere({
@@ -1140,7 +1140,7 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
       },
     });
 
-    const todayWeekday = getTodayRomeIsoWeekday();
+    const todayWeekday = getTodayIsoWeekday(timeZone);
     const rows = habits.filter((habit) => {
       if (!Array.isArray(habit.activeDays)) {
         return false;
@@ -1178,7 +1178,8 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
 }
 
 export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]> {
-  const todayRange = getTodayRomeDayRange();
+  const timeZone = await getCurrentWorkspaceTimezone();
+  const todayRange = getTodayDayRange(timeZone);
 
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
@@ -1255,7 +1256,8 @@ export async function markHabitOccurrenceSkipped(
 }
 
 export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
-  const todayStart = getTodayStart();
+  const timeZone = await getCurrentWorkspaceTimezone();
+  const todayStart = getTodayDayRange(timeZone).start;
 
   try {
     const workspaceWhere = await getCurrentWorkspaceScopedWhere();
@@ -1305,6 +1307,7 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
 
         const isFirstEntryOfDay = await resolveIsFirstEntryOfDayForHabitOccurrence(
           occurrence.date,
+          timeZone,
           workspaceWhere,
           tx,
           occurrence.id,

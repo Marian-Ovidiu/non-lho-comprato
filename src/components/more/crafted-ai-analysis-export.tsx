@@ -73,7 +73,7 @@ export function CraftedAiAnalysisExport() {
       const blob = await response.blob();
       const fileName =
         getFilenameFromContentDisposition(response.headers.get("content-disposition")) ??
-        getAiExpenseExportFilename(new Date(), range);
+        getAiExpenseExportFilename(Intl.DateTimeFormat().resolvedOptions().timeZone, new Date(), range);
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
 

@@ -10,9 +10,9 @@ import { CraftedEntryRow } from "@/src/components/entries/crafted-entry-row";
 import { Button } from "@/components/ui/button";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import {
-  getRomeDateKey,
-  shiftRomeDateKey,
-} from "@/src/lib/rome-dates";
+  getDateKey,
+  shiftDateKey,
+} from "@/src/lib/workspace-dates";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { cn } from "@/lib/utils";
 
@@ -118,8 +118,9 @@ function getShortRomeDateLabel(dateKey: string) {
 }
 
 function getCraftedDayGroupLabel(dateKey: string) {
-  const todayKey = getRomeDateKey(new Date());
-  const yesterdayKey = shiftRomeDateKey(todayKey, -1);
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const todayKey = getDateKey(new Date(), browserTz);
+  const yesterdayKey = shiftDateKey(todayKey, -1);
   const shortDate = getShortRomeDateLabel(dateKey);
 
   if (dateKey === todayKey) {
@@ -147,9 +148,10 @@ function getCraftedDayGroupLabel(dateKey: string) {
 
 function groupEntries(entries: EntryItem[]): DayGroup[] {
   const groups: DayGroup[] = [];
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
   for (const entry of entries) {
-    const dateKey = getRomeDateKey(new Date(entry.date));
+    const dateKey = getDateKey(new Date(entry.date), browserTz);
     const currentGroup = groups.at(-1);
 
     if (!dateKey) {

@@ -52,7 +52,7 @@ import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-
 import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
-import { getRomeTodayDateKey, shiftRomeDateKey } from "@/src/lib/rome-dates";
+import { getBrowserTodayDateKey, shiftDateKey } from "@/src/lib/workspace-dates";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
 import type { EntryPaymentModeValue } from "@/src/lib/entry-payment-mode";
@@ -115,7 +115,7 @@ const initialState: QuickAddState = {
 };
 
 function getTodayLocal() {
-  return getRomeTodayDateKey();
+  return getBrowserTodayDateKey();
 }
 
 function getInitialDraft(
@@ -395,7 +395,7 @@ export function QuickAddSheet({
   });
   const showSuggestionLookupState = expenseSuggestion.isLoading;
   const todayKey = getTodayLocal();
-  const yesterdayKey = shiftRomeDateKey(todayKey, -1);
+  const yesterdayKey = shiftDateKey(todayKey, -1);
   const savingContext: EntrySavingContext = comparisonEnabled ? "comparison" : "none";
   const quickAddIntent = getQuickAddIntent(comparisonEnabled, effectivePaymentMode);
   const hiddenAmountSpent = toHiddenMoneyValue(draft.amountSpent);
