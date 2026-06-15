@@ -99,6 +99,15 @@ export async function getCurrentWorkspaceLanguage(): Promise<string> {
   return workspace.language ?? "it";
 }
 
+export async function isWorkspaceSetupNeeded(): Promise<boolean> {
+  const workspaceId = await getCurrentWorkspaceId();
+  const data = await prisma.workspace.findUnique({
+    where: { id: workspaceId },
+    select: { setupCompleted: true },
+  });
+  return !(data?.setupCompleted ?? false);
+}
+
 export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberOption[]> {
   const workspaceId = await getCurrentWorkspaceId();
 

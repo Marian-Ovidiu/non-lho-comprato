@@ -18,6 +18,7 @@ import {
 } from "@/src/lib/workspace-context";
 import { isSupportedCurrency } from "@/src/lib/workspace-currency";
 import { isSupportedLanguage } from "@/src/lib/workspace-language";
+import { isSupportedTimezone } from "@/src/lib/workspace-timezone";
 import {
   buildAbsoluteAppUrl,
   generateInviteToken,
@@ -407,6 +408,80 @@ export async function updateWorkspaceLanguageAction(
     unstable_rethrow(error);
     console.error("Failed to update workspace language:", error);
     return { success: false, message: "Non riesco ad aggiornare la lingua adesso. Riprova." };
+  }
+}
+
+type UpdateTimezoneResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function updateWorkspaceTimezoneAction(
+  formData: FormData,
+): Promise<UpdateTimezoneResult> {
+  const timezone = String(formData.get("timezone") ?? "").trim();
+
+  if (!isSupportedTimezone(timezone)) {
+    return { success: false, message: "Fuso orario non supportato." };
+  }
+
+  try {
+    const workspaceId = await getCurrentWorkspaceId();
+
+    await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { timezone },
+    });
+
+    revalidatePath("/", "layout");
+
+    return { success: true, message: "Fuso orario aggiornato." };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to update workspace timezone:", error);
+    return { success: false, message: "Non riesco ad aggiornare il fuso orario. Riprova." };
+  }
+}
+
+type CompleteSetupResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function completeWorkspaceSetupAction(
+  formData: FormData,
+): Promise<CompleteSetupResult> {
+  const timezone = String(formData.get("timezone") ?? "").trim();
+  const currency = String(formData.get("currency") ?? "").trim().toUpperCase();
+  const language = String(formData.get("language") ?? "").trim().toLowerCase();
+
+  if (!isSupportedTimezone(timezone)) {
+    return { success: false, message: "Fuso orario non supportato." };
+  }
+
+  if (!isSupportedCurrency(currency)) {
+    return { success: false, message: "Valuta non supportata." };
+  }
+
+  if (!isSupportedLanguage(language)) {
+    return { success: false, message: "Lingua non supportata." };
+  }
+
+  try {
+    const workspaceId = await getCurrentWorkspaceId();
+
+    await prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { timezone, currency, language, setupCompleted: true },
+    });
+
+    revalidatePath("/", "layout");
+
+    return { success: true, message: "Configurazione completata." };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to complete workspace setup:", error);
+    return { success: false, message: "Non riesco a salvare la configurazione. Riprova." };
   }
 }
 
