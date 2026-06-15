@@ -1,4 +1,3 @@
-import { getEntryOwnershipLabel } from "@/src/lib/person-labels";
 import { toEntryMoneyView } from "@/src/lib/entry-domain";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 
@@ -64,7 +63,6 @@ export type AiExpenseExportEntry = {
   title: string;
   note: string | null;
   source: string;
-  person: string;
   realCost: unknown;
   alternativeCost: unknown;
   savedAmount: unknown;
@@ -272,6 +270,12 @@ export function buildAiExpenseExportRow(
   const beneficiaryNames = beneficiariesArr
     .map((b) => b.userName ?? b.userEmail ?? b.userId)
     .join("|");
+  const personLabel =
+    beneficiariesArr.length > 1
+      ? "Condiviso"
+      : beneficiariesArr.length === 1
+        ? (beneficiariesArr[0]!.userName ?? beneficiariesArr[0]!.userEmail ?? beneficiariesArr[0]!.userId)
+        : (entry.paidByUserName ?? entry.paidByUserEmail ?? entry.paidByUserId ?? "");
 
   return {
     // Legacy columns (preserved for backward compatibility)
@@ -282,7 +286,7 @@ export function buildAiExpenseExportRow(
     month: getRomeDateParts(entry.date).month,
     year: getRomeDateParts(entry.date).year,
     dayOfWeek: formatRomeWeekday(entry.date),
-    person: getEntryOwnershipLabel(entry.person),
+    person: personLabel,
     workspace: workspaceName,
     title: entry.title,
     description: "",

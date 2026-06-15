@@ -12,8 +12,6 @@ export const entryListSelect = {
   date: true,
   note: true,
   source: true,
-  person: true,
-  paidBy: true,
   paidByUserId: true,
   habitOccurrenceId: true,
   createdAt: true,

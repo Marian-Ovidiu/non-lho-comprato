@@ -6,10 +6,6 @@ import { type EntryMoneyLike } from "@/src/lib/entry-domain";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { prisma } from "@/src/lib/prisma";
 import {
-  isSharedPerson,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
-import {
   getCurrentWorkspaceId,
   getCurrentWorkspaceScopedWhere,
   requireWorkspaceAccessForRecord,
@@ -21,14 +17,12 @@ type GoalActionResult = {
   errors?: Record<string, string>;
 };
 
-type GoalPerson = LegacyPersonValue | null;
-
 type GoalWithProgress = {
   id: string;
   title: string;
   targetAmount: number;
   emoji: string | null;
-  person: GoalPerson | null;
+  targetUserId: string | null;
   isActive: boolean;
   createdAt: string;
   progressAmount: number;
@@ -121,14 +115,14 @@ function getProgressPercent(progressAmount: number, targetAmount: number): numbe
 }
 
 function getProgressAmount(
-  person: GoalPerson | null,
-  totals: Record<LegacyPersonValue, number> & { all: number },
+  targetUserId: string | null,
+  totalByUserId: Map<string, number>,
+  totalAll: number,
 ): number {
-  if (person && !isSharedPerson(person)) {
-    return totals[person];
+  if (targetUserId) {
+    return totalByUserId.get(targetUserId) ?? 0;
   }
-
-  return totals.all;
+  return totalAll;
 }
 
 function getGoalContribution(entry: EntryMoneyLike): number {
@@ -207,23 +201,19 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
           title: true,
           targetAmount: true,
           emoji: true,
-          person: true,
+          targetUserId: true,
           isActive: true,
           createdAt: true,
         },
         orderBy: [
-          {
-            isActive: "desc",
-          },
-          {
-            createdAt: "desc",
-          },
+          { isActive: "desc" },
+          { createdAt: "desc" },
         ],
       }),
       prisma.entry.findMany({
         where: workspaceWhere,
         select: {
-          person: true,
+          beneficiaries: { select: { userId: true } },
           realCost: true,
           alternativeCost: true,
           savedAmount: true,
@@ -233,30 +223,24 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
       }),
     ]);
 
-    const totals: Record<LegacyPersonValue, number> & { all: number } = {
-      all: 0,
-      MARIAN: 0,
-      MARTINA: 0,
-      TUTTI: 0,
-    };
+    const totalByUserId = new Map<string, number>();
+    let totalAll = 0;
 
     for (const entry of entries) {
       const contribution = getGoalContribution(entry);
+      if (contribution <= 0) continue;
 
-      if (contribution <= 0) {
-        continue;
+      totalAll = round2(totalAll + contribution);
+
+      if (entry.beneficiaries.length === 1) {
+        const userId = entry.beneficiaries[0]!.userId;
+        totalByUserId.set(userId, round2((totalByUserId.get(userId) ?? 0) + contribution));
       }
-
-      if (entry.person) {
-        totals[entry.person] = round2(totals[entry.person] + contribution);
-      }
-
-      totals.all = round2(totals.all + contribution);
     }
 
     return goals.map((goal) => {
       const targetAmount = round2(toNumber(goal.targetAmount));
-      const progressAmount = getProgressAmount(goal.person, totals);
+      const progressAmount = getProgressAmount(goal.targetUserId, totalByUserId, totalAll);
       const progressPercent = getProgressPercent(progressAmount, targetAmount);
       const remainingAmount = round2(Math.max(targetAmount - progressAmount, 0));
 
@@ -265,7 +249,7 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
         title: goal.title,
         targetAmount,
         emoji: goal.emoji,
-        person: goal.person,
+        targetUserId: goal.targetUserId,
         isActive: goal.isActive,
         createdAt: goal.createdAt.toISOString(),
         progressAmount,

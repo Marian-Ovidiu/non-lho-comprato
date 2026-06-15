@@ -15,7 +15,6 @@ import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate } from "@/src/lib/formatters";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
-import { getPresetPersonLabel } from "@/src/lib/ui-person";
 
 function toNumber(value: string): number {
   const parsed = Number(value.replace(",", "."));
@@ -98,7 +97,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
           <div className="min-w-0">
             <p className="truncate text-[15px] font-[450]">{preset.title}</p>
             <p className="mt-0.5 text-xs text-ink-3">
-              {preset.category.name} · {getPresetPersonLabel(preset.person)} · {formatDate(preset.createdAt)}
+              {preset.category.name} · {preset.targetUserLabel} · {formatDate(preset.createdAt)}
             </p>
             <p className="mt-1 text-xs text-ink-3">{summary.detail} · {summary.note}</p>
           </div>

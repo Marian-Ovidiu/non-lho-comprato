@@ -1,4 +1,3 @@
-import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
 import { getMemberLabel, type WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import {
   aggregateEntryMetrics,
@@ -16,7 +15,6 @@ export type MonthlyReportAnalyticsEntry = {
   savingContext: string;
   note: string | null;
   source: string;
-  person: string;
   paidByUserId: string | null;
   beneficiaries: Array<{
     userId: string;
@@ -166,25 +164,12 @@ function resolvePayerUserId(
   members: WorkspaceMemberOption[],
 ): string | null {
   const memberIds = new Set(members.map((member) => member.userId));
-  const slots = getWorkspaceMemberSlots(members);
 
   if (entry.paidByUserId && memberIds.has(entry.paidByUserId)) {
     return entry.paidByUserId;
   }
 
-  if (entry.person === "MARTINA") {
-    return slots.secondaryUserId ?? slots.primaryUserId ?? getMemberFallbackUserId(members);
-  }
-
-  if (entry.person === "TUTTI") {
-    return slots.primaryUserId ?? slots.secondaryUserId ?? getMemberFallbackUserId(members);
-  }
-
-  if (entry.person === "MARIAN") {
-    return slots.primaryUserId ?? slots.secondaryUserId ?? getMemberFallbackUserId(members);
-  }
-
-  return slots.primaryUserId ?? slots.secondaryUserId ?? getMemberFallbackUserId(members);
+  return getMemberFallbackUserId(members);
 }
 
 function resolveBeneficiaryUserIds(
@@ -338,8 +323,7 @@ export function buildMonthlyReportAnalyticsSnapshot(
     const isPersonalExpense =
       beneficiaryUserIds.length === 1 &&
       payerUserId !== null &&
-      beneficiaryUserIds[0] === payerUserId &&
-      entry.person !== "TUTTI";
+      beneficiaryUserIds[0] === payerUserId;
 
     if (payerUserId) {
       const totals = totalsByUserId.get(payerUserId);

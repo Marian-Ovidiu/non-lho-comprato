@@ -20,18 +20,15 @@ import {
   parsePaidByUserIdFromForm,
   validateEntryOwnership,
 } from "@/src/lib/entry-ownership";
-import { EntryVisibility, type Person } from "@/src/lib/generated/prisma/enums";
+import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import {
   getEntryFormText as getText,
   resolveEntryMoneyFromForm,
 } from "@/src/features/entries/form-money";
 import { resolveEntryCategory } from "@/src/features/entries/repository";
-import { syncEntryPersonColumns } from "@/src/lib/entry-person-sync";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
-import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
-import type { LegacyPersonValue } from "@/src/lib/ui-person";
 import {
   getDefaultPaidByUserId,
   resolveEntryPeopleFromRecord,
@@ -92,8 +89,6 @@ type EntryWithCategory = {
   date: Date;
   note: string | null;
   source: string;
-  person: Person;
-  paidBy: Person;
   beneficiaries: { userId: string }[];
   paidByUserId: string | null;
   habitOccurrenceId: string | null;
@@ -124,7 +119,6 @@ type SerializableEntry = {
   date: string;
   note: string | null;
   source: string;
-  person: LegacyPersonValue;
   paidByUserId: string;
   beneficiaryUserIds: string[];
   habitOccurrenceId: string | null;
@@ -232,7 +226,6 @@ export type EntriesPageResult = {
 };
 
 type EntriesPageOptions = {
-  person?: PersonFilterValue;
   q?: string;
   cursor?: string;
   limit?: number;
@@ -711,7 +704,6 @@ function serializeEntry(
     date: entry.date.toISOString(),
     note: entry.note,
     source: entry.source,
-    person: entry.person,
     paidByUserId: people.paidByUserId,
     beneficiaryUserIds: people.beneficiaryUserIds,
     habitOccurrenceId: entry.habitOccurrenceId,
@@ -727,18 +719,14 @@ function serializeEntry(
   };
 }
 
-export async function getEntries(
-  person?: PersonFilterValue,
-): Promise<SerializableEntry[]> {
+export async function getEntries(): Promise<SerializableEntry[]> {
   let workspaceId = "unknown";
 
-  logEntryLoadStep("start", {
-    personFilter: person ?? "all",
-  });
+  logEntryLoadStep("start", {});
 
   try {
     const [workspaceWhere, members] = await Promise.all([
-      getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
+      getCurrentWorkspaceScopedWhere(),
       getCurrentWorkspaceMembers(),
     ]);
 
@@ -746,7 +734,6 @@ export async function getEntries(
 
     logEntryLoadStep("where", {
       workspaceId,
-      personFilter: person ?? "all",
       prismaWhere: workspaceWhere,
     });
 
@@ -770,7 +757,6 @@ export async function getEntries(
     if (isEntryLoadDebugEnabled() || isWorkspaceDebugEnabled()) {
       logWorkspaceDebug("getEntries", {
         workspaceId,
-        personFilter: person ?? "all",
         prismaWhere: workspaceWhere,
         rawCount,
         entryCount: entries.length,
@@ -781,19 +767,16 @@ export async function getEntries(
   } catch (error) {
     logEntryLoadError("getEntries", error, {
       workspaceId,
-      personFilter: person ?? "all",
     });
 
     logEntryLoadStep("error", {
       workspaceId,
-      personFilter: person ?? "all",
       message: formatEntryLoadError(error),
     });
 
     if (isWorkspaceDebugEnabled()) {
       logWorkspaceDebug("getEntries.error", {
         workspaceId,
-        personFilter: person ?? "all",
         message: formatEntryLoadError(error),
       });
     }
@@ -803,32 +786,22 @@ export async function getEntries(
 }
 
 export async function getEntriesPage(
-  personOrOptions?: PersonFilterValue | EntriesPageOptions,
-  maybeOptions?: Omit<EntriesPageOptions, "person">,
+  options?: EntriesPageOptions,
 ): Promise<EntriesPageResult> {
   await refreshSupabaseSessionForAction();
 
-  const options =
-    typeof personOrOptions === "string" || personOrOptions === undefined
-      ? {
-          person: personOrOptions,
-          ...(maybeOptions ?? {}),
-        }
-      : personOrOptions;
-
-  const limit = options.limit ?? 20;
-  const cursor = options.cursor?.trim() || undefined;
-  const person = options.person;
-  const searchQuery = normalizeSearchQuery(options.q);
+  const limit = options?.limit ?? 20;
+  const cursor = options?.cursor?.trim() || undefined;
+  const searchQuery = normalizeSearchQuery(options?.q);
 
   let workspaceId = "unknown";
 
   try {
-    const membersPromise = options.members
+    const membersPromise = options?.members
       ? Promise.resolve(options.members)
       : getCurrentWorkspaceMembers();
     const [workspaceWhere, members] = await Promise.all([
-      getCurrentWorkspaceScopedWhere(buildPersonWhere(person)),
+      getCurrentWorkspaceScopedWhere(),
       membersPromise,
     ]);
 
@@ -861,7 +834,6 @@ export async function getEntriesPage(
     unstable_rethrow(error);
     logEntryLoadError("getEntriesPage", error, {
       workspaceId,
-      personFilter: person ?? "all",
       searchQuery: searchQuery || "all",
       cursor: cursor ?? null,
       limit,
@@ -949,14 +921,11 @@ export async function getEntryById(
   }
 }
 
-export async function getDashboardSummary(
-  person?: PersonFilterValue,
-): Promise<MonthlySummary> {
+export async function getDashboardSummary(): Promise<MonthlySummary> {
   const now = new Date();
   const { start, end } = getRomeMonthRangeForMonthKey(getRomeMonthKey(now));
 
   const workspaceWhere = await getCurrentWorkspaceScopedWhere({
-    ...buildPersonWhere(person),
     date: {
       gte: start,
       lt: end,
@@ -983,7 +952,6 @@ export async function getDashboardSummary(
 
     logWorkspaceDebug("getDashboardSummary", {
       workspaceId: workspaceWhere.workspaceId,
-      personFilter: person ?? "all",
       monthStart: start.toISOString(),
       nextMonthStart: end.toISOString(),
       entriesThisMonth: entries.length,
@@ -1008,12 +976,8 @@ export async function getDashboardSummary(
   };
 }
 
-export async function getDashboardEntrySnapshot(
-  person?: PersonFilterValue,
-): Promise<DashboardEntrySnapshot> {
-  const workspaceWhere = await getCurrentWorkspaceScopedWhere(
-    buildPersonWhere(person),
-  );
+export async function getDashboardEntrySnapshot(): Promise<DashboardEntrySnapshot> {
+  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
   const weekStart = subDays(new Date(), 7);
 
   try {
@@ -1266,12 +1230,6 @@ export async function createEntry(
 
   const money = entryMoney.money;
 
-  const personFields = syncEntryPersonColumns(
-    ownership.paidByUserId,
-    ownership.beneficiaryUserIds,
-    members,
-  );
-
   try {
     const currentUser = await getCurrentUser();
     const workspaceId = await getCurrentWorkspaceId();
@@ -1322,8 +1280,6 @@ export async function createEntry(
         beneficiaries: {
           create: ownership.beneficiaryUserIds.map((userId) => ({ userId })),
         },
-        person: personFields.person,
-        paidBy: personFields.paidBy,
         createdByUserId: currentUser.id,
         visibility: EntryVisibility.workspace,
       },
@@ -1423,12 +1379,6 @@ export async function updateEntry(
 
   const money = entryMoney.money;
 
-  const personFields = syncEntryPersonColumns(
-    ownership.paidByUserId,
-    ownership.beneficiaryUserIds,
-    members,
-  );
-
   try {
     const existingEntry = await prisma.entry.findUnique({
       where: { id },
@@ -1488,8 +1438,6 @@ export async function updateEntry(
           beneficiaries: {
             create: ownership.beneficiaryUserIds.map((userId) => ({ userId })),
           },
-          person: personFields.person,
-          paidBy: personFields.paidBy,
           source: existingEntry.source,
           habitOccurrenceId: existingEntry.habitOccurrenceId,
           createdByUserId: existingEntry.createdByUserId ?? currentUser.id,

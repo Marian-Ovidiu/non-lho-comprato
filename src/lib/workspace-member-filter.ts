@@ -1,10 +1,4 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import type { Person } from "@/src/lib/generated/prisma/enums";
-import {
-  getWorkspaceMemberSlots,
-  isSecondaryMemberUserId,
-} from "@/src/lib/member-slots";
-import { PERSON_FILTER_LABELS, normalizeLegacyPerson } from "@/src/lib/ui-person";
 import {
   dedupeWorkspaceMemberOptions,
   sortWorkspaceMembers,
@@ -22,7 +16,7 @@ export function getWorkspaceMemberFilterOptions(
   const sorted = sortWorkspaceMembers(dedupeWorkspaceMemberOptions(members));
 
   return [
-    { value: "", label: PERSON_FILTER_LABELS.ALL },
+    { value: "", label: "Tutti i movimenti" },
     ...sorted.map((member) => ({
       value: member.userId,
       label: member.label,
@@ -30,7 +24,7 @@ export function getWorkspaceMemberFilterOptions(
   ];
 }
 
-/** Resolves `?person=` to a workspace member user id (legacy enum values map to slots). */
+/** Resolves `?person=` URL param to a workspace member userId. */
 export function resolveWorkspaceMemberFilter(
   value: string | undefined,
   members: WorkspaceMemberOption[],
@@ -41,25 +35,7 @@ export function resolveWorkspaceMemberFilter(
   }
 
   const memberIds = new Set(members.map((member) => member.userId));
-  if (memberIds.has(trimmed)) {
-    return trimmed;
-  }
-
-  const legacy = normalizeLegacyPerson(trimmed);
-  if (!legacy) {
-    return undefined;
-  }
-
-  const slots = getWorkspaceMemberSlots(members);
-  if (legacy === "MARIAN" && slots.primaryUserId) {
-    return slots.primaryUserId;
-  }
-
-  if (legacy === "MARTINA" && slots.secondaryUserId) {
-    return slots.secondaryUserId;
-  }
-
-  return undefined;
+  return memberIds.has(trimmed) ? trimmed : undefined;
 }
 
 export function getWorkspaceMemberFilter(
@@ -70,18 +46,7 @@ export function getWorkspaceMemberFilter(
   return resolveWorkspaceMemberFilter(raw, members);
 }
 
-function userIdToLegacyBeneficiaryPerson(
-  userId: string,
-  members: WorkspaceMemberOption[],
-): Person {
-  const slots = getWorkspaceMemberSlots(members);
-  return isSecondaryMemberUserId(userId, slots) ? "MARTINA" : "MARIAN";
-}
-
-/**
- * Entry filter aligned with member spending stats (paidByUserId + beneficiaries).
- * Legacy `Entry.person` is used only when there are no beneficiary rows.
- */
+/** Entry filter aligned with member spending stats (paidByUserId + beneficiaries). */
 export function buildWorkspaceMemberEntryWhere(
   memberUserId: string | undefined,
   members: WorkspaceMemberOption[],
@@ -89,8 +54,6 @@ export function buildWorkspaceMemberEntryWhere(
   if (!memberUserId) {
     return {};
   }
-
-  const legacyPerson = userIdToLegacyBeneficiaryPerson(memberUserId, members);
 
   return {
     OR: [
@@ -115,10 +78,6 @@ export function buildWorkspaceMemberEntryWhere(
             },
           },
         ],
-      },
-      {
-        beneficiaries: { none: {} },
-        person: legacyPerson,
       },
     ],
   };

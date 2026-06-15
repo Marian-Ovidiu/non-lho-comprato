@@ -17,12 +17,6 @@ enum EntrySource {
   habit
 }
 
-enum Person {
-  MARIAN
-  MARTINA
-  TUTTI
-}
-
 enum WorkspaceKind {
   private
   shared
@@ -104,8 +98,6 @@ model Entry {
   isFirstEntryOfDay Boolean          @default(false)
   note              String?
   source            EntrySource      @default(manual)
-  person            Person           @default(MARIAN)
-  paidBy            Person           @default(MARIAN)
   visibility        EntryVisibility  @default(workspace)
   beneficiaries     EntryBeneficiary[]
   createdByUserId   String?
@@ -182,12 +174,14 @@ model Goal {
   title        String
   targetAmount Decimal    @db.Decimal(10, 2)
   emoji        String?
-  person       Person?
+  targetUserId String?
+  targetUser   User?      @relation("GoalTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 
   @@index([workspaceId])
+  @@index([targetUserId])
 }
 
 model QuickPreset {
@@ -200,11 +194,14 @@ model QuickPreset {
   realCost        Decimal    @db.Decimal(10, 2)
   alternativeCost Decimal    @db.Decimal(10, 2)
   note            String?
-  person          Person?
+  targetUserId    String?
+  targetScope     String?
+  targetUser      User?      @relation("QuickPresetTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
 
   @@index([workspaceId])
+  @@index([targetUserId])
 }
 
 model User {
@@ -222,6 +219,8 @@ model User {
   paidEntries          Entry[]             @relation("EntryPaidBy")
   beneficiaryEntries   EntryBeneficiary[]
   targetHabits         Habit[]             @relation("HabitTargetUser")
+  targetGoals          Goal[]              @relation("GoalTargetUser")
+  targetPresets        QuickPreset[]       @relation("QuickPresetTargetUser")
   feedbacks            Feedback[]          @relation("FeedbackUser")
 }
 

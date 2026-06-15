@@ -1,7 +1,7 @@
 import { getDatabaseConnectionSnapshot } from "@/src/lib/database-config";
 import { prisma } from "@/src/lib/prisma";
 
-const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-marian-martina";
+const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-workspace";
 
 function getLegacyWorkspaceIdForDebug() {
   return process.env.LEGACY_WORKSPACE_ID?.trim() || DEFAULT_LEGACY_WORKSPACE_ID;
@@ -33,9 +33,9 @@ export function getWorkspaceEnvSnapshot() {
     legacyWorkspaceIdResolved: getLegacyWorkspaceIdForDebug(),
     productionWorkspaceNameEnv:
       process.env.PRODUCTION_WORKSPACE_NAME?.trim() || "(default)",
-    legacyMarianEmailConfigured: Boolean(process.env.LEGACY_MARIAN_EMAIL?.trim()),
-    legacyMartinaEmailConfigured: Boolean(
-      process.env.LEGACY_MARTINA_EMAIL?.trim(),
+    legacyPrimaryEmailConfigured: Boolean(process.env.LEGACY_PRIMARY_EMAIL?.trim()),
+    legacySecondaryEmailConfigured: Boolean(
+      process.env.LEGACY_SECONDARY_EMAIL?.trim(),
     ),
     databaseHost: database.databaseHost,
     databasePort: database.databasePort,

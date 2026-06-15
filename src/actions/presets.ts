@@ -12,13 +12,7 @@ import {
   type EntryMoneyView,
   type EntrySavingContext,
 } from "@/src/lib/entry-domain";
-import { getWorkspaceMemberSlots } from "@/src/lib/member-slots";
 import { prisma } from "@/src/lib/prisma";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
-import {
-  normalizeLegacyPerson,
-  type LegacyPersonValue,
-} from "@/src/lib/ui-person";
 import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
@@ -52,7 +46,9 @@ export type SerializablePreset = {
   comparisonAmount: string;
   savingImpact: string;
   note: string | null;
-  person: LegacyPersonValue | null;
+  targetUserId: string | null;
+  targetScope: string | null;
+  targetUserLabel: string;
   createdAt: string;
   category: {
     id: string;
@@ -360,7 +356,8 @@ function buildPresetEntryFormData(params: {
 }
 
 function resolvePresetOwnership(
-  person: LegacyPersonValue,
+  targetUserId: string | null,
+  targetScope: string | null,
   members: WorkspaceMemberOption[],
   currentUserId: string,
 ): {
@@ -368,11 +365,9 @@ function resolvePresetOwnership(
   beneficiaryUserIds: string[];
 } {
   const defaultPaidByUserId = getDefaultPaidByUserId(members, currentUserId);
-  const slots = getWorkspaceMemberSlots(members);
 
-  if (person === "TUTTI") {
+  if (targetScope === "shared") {
     const beneficiaryUserIds = members.map((member) => member.userId);
-
     return {
       paidByUserId: defaultPaidByUserId,
       beneficiaryUserIds:
@@ -382,16 +377,13 @@ function resolvePresetOwnership(
     };
   }
 
-  const targetUserId =
-    person === "MARTINA"
-      ? slots.secondaryUserId ?? slots.primaryUserId ?? defaultPaidByUserId
-      : slots.primaryUserId ?? defaultPaidByUserId;
+  const resolvedUserId = targetUserId ?? defaultPaidByUserId;
 
   return {
-    paidByUserId: targetUserId,
-    beneficiaryUserIds: targetUserId
-      ? [targetUserId]
-      : getDefaultBeneficiaryUserIds(members, targetUserId),
+    paidByUserId: resolvedUserId,
+    beneficiaryUserIds: resolvedUserId
+      ? [resolvedUserId]
+      : getDefaultBeneficiaryUserIds(members, resolvedUserId),
   };
 }
 
@@ -584,20 +576,35 @@ export async function updatePreset(
   }
 }
 
-function serializePreset(preset: {
-  id: string;
-  title: string;
-  realCost: unknown;
-  alternativeCost: unknown;
-  note: string | null;
-  person: LegacyPersonValue | null;
-  createdAt: Date;
-  category: {
+function resolveTargetUserLabel(
+  targetUserId: string | null,
+  targetScope: string | null,
+  members: WorkspaceMemberOption[],
+): string {
+  if (targetScope === "shared") return "Condiviso";
+  if (!targetUserId) return "Automatico";
+  const member = members.find((m) => m.userId === targetUserId);
+  return member?.label ?? "Automatico";
+}
+
+function serializePreset(
+  preset: {
     id: string;
-    name: string;
-    slug: string;
-  };
-}): SerializablePreset {
+    title: string;
+    realCost: unknown;
+    alternativeCost: unknown;
+    note: string | null;
+    targetUserId: string | null;
+    targetScope: string | null;
+    createdAt: Date;
+    category: {
+      id: string;
+      name: string;
+      slug: string;
+    };
+  },
+  members: WorkspaceMemberOption[],
+): SerializablePreset {
   const money = toEntryMoneyView({
     realCost: preset.realCost,
     alternativeCost: preset.alternativeCost,
@@ -615,7 +622,9 @@ function serializePreset(preset: {
     comparisonAmount: money.comparisonAmount.toFixed(2),
     savingImpact: money.savingImpact.toFixed(2),
     note: preset.note,
-    person: preset.person,
+    targetUserId: preset.targetUserId,
+    targetScope: preset.targetScope,
+    targetUserLabel: resolveTargetUserLabel(preset.targetUserId, preset.targetScope, members),
     createdAt: preset.createdAt.toISOString(),
     category: {
       id: preset.category.id,
@@ -627,20 +636,22 @@ function serializePreset(preset: {
 
 export async function getPresets(): Promise<SerializablePreset[]> {
   try {
-    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+    const [workspaceWhere, members] = await Promise.all([
+      getCurrentWorkspaceScopedWhere(),
+      getCurrentWorkspaceMembers(),
+    ]);
 
     const presets = await prisma.quickPreset.findMany({
       where: workspaceWhere,
-      orderBy: {
-        createdAt: "desc",
-      },
+      orderBy: { createdAt: "desc" },
       select: {
         id: true,
         title: true,
         realCost: true,
         alternativeCost: true,
         note: true,
-        person: true,
+        targetUserId: true,
+        targetScope: true,
         createdAt: true,
         category: {
           select: {
@@ -652,7 +663,7 @@ export async function getPresets(): Promise<SerializablePreset[]> {
       },
     });
 
-    return presets.map(serializePreset);
+    return presets.map((preset) => serializePreset(preset, members));
   } catch (error) {
     console.error("Failed to load presets:", error);
     return [];
@@ -661,7 +672,6 @@ export async function getPresets(): Promise<SerializablePreset[]> {
 
 export async function createEntryFromPreset(
   presetId: string,
-  person?: PersonFilterValue,
 ): Promise<PresetActionResult> {
   const id = presetId.trim();
 
@@ -681,7 +691,8 @@ export async function createEntryFromPreset(
         realCost: true,
         alternativeCost: true,
         note: true,
-        person: true,
+        targetUserId: true,
+        targetScope: true,
         workspaceId: true,
       },
     });
@@ -707,9 +718,9 @@ export async function createEntryFromPreset(
       };
     }
 
-    const effectivePerson = preset.person ?? normalizeLegacyPerson(person);
-    const ownership = effectivePerson
-      ? resolvePresetOwnership(effectivePerson, members, currentUser.id)
+    const hasExplicitTarget = preset.targetUserId !== null || preset.targetScope !== null;
+    const ownership = hasExplicitTarget
+      ? resolvePresetOwnership(preset.targetUserId, preset.targetScope, members, currentUser.id)
       : resolveDefaultPresetOwnership(members, currentUser.id);
 
     const entryFormData = buildPresetEntryFormData({

@@ -1,6 +1,6 @@
-const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-marian-martina";
-const DEFAULT_LEGACY_MARIAN_USER_ID = "legacy-marian";
-const DEFAULT_LEGACY_MARTINA_USER_ID = "legacy-martina";
+const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-workspace";
+const DEFAULT_LEGACY_PRIMARY_USER_ID = "legacy-user-1";
+const DEFAULT_LEGACY_SECONDARY_USER_ID = "legacy-user-2";
 const DEFAULT_PRODUCTION_WORKSPACE_NAME = "Workspace condiviso";
 
 export function normalizeEmail(email: string | null | undefined) {
@@ -12,11 +12,11 @@ export function getLegacyWorkspaceId() {
 }
 
 export function getLegacyPrimaryUserId() {
-  return process.env.LEGACY_PRIMARY_USER_ID?.trim() || DEFAULT_LEGACY_MARIAN_USER_ID;
+  return process.env.LEGACY_PRIMARY_USER_ID?.trim() || DEFAULT_LEGACY_PRIMARY_USER_ID;
 }
 
 export function getLegacySecondaryUserId() {
-  return process.env.LEGACY_SECONDARY_USER_ID?.trim() || DEFAULT_LEGACY_MARTINA_USER_ID;
+  return process.env.LEGACY_SECONDARY_USER_ID?.trim() || DEFAULT_LEGACY_SECONDARY_USER_ID;
 }
 
 export function isLegacyAuthBridgeEnabled() {
@@ -41,16 +41,16 @@ export function getLegacyAuthMapping(email: string | null | undefined) {
     return null;
   }
 
-  const marianEmail = normalizeEmail(process.env.LEGACY_MARIAN_EMAIL);
-  if (marianEmail && normalizedEmail === marianEmail) {
+  const primaryEmail = normalizeEmail(process.env.LEGACY_PRIMARY_EMAIL);
+  if (primaryEmail && normalizedEmail === primaryEmail) {
     return {
       userId: getLegacyPrimaryUserId(),
       workspaceId: getLegacyWorkspaceId(),
     };
   }
 
-  const martinaEmail = normalizeEmail(process.env.LEGACY_MARTINA_EMAIL);
-  if (martinaEmail && normalizedEmail === martinaEmail) {
+  const secondaryEmail = normalizeEmail(process.env.LEGACY_SECONDARY_EMAIL);
+  if (secondaryEmail && normalizedEmail === secondaryEmail) {
     return {
       userId: getLegacySecondaryUserId(),
       workspaceId: getLegacyWorkspaceId(),

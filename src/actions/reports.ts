@@ -112,7 +112,6 @@ export type MonthlyReportEntry = {
   savingContext: string;
   note: string | null;
   source: string;
-  person: string;
   paidByUserId: string | null;
   beneficiaries: Array<{
     userId: string;
@@ -256,7 +255,6 @@ function serializeMonthlyReportEntry(entry: {
   savingContext: string;
   note: string | null;
   source: string;
-  person: string;
   paidByUserId: string | null;
   beneficiaries: Array<{ userId: string }>;
   category: {
@@ -276,7 +274,6 @@ function serializeMonthlyReportEntry(entry: {
     savingContext: entry.savingContext,
     note: entry.note,
     source: entry.source,
-    person: entry.person,
     paidByUserId: entry.paidByUserId,
     beneficiaries: entry.beneficiaries.map((beneficiary) => ({
       userId: beneficiary.userId,
@@ -549,7 +546,6 @@ export async function getMonthlyReport(
           savingContext: true,
           note: true,
           source: true,
-          person: true,
           paidByUserId: true,
           beneficiaries: {
             select: {
@@ -581,7 +577,6 @@ export async function getMonthlyReport(
           savingContext: true,
           note: true,
           source: true,
-          person: true,
           paidByUserId: true,
           beneficiaries: {
             select: {

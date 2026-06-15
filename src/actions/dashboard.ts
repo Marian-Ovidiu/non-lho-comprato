@@ -6,8 +6,6 @@ import { getTodayHabitOccurrences } from "@/src/actions/habits";
 import { getCategoryStats, getMonthlyStats } from "@/src/actions/stats";
 import { getGlobalStreak } from "@/src/actions/streaks";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import type { PersonFilterValue } from "@/src/lib/person-filter";
-import { buildPersonWhere } from "@/src/lib/person-filter";
 import { unstable_rethrow } from "next/navigation";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
@@ -30,13 +28,10 @@ type TodayDashboardSummary = {
   netImpactToday: number;
 };
 
-async function buildEntryWhere(
-  person?: PersonFilterValue,
-): Promise<Prisma.EntryWhereInput> {
+async function buildEntryWhere(): Promise<Prisma.EntryWhereInput> {
   const { start, end } = getRomeDayRangeForDate(new Date());
 
   return getCurrentWorkspaceScopedWhere({
-    ...buildPersonWhere(person),
     date: {
       gte: start,
       lt: end,
@@ -44,14 +39,12 @@ async function buildEntryWhere(
   });
 }
 
-export async function getTodayDashboardSummary(
-  person?: PersonFilterValue,
-): Promise<TodayDashboardSummary> {
+export async function getTodayDashboardSummary(): Promise<TodayDashboardSummary> {
   await refreshSupabaseSessionForAction();
 
   try {
     const entries = await prisma.entry.findMany({
-      where: await buildEntryWhere(person),
+      where: await buildEntryWhere(),
       select: {
         realCost: true,
         alternativeCost: true,

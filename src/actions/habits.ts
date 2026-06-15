@@ -490,7 +490,7 @@ function buildEntryDataForOccurrence(
             savingContext: "none",
             amountSpent: 0,
           });
-  const { person, paidBy, paidByUserId, beneficiaryUserIds } =
+  const { paidByUserId, beneficiaryUserIds } =
     syncHabitEntryPersonColumns({
       targetScope: occurrence.habit.targetScope,
       targetUserId: occurrence.habit.targetUserId,
@@ -501,8 +501,6 @@ function buildEntryDataForOccurrence(
     workspaceId: context.workspaceId,
     createdByUserId: context.currentUserId,
     paidByUserId,
-    paidBy,
-    person,
     beneficiaries: {
       create: beneficiaryUserIds.map((userId) => ({ userId })),
     },

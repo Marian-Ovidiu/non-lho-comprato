@@ -1,7 +1,6 @@
 "use server";
 
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import { prisma } from "@/src/lib/prisma";
 import { buildRomeStreakResult, getRomeDateKey } from "@/src/lib/rome-dates";
 import { getCurrentWorkspaceScopedWhere } from "@/src/lib/workspace-context";
@@ -19,7 +18,6 @@ type TodaySavingStatus = {
 };
 
 type StreakScope = {
-  person?: PersonFilterValue;
   categoryId?: string;
 };
 
@@ -31,7 +29,6 @@ async function buildEntryWhere(scope: StreakScope = {}): Promise<Prisma.EntryWhe
   const where: Prisma.EntryWhereInput = {};
   const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
-  Object.assign(where, buildPersonWhere(scope.person));
   Object.assign(where, workspaceWhere);
 
   if (scope.categoryId) {
@@ -105,13 +102,6 @@ async function loadStreakData(scope: StreakScope = {}): Promise<{
 
 export async function getGlobalStreak(): Promise<StreakResult> {
   const { streak } = await loadStreakData();
-  return streak;
-}
-
-export async function getPersonStreak(
-  person: PersonFilterValue,
-): Promise<StreakResult> {
-  const { streak } = await loadStreakData({ person });
   return streak;
 }
 

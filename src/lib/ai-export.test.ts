@@ -20,7 +20,6 @@ function createEntry(
     title: "Test entry",
     note: null,
     source: "manual",
-    person: "personal",
     realCost: 0,
     alternativeCost: 0,
     savedAmount: 0,
