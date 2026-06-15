@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { trackPostHogEvent } from "@/src/lib/posthog";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type WorkspaceOption = {
   id: string;
@@ -49,22 +50,24 @@ function WorkspaceMark({ isShared }: { isShared: boolean }) {
   );
 }
 
-function getWorkspaceLabel(workspace: WorkspaceOption) {
-  return workspace.isShared ? "Condiviso" : "Privato";
+function getWorkspaceLabel(workspace: WorkspaceOption, t: ReturnType<typeof useTranslations>) {
+  return workspace.isShared ? t.workspaceSwitcher.shared : t.workspaceSwitcher.private;
 }
 
-function getWorkspaceSubtitle(workspace: WorkspaceOption) {
-  return workspace.isShared ? "Visibile alle persone del workspace" : "Solo tuo";
+function getWorkspaceSubtitle(workspace: WorkspaceOption, t: ReturnType<typeof useTranslations>) {
+  return workspace.isShared ? t.workspaceSwitcher.sharedDesc : t.workspaceSwitcher.privateDesc;
 }
 
 function WorkspaceTrigger({
   workspace,
   interactive,
   isSwitching = false,
+  t,
 }: {
   workspace: WorkspaceOption;
   interactive: boolean;
   isSwitching?: boolean;
+  t: ReturnType<typeof useTranslations>;
 }) {
   return (
     <span
@@ -78,7 +81,7 @@ function WorkspaceTrigger({
       <WorkspaceMark isShared={workspace.isShared} />
 
       <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-text">
-        {getWorkspaceLabel(workspace)}
+        {getWorkspaceLabel(workspace, t)}
       </span>
 
       {isSwitching ? (
@@ -87,7 +90,7 @@ function WorkspaceTrigger({
             className="size-3 animate-spin motion-reduce:animate-none"
             aria-hidden="true"
           />
-          Cambio spazio…
+          {t.workspaceSwitcher.switching}
         </span>
       ) : null}
 
@@ -108,6 +111,7 @@ export function WorkspaceSwitcher({
   const pathname = usePathname();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations();
   const [open, setOpen] = useState(false);
   const [switchingWorkspaceId, setSwitchingWorkspaceId] = useState<string | null>(
     null,
@@ -179,7 +183,7 @@ export function WorkspaceSwitcher({
       const result = await switchWorkspaceAction(formData);
 
       if (!result.success) {
-        setSwitchError("Non riesco a cambiare workspace. Riprova tra poco.");
+        setSwitchError(t.workspaceSwitcher.switchError);
         endWorkspaceSwitch();
         return;
       }
@@ -190,7 +194,7 @@ export function WorkspaceSwitcher({
       });
     } catch (error) {
       console.error("Failed to switch workspace:", error);
-      setSwitchError("Cambio workspace non riuscito. Riprova.");
+      setSwitchError(t.workspaceSwitcher.switchError2);
       endWorkspaceSwitch();
     }
   }
@@ -199,9 +203,9 @@ export function WorkspaceSwitcher({
     return (
       <div
         className="w-full min-w-0"
-        aria-label={`Spazio attivo: ${currentWorkspace.name}`}
+        aria-label={`${t.workspaceSwitcher.activeWorkspace}: ${currentWorkspace.name}`}
       >
-        <WorkspaceTrigger workspace={currentWorkspace} interactive={false} />
+        <WorkspaceTrigger workspace={currentWorkspace} interactive={false} t={t} />
       </div>
     );
   }
@@ -222,12 +226,13 @@ export function WorkspaceSwitcher({
           className="h-auto w-full min-w-0 justify-start rounded-full p-0 hover:bg-transparent"
           disabled={isSwitching}
           aria-busy={showSwitchingState}
-          aria-label={`Cambia workspace: ${currentWorkspace.name}`}
+          aria-label={`${t.workspaceSwitcher.changeWorkspace}: ${currentWorkspace.name}`}
         >
           <WorkspaceTrigger
             workspace={currentWorkspace}
             interactive
             isSwitching={showSwitchingState}
+            t={t}
           />
         </Button>
       </DialogTrigger>
@@ -251,13 +256,13 @@ export function WorkspaceSwitcher({
           <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-5 sm:pb-5">
             <div className="space-y-1">
               <p className="text-xs font-medium uppercase tracking-[0.22em] text-muted-text">
-                Spazio attivo
+                {t.workspaceSwitcher.activeWorkspace}
               </p>
               <DialogTitle className="text-lg tracking-tight">
-                Cambia workspace
+                {t.workspaceSwitcher.changeWorkspace}
               </DialogTitle>
               <DialogDescription className="max-w-md text-sm leading-5 text-muted-text">
-                Privato significa solo tuo. Condiviso significa che lo vedono anche le persone del workspace.
+                {t.workspaceSwitcher.dialogDesc}
               </DialogDescription>
             </div>
           </div>
@@ -271,7 +276,7 @@ export function WorkspaceSwitcher({
                     {currentWorkspace.name}
                   </p>
                   <p className="text-sm leading-5 text-muted-text">
-                    {getWorkspaceLabel(currentWorkspace)} · {getWorkspaceSubtitle(currentWorkspace)}
+                    {getWorkspaceLabel(currentWorkspace, t)} · {getWorkspaceSubtitle(currentWorkspace, t)}
                   </p>
                 </div>
               </div>
@@ -323,7 +328,7 @@ export function WorkspaceSwitcher({
                           {workspace.name}
                         </span>
                         <span className="block text-xs leading-4 text-muted-text">
-                          {getWorkspaceLabel(workspace)} · {getWorkspaceSubtitle(workspace)}
+                          {getWorkspaceLabel(workspace, t)} · {getWorkspaceSubtitle(workspace, t)}
                         </span>
                       </span>
 
@@ -333,7 +338,7 @@ export function WorkspaceSwitcher({
                             variant="outline"
                             className="rounded-full border-primary/20 bg-primary/8 text-[10px] uppercase tracking-[0.18em] text-primary"
                           >
-                            Attivo
+                            {t.workspaceSwitcher.active}
                           </Badge>
                         ) : null}
                         {isSubmitting ? (
@@ -342,7 +347,7 @@ export function WorkspaceSwitcher({
                               className="size-3 animate-spin motion-reduce:animate-none"
                               aria-hidden="true"
                             />
-                            Cambio spazio…
+                            {t.workspaceSwitcher.switching}
                           </span>
                         ) : isCurrent ? (
                           <Check className="size-4 text-primary" aria-hidden="true" />

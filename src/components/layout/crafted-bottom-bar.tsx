@@ -23,16 +23,7 @@ const QuickAddSheet = dynamic(
 );
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/src/lib/haptics";
-
-const leftNavItems = [
-  { href: "/", label: "Oggi" },
-  { href: "/entries", label: "Movimenti" },
-] as const;
-
-const rightNavItems = [
-  { href: "/stats", label: "Stats" },
-  { href: "/more", label: "Altro" },
-] as const;
+import { useTranslations } from "@/src/components/language/language-context";
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") {
@@ -92,10 +83,21 @@ export function CraftedBottomBar({
   currentUserId,
 }: CraftedBottomBarProps) {
   const pathname = usePathname();
+  const t = useTranslations();
+
+  const leftNavItems = [
+    { href: "/", label: t.nav.today },
+    { href: "/entries", label: t.nav.entries },
+  ];
+
+  const rightNavItems = [
+    { href: "/stats", label: t.nav.stats },
+    { href: "/more", label: t.nav.more },
+  ];
 
   return (
     <nav
-      aria-label="Navigazione principale"
+      aria-label={t.nav.mainNavLabel}
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-background md:hidden"
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-2.5">

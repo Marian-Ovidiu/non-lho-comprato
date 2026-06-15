@@ -8,6 +8,7 @@ import { Serif } from "@/components/crafted";
 import { acceptWorkspaceInviteAction } from "@/src/actions/invites";
 import { cn } from "@/lib/utils";
 import { trackPostHogEvent } from "@/src/lib/posthog";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type InviteAcceptanceState = {
   success: boolean;
@@ -35,6 +36,7 @@ export function CraftedInviteAcceptancePanel({
   token,
   workspaceNameHint,
 }: CraftedInviteAcceptancePanelProps) {
+  const t = useTranslations();
   const router = useRouter();
   const didTrackStartRef = useRef(false);
   const didTrackSuccessRef = useRef(false);
@@ -75,9 +77,9 @@ export function CraftedInviteAcceptancePanel({
   return (
     <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
       <div className="border-y border-line py-4">
-        <p className="text-[15px] font-[450]">{workspaceNameHint ?? "Invito condiviso"}</p>
+        <p className="text-[15px] font-[450]">{workspaceNameHint ?? t.invites.acceptanceTitle}</p>
         <Serif className="mt-2 block text-sm text-ink-3">
-          Quando accetti, questo spazio diventa disponibile nel tuo account.
+          {t.invites.acceptanceMessage}
         </Serif>
       </div>
 
@@ -107,7 +109,7 @@ export function CraftedInviteAcceptancePanel({
           className="flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15px] font-bold text-accent-foreground disabled:opacity-60"
         >
           {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-          {pending ? "Accettazione..." : "Accetta invito"}
+          {pending ? t.invites.acceptingButton : t.invites.acceptButton}
         </button>
       </form>
     </section>

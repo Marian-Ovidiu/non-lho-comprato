@@ -3,6 +3,7 @@
 import { Label, Mono } from "@/components/crafted";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type CraftedEntriesHeaderProps = {
   monthLabel: string;
@@ -18,9 +19,10 @@ export function CraftedEntriesHeader({
   totalSaved,
 }: CraftedEntriesHeaderProps) {
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   return (
     <section className="-mx-4 px-5 pb-5 pt-7 sm:-mx-6 lg:-mx-8">
-      <Label className="mb-4 block">Movimenti — {monthLabel.toLowerCase()}</Label>
+      <Label className="mb-4 block">{t.nav.entries} — {monthLabel.toLowerCase()}</Label>
       <div className="flex items-end justify-between gap-4">
         <div>
           <Label className="mb-1.5 block">Speso</Label>
@@ -31,11 +33,11 @@ export function CraftedEntriesHeader({
             <span className="text-base text-accent">{currencySymbol}</span>
           </div>
           <Mono className="mt-2 block text-[11px] tracking-[0.02em] text-ink-3">
-            {entriesCount} {entriesCount === 1 ? "movimento" : "movimenti"}
+            {entriesCount} {entriesCount === 1 ? t.entries.entrySingular : t.entries.entryPlural}
           </Mono>
         </div>
         <div className="text-right">
-          <Label className="mb-1.5 block">Impatto netto</Label>
+          <Label className="mb-1.5 block">{t.entries.netImpactLabel}</Label>
           <Mono className="text-xl font-medium">
             {formatCraftedCompact(totalSaved)}
             <span className="text-xs text-accent">{currencySymbol}</span>

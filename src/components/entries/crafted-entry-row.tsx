@@ -9,7 +9,12 @@ import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatDate } from "@/src/lib/formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
-import { useLocalizedCategoryName } from "@/src/components/language/language-context";
+import {
+  useLocalizedCategoryName,
+  useTranslations,
+  useWorkspaceLanguage,
+} from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 import { cn } from "@/lib/utils";
 
 type CraftedEntryRowProps = {
@@ -31,21 +36,25 @@ type CraftedEntryRowProps = {
   showDivider?: boolean;
 };
 
-function formatEntryMeta(date: string | Date, categoryName: string) {
+function formatEntryMeta(
+  date: string | Date,
+  categoryName: string,
+  locale: string,
+  yesterdayLabel: string,
+) {
   const parsedDate = new Date(date);
   const daysAgo = differenceInCalendarDays(new Date(), parsedDate);
 
   if (daysAgo === 0) {
-    const time = new Intl.DateTimeFormat("it-IT", {
+    const time = new Intl.DateTimeFormat(locale, {
       hour: "2-digit",
       minute: "2-digit",
-      timeZone: "Europe/Rome",
     }).format(parsedDate);
     return `${categoryName} · ${time}`;
   }
 
   if (daysAgo === 1) {
-    return `${categoryName} · ieri`;
+    return `${categoryName} · ${yesterdayLabel.toLowerCase()}`;
   }
 
   return `${categoryName} · ${formatDate(parsedDate)}`;
@@ -56,7 +65,20 @@ function toFiniteNumber(value: unknown): number {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function getSecondaryMeta(entry: CraftedEntryRowProps["entry"], currencySymbol: string) {
+type SecondaryMetaTranslations = {
+  avoidedBadge: string;
+  avoidedDesc: string;
+  comparisonBadge: string;
+  comparisonSaved: string;
+  comparisonSpentMore: string;
+  comparisonInline: string;
+};
+
+function getSecondaryMeta(
+  entry: CraftedEntryRowProps["entry"],
+  currencySymbol: string,
+  labels: SecondaryMetaTranslations,
+) {
   const mode = entry.mode === "avoided" ? "avoided" : "spent";
   const savingContext =
     entry.savingContext === "comparison" ? "comparison" : "none";
@@ -65,8 +87,8 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"], currencySymbol: 
 
   if (mode === "avoided") {
     return {
-      badge: "Evitata",
-      detail: `${formatCraftedEntryAmount(alternativeCost)}${currencySymbol} non comprati`,
+      badge: labels.avoidedBadge,
+      detail: `${formatCraftedEntryAmount(alternativeCost)}${currencySymbol} ${labels.avoidedDesc}`,
       tone: "accent" as const,
     };
   }
@@ -74,23 +96,23 @@ function getSecondaryMeta(entry: CraftedEntryRowProps["entry"], currencySymbol: 
   if (savingContext === "comparison") {
     if (savedAmount > 0) {
       return {
-        badge: "Confronto",
-        detail: `${formatCraftedEntryAmount(savedAmount)}${currencySymbol} risparmiati scegliendo meglio`,
+        badge: labels.comparisonBadge,
+        detail: `${formatCraftedEntryAmount(savedAmount)}${currencySymbol} ${labels.comparisonSaved}`,
         tone: "accent" as const,
       };
     }
 
     if (savedAmount < 0) {
       return {
-        badge: "Confronto",
-        detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}${currencySymbol} spesi in più del confronto`,
+        badge: labels.comparisonBadge,
+        detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}${currencySymbol} ${labels.comparisonSpentMore}`,
         tone: "default" as const,
       };
     }
 
     return {
-      badge: "Confronto",
-      detail: "In linea con il confronto",
+      badge: labels.comparisonBadge,
+      detail: labels.comparisonInline,
       tone: "muted" as const,
     };
   }
@@ -104,8 +126,18 @@ export function CraftedEntryRow({
   showDivider = true,
 }: CraftedEntryRowProps) {
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
+  const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
   const categoryName = useLocalizedCategoryName(entry.category.slug, entry.category.name);
-  const meta = getSecondaryMeta(entry, currencySymbol);
+  const meta = getSecondaryMeta(entry, currencySymbol, {
+    avoidedBadge: t.entries.avoidedBadge,
+    avoidedDesc: t.entries.avoidedDesc,
+    comparisonBadge: t.entries.comparisonBadge,
+    comparisonSaved: t.entries.comparisonSaved,
+    comparisonSpentMore: t.entries.comparisonSpentMore,
+    comparisonInline: t.entries.comparisonInline,
+  });
 
   return (
     <div className={className}>
@@ -121,7 +153,7 @@ export function CraftedEntryRow({
         <div className="min-w-0 flex-1">
           <p className="truncate text-[15px] font-[450]">{entry.title}</p>
           <Mono className="mt-0.5 block text-[11px] leading-4 tracking-[0.02em] text-ink-3">
-            {formatEntryMeta(entry.date, categoryName)}
+            {formatEntryMeta(entry.date, categoryName, locale, t.common.yesterday)}
           </Mono>
           {meta ? (
             <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">

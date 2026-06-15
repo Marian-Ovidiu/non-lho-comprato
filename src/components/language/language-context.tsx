@@ -3,6 +3,7 @@
 import { createContext, useContext } from "react";
 
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
+import { getTranslations, type Translations } from "@/src/lib/i18n";
 
 const LanguageContext = createContext("it");
 
@@ -18,6 +19,11 @@ export function LanguageProvider({
 
 export function useWorkspaceLanguage(): string {
   return useContext(LanguageContext);
+}
+
+export function useTranslations(): Translations {
+  const language = useWorkspaceLanguage();
+  return getTranslations(language);
 }
 
 export function useLocalizedCategoryName(

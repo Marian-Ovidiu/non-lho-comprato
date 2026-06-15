@@ -17,6 +17,7 @@ import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type { CraftedHabitsProps } from "@/src/lib/crafted-habits-build";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type CraftedHabitsComponentProps = CraftedHabitsProps;
 
@@ -30,6 +31,7 @@ export function CraftedHabits({
   monthLabel,
 }: CraftedHabitsComponentProps) {
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   const [today, setToday] = useState(initialToday);
   const didMountRef = useRef(false);
   const wasAllConfirmedRef = useRef(
@@ -72,13 +74,13 @@ export function CraftedHabits({
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-5 py-7">
-        <Label className="mb-4 block">Ricorrenti — oggi</Label>
+        <Label className="mb-4 block">{t.habits.todayTitle}</Label>
         <div className="flex items-baseline gap-2.5">
           <Mono className="text-[clamp(3rem,16vw,4.75rem)] font-semibold leading-[0.84] tracking-[-0.05em]">
             {livePending}
             <span className="text-ink-3">/{totalToday || today.length}</span>
           </Mono>
-          <span className="text-lg text-muted-foreground">da confermare</span>
+          <span className="text-lg text-muted-foreground">{t.habits.pendingConfirm}</span>
         </div>
         {habitsNote ? (
           <Serif className="mt-3.5 block text-[19px] text-muted-foreground">
@@ -87,27 +89,27 @@ export function CraftedHabits({
         ) : totalToday > 0 ? (
           <Serif className="mt-3.5 block text-[19px] text-muted-foreground">
             {liveAvoided > 0
-              ? `${liveAvoided} ${liveAvoided === 1 ? "spesa prevista evitata" : "spese previste evitate"} oggi.`
-              : "Conferma cosa hai pagato, evitato o cosa non era applicabile oggi."}
+              ? (liveAvoided === 1 ? t.habits.avoidedSingular(liveAvoided) : t.habits.avoidedPlural(liveAvoided))
+              : t.habits.confirmHabits}
           </Serif>
         ) : null}
       </section>
       <Rule />
 
       <section className="px-5 pt-5 pb-1.5">
-        <Label>Spese previste di oggi</Label>
+        <Label>{t.habits.todayHabits}</Label>
       </section>
 
       {today.length === 0 ? (
         <div className="px-5 py-8 text-center">
           <Serif className="text-sm text-ink-3">
-            Nessuna ricorrente attiva per oggi.
+            {t.habits.noTodayHabits}
           </Serif>
           <Link
             href="#nuova-abitudine"
             className="mt-4 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
           >
-            Crea una nuova ricorrente
+            {t.habits.createHabitLink}
           </Link>
         </div>
       ) : (
@@ -151,8 +153,8 @@ export function CraftedHabits({
       {all.length > 0 ? (
         <>
           <section className="flex items-baseline justify-between px-5 pt-5 pb-1.5">
-            <Label>Tutte le ricorrenti</Label>
-            <Mono className="text-[11px] text-ink-3">{activeCount} attive</Mono>
+            <Label>{t.habits.allHabits}</Label>
+            <Mono className="text-[11px] text-ink-3">{activeCount} {t.habits.activeCount}</Mono>
           </section>
           <div className="px-5 pb-1">
             {all.map((habit, index) => (
@@ -176,7 +178,7 @@ export function CraftedHabits({
                       <span className="text-[11px] text-accent">{currencySymbol}</span>
                     </Mono>
                     <Mono className="mt-0.5 block text-[10px] tracking-[0.06em] text-ink-3 uppercase">
-                      impatto mese
+                      {t.habits.monthImpact}
                     </Mono>
                   </div>
                 </div>
@@ -192,8 +194,7 @@ export function CraftedHabits({
           {monthSaved > 0 ? (
             <div className="px-5 py-4 text-center">
               <Serif className="text-sm text-ink-3">
-                {formatCraftedCompact(monthSaved)}{currencySymbol} di impatto netto dalle ricorrenti, a{" "}
-                {monthLabel}.
+                {t.habits.monthSavings(`${formatCraftedCompact(monthSaved)}${currencySymbol}`, monthLabel)}
               </Serif>
             </div>
           ) : null}

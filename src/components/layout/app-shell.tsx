@@ -17,7 +17,8 @@ import { InstallButton } from "@/src/components/pwa/install-button";
 import { WorkspaceSwitcher } from "@/src/components/layout/workspace-switcher";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { CurrencyProvider } from "@/src/components/currency/currency-context";
-import { LanguageProvider } from "@/src/components/language/language-context";
+import { LanguageProvider, useTranslations } from "@/src/components/language/language-context";
+import { getTranslations } from "@/src/lib/i18n";
 
 export type AppShellWorkspace = {
   id: string;
@@ -30,14 +31,6 @@ export type AppShellAuth = {
   isAuthenticated: boolean;
   userLabel?: string | null;
 };
-
-const desktopNavItems = [
-  { href: "/", label: "Oggi" },
-  { href: "/entries", label: "Movimenti" },
-  { href: "/goals", label: "Obiettivi" },
-  { href: "/stats", label: "Statistiche" },
-  { href: "/more", label: "Altro" },
-] as const;
 
 function isActivePath(pathname: string, href: string) {
   if (href === "/") {
@@ -82,7 +75,8 @@ function DesktopNavLink({
 function AccountButton({
   isAuthenticated,
   userLabel,
-}: AppShellAuth) {
+  t,
+}: AppShellAuth & { t: ReturnType<typeof useTranslations> }) {
   const initials = userLabel
     ? userLabel
         .split(" ")
@@ -96,7 +90,7 @@ function AccountButton({
   if (!isAuthenticated) {
     return (
       <Button asChild variant="outline" size="sm" className="h-8 rounded-full px-3 text-xs">
-        <Link href="/login">Accedi</Link>
+        <Link href="/login">{t.more.login}</Link>
       </Button>
     );
   }
@@ -136,6 +130,16 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const t = getTranslations(language);
+
+  const desktopNavItems = [
+    { href: "/", label: t.nav.today },
+    { href: "/entries", label: t.nav.entries },
+    { href: "/goals", label: t.nav.goals },
+    { href: "/stats", label: t.nav.stats },
+    { href: "/more", label: t.nav.more },
+  ];
+
   const [isWorkspaceSwitching, setIsWorkspaceSwitching] = useState(false);
   const workspaceSwitchEndTimerRef = useRef<number | null>(null);
   const pendingWorkspaceSwitchIdRef = useRef<string | null>(null);
@@ -208,6 +212,7 @@ export function AppShell({
                   <AccountButton
                     isAuthenticated={auth.isAuthenticated}
                     userLabel={auth.userLabel}
+                    t={t}
                   />
                 </div>
               }
@@ -229,7 +234,7 @@ export function AppShell({
                       className="size-3 animate-spin motion-reduce:animate-none"
                       aria-hidden="true"
                     />
-                    Cambio spazio…
+                    {t.workspaceSwitcher.switching}
                   </p>
                 ) : null}
               </div>
@@ -239,12 +244,13 @@ export function AppShell({
                 <AccountButton
                   isAuthenticated={auth.isAuthenticated}
                   userLabel={auth.userLabel}
+                  t={t}
                 />
               </div>
             </div>
 
             <nav
-              aria-label="Navigazione desktop"
+              aria-label={t.nav.desktopNavLabel}
               className="hidden gap-5 overflow-x-auto px-5 pb-3 md:flex"
             >
               {desktopNavItems.map((item) => (

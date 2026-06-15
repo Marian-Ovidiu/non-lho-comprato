@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
 import { Label, Serif } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type CraftedSubpageHeaderProps = {
   backHref: string;
@@ -14,12 +17,14 @@ type CraftedSubpageHeaderProps = {
 
 export function CraftedSubpageHeader({
   backHref,
-  backLabel = "Indietro",
+  backLabel,
   eyebrow,
   title,
   context,
   meta,
 }: CraftedSubpageHeaderProps) {
+  const t = useTranslations();
+  const resolvedBackLabel = backLabel ?? t.subpageHeader.back;
   return (
     <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
       <Link
@@ -27,7 +32,7 @@ export function CraftedSubpageHeader({
         className="mb-5 inline-flex items-center gap-1 text-sm text-ink-3 transition-opacity hover:opacity-80"
       >
         <ChevronLeft className="size-4" aria-hidden="true" />
-        {backLabel}
+        {resolvedBackLabel}
       </Link>
       {eyebrow ? <Label className="mb-2 block">{eyebrow}</Label> : null}
       <div className="flex items-start justify-between gap-4">

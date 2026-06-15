@@ -16,6 +16,8 @@ import {
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { cn } from "@/lib/utils";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 
 type EntryItem = {
   id: string;
@@ -71,14 +73,6 @@ const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 250;
 const RECENT_ENTRY_HIGHLIGHT_MS = 2_000;
 
-const CATEGORY_FILTERS: CategoryFilter[] = [
-  { id: "all", label: "Tutti" },
-  { id: "caffe", label: "Caffè", matches: ["caffe", "caffè", "coffee"] },
-  { id: "delivery", label: "Delivery", matches: ["delivery", "cibo", "spesa"] },
-  { id: "shopping", label: "Shopping", matches: ["shopping"] },
-  { id: "svago", label: "Svago", matches: ["svago"] },
-];
-
 function normalizeFilterKey(value: string) {
   return value
     .normalize("NFD")
@@ -99,7 +93,7 @@ function matchesCategoryFilter(entry: EntryItem, filter: CategoryFilter) {
   );
 }
 
-function getShortRomeDateLabel(dateKey: string) {
+function getShortRomeDateLabel(dateKey: string, locale: string) {
   const [yearPart, monthPart, dayPart] = dateKey.split("-");
   const year = Number(yearPart);
   const month = Number(monthPart);
@@ -109,7 +103,7 @@ function getShortRomeDateLabel(dateKey: string) {
     return dateKey;
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
@@ -118,22 +112,27 @@ function getShortRomeDateLabel(dateKey: string) {
     .replace(".", "");
 }
 
-function getCraftedDayGroupLabel(dateKey: string) {
+function getCraftedDayGroupLabel(
+  dateKey: string,
+  locale: string,
+  todayLabel: string,
+  yesterdayLabel: string,
+) {
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const todayKey = getDateKey(new Date(), browserTz);
   const yesterdayKey = shiftDateKey(todayKey, -1);
-  const shortDate = getShortRomeDateLabel(dateKey);
+  const shortDate = getShortRomeDateLabel(dateKey, locale);
 
   if (dateKey === todayKey) {
-    return `Oggi · ${shortDate}`;
+    return `${todayLabel} · ${shortDate}`;
   }
 
   if (dateKey === yesterdayKey) {
-    return `Ieri · ${shortDate}`;
+    return `${yesterdayLabel} · ${shortDate}`;
   }
 
   const [yearPart, monthPart, dayPart] = dateKey.split("-");
-  const weekday = new Intl.DateTimeFormat("it-IT", {
+  const weekday = new Intl.DateTimeFormat(locale, {
     weekday: "short",
     timeZone: "UTC",
   })
@@ -147,7 +146,12 @@ function getCraftedDayGroupLabel(dateKey: string) {
   return `${weekday} · ${shortDate}`;
 }
 
-function groupEntries(entries: EntryItem[]): DayGroup[] {
+function groupEntries(
+  entries: EntryItem[],
+  locale: string,
+  todayLabel: string,
+  yesterdayLabel: string,
+): DayGroup[] {
   const groups: DayGroup[] = [];
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
@@ -171,7 +175,7 @@ function groupEntries(entries: EntryItem[]): DayGroup[] {
 
     groups.push({
       dateKey,
-      label: getCraftedDayGroupLabel(dateKey),
+      label: getCraftedDayGroupLabel(dateKey, locale, todayLabel, yesterdayLabel),
       entries: [entry],
       totalRealSpent: realSpent,
       totalSaved: saved,
@@ -219,6 +223,18 @@ export function CraftedEntryList({
   previousMonthSummary,
 }: CraftedEntryListProps) {
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
+  const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
+
+  const CATEGORY_FILTERS: CategoryFilter[] = [
+    { id: "all", label: t.entries.filterAll },
+    { id: "caffe", label: t.entries.filterCoffee, matches: ["caffe", "caffè", "coffee"] },
+    { id: "delivery", label: t.entries.filterDelivery, matches: ["delivery", "cibo", "spesa"] },
+    { id: "shopping", label: t.entries.filterShopping, matches: ["shopping"] },
+    { id: "svago", label: t.entries.filterFun, matches: ["svago"] },
+  ];
+
   const [entries, setEntries] = useState(initialEntries);
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
   const [hasMore, setHasMore] = useState(initialHasMore);
@@ -247,7 +263,10 @@ export function CraftedEntryList({
     [entries, activeFilter],
   );
 
-  const groups = useMemo(() => groupEntries(filteredEntries), [filteredEntries]);
+  const groups = useMemo(
+    () => groupEntries(filteredEntries, locale, t.entries.todayLabel, t.entries.yesterdayLabel),
+    [filteredEntries, locale, t.entries.todayLabel, t.entries.yesterdayLabel],
+  );
   const hasSearchTerm = searchValue.trim().length > 0;
 
   useEffect(() => {
@@ -318,7 +337,7 @@ export function CraftedEntryList({
         }
 
         console.error("Failed to search entries:", error);
-        setSearchError("Non riesco a cercare i movimenti adesso.");
+        setSearchError(t.entries.searchError);
         setEntries([]);
         setNextCursor(null);
         setHasMore(false);
@@ -361,7 +380,7 @@ export function CraftedEntryList({
       }
 
       console.error("Failed to load more entries:", error);
-      setLoadError("Non riesco a caricare altri movimenti adesso.");
+      setLoadError(t.entries.loadError);
     } finally {
       if (requestIdRef.current === currentRequestId) {
         setIsLoading(false);
@@ -414,8 +433,8 @@ export function CraftedEntryList({
           <input
             value={searchValue}
             onChange={(event) => handleSearchChange(event.target.value)}
-            placeholder="Cerca un movimento…"
-            aria-label="Cerca movimenti"
+            placeholder={t.entries.searchPlaceholder}
+            aria-label={t.entries.searchPlaceholder}
             className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-ink-3"
           />
           {isSearching ? (
@@ -426,7 +445,7 @@ export function CraftedEntryList({
               type="button"
               onClick={() => handleSearchChange("")}
               className="rounded-full p-1 text-ink-3 transition-colors hover:text-foreground"
-              aria-label="Cancella ricerca"
+              aria-label={t.entries.clearSearch}
             >
               <X className="size-4" aria-hidden="true" />
             </button>
@@ -443,21 +462,19 @@ export function CraftedEntryList({
           <div className="space-y-2 text-center">
             <p className="text-lg font-semibold tracking-[-0.02em]">
               {hasSearchTerm
-                ? searchError
-                  ? "Ricerca non disponibile."
-                  : "Nessun movimento trovato."
-                : "Niente ancora."}
+                ? t.entries.noResultsTitle
+                : t.entries.emptyTitle}
             </p>
             <Serif className="block text-sm text-ink-3">
               {hasSearchTerm
-                ? "Prova con categoria, importo o persona."
-                : "Qui compariranno i movimenti, raggruppati per giorno."}
+                ? t.entries.noResultsDesc
+                : t.entries.emptyDesc}
             </Serif>
           </div>
           {!hasSearchTerm ? (
             <div className="flex justify-center">
               <Button asChild className="h-11 rounded-[var(--r-cta)] px-5">
-                <Link href={newEntryHref}>Aggiungi il primo movimento</Link>
+                <Link href={newEntryHref}>{t.entries.addFirst}</Link>
               </Button>
             </div>
           ) : null}
@@ -470,13 +487,13 @@ export function CraftedEntryList({
                 <Label>{group.label}</Label>
                 <Mono className="mt-1 block text-[10px] text-ink-3">
                   {group.entries.length}{" "}
-                  {group.entries.length === 1 ? "movimento" : "movimenti"}
+                  {group.entries.length === 1 ? t.entries.entrySingular : t.entries.entryPlural}
                 </Mono>
               </div>
               <div className="shrink-0 text-right">
                 <Mono className="block text-sm font-medium">
                   {formatCraftedCompact(group.totalRealSpent)}{currencySymbol}
-                  <span className="font-normal text-ink-3"> spesi</span>
+                  <span className="font-normal text-ink-3"> {t.entries.spentLabel}</span>
                 </Mono>
                 <Mono
                   className={cn(
@@ -491,7 +508,7 @@ export function CraftedEntryList({
                   {group.totalSaved > 0 ? "+" : ""}
                   {formatCraftedCompact(group.totalSaved)}{currencySymbol}
                   <span className="ml-1 font-normal text-ink-3">
-                    impatto netto
+                    {t.entries.netImpactLabel}
                   </span>
                 </Mono>
               </div>
@@ -518,11 +535,11 @@ export function CraftedEntryList({
         <div className="px-5 py-5 text-center">
           <Serif className="text-sm text-ink-3">
             {previousMonthSummary.label.toLowerCase()} —{" "}
-            {formatCraftedCompact(previousMonthSummary.totalRealSpent)}{currencySymbol} spesi
+            {formatCraftedCompact(previousMonthSummary.totalRealSpent)}{currencySymbol} {t.entries.spentLabel}
             {previousMonthSummary.totalSaved > 0
-              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}${currencySymbol} impatto netto`
+              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}${currencySymbol} ${t.entries.netImpactLabel}`
               : ""}{" "}
-            in {previousMonthSummary.entriesCount} movimenti
+            in {previousMonthSummary.entriesCount} {previousMonthSummary.entriesCount === 1 ? t.entries.entrySingular : t.entries.entryPlural}
           </Serif>
         </div>
       ) : null}
@@ -543,10 +560,10 @@ export function CraftedEntryList({
             {isLoading ? (
               <>
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Caricamento...
+                {t.entries.loadingMore}
               </>
             ) : (
-              "Carica altri"
+              t.entries.loadMore
             )}
           </Button>
         ) : null}

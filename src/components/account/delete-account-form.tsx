@@ -8,10 +8,12 @@ import {
   type DeleteAccountState,
 } from "@/src/actions/auth";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/src/components/language/language-context";
 
 const initialState: DeleteAccountState = { success: false, message: "" };
 
 export function DeleteAccountForm() {
+  const t = useTranslations();
   const [state, formAction, pending] = useActionState(
     deleteAccountAction,
     initialState,
@@ -19,8 +21,8 @@ export function DeleteAccountForm() {
   const [understood, setUnderstood] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const canSubmit = useMemo(
-    () => understood && confirmation.trim() === "ELIMINA" && !pending,
-    [confirmation, pending, understood],
+    () => understood && confirmation.trim() === t.account.deleteConfirmPlaceholder && !pending,
+    [confirmation, pending, understood, t.account.deleteConfirmPlaceholder],
   );
 
   return (
@@ -34,13 +36,13 @@ export function DeleteAccountForm() {
           className="mt-1 size-4 shrink-0 accent-[var(--destructive)]"
         />
         <span>
-          Ho capito che questa azione e permanente e non potra essere annullata.
+          {t.account.deleteConfirmHelp}
         </span>
       </label>
 
       <div className="space-y-2">
         <label htmlFor="delete-confirmation" className="text-sm font-medium">
-          Scrivi ELIMINA
+          {t.account.deleteConfirmLabel}
         </label>
         <input
           id="delete-confirmation"
@@ -49,7 +51,7 @@ export function DeleteAccountForm() {
           onChange={(event) => setConfirmation(event.target.value)}
           autoComplete="off"
           className="h-12 w-full border border-line bg-surface-muted px-3 text-base outline-none transition-colors placeholder:text-ink-3 focus:border-destructive focus:ring-2 focus:ring-destructive/20"
-          placeholder="ELIMINA"
+          placeholder={t.account.deleteConfirmPlaceholder}
         />
       </div>
 
@@ -70,7 +72,7 @@ export function DeleteAccountForm() {
         )}
       >
         {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-        {pending ? "Eliminazione..." : "Elimina account e dati"}
+        {pending ? t.account.deletingButton : t.account.deleteButton}
       </button>
     </form>
   );

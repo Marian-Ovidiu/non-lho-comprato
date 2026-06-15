@@ -8,6 +8,7 @@ import { formatMoney } from "@/src/lib/formatters";
 import { getGoalEmoji } from "@/src/lib/visual-cues";
 import { spacing } from "@/src/lib/spacing";
 import { useCurrencyCode } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type GoalsPreviewProps = {
   goals: Array<{
@@ -30,21 +31,23 @@ function getProgressWidth(progressPercent: number) {
 
 export function GoalsPreview({
   goals,
-  description = "Le mete che avanzano con impatto netto positivo.",
+  description,
 }: GoalsPreviewProps) {
   const currencyCode = useCurrencyCode();
+  const t = useTranslations();
   const visibleGoals = goals.slice(0, 3);
+  const resolvedDescription = description ?? t.goalsPreview.desc;
 
   return (
     <Card className="overflow-hidden border-border shadow-sm">
       <CardHeader className={spacing.cardHeader}>
         <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
-            <CardTitle className="text-base">Obiettivi attivi</CardTitle>
-            <p className="text-sm text-muted-text">{description}</p>
+            <CardTitle className="text-base">{t.goalsPreview.title}</CardTitle>
+            <p className="text-sm text-muted-text">{resolvedDescription}</p>
           </div>
           <Button asChild variant="ghost" size="sm" className="w-fit px-0 text-muted-text">
-            <Link href="/goals">Vai agli obiettivi</Link>
+            <Link href="/goals">{t.goalsPreview.viewGoals}</Link>
           </Button>
         </div>
       </CardHeader>
@@ -52,7 +55,7 @@ export function GoalsPreview({
       <CardContent className={`space-y-3 ${spacing.cardBodyCompact}`}>
         {visibleGoals.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border bg-surface-muted px-4 py-3 text-sm leading-5 text-muted-text">
-            🎯 Nessun obiettivo attivo al momento. Dai una direzione all&apos;impatto positivo.
+            {t.goalsPreview.noGoals}
           </p>
         ) : (
           visibleGoals.map((goal) => {
@@ -67,7 +70,7 @@ export function GoalsPreview({
                       {goal.title}
                     </p>
                     <p className="text-xs text-muted-text">
-                      Obiettivo {formatMoney(goal.targetAmount, currencyCode)}
+                      {t.goalsPreview.goalTarget(formatMoney(goal.targetAmount, currencyCode))}
                     </p>
                   </div>
                   <p className="shrink-0 text-sm font-semibold text-success">

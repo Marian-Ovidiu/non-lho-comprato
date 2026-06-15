@@ -9,6 +9,7 @@ import { createGoal } from "@/src/actions/goals";
 import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { cn } from "@/lib/utils";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type FormState = {
   success: boolean;
@@ -25,6 +26,7 @@ const initialState: FormState = {
 export function CraftedGoalForm() {
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const refresh = useCallback(() => router.refresh(), [router]);
@@ -70,12 +72,12 @@ export function CraftedGoalForm() {
           <input
             id="title"
             name="title"
-            placeholder="Weekend a Lisbona"
+            placeholder={t.goalForm.titlePlaceholder}
             autoComplete="off"
             className="min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-ink-3/70"
             aria-invalid={Boolean(state.errors?.title)}
           />
-          <CraftedLabel>Obiettivo</CraftedLabel>
+          <CraftedLabel>{t.goalForm.titleLabel}</CraftedLabel>
         </div>
         <FormFieldError message={state.errors?.title} />
       </div>
@@ -89,11 +91,11 @@ export function CraftedGoalForm() {
             inputMode="decimal"
             min="0"
             step="0.01"
-            placeholder="900"
+            placeholder={t.goalForm.amountPlaceholder}
             className="min-w-0 flex-1 bg-transparent font-num text-[15px] text-foreground outline-none placeholder:text-ink-3/70"
             aria-invalid={Boolean(state.errors?.targetAmount)}
           />
-          <CraftedLabel>Importo {currencySymbol}</CraftedLabel>
+          <CraftedLabel>{t.goalForm.amountLabel(currencySymbol)}</CraftedLabel>
         </div>
         <FormFieldError message={state.errors?.targetAmount} />
       </div>
@@ -112,10 +114,10 @@ export function CraftedGoalForm() {
         {pending ? (
           <>
             <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
-            Creazione…
+            {t.goalForm.creatingButton}
           </>
         ) : (
-          "Crea obiettivo"
+          t.goalForm.createButton
         )}
       </button>
     </form>

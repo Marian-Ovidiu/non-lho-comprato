@@ -26,6 +26,7 @@ import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 import { HabitScopeReminderFields } from "@/src/components/habits/habit-scope-reminder-fields";
 import { FormFieldError } from "@/src/components/shared/form-field-error";
 import {
@@ -71,21 +72,14 @@ type CraftedHabitCardProps = {
   workspaceKind: "private" | "shared";
 };
 
-const weekdayOptions = [
-  { value: 1, label: "Lun" },
-  { value: 2, label: "Mar" },
-  { value: 3, label: "Mer" },
-  { value: 4, label: "Gio" },
-  { value: 5, label: "Ven" },
-  { value: 6, label: "Sab" },
-  { value: 7, label: "Dom" },
-] as const;
+const weekdayValues = [1, 2, 3, 4, 5, 6, 7] as const;
 
-function getActiveDayLabels(activeDays: unknown): string[] {
+function getActiveDayLabels(activeDays: unknown, labels: readonly [string, string, string, string, string, string, string]): string[] {
   if (!Array.isArray(activeDays)) return [];
-  return weekdayOptions
-    .filter((day) => activeDays.map((value) => Number(value)).includes(day.value))
-    .map((day) => day.label);
+  const nums = activeDays.map((value) => Number(value));
+  return weekdayValues
+    .filter((v) => nums.includes(v))
+    .map((v) => labels[v - 1]);
 }
 
 function getInitialActiveDays(activeDays: unknown): number[] {
@@ -105,6 +99,7 @@ export function CraftedHabitCard({
 }: CraftedHabitCardProps) {
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
@@ -125,18 +120,18 @@ export function CraftedHabitCard({
   const refreshTimerRef = useRef<number | null>(null);
   const successTimerRef = useRef<number | null>(null);
 
-  const activeDayLabels = getActiveDayLabels(habit.activeDays);
+  const activeDayLabels = getActiveDayLabels(habit.activeDays, t.habitCard.weekdays);
   const selectedLabels = useMemo(
     () =>
-      weekdayOptions
-        .filter((day) => selectedDays.includes(day.value))
-        .map((day) => day.label),
-    [selectedDays],
+      weekdayValues
+        .filter((v) => selectedDays.includes(v))
+        .map((v) => t.habitCard.weekdays[v - 1]),
+    [selectedDays, t.habitCard.weekdays],
   );
 
   const icon = getCategoryCraftedIcon(habit.category);
   const freqLabel =
-    activeDayLabels.length > 0 ? activeDayLabels.join(", ") : "Tutti i giorni";
+    activeDayLabels.length > 0 ? activeDayLabels.join(", ") : t.habitCard.weekdays.join(", ");
   const targetLabel = getHabitTargetDisplayLabel({
     targetScope: habit.targetScope,
     targetUserId: habit.targetUserId,
@@ -144,8 +139,8 @@ export function CraftedHabitCard({
     members,
   });
   const reminderLabel = habit.reminderEnabled
-    ? `Promemoria ${habit.reminderTime ?? "09:30"}`
-    : "Promemoria off";
+    ? `${t.habitCard.reminderOn} ${habit.reminderTime ?? "09:30"}`
+    : t.habitCard.reminderOff;
 
   function toggleDay(day: number) {
     setSelectedDays((current) =>
@@ -227,7 +222,7 @@ export function CraftedHabitCard({
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/55">
             <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
               <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-              Eliminazione...
+              {t.habitCard.deleting}
             </span>
           </div>
         ) : null}
@@ -237,7 +232,7 @@ export function CraftedHabitCard({
           <div className="min-w-0 flex-1">
             <p className="truncate text-[15px] font-[450]">{habit.name}</p>
             <Mono className="mt-0.5 block text-[11px] text-ink-3">
-              {freqLabel} · {habit.isActive ? "Attiva" : "In pausa"}
+              {freqLabel} · {habit.isActive ? t.habitCard.statusActive : t.habitCard.statusPaused}
             </Mono>
             <Mono className="mt-0.5 block truncate text-[11px] text-ink-3">
               {targetLabel} · {reminderLabel}
@@ -250,7 +245,7 @@ export function CraftedHabitCard({
           <div ref={menuRef} className="relative shrink-0">
             <button
               type="button"
-              aria-label="Azioni ricorrente"
+              aria-label={t.habitCard.actions}
               aria-expanded={menuOpen}
               aria-haspopup="menu"
               onClick={() => setMenuOpen((value) => !value)}
@@ -262,7 +257,7 @@ export function CraftedHabitCard({
             {menuOpen ? (
               <div
                 role="menu"
-                aria-label="Azioni ricorrente"
+                aria-label={t.habitCard.actions}
                 className="absolute right-0 top-9 z-20 w-40 border border-line bg-background p-1 shadow-lg"
               >
                 <button
@@ -280,7 +275,7 @@ export function CraftedHabitCard({
                   }}
                 >
                   <Pencil className="size-4" aria-hidden="true" />
-                  Modifica
+                  {t.habitCard.edit}
                 </button>
                 <button
                   type="button"
@@ -292,7 +287,7 @@ export function CraftedHabitCard({
                   }}
                 >
                   <Trash2 className="size-4" aria-hidden="true" />
-                  Elimina
+                  {t.habitCard.delete}
                 </button>
               </div>
             ) : null}
@@ -302,16 +297,16 @@ export function CraftedHabitCard({
         <div className="mt-2.5 flex items-center gap-2.5">
           <ProgressLine value={habit.isActive ? 100 : 0} className="flex-1" />
           <Mono className="text-[10.5px] whitespace-nowrap text-ink-3">
-            {habit._count.occurrences} occ.
+            {habit._count.occurrences} {t.habits.occAbbr}
           </Mono>
         </div>
       </div>
 
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto border-line sm:max-w-lg">
-          <DialogTitle>Modifica ricorrente</DialogTitle>
+          <DialogTitle>{t.habitCard.editTitle}</DialogTitle>
           <DialogDescription>
-            Aggiorna nome, categoria, importo e giorni attivi.
+            {t.habitCard.editDesc}
           </DialogDescription>
 
           <form
@@ -349,7 +344,7 @@ export function CraftedHabitCard({
                   disabled={isEditing}
                   className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
                 />
-                <CraftedLabel>Nome</CraftedLabel>
+                <CraftedLabel>{t.habitCard.nameLabel}</CraftedLabel>
               </div>
               <FormFieldError message={editErrors.name} />
             </div>
@@ -369,7 +364,7 @@ export function CraftedHabitCard({
                     </option>
                   ))}
                 </select>
-                <CraftedLabel>Categoria</CraftedLabel>
+                <CraftedLabel>{t.habitCard.categoryLabel}</CraftedLabel>
               </div>
               <FormFieldError message={editErrors.categoryId} />
             </div>
@@ -388,7 +383,7 @@ export function CraftedHabitCard({
                     disabled={isEditing}
                     className="min-w-0 flex-1 bg-transparent font-num text-[15px] outline-none"
                   />
-                  <CraftedLabel>Costo {currencySymbol}</CraftedLabel>
+                  <CraftedLabel>{t.habitCard.amountLabel(currencySymbol)}</CraftedLabel>
                 </div>
                 <FormFieldError message={editErrors.amount} />
               </div>
@@ -401,10 +396,10 @@ export function CraftedHabitCard({
                     disabled={isEditing}
                     className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
                   >
-                    <option value="1">Attiva</option>
-                    <option value="0">In pausa</option>
+                    <option value="1">{t.habitCard.statusActive}</option>
+                    <option value="0">{t.habitCard.statusPaused}</option>
                   </select>
-                  <CraftedLabel>Stato</CraftedLabel>
+                  <CraftedLabel>{t.habitCard.statusLabel}</CraftedLabel>
                 </div>
               </div>
             </div>
@@ -425,13 +420,14 @@ export function CraftedHabitCard({
             />
 
             <div>
-              <CraftedLabel className="mb-3 block">Giorni</CraftedLabel>
+              <CraftedLabel className="mb-3 block">{t.habitCard.daysLabel}</CraftedLabel>
               <div className="flex flex-wrap gap-3">
-                {weekdayOptions.map((day) => {
-                  const checked = selectedDays.includes(day.value);
+                {weekdayValues.map((value) => {
+                  const checked = selectedDays.includes(value);
+                  const label = t.habitCard.weekdays[value - 1];
                   return (
                     <label
-                      key={day.value}
+                      key={value}
                       className={cn(
                         "cursor-pointer border-b-[1.5px] pb-1.5 text-[13px]",
                         checked
@@ -442,13 +438,13 @@ export function CraftedHabitCard({
                       <input
                         type="checkbox"
                         name="activeDays"
-                        value={day.value}
+                        value={value}
                         checked={checked}
-                        onChange={() => toggleDay(day.value)}
+                        onChange={() => toggleDay(value)}
                         className="sr-only"
                         disabled={isEditing}
                       />
-                      {day.label}
+                      {label}
                     </label>
                   );
                 })}
@@ -466,14 +462,14 @@ export function CraftedHabitCard({
                 disabled={isEditing}
                 className="px-4 py-2 text-sm text-ink-3 underline-offset-4 hover:underline disabled:opacity-50"
               >
-                Annulla
+                {t.common.cancel}
               </button>
               <button
                 type="submit"
                 disabled={isEditing}
                 className="rounded-2xl bg-accent px-5 py-2.5 text-sm font-bold text-accent-foreground disabled:opacity-50"
               >
-                {isEditing ? "Salvataggio..." : "Salva modifiche"}
+                {isEditing ? t.habitCard.savingChanges : t.habitCard.saveChanges}
               </button>
             </div>
           </form>
@@ -482,9 +478,9 @@ export function CraftedHabitCard({
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="border-line sm:max-w-md">
-          <DialogTitle>Elimina ricorrente</DialogTitle>
+          <DialogTitle>{t.habitCard.deleteTitle}</DialogTitle>
           <DialogDescription>
-            Scegli se mantenere i movimenti già generati da questa ricorrente.
+            {t.habitCard.deleteDesc}
           </DialogDescription>
 
           <div className="space-y-2">
@@ -494,9 +490,9 @@ export function CraftedHabitCard({
               onClick={() => handleDelete("habit_only")}
               className="w-full border border-line px-4 py-3 text-left transition-opacity hover:opacity-80 disabled:opacity-50"
             >
-              <span className="block text-sm font-medium">Solo ricorrente</span>
+              <span className="block text-sm font-medium">{t.habitCard.deleteOnly}</span>
               <span className="mt-1 block text-xs text-ink-3">
-                I movimenti restano nel registro, scollegati dalla ricorrente.
+                {t.habitCard.deleteOnlyDesc}
               </span>
             </button>
             <button
@@ -505,9 +501,9 @@ export function CraftedHabitCard({
               onClick={() => handleDelete("habit_and_entries")}
               className="w-full border border-destructive/30 px-4 py-3 text-left text-destructive transition-opacity hover:opacity-80 disabled:opacity-50"
             >
-              <span className="block text-sm font-medium">Ricorrente e movimenti collegati</span>
+              <span className="block text-sm font-medium">{t.habitCard.deleteWithEntries}</span>
               <span className="mt-1 block text-xs opacity-80">
-                Elimina anche i movimenti creati dalle occorrenze di questa ricorrente.
+                {t.habitCard.deleteWithEntriesDesc}
               </span>
             </button>
           </div>

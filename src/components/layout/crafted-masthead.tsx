@@ -1,9 +1,12 @@
 "use client";
 
 import { CraftedIcon, Mono } from "@/components/crafted";
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 
 function MastheadDate() {
-  const formatted = new Intl.DateTimeFormat("it-IT", {
+  const language = useWorkspaceLanguage();
+  const formatted = new Intl.DateTimeFormat(languageToLocale(language), {
     weekday: "short",
     day: "numeric",
     month: "short",

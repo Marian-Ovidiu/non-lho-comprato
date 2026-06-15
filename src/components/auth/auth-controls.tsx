@@ -5,6 +5,7 @@ import Link from "next/link";
 import { signOutAction } from "@/src/actions/auth";
 import { Button } from "@/components/ui/button";
 import { resetPostHog } from "@/src/lib/posthog";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type AuthControlsProps = {
   isAuthenticated: boolean;
@@ -15,10 +16,12 @@ export function AuthControls({
   isAuthenticated,
   userLabel,
 }: AuthControlsProps) {
+  const t = useTranslations();
+
   if (!isAuthenticated) {
     return (
       <Button asChild variant="outline" size="sm" className="rounded-full">
-        <Link href="/login">Accedi</Link>
+        <Link href="/login">{t.auth.loginButton}</Link>
       </Button>
     );
   }
@@ -37,7 +40,7 @@ export function AuthControls({
         }}
       >
         <Button type="submit" variant="outline" size="sm" className="rounded-full">
-          Esci
+          {t.auth.logoutButton}
         </Button>
       </form>
     </div>

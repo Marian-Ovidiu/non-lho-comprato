@@ -17,13 +17,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-
-const FEEDBACK_TYPES = [
-  { value: "bug", label: "Problema" },
-  { value: "suggestion", label: "Consiglio" },
-  { value: "confusion", label: "Non ho capito qualcosa" },
-  { value: "other", label: "Altro" },
-] as const;
+import { useTranslations } from "@/src/components/language/language-context";
 
 const INITIAL_STATE: FeedbackActionState = { success: false, message: "" };
 
@@ -51,12 +45,20 @@ function readBrowserCtx(): BrowserCtx {
 }
 
 export function FeedbackButton() {
+  const t = useTranslations();
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("bug");
   const [state, formAction, isPending] = useActionState(submitFeedback, INITIAL_STATE);
   // Computed once at mount — these values are stable within a session.
   const [browserCtx] = useState<BrowserCtx>(readBrowserCtx);
+
+  const FEEDBACK_TYPES = [
+    { value: "bug", label: t.feedback.typeBug },
+    { value: "suggestion", label: t.feedback.typeSuggestion },
+    { value: "confusion", label: t.feedback.typeConfusion },
+    { value: "other", label: t.feedback.typeOther },
+  ] as const;
 
   useEffect(() => {
     if (state.success) {
@@ -70,7 +72,7 @@ export function FeedbackButton() {
       <DialogTrigger asChild>
         <button
           type="button"
-          aria-label="Lascia un feedback"
+          aria-label={t.feedback.buttonLabel}
           className={cn(
             "fixed right-4 z-50 flex h-11 w-11 items-center justify-center rounded-full shadow-[var(--shadow-pop)] ring-1 ring-border/50",
             "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] md:bottom-6 md:right-6",
@@ -84,9 +86,9 @@ export function FeedbackButton() {
 
       <DialogContent className="max-w-sm rounded-[22px] bg-surface shadow-[var(--shadow-pop)]">
         <DialogHeader>
-          <DialogTitle>Lascia un feedback</DialogTitle>
+          <DialogTitle>{t.feedback.title}</DialogTitle>
           <DialogDescription>
-            Segnala un problema, un consiglio o qualcosa che non ti torna.
+            {t.feedback.desc}
           </DialogDescription>
         </DialogHeader>
 
@@ -104,7 +106,7 @@ export function FeedbackButton() {
             <input type="hidden" name="displayMode" value={browserCtx.displayMode} />
 
             <fieldset className="space-y-2">
-              <legend className="text-sm font-medium leading-none">Tipo</legend>
+              <legend className="text-sm font-medium leading-none">{t.feedback.typeLegend}</legend>
               <div className="flex flex-wrap gap-2">
                 {FEEDBACK_TYPES.map(({ value, label }) => (
                   <button
@@ -130,11 +132,11 @@ export function FeedbackButton() {
             </fieldset>
 
             <div className="space-y-2">
-              <Label htmlFor="feedback-message">Messaggio</Label>
+              <Label htmlFor="feedback-message">{t.feedback.messageLabel}</Label>
               <Textarea
                 id="feedback-message"
                 name="message"
-                placeholder="Scrivi cosa è successo o cosa miglioreresti..."
+                placeholder={t.feedback.messagePlaceholder}
                 rows={4}
                 maxLength={2000}
                 aria-invalid={!!state.errors?.message}
@@ -151,7 +153,7 @@ export function FeedbackButton() {
             ) : null}
 
             <Button type="submit" className="w-full rounded-[var(--r-cta)]" disabled={isPending}>
-              {isPending ? "Invio…" : "Invia feedback"}
+              {isPending ? t.feedback.sendingButton : t.feedback.sendButton}
             </Button>
           </form>
         )}

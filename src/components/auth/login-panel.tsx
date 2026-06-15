@@ -10,6 +10,7 @@ import {
   SUPABASE_OAUTH_PROVIDERS,
   type SupabaseOAuthProvider,
 } from "@/src/lib/auth/providers";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type LoginPanelProps = {
   providers?: SupabaseOAuthProvider[];
@@ -30,6 +31,7 @@ export function LoginPanel({
   className,
   redirectPath,
 }: LoginPanelProps = {}) {
+  const t = useTranslations();
   const [pendingProvider, setPendingProvider] =
     useState<SupabaseOAuthProvider | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -84,8 +86,7 @@ export function LoginPanel({
         return;
       }
 
-      const message =
-        "Non riesco ad aprire il flusso Google adesso. Riprova tra poco.";
+      const message = t.auth.oauthError;
       console.error("[auth] oauth missing url");
       setLoginError(message);
       setPendingProvider(null);

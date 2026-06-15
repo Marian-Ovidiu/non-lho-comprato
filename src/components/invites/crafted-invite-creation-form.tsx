@@ -7,6 +7,7 @@ import { Label as CraftedLabel, Mono } from "@/components/crafted";
 import { createWorkspaceInviteAction } from "@/src/actions/invites";
 import { cn } from "@/lib/utils";
 import { trackPostHogEvent } from "@/src/lib/posthog";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type InviteCreationState = {
   success: boolean;
@@ -42,6 +43,7 @@ const INVITE_EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 export function CraftedInviteCreationForm({
   currentWorkspace,
 }: CraftedInviteCreationFormProps) {
+  const t = useTranslations();
   const formRef = useRef<HTMLFormElement>(null);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const didTrackSuccessRef = useRef(false);
@@ -80,8 +82,8 @@ export function CraftedInviteCreationForm({
       try {
         if (navigator.share) {
           await navigator.share({
-            title: "Invito condiviso",
-            text: "Copia il link e invialo alla persona.",
+            title: t.invites.shareTitle,
+            text: t.invites.shareText,
             url: inviteUrl,
           });
           if (!cancelled) {
@@ -103,14 +105,14 @@ export function CraftedInviteCreationForm({
           return;
         }
 
-        throw new Error("Condivisione non disponibile su questo dispositivo.");
+        throw new Error(t.invites.shareUnavailable);
       } catch (error) {
         if (cancelled) return;
         setCopied(false);
         setShareError(
           error instanceof Error
             ? error.message
-            : "Non riesco a condividere il link in questo momento.",
+            : t.invites.shareError,
         );
       }
     };
@@ -124,13 +126,13 @@ export function CraftedInviteCreationForm({
 
   async function copyInviteLink() {
     if (!inviteUrl) {
-      setCopyError("Il link non è ancora disponibile.");
+      setCopyError(t.invites.copyError);
       return;
     }
 
     try {
       if (!navigator.clipboard?.writeText) {
-        throw new Error("Clipboard API non disponibile.");
+        throw new Error(t.invites.copyUnavailable);
       }
 
       await navigator.clipboard.writeText(inviteUrl);
@@ -143,25 +145,25 @@ export function CraftedInviteCreationForm({
       setCopyError(
         error instanceof Error
           ? error.message
-          : "Non riesco a copiare il link in questo momento.",
+          : t.invites.copyFailed,
       );
     }
   }
 
   async function shareInviteLink() {
     if (!inviteUrl) {
-      setShareError("Il link non è ancora disponibile.");
+      setShareError(t.invites.copyError);
       return;
     }
 
     try {
       if (!navigator.share) {
-        throw new Error("Condivisione non disponibile su questo dispositivo.");
+        throw new Error(t.invites.shareUnavailable);
       }
 
       await navigator.share({
-        title: "Invito condiviso",
-        text: "Copia il link e invialo alla persona.",
+        title: t.invites.shareTitle,
+        text: t.invites.shareText,
         url: inviteUrl,
       });
       setShareError(null);
@@ -170,7 +172,7 @@ export function CraftedInviteCreationForm({
       setShareError(
         error instanceof Error
           ? error.message
-          : "Non riesco ad aprire la condivisione in questo momento.",
+          : t.invites.shareError,
       );
     }
   }
@@ -183,24 +185,24 @@ export function CraftedInviteCreationForm({
     setShareError(null);
     setCopied(false);
 
-    const email = window.prompt("Inserisci l'email della persona");
+    const email = window.prompt(t.invites.emailPrompt);
     if (email == null) return;
 
     const normalizedEmail = email.trim();
     if (!normalizedEmail) {
-      setLocalError("Inserisci un indirizzo email valido.");
+      setLocalError(t.invites.emailInvalid);
       return;
     }
 
     if (!INVITE_EMAIL_PATTERN.test(normalizedEmail)) {
-      setLocalError("Inserisci un indirizzo email valido.");
+      setLocalError(t.invites.emailInvalid);
       return;
     }
 
     const form = formRef.current;
     const emailInput = emailInputRef.current;
     if (!form || !emailInput) {
-      setLocalError("Non riesco ad avviare l'invito adesso.");
+      setLocalError(t.invites.inviteError);
       return;
     }
 

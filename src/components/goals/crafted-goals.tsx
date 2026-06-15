@@ -21,6 +21,7 @@ import {
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type { CraftedGoalRow, CraftedGoalsProps } from "@/src/lib/crafted-goals-build";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 
 function GoalActions({
@@ -34,6 +35,7 @@ function GoalActions({
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const t = useTranslations();
 
   function handleToggleActive() {
     startTransition(async () => {
@@ -49,9 +51,7 @@ function GoalActions({
   }
 
   function handleDelete() {
-    const confirmed = window.confirm(
-      "Vuoi eliminare questo obiettivo? L'operazione non si può annullare.",
-    );
+    const confirmed = window.confirm(t.goals.deleteConfirm);
 
     if (!confirmed) {
       return;
@@ -78,7 +78,7 @@ function GoalActions({
           disabled={isPending}
           className="text-[12px] text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
         >
-          {isActive ? "Metti in pausa" : "Riattiva"}
+          {isActive ? t.goals.pause : t.goals.resume}
         </button>
       ) : null}
       <button
@@ -87,7 +87,7 @@ function GoalActions({
         disabled={isPending}
         className="text-[12px] text-destructive/70 transition-colors hover:text-destructive disabled:opacity-50"
       >
-        Elimina
+        {t.goals.delete}
       </button>
     </div>
   );
@@ -95,12 +95,13 @@ function GoalActions({
 
 function FeaturedGoal({ goal }: { goal: CraftedGoalRow }) {
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   const target = formatCraftedCompact(goal.targetAmount);
 
   return (
     <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
       <div className="mb-4 flex items-center justify-between">
-        <Label>La più vicina</Label>
+        <Label>{t.goals.closest}</Label>
         <CraftedIcon name={goal.icon} size={20} className="text-accent" />
       </div>
       <h2 className="mb-4 text-[27px] font-semibold tracking-[-0.025em]">{goal.title}</h2>
@@ -157,11 +158,12 @@ export function CraftedGoals({
   trio,
 }: CraftedGoalsProps) {
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-[var(--sp-page-x)] pb-1 pt-[var(--sp-section-y)]">
         <Serif className="block text-[13px] text-ink-3">
-          Le mete avanzano con l&apos;impatto positivo: cose non comprate e confronti dove hai speso meno del riferimento.
+          {t.goals.desc}
         </Serif>
       </section>
 
@@ -175,10 +177,9 @@ export function CraftedGoals({
       {!featured && !hasActiveGoals && (paused.length > 0 || achieved.length > 0) ? (
         <>
           <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-            <Label className="mb-2 block">Obiettivi attivi</Label>
+            <Label className="mb-2 block">{t.common.active}</Label>
             <Serif className="text-sm text-ink-3">
-              Nessuna meta attiva al momento. Riattivane una per tornare a raccogliere
-              impatto positivo.
+              {t.goals.noActive}
             </Serif>
           </section>
           <Rule />
@@ -188,7 +189,7 @@ export function CraftedGoals({
       {others.length > 0 ? (
         <>
           <section className="px-5 pt-5 pb-1.5">
-            <Label>Altre mete</Label>
+            <Label>{t.goals.otherGoals}</Label>
           </section>
           <div className="px-5 pb-1">
             {others.map((goal, index) => (
@@ -207,7 +208,7 @@ export function CraftedGoals({
       {paused.length > 0 ? (
         <>
           <section className="px-5 pt-5 pb-1.5">
-            <Label>In pausa</Label>
+            <Label>{t.goals.paused}</Label>
           </section>
           <div className="px-5 pb-1">
             {paused.map((goal, index) => (
@@ -226,12 +227,12 @@ export function CraftedGoals({
       <StatTrio
         items={[
           {
-            label: "Da impatto positivo",
+            label: t.goals.fromPositiveImpact,
             value: <CraftedAmount value={trio.towardGoals} />,
             suffix: currencySymbol,
           },
           {
-            label: "Completati",
+            label: t.goals.achieved,
             value: (
               <CraftedAmount
                 value={trio.completedCount}
@@ -240,7 +241,7 @@ export function CraftedGoals({
             ),
           },
           {
-            label: "Impatto netto mese",
+            label: t.goals.monthNetImpact,
             value: (
               <CraftedAmount
                 value={trio.monthSaved > 0 ? trio.monthSaved : 0}
@@ -255,7 +256,7 @@ export function CraftedGoals({
       {achieved.length > 0 ? (
         <>
           <section className="px-5 pt-5 pb-1.5">
-            <Label>Raggiunte</Label>
+            <Label>{t.goals.achieved}</Label>
           </section>
           <div className="px-5 pb-2">
             {achieved.map((goal, index) => (

@@ -1,29 +1,33 @@
+"use client";
+
 import { Card, CardContent } from "@/components/ui/card";
 import { CraftedOdometer } from "@/components/crafted/motion";
 import type { WorkspaceBalanceCardState } from "@/src/lib/workspace-balance";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type CoupleBalanceCardProps = {
   balance: WorkspaceBalanceCardState;
 };
 
 export function CoupleBalanceCard({ balance }: CoupleBalanceCardProps) {
-  const counterpartLabel = balance.counterpartLabel ?? "l'altra persona";
+  const t = useTranslations();
+  const counterpartLabel = balance.counterpartLabel ?? "";
   const headline = !balance.supported
-    ? "Bilancio disponibile solo per spazi condivisi a 2 persone"
+    ? t.coupleBalance.notSupported
     : balance.status === "balanced"
-      ? "Siete in pari"
+      ? t.coupleBalance.balanced
       : balance.status === "they-owe"
-        ? `${counterpartLabel} ti deve`
-        : `Devi a ${counterpartLabel}`;
+        ? t.coupleBalance.theyOwe(counterpartLabel)
+        : t.coupleBalance.youOwe(counterpartLabel);
   const detail = !balance.supported
-    ? "La card si attiva solo quando il workspace ha esattamente due persone."
-    : "Calcolato solo sulle spese condivise.";
+    ? t.coupleBalance.notSupported
+    : t.coupleBalance.sharedOnly;
 
   return (
     <Card className="overflow-hidden border-border shadow-sm dark:border-border">
       <CardContent className="space-y-2 p-4 sm:p-6">
         <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
-          Bilancio coppia
+          {t.dashboard.coupleBalance}
         </p>
         <p className="text-lg font-semibold tracking-tight text-foreground">
           {headline}

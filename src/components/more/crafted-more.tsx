@@ -1,7 +1,10 @@
+"use client";
+
 import Link from "next/link";
 
 import { signOutAction } from "@/src/actions/auth";
 import { CraftedIcon, Label, Rule, Serif } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
 import { CraftedMoreRow, CraftedMoreSection } from "@/src/components/more/crafted-more-row";
 import { cn } from "@/lib/utils";
 
@@ -35,10 +38,11 @@ export function CraftedMore({
   workspaceSection,
   appSection,
 }: CraftedMoreProps) {
+  const t = useTranslations();
   return (
     <div className="-mx-4 pb-6 sm:-mx-6 lg:-mx-8">
       <section className="px-5 py-6">
-        <Label className="mb-4 block">Profilo</Label>
+        <Label className="mb-4 block">{t.more.profileSection}</Label>
         <div className="flex items-start gap-3.5">
           <div className="flex size-11 shrink-0 items-center justify-center border border-line text-xs font-semibold tracking-[0.08em]">
             {workspaceInitials}
@@ -51,7 +55,7 @@ export function CraftedMore({
               </p>
             ) : (
               <Serif className="mt-1 block text-sm text-ink-3">
-                Accedi per sincronizzare i tuoi segnali.
+                {t.more.syncMessage}
               </Serif>
             )}
           </div>
@@ -65,14 +69,14 @@ export function CraftedMore({
             href="/login"
             className="flex h-[54px] w-full items-center justify-center rounded-2xl bg-accent text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
           >
-            Accedi
+            {t.more.login}
           </Link>
         </section>
       ) : null}
 
       {workspaceNextStep ? (
         <>
-          <CraftedMoreSection title="Prossimo passo">
+          <CraftedMoreSection title={t.more.nextStepSection}>
             <div className="border-y border-line py-4">
               <p className="text-[15px] font-medium">{workspaceNextStep.title}</p>
               <Serif className="mt-1 block text-sm text-ink-3">
@@ -92,24 +96,24 @@ export function CraftedMore({
 
       {showWorkspaceTools ? (
         <>
-          <CraftedMoreSection title="Workspace">
+          <CraftedMoreSection title={t.more.workspaceSection}>
             <div className="divide-y divide-line-soft border-y border-line">
               <CraftedMoreRow
                 href="/workspace/members"
-                label="Partecipanti"
-                detail="Invita o gestisci le persone"
+                label={t.more.membersLabel}
+                detail={t.more.membersDetail}
                 icon="shield"
               />
               <CraftedMoreRow
                 href="/workspace/categories"
-                label="Gestisci categorie"
-                detail="Crea, modifica e archivia le categorie"
+                label={t.more.categoriesLabel}
+                detail={t.more.categoriesDetail}
                 icon="receipt"
               />
               <CraftedMoreRow
                 href="/workspace/new"
-                label="Crea workspace"
-                detail="Spazio condiviso per la coppia o il team"
+                label={t.more.newWorkspaceLabel}
+                detail={t.more.newWorkspaceDetail}
                 icon="target"
               />
               <div className="py-3.5">{workspaceSection}</div>
@@ -119,53 +123,53 @@ export function CraftedMore({
         </>
       ) : null}
 
-      <CraftedMoreSection title="Gestione">
+      <CraftedMoreSection title={t.more.managementSection}>
         <div className="divide-y divide-line-soft border-y border-line">
           <CraftedMoreRow
             href="/habits"
-            label="Ricorrenti"
-            detail="Spese previste da tenere d'occhio"
+            label={t.more.habitsLabel}
+            detail={t.more.habitsDetail}
             icon="coffee"
           />
           <CraftedMoreRow
             href="/presets"
-            label="Preset rapidi"
-            detail="Modelli veloci in un tap"
+            label={t.more.presetsLabel}
+            detail={t.more.presetsDetail}
             icon="receipt"
           />
           <CraftedMoreRow
             href="/goals"
-            label="Obiettivi"
-            detail="Mete alimentate dall'impatto positivo"
+            label={t.more.goalsLabel}
+            detail={t.more.goalsDetail}
             icon="target"
           />
         </div>
       </CraftedMoreSection>
       <Rule />
 
-      <CraftedMoreSection title="Analisi">
+      <CraftedMoreSection title={t.more.analyticsSection}>
         <div className="border-y border-line">
           <CraftedMoreRow
             href="/reports/monthly"
-            label="Report mensile"
-            detail="Riepilogo del mese in PDF"
+            label={t.more.monthlyReportLabel}
+            detail={t.more.monthlyReportDetail}
             icon="arrowUp"
           />
         </div>
       </CraftedMoreSection>
       <Rule />
 
-      <CraftedMoreSection title="App">{appSection}</CraftedMoreSection>
+      <CraftedMoreSection title={t.more.appSection}>{appSection}</CraftedMoreSection>
 
       {isAuthenticated ? (
         <>
           <Rule />
-          <CraftedMoreSection title="Account">
+          <CraftedMoreSection title={t.more.accountSection}>
             <div className="border-y border-line">
               <CraftedMoreRow
                 href="/account/delete"
-                label="Elimina account"
-                detail="Cancella account e dati associati"
+                label={t.more.deleteAccountLabel}
+                detail={t.more.deleteAccountDetail}
                 icon="del"
               />
             </div>
@@ -179,7 +183,7 @@ export function CraftedMore({
                 "transition-colors hover:text-foreground",
               )}
             >
-              Esci
+              {t.more.logout}
             </button>
           </form>
         </>

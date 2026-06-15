@@ -1,6 +1,9 @@
+"use client";
+
 import Link from "next/link";
 
 import { Rule } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
 import { CraftedHabitCard } from "@/src/components/habits/crafted-habit-card";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
@@ -51,17 +54,19 @@ export function CraftedHabitList({
   currentUserId,
   workspaceKind,
 }: CraftedHabitListProps) {
+  const t = useTranslations();
+
   if (habits.length === 0) {
     return (
       <div className="py-6 text-center">
         <p className="text-sm text-ink-3">
-          Nessuna abitudine ancora. Creane una e comparirà qui nei giorni scelti.
+          {t.habits.noTodayHabits}
         </p>
         <Link
           href="#nuova-abitudine"
           className="mt-4 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
         >
-          Crea abitudine
+          {t.habits.createHabitLink}
         </Link>
       </div>
     );

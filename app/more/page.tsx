@@ -11,6 +11,8 @@ import {
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
+import { getTranslations } from "@/src/lib/i18n";
+import { getCurrentWorkspaceLanguage } from "@/src/lib/workspace-context";
 
 const DEVELOPER_EMAIL = "h.marian914@gmail.com";
 
@@ -34,6 +36,9 @@ function getWorkspaceNextStep(
 }
 
 export default async function MorePage() {
+  const language = await getCurrentWorkspaceLanguage();
+  const t = getTranslations(language);
+
   let loadError: string | null = null;
   let authUser: Awaited<ReturnType<typeof getAuthenticatedUser>> = null;
   let workspaceResult: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
@@ -52,8 +57,8 @@ export default async function MorePage() {
   const profileLabel = authUser?.name ?? authUser?.email ?? "Account";
   const workspaceLabel = workspace
     ? workspace.kind === "shared"
-      ? "Condiviso"
-      : "Privato"
+      ? t.common.shared
+      : t.common.private
     : "Nessun workspace";
   const workspaceInitials = workspace
     ? workspace.name
@@ -73,7 +78,7 @@ export default async function MorePage() {
       {loadError ? (
         <div className="px-5 pt-5 pb-4">
           <DataLoadErrorBanner
-            title="Alcuni dati non sono disponibili"
+            title={t.shared.dataLoadError}
             message={loadError}
           />
         </div>

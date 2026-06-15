@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { CraftedIcon, Serif } from "@/components/crafted";
 import { celebrate } from "@/components/crafted/motion";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/src/components/language/language-context";
 
 const ENTER_MS = 280;
 const EXIT_MS = 200;
@@ -17,13 +18,13 @@ type StreakCelebrationOverlayProps = {
   onClose: () => void;
 };
 
-function getMilestoneLabel(days: number): string {
-  if (days >= 30) return "un mese filato";
-  if (days >= 21) return "tre settimane filate";
-  if (days >= 14) return "due settimane filate";
-  if (days >= 7) return "una settimana filata";
-  if (days >= 3) return "tre giorni di fila";
-  return "una nuova striscia";
+function getMilestoneLabel(days: number, t: ReturnType<typeof useTranslations>): string {
+  if (days >= 30) return t.streakCelebration.milestoneMonth;
+  if (days >= 21) return t.streakCelebration.milestoneThreeWeeks;
+  if (days >= 14) return t.streakCelebration.milestoneTwoWeeks;
+  if (days >= 7) return t.streakCelebration.milestoneWeek;
+  if (days >= 3) return t.streakCelebration.milestoneThreeDays;
+  return t.streakCelebration.milestoneNewStreak;
 }
 
 export function StreakCelebrationOverlay({
@@ -31,6 +32,7 @@ export function StreakCelebrationOverlay({
   streakTo,
   onClose,
 }: StreakCelebrationOverlayProps) {
+  const t = useTranslations();
   const [displayedStreak, setDisplayedStreak] = useState(streakFrom);
   const [mounted, setMounted] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
@@ -139,7 +141,7 @@ export function StreakCelebrationOverlay({
     >
       <div className="flex flex-col items-center text-center">
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent">
-          Traguardo
+          {t.streakCelebration.milestone}
         </p>
 
         <div ref={flameRef} className="my-8 text-accent">
@@ -152,7 +154,7 @@ export function StreakCelebrationOverlay({
         </div>
 
         <Serif className="text-[22px] leading-[1.35] text-muted-foreground">
-          {getMilestoneLabel(streakTo)}
+          {getMilestoneLabel(streakTo, t)}
         </Serif>
 
         <div className="mt-5 flex items-baseline gap-2">
@@ -166,11 +168,11 @@ export function StreakCelebrationOverlay({
           >
             {displayedStreak}
           </span>
-          <span className="text-[22px] font-semibold text-foreground">giorni</span>
+          <span className="text-[22px] font-semibold text-foreground">{t.streakCelebration.daysLabel}</span>
         </div>
 
         <p className="mt-6 text-[14px] leading-[1.55] text-ink-3">
-          Hai tenuto il ritmo. Ogni giorno conta.
+          {t.streakCelebration.message}
         </p>
       </div>
 
