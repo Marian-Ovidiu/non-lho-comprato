@@ -2,7 +2,7 @@
 
 import { subDays } from "date-fns";
 import { Prisma } from "@/src/lib/generated/prisma/client";
-import { revalidatePath } from "next/cache";
+import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 
 import { mergeCategoryOptions } from "@/src/lib/categories";
@@ -924,19 +924,23 @@ export async function getEntryById(
 }
 
 export async function getDashboardSummary(): Promise<MonthlySummary> {
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+  return _cachedDashboardSummary(workspaceId, timeZone);
+}
+
+async function _cachedDashboardSummary(workspaceId: string, timeZone: string): Promise<MonthlySummary> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
   const now = new Date();
-  const timeZone = await getCurrentWorkspaceTimezone();
   const { start, end } = getMonthRangeForMonthKey(getMonthKey(now, timeZone), timeZone);
 
-  const workspaceWhere = await getCurrentWorkspaceScopedWhere({
-    date: {
-      gte: start,
-      lt: end,
-    },
-  });
-
   const entries = await prisma.entry.findMany({
-    where: workspaceWhere,
+    where: { workspaceId, date: { gte: start, lt: end } },
     select: {
       realCost: true,
       alternativeCost: true,
@@ -947,14 +951,9 @@ export async function getDashboardSummary(): Promise<MonthlySummary> {
   });
 
   if (isWorkspaceDebugEnabled()) {
-    const allTimeCount = await prisma.entry.count({
-      where: {
-        workspaceId: workspaceWhere.workspaceId,
-      },
-    });
-
+    const allTimeCount = await prisma.entry.count({ where: { workspaceId } });
     logWorkspaceDebug("getDashboardSummary", {
-      workspaceId: workspaceWhere.workspaceId,
+      workspaceId,
       monthStart: start.toISOString(),
       nextMonthStart: end.toISOString(),
       entriesThisMonth: entries.length,
@@ -980,7 +979,15 @@ export async function getDashboardSummary(): Promise<MonthlySummary> {
 }
 
 export async function getDashboardEntrySnapshot(): Promise<DashboardEntrySnapshot> {
-  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+  const workspaceId = await getCurrentWorkspaceId();
+  return _cachedDashboardEntrySnapshot(workspaceId);
+}
+
+async function _cachedDashboardEntrySnapshot(workspaceId: string): Promise<DashboardEntrySnapshot> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
   const weekStart = subDays(new Date(), 7);
 
   try {
@@ -988,38 +995,22 @@ export async function getDashboardEntrySnapshot(): Promise<DashboardEntrySnapsho
       await withDatabaseRetry(
         () =>
           Promise.all([
-        prisma.entry.count({
-          where: workspaceWhere,
-        }),
+        prisma.entry.count({ where: { workspaceId } }),
         prisma.entry.findFirst({
-          where: workspaceWhere,
+          where: { workspaceId },
           orderBy: [
-            {
-              date: "asc",
-            },
-            {
-              createdAt: "asc",
-            },
-            {
-              id: "asc",
-            },
+            { date: "asc" },
+            { createdAt: "asc" },
+            { id: "asc" },
           ],
-          select: {
-            date: true,
-          },
+          select: { date: true },
         }),
         prisma.entry.findMany({
-          where: workspaceWhere,
+          where: { workspaceId },
           orderBy: [
-            {
-              date: "desc",
-            },
-            {
-              createdAt: "desc",
-            },
-            {
-              id: "desc",
-            },
+            { date: "desc" },
+            { createdAt: "desc" },
+            { id: "desc" },
           ],
           take: 3,
           select: {
@@ -1039,22 +1030,11 @@ export async function getDashboardEntrySnapshot(): Promise<DashboardEntrySnapsho
           },
         }),
         prisma.entry.findMany({
-          where: {
-            ...workspaceWhere,
-            date: {
-              gte: weekStart,
-            },
-          },
+          where: { workspaceId, date: { gte: weekStart } },
           orderBy: [
-            {
-              date: "asc",
-            },
-            {
-              createdAt: "asc",
-            },
-            {
-              id: "asc",
-            },
+            { date: "asc" },
+            { createdAt: "asc" },
+            { id: "asc" },
           ],
           select: {
             date: true,
@@ -1302,6 +1282,8 @@ export async function createEntry(
     tryRevalidatePath("/");
     tryRevalidatePath("/entries");
     tryRevalidatePath("/stats");
+    updateTag(`entries:${workspaceId}`);
+    updateTag(`goals:${workspaceId}`);
 
     return {
       success: true,
@@ -1462,6 +1444,8 @@ export async function updateEntry(
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
+    updateTag(`entries:${workspaceId}`);
+    updateTag(`goals:${workspaceId}`);
 
     return {
       success: true,
@@ -1550,6 +1534,8 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
+    updateTag(`entries:${entry.workspaceId}`);
+    updateTag(`goals:${entry.workspaceId}`);
 
     return {
       success: true,

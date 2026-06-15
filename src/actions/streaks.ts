@@ -3,7 +3,8 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
 import { buildStreakResult as buildStreakResultFromDates, getDateKey } from "@/src/lib/workspace-dates";
-import { getCurrentWorkspaceScopedWhere, getCurrentWorkspaceTimezone } from "@/src/lib/workspace-context";
+import { cacheLife, cacheTag } from "next/cache";
+import { getCurrentWorkspaceId, getCurrentWorkspaceScopedWhere, getCurrentWorkspaceTimezone } from "@/src/lib/workspace-context";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 
 type StreakResult = {
@@ -100,8 +101,44 @@ async function loadStreakData(scope: StreakScope = {}): Promise<{
 }
 
 export async function getGlobalStreak(): Promise<StreakResult> {
-  const { streak } = await loadStreakData();
-  return streak;
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+  return _cachedGlobalStreak(workspaceId, timeZone);
+}
+
+async function _cachedGlobalStreak(workspaceId: string, timeZone: string): Promise<StreakResult> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
+  try {
+    const entries = await prisma.entry.findMany({
+      where: { workspaceId },
+      select: {
+        date: true,
+        realCost: true,
+        alternativeCost: true,
+        savedAmount: true,
+        mode: true,
+        savingContext: true,
+      },
+      orderBy: { date: "asc" },
+    });
+
+    const dayTotals = new Map<string, number>();
+    for (const entry of entries) {
+      const dateKey = getDateKey(entry.date, timeZone);
+      if (!dateKey) continue;
+      dayTotals.set(dateKey, round2((dayTotals.get(dateKey) ?? 0) + calculateEntryMetrics(entry).netImpact));
+    }
+
+    return buildStreakResultFromDates(dayTotals.keys());
+  } catch (error) {
+    console.error("Failed to load global streak:", error);
+    return { currentStreak: 0, bestStreak: 0, streakDates: [] };
+  }
 }
 
 export async function getTodaySavingStatus(): Promise<TodaySavingStatus> {

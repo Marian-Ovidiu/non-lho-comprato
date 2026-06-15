@@ -307,28 +307,39 @@ export default async function Home({ searchParams }: HomePageProps) {
   };
   let entriesLoadError: string | null = null;
   let dashboardLoadError: string | null = null;
-  const [timeZone, currency, language, needsSetup] = await Promise.all([
-    getCurrentWorkspaceTimezone(),
-    getCurrentWorkspaceCurrency(),
-    getCurrentWorkspaceLanguage(),
-    isWorkspaceSetupNeeded(),
+  const [
+    [timeZone, currency, language, needsSetup],
+    snapshot,
+    metrics,
+  ] = await Promise.all([
+    Promise.all([
+      getCurrentWorkspaceTimezone(),
+      getCurrentWorkspaceCurrency(),
+      getCurrentWorkspaceLanguage(),
+      isWorkspaceSetupNeeded(),
+    ]),
+    getDashboardEntrySnapshot().catch((error) => {
+      unstable_rethrow(error);
+      entriesLoadError = formatEntryLoadError(error);
+      console.error("Failed to load dashboard entry snapshot:", error);
+      return null;
+    }),
+    getHomeDashboardMetrics().catch((error) => {
+      unstable_rethrow(error);
+      dashboardLoadError = formatEntryLoadError(error);
+      console.error("Failed to load dashboard summary:", error);
+      return null;
+    }),
   ]);
 
-  try {
-    const snapshot = await getDashboardEntrySnapshot();
+  if (snapshot) {
     entryCount = snapshot.entryCount;
     firstEntryDate = snapshot.firstEntryDate;
     recentEntries = snapshot.recentEntries;
     weekEntries = snapshot.weekEntries;
-  } catch (error) {
-    unstable_rethrow(error);
-    entriesLoadError = formatEntryLoadError(error);
-    console.error("Failed to load dashboard entry snapshot:", error);
   }
 
-  try {
-    const metrics = await getHomeDashboardMetrics();
-
+  if (metrics) {
     monthSaved = metrics.summary.totalSaved;
     monthRealSpent = metrics.summary.totalRealSpent;
     monthLargeComparisonImpact = metrics.summary.largeComparisonImpact;
@@ -342,10 +353,6 @@ export default async function Home({ searchParams }: HomePageProps) {
     activeGoals = metrics.goals;
     todayHabits = metrics.todayHabits;
     pendingHabitsCount = metrics.pendingHabitsCount;
-  } catch (error) {
-    unstable_rethrow(error);
-    dashboardLoadError = formatEntryLoadError(error);
-    console.error("Failed to load dashboard summary:", error);
   }
 
   const homePhase = getHomePhase({

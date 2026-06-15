@@ -1,8 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
+import dynamic from "next/dynamic";
 
 import { AppShell } from "@/src/components/layout/app-shell";
-import { PostHogNavigationTracker } from "@/src/components/analytics/posthog-navigation-tracker";
+
+const PostHogNavigationTracker = dynamic(
+  () =>
+    import("@/src/components/analytics/posthog-navigation-tracker").then(
+      (m) => ({ default: m.PostHogNavigationTracker }),
+    ),
+  { ssr: false },
+);
 import { RegisterSW } from "@/src/components/pwa/register-sw";
 import { SplashBootstrapShell } from "@/src/components/splash/splash-bootstrap-shell";
 import { SplashGate } from "@/src/components/splash/splash-gate";

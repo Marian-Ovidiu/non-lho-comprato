@@ -2,8 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { QuickAddSheet } from "@/src/components/entries/quick-add-sheet";
+import dynamic from "next/dynamic";
 import type { AppShellWorkspace } from "@/src/components/layout/app-shell";
+
+const QuickAddSheet = dynamic(
+  () =>
+    import("@/src/components/entries/quick-add-sheet").then((m) => ({
+      default: m.QuickAddSheet,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <button
+        disabled
+        aria-hidden="true"
+        className="size-10 rounded-full border-[1.5px] border-accent bg-transparent"
+      />
+    ),
+  },
+);
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/src/lib/haptics";
 

@@ -87,19 +87,15 @@ export async function getHomeDashboardMetrics() {
     loadedTodaySummary,
     loadedWorkspaceBalance,
     loadedGoals,
-  ] = await Promise.all([
-    getDashboardSummary(),
-    getTodayDashboardSummary(),
-    getWorkspaceBalance(),
-    getGoalsWithProgress(),
-  ]);
-
-  const [
     loadedTodayHabits,
     globalStreak,
     loadedMonthlyStats,
     loadedCategoryStats,
   ] = await Promise.all([
+    getDashboardSummary(),
+    getTodayDashboardSummary(),
+    getWorkspaceBalance(),
+    getGoalsWithProgress(),
     getTodayHabitOccurrences(),
     getGlobalStreak(),
     getMonthlyStats(),

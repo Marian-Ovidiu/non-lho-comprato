@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
 import { type EntryMoneyLike } from "@/src/lib/entry-domain";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
@@ -174,6 +174,7 @@ export async function createGoal(
     });
 
     revalidateGoalPaths();
+    updateTag(`goals:${workspaceId}`);
 
     return {
       success: true,
@@ -190,12 +191,19 @@ export async function createGoal(
 }
 
 export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
-  try {
-    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
+  const workspaceId = await getCurrentWorkspaceId();
+  return _cachedGoalsWithProgress(workspaceId);
+}
 
+async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithProgress[]> {
+  "use cache";
+  cacheTag(`goals:${workspaceId}`, `entries:${workspaceId}`);
+  cacheLife("hours");
+
+  try {
     const [goals, entries] = await Promise.all([
       prisma.goal.findMany({
-        where: workspaceWhere,
+        where: { workspaceId },
         select: {
           id: true,
           title: true,
@@ -211,7 +219,7 @@ export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
         ],
       }),
       prisma.entry.findMany({
-        where: workspaceWhere,
+        where: { workspaceId },
         select: {
           beneficiaries: { select: { userId: true } },
           realCost: true,
@@ -297,6 +305,7 @@ export async function deleteGoal(goalId: string): Promise<GoalActionResult> {
     });
 
     revalidateGoalPaths();
+    updateTag(`goals:${goal.workspaceId}`);
 
     return {
       success: true,
@@ -350,6 +359,7 @@ export async function toggleGoalActive(
     });
 
     revalidateGoalPaths();
+    updateTag(`goals:${goal.workspaceId}`);
 
     return {
       success: true,

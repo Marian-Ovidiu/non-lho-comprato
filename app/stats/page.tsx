@@ -1,9 +1,26 @@
+import nextDynamic from "next/dynamic";
 import { getStatsPageData } from "@/src/actions/stats";
 import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
 import { CraftedPersonFilter } from "@/src/components/stats/crafted-person-filter";
-import { CraftedStats } from "@/src/components/stats/crafted-stats";
 import type { CraftedTopSavingsItem } from "@/src/components/stats/crafted-top-savings-list";
 import { CraftedStatsEmptyState } from "@/src/components/stats/crafted-stats-empty-state";
+
+const CraftedStats = nextDynamic(
+  () =>
+    import("@/src/components/stats/crafted-stats").then((m) => ({
+      default: m.CraftedStats,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse space-y-4 px-5 pt-2">
+        <div className="h-32 rounded-xl bg-muted" />
+        <div className="h-32 rounded-xl bg-muted" />
+        <div className="h-48 rounded-xl bg-muted" />
+      </div>
+    ),
+  },
+);
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { buildCraftedStatsProps } from "@/src/lib/crafted-stats-build";
 import { buildDailySpendingComparison } from "@/src/lib/daily-spending-comparison";

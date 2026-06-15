@@ -1,6 +1,24 @@
+import nextDynamic from "next/dynamic";
 import { getCategories } from "@/src/actions/entries";
-import { CraftedEntryForm } from "@/src/components/entries/crafted-entry-form";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
+
+const CraftedEntryForm = nextDynamic(
+  () =>
+    import("@/src/components/entries/crafted-entry-form").then((m) => ({
+      default: m.CraftedEntryForm,
+    })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="animate-pulse space-y-4 px-5 pt-5">
+        <div className="h-12 rounded-xl bg-muted" />
+        <div className="h-12 rounded-xl bg-muted" />
+        <div className="h-12 rounded-xl bg-muted" />
+        <div className="h-28 rounded-xl bg-muted" />
+      </div>
+    ),
+  },
+);
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import {

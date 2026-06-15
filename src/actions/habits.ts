@@ -1,6 +1,6 @@
 ﻿"use server";
 
-import { revalidatePath } from "next/cache";
+import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { calculateEntryMoney } from "@/src/lib/entry-domain";
@@ -642,6 +642,8 @@ async function syncOccurrenceStatus(
     logStep("transaction");
 
     revalidateHabitOccurrencePaths();
+    updateTag(`habits:${workspaceId}`);
+    updateTag(`entries:${workspaceId}`);
     logStep("revalidate");
 
     return {
@@ -1168,6 +1170,7 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
 
     if (result.count > 0) {
       tryRevalidatePaths();
+      updateTag(`habits:${workspaceWhere.workspaceId}`);
     }
 
     return { createdCount: result.count };
@@ -1178,12 +1181,21 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
 }
 
 export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]> {
-  const timeZone = await getCurrentWorkspaceTimezone();
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+  return _cachedTodayHabitOccurrences(workspaceId, timeZone);
+}
+
+async function _cachedTodayHabitOccurrences(workspaceId: string, timeZone: string): Promise<TodayHabitOccurrence[]> {
+  "use cache";
+  cacheTag(`habits:${workspaceId}`);
+  cacheLife("minutes");
+
   const todayRange = getTodayDayRange(timeZone);
 
   try {
-    const workspaceWhere = await getCurrentWorkspaceScopedWhere();
-
     const occurrences = await prisma.habitOccurrence.findMany({
       where: {
         date: {
@@ -1191,7 +1203,7 @@ export async function getTodayHabitOccurrences(): Promise<TodayHabitOccurrence[]
           lt: todayRange.end,
         },
         habit: {
-          is: workspaceWhere,
+          is: { workspaceId },
         },
       },
       orderBy: {
@@ -1353,6 +1365,8 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
 
     if (finalizedCount > 0) {
       tryRevalidatePaths();
+      updateTag(`habits:${workspaceId}`);
+      updateTag(`entries:${workspaceId}`);
     }
 
     return { finalizedCount };

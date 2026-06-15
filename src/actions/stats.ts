@@ -8,7 +8,9 @@ import {
 } from "@/src/lib/member-spending-stats";
 import { formatMoney } from "@/src/lib/formatters";
 import { prisma } from "@/src/lib/prisma";
+import { cacheLife, cacheTag } from "next/cache";
 import {
+  getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
   getCurrentWorkspaceTimezone,
@@ -1003,6 +1005,71 @@ export async function getStatsOverview(
 export async function getMonthlyStats(
   memberUserId?: string,
 ): Promise<MonthlyStatsItem[]> {
+  if (!memberUserId) {
+    const [workspaceId, timeZone] = await Promise.all([
+      getCurrentWorkspaceId(),
+      getCurrentWorkspaceTimezone(),
+    ]);
+    return _cachedMonthlyStats(workspaceId, timeZone);
+  }
+  return _getMonthlyStatsDynamic(memberUserId);
+}
+
+async function _cachedMonthlyStats(workspaceId: string, timeZone: string): Promise<MonthlyStatsItem[]> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
+  try {
+    const entries = await prisma.entry.findMany({
+      where: { workspaceId },
+      select: {
+        date: true,
+        realCost: true,
+        alternativeCost: true,
+        savedAmount: true,
+      },
+      orderBy: { date: "asc" },
+    });
+
+    if (entries.length === 0) return [];
+
+    const grouped = new Map<string, { totalRealSpent: number; totalAlternativeCost: number; totalSaved: number; entriesCount: number }>();
+
+    for (const entry of entries) {
+      const monthKey = getMonthKey(entry.date, timeZone);
+      const current = grouped.get(monthKey) ?? { totalRealSpent: 0, totalAlternativeCost: 0, totalSaved: 0, entriesCount: 0 };
+      current.totalRealSpent = round2(current.totalRealSpent + toNumber(entry.realCost));
+      current.totalAlternativeCost = round2(current.totalAlternativeCost + toNumber(entry.alternativeCost));
+      current.totalSaved = round2(current.totalSaved + toNumber(entry.savedAmount));
+      current.entriesCount += 1;
+      grouped.set(monthKey, current);
+    }
+
+    return Array.from(grouped.entries())
+      .sort(([l], [r]) => l.localeCompare(r))
+      .map(([month, totals]) => ({
+        month,
+        label: getMonthLabelFromKey(month),
+        totalRealSpent: totals.totalRealSpent,
+        totalAlternativeCost: totals.totalAlternativeCost,
+        totalSaved: totals.totalSaved,
+        netImpact: totals.totalSaved,
+        avoidedAmount: 0,
+        comparisonSaved: 0,
+        comparisonOverspent: 0,
+        grossPositiveImpact: 0,
+        largeComparisonImpact: 0,
+        ordinaryImpact: totals.totalSaved,
+        entriesCount: totals.entriesCount,
+      }));
+  } catch (error) {
+    console.error("Failed to load monthly stats:", error);
+    return [];
+  }
+}
+
+async function _getMonthlyStatsDynamic(memberUserId: string): Promise<MonthlyStatsItem[]> {
   const timeZone = await getCurrentWorkspaceTimezone();
   try {
     const entries = await prisma.entry.findMany({
@@ -1079,6 +1146,69 @@ export async function getMonthlyStats(
 export async function getCategoryStats(
   memberUserId?: string,
 ): Promise<CategoryStatsItem[]> {
+  if (!memberUserId) {
+    const workspaceId = await getCurrentWorkspaceId();
+    return _cachedCategoryStats(workspaceId);
+  }
+  return _getCategoryStatsDynamic(memberUserId);
+}
+
+async function _cachedCategoryStats(workspaceId: string): Promise<CategoryStatsItem[]> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
+  try {
+    const grouped = await prisma.entry.groupBy({
+      by: ["categoryId"],
+      where: { workspaceId },
+      _sum: { realCost: true, alternativeCost: true, savedAmount: true },
+      _count: { _all: true },
+    });
+
+    if (grouped.length === 0) return [];
+
+    const categoryIds = grouped.map((item) => item.categoryId);
+    const categories = await prisma.category.findMany({
+      where: { id: { in: categoryIds } },
+      select: { id: true, name: true, slug: true },
+    });
+    const categoryById = new Map(categories.map((c) => [c.id, c]));
+
+    return grouped
+      .map((totals) => {
+        const category = categoryById.get(totals.categoryId);
+        const entriesCount = totals._count._all;
+        const totalSaved = round2(toNumber(totals._sum.savedAmount));
+        return {
+          categoryId: totals.categoryId,
+          categoryName: category?.name ?? "Senza categoria",
+          categorySlug: category?.slug ?? totals.categoryId,
+          totalRealSpent: round2(toNumber(totals._sum.realCost)),
+          totalAlternativeCost: round2(toNumber(totals._sum.alternativeCost)),
+          totalSaved,
+          netImpact: totalSaved,
+          avoidedAmount: 0,
+          comparisonSaved: 0,
+          comparisonOverspent: 0,
+          grossPositiveImpact: 0,
+          entriesCount,
+          averageSaved: entriesCount === 0 ? 0 : round2(totalSaved / entriesCount),
+        };
+      })
+      .sort(
+        (l, r) =>
+          r.totalRealSpent - l.totalRealSpent ||
+          r.totalSaved - l.totalSaved ||
+          l.categoryName.localeCompare(r.categoryName, "it"),
+      );
+  } catch (error) {
+    console.error("Failed to load category stats:", error);
+    return [];
+  }
+}
+
+async function _getCategoryStatsDynamic(memberUserId: string): Promise<CategoryStatsItem[]> {
   try {
     const grouped = await prisma.entry.groupBy({
       by: ["categoryId"],
