@@ -86,6 +86,7 @@ export type WorkspaceBalanceEntry = {
   realCost: number;
   paidByUserId: string | null;
   beneficiaryUserIds: string[];
+  paymentMode?: "single_payer" | "joint_account" | string | null;
 };
 
 export type WorkspaceBalanceStatus =
@@ -182,6 +183,16 @@ export function computeCoupleWorkspaceBalance(
         beneficiaryUserId,
         (owedTotals.get(beneficiaryUserId) ?? 0) + share,
       );
+    }
+
+    if (entry.paymentMode === "joint_account") {
+      for (const beneficiaryUserId of beneficiaryUserIds) {
+        paidTotals.set(
+          beneficiaryUserId,
+          (paidTotals.get(beneficiaryUserId) ?? 0) + share,
+        );
+      }
+      continue;
     }
 
     if (memberIds.has(payerUserId)) {

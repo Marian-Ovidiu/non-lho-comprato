@@ -2,6 +2,7 @@ export type MemberSpendingEntry = {
   realCost: number;
   paidByUserId: string | null;
   beneficiaryUserIds: string[];
+  paymentMode?: "single_payer" | "joint_account" | string | null;
 };
 
 export type MemberSpendingTotals = {
@@ -47,6 +48,21 @@ export function applyMemberSpendingEntry(
   const realCost = entry.realCost;
   const beneficiaryUserIds = normalizeBeneficiaryUserIds(entry.beneficiaryUserIds);
   const payerUserId = entry.paidByUserId?.trim() ?? "";
+
+  if (entry.paymentMode === "joint_account" && beneficiaryUserIds.length > 1) {
+    const share = round2(realCost / beneficiaryUserIds.length);
+
+    for (const beneficiaryUserId of beneficiaryUserIds) {
+      const totals = totalsByUserId.get(beneficiaryUserId);
+
+      if (totals) {
+        totals.totalPaidByUser = round2(totals.totalPaidByUser + share);
+        totals.sharedSpending = round2(totals.sharedSpending + share);
+      }
+    }
+
+    return;
+  }
 
   if (payerUserId) {
     const payerTotals = totalsByUserId.get(payerUserId);

@@ -139,6 +139,7 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
         select: {
           realCost: true,
           paidByUserId: true,
+          paymentMode: true,
           beneficiaries: {
             select: {
               userId: true,
@@ -154,6 +155,7 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
       entries.map((entry) => ({
         realCost: Number(entry.realCost),
         paidByUserId: entry.paidByUserId,
+        paymentMode: entry.paymentMode,
         beneficiaryUserIds: entry.beneficiaries.map(
           (beneficiary) => beneficiary.userId,
         ),

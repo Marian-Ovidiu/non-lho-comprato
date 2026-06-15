@@ -55,6 +55,7 @@ import { trackPostHogEvent } from "@/src/lib/posthog";
 import { getRomeTodayDateKey, shiftRomeDateKey } from "@/src/lib/rome-dates";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
+import type { EntryPaymentModeValue } from "@/src/lib/entry-payment-mode";
 import {
   DEFAULT_QUICK_ADD_PRESETS,
   readHiddenDefaultPresetIds,
@@ -105,7 +106,7 @@ type QuickAddDraft = {
   date: string;
 };
 
-type QuickAddIntent = "spent" | "comparison";
+type QuickAddIntent = "spent" | "comparison" | "joint";
 
 const initialState: QuickAddState = {
   success: false,
@@ -202,6 +203,7 @@ function getSearchHref(
   draft: QuickAddDraft,
   mode: EntryMode,
   savingContext: EntrySavingContext,
+  paymentMode: EntryPaymentModeValue,
   returnTo?: string,
 ) {
   const params = new URLSearchParams();
@@ -221,6 +223,7 @@ function getSearchHref(
 
   params.set("mode", mode);
   params.set("savingContext", savingContext);
+  params.set("paymentMode", paymentMode);
 
   if (hiddenAmountSpent) {
     params.set("amountSpent", hiddenAmountSpent);
@@ -254,7 +257,12 @@ function getSearchHref(
 
 function getQuickAddIntent(
   comparisonEnabled: boolean,
+  paymentMode: EntryPaymentModeValue,
 ): QuickAddIntent {
+  if (paymentMode === "joint_account") {
+    return "joint";
+  }
+
   return comparisonEnabled ? "comparison" : "spent";
 }
 
@@ -309,6 +317,8 @@ export function QuickAddSheet({
     "idle",
   );
   const [mode, setMode] = useState<EntryMode>("spent");
+  const [paymentMode, setPaymentMode] =
+    useState<EntryPaymentModeValue>("single_payer");
   const [comparisonEnabled, setComparisonEnabled] = useState(false);
   const [comparisonAmountTouched, setComparisonAmountTouched] = useState(false);
   const { tryTrigger, overlay } = useStreakCelebrationTrigger({
@@ -361,6 +371,10 @@ export function QuickAddSheet({
           ],
     [currentUserId, members],
   );
+  const canUseJointPayment = workspace.isShared && activeMembers.length === 2;
+  const effectivePaymentMode = canUseJointPayment
+    ? paymentMode
+    : "single_payer";
   const [state, formAction, pending] = useActionState(
     async (_previousState: QuickAddState, formData: FormData) => {
       return createEntry(formData);
@@ -383,14 +397,14 @@ export function QuickAddSheet({
   const todayKey = getTodayLocal();
   const yesterdayKey = shiftRomeDateKey(todayKey, -1);
   const savingContext: EntrySavingContext = comparisonEnabled ? "comparison" : "none";
-  const quickAddIntent = getQuickAddIntent(comparisonEnabled);
+  const quickAddIntent = getQuickAddIntent(comparisonEnabled, effectivePaymentMode);
   const hiddenAmountSpent = toHiddenMoneyValue(draft.amountSpent);
   const hiddenComparisonAmount = comparisonEnabled
     ? toHiddenMoneyValue(draft.comparisonAmount)
     : "";
   const fullFormHref = useMemo(
-    () => getSearchHref(draft, mode, savingContext, pathname),
-    [draft, mode, pathname, savingContext],
+    () => getSearchHref(draft, mode, savingContext, effectivePaymentMode, pathname),
+    [draft, effectivePaymentMode, mode, pathname, savingContext],
   );
   const suggestion =
     expenseSuggestion.suggestion &&
@@ -541,6 +555,7 @@ export function QuickAddSheet({
       setActivePreset(null);
       hasDraftBeenEditedRef.current = false;
       setMode("spent");
+      setPaymentMode("single_payer");
       setComparisonEnabled(false);
       setComparisonAmountTouched(false);
       setDraft(getInitialDraft(activeMembers, currentUserId));
@@ -589,6 +604,7 @@ export function QuickAddSheet({
     hasDraftBeenEditedRef.current = true;
     setActivePreset(preset.id);
     setMode("spent");
+    setPaymentMode("single_payer");
     const paidByUserId = getDefaultPaidByUserId(activeMembers, currentUserId);
     const beneficiaryUserIds = preset.shared
       ? activeMembers.map((member) => member.userId)
@@ -612,6 +628,7 @@ export function QuickAddSheet({
   function personalize() {
     hasDraftBeenEditedRef.current = true;
     setActivePreset("custom");
+    setPaymentMode("single_payer");
     setComparisonEnabled(false);
     setComparisonAmountTouched(false);
     setDraft(getInitialDraft(activeMembers, currentUserId));
@@ -631,6 +648,7 @@ export function QuickAddSheet({
 
   function handleIntentChange(nextIntent: QuickAddIntent) {
     handleModeChange("spent");
+    setPaymentMode(nextIntent === "joint" ? "joint_account" : "single_payer");
     setComparisonEnabled(nextIntent === "comparison");
 
     if (nextIntent === "comparison") {
@@ -641,6 +659,14 @@ export function QuickAddSheet({
       }));
     } else {
       setComparisonAmountTouched(false);
+    }
+
+    if (nextIntent === "joint") {
+      setDraft((current) => ({
+        ...current,
+        paidByUserId: activeMembers[0]?.userId ?? current.paidByUserId,
+        beneficiaryUserIds: activeMembers.map((member) => member.userId),
+      }));
     }
   }
 
@@ -675,6 +701,7 @@ export function QuickAddSheet({
         if (!nextOpen) {
           setActivePreset(null);
           setMode("spent");
+          setPaymentMode("single_payer");
           setComparisonEnabled(false);
           setComparisonAmountTouched(false);
           hasDraftBeenEditedRef.current = false;
@@ -769,7 +796,10 @@ export function QuickAddSheet({
 
           <div className="grid min-w-0 gap-3 px-4 py-4 sm:grid-cols-2 sm:px-6">
             <div className="sm:col-span-2">
-              <div className="grid grid-cols-2 gap-2 rounded-[var(--r-control)] border border-line bg-transparent p-1">
+              <div className={cn(
+                "grid gap-2 rounded-[var(--r-control)] border border-line bg-transparent p-1",
+                canUseJointPayment ? "grid-cols-3" : "grid-cols-2",
+              )}>
                 <button
                   type="button"
                   onClick={() => handleIntentChange("spent")}
@@ -801,11 +831,29 @@ export function QuickAddSheet({
                   </span>
                   Speso + confronto
                 </button>
+                {canUseJointPayment ? (
+                  <button
+                    type="button"
+                    onClick={() => handleIntentChange("joint")}
+                    className={cn(
+                      "flex min-h-11 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                      quickAddIntent === "joint"
+                        ? "border-accent text-foreground"
+                        : "border-transparent text-ink-3 hover:text-foreground",
+                    )}
+                    aria-pressed={quickAddIntent === "joint"}
+                  >
+                    <Users2 className="size-4" aria-hidden="true" />
+                    Pagata insieme
+                  </button>
+                ) : null}
               </div>
               <p className="mt-2 text-center text-xs leading-5 text-muted-text">
                 {quickAddIntent === "spent"
                   ? "Solo denaro uscito davvero."
-                  : "Usalo quando hai scelto un'opzione più economica."}
+                  : quickAddIntent === "comparison"
+                    ? "Usalo quando hai scelto un'opzione più economica."
+                    : "Entrambi avete pagato la vostra metà."}
               </p>
             </div>
 
@@ -905,6 +953,7 @@ export function QuickAddSheet({
           >
             <input type="hidden" name="mode" value={mode} />
             <input type="hidden" name="savingContext" value={savingContext} />
+            <input type="hidden" name="paymentMode" value={effectivePaymentMode} />
             {hiddenAmountSpent ? (
               <input type="hidden" name="amountSpent" value={hiddenAmountSpent} />
             ) : null}
@@ -1071,6 +1120,7 @@ export function QuickAddSheet({
                   type="button"
                   className="w-full text-left text-[13px] text-muted-text transition-colors hover:text-foreground"
                   onClick={() => {
+                    setPaymentMode("single_payer");
                     setComparisonEnabled((current) => {
                       if (current) {
                         return false;
@@ -1147,6 +1197,7 @@ export function QuickAddSheet({
                   suggestion={suggestion}
                   onApply={() => {
                     hasDraftBeenEditedRef.current = true;
+                    setPaymentMode("single_payer");
                     setComparisonEnabled(true);
                     setComparisonAmountTouched(true);
                     setDraft((current) => ({
@@ -1157,7 +1208,12 @@ export function QuickAddSheet({
                 />
               ) : null}
 
-              {membersLoading ? (
+              {effectivePaymentMode === "joint_account" ? (
+                <div className="rounded-[var(--r-card)] border border-line bg-surface-muted/60 px-4 py-3 text-sm leading-6 text-muted-text">
+                  Pagata insieme: l&apos;importo vale per entrambi e il saldo
+                  considera metà già pagata da ciascuno.
+                </div>
+              ) : membersLoading ? (
                 <p className="text-xs leading-5 text-muted-text" aria-live="polite">
                   Carico i membri del workspace…
                 </p>

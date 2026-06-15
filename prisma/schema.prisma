@@ -53,6 +53,11 @@ enum EntrySavingContext {
   comparison
 }
 
+enum EntryPaymentMode {
+  single_payer
+  joint_account
+}
+
 enum HabitOccurrenceStatus {
   pending
   spent
@@ -94,6 +99,7 @@ model Entry {
   savedAmount       Decimal          @db.Decimal(10, 2)
   mode              EntryMode          @default(spent)
   savingContext     EntrySavingContext @default(none)
+  paymentMode       EntryPaymentMode   @default(single_payer)
   date              DateTime
   isFirstEntryOfDay Boolean          @default(false)
   note              String?

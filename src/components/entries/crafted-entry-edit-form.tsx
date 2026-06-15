@@ -5,9 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ChevronDown,
-  CircleOff,
   Loader2,
   Receipt,
+  Users2,
 } from "lucide-react";
 
 import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
@@ -35,6 +35,10 @@ import type {
 } from "@/src/lib/entry-domain";
 import { cn } from "@/lib/utils";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import {
+  normalizeEntryPaymentMode,
+  type EntryPaymentModeValue,
+} from "@/src/lib/entry-payment-mode";
 
 type CategoryOption = {
   id: string;
@@ -50,6 +54,7 @@ type EntryToEdit = {
   categoryId: string;
   mode: EntryMode;
   savingContext: EntrySavingContext;
+  paymentMode: EntryPaymentModeValue;
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
@@ -63,7 +68,7 @@ type EntryToEdit = {
   beneficiaryUserIds: string[];
 };
 
-type EntryIntent = "spent" | "comparison" | "avoided";
+type EntryIntent = "spent" | "comparison" | "joint";
 
 type FormState = {
   success: boolean;
@@ -98,20 +103,11 @@ function getComparisonFieldError(errors?: Record<string, string>) {
   return errors?.comparisonAmount ?? errors?.alternativeCost;
 }
 
-function formatPrimaryFieldLabel(mode: EntryMode) {
-  return mode === "avoided" ? "Avresti speso" : "Quanto hai speso";
-}
-
 function getSummaryText(
-  mode: EntryMode,
   savingContext: EntrySavingContext,
   amountSpentInput: string,
   comparisonInput: string,
 ) {
-  if (mode === "avoided") {
-    return "Non comprato";
-  }
-
   if (savingContext === "comparison") {
     const delta = getMoneyDelta(amountSpentInput, comparisonInput);
 
@@ -130,11 +126,11 @@ function getSummaryText(
 }
 
 function getEntryIntent(
-  mode: EntryMode,
   showComparison: boolean,
+  paymentMode: EntryPaymentModeValue,
 ): EntryIntent {
-  if (mode === "avoided") {
-    return "avoided";
+  if (paymentMode === "joint_account") {
+    return "joint";
   }
 
   return showComparison ? "comparison" : "spent";
@@ -156,7 +152,7 @@ export function CraftedEntryEditForm({
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  const [mode, setMode] = useState<EntryMode>(entry.mode);
+  const [mode, setMode] = useState<EntryMode>("spent");
   const [categoryId, setCategoryId] = useState(entry.categoryId);
   const [title, setTitle] = useState(entry.title);
   const [date, setDate] = useState(getDateValue(entry.date));
@@ -175,6 +171,9 @@ export function CraftedEntryEditForm({
   const [beneficiaryUserIds, setBeneficiaryUserIds] = useState(
     entry.beneficiaryUserIds,
   );
+  const [paymentMode, setPaymentMode] = useState<EntryPaymentModeValue>(() =>
+    normalizeEntryPaymentMode(entry.paymentMode),
+  );
 
   const [state, formAction, pending] = useActionState(
     async (_previousState: FormState, formData: FormData) =>
@@ -192,48 +191,38 @@ export function CraftedEntryEditForm({
     return () => window.clearTimeout(timeout);
   }, [router, state.success]);
 
-  const savingContext: EntrySavingContext =
-    mode === "avoided" ? "comparison" : showComparison ? "comparison" : "none";
-  const entryIntent = getEntryIntent(mode, showComparison);
-  const hiddenAmountSpent = mode === "spent" ? toHiddenMoneyValue(amountSpentInput) : "";
-  const hiddenComparisonAmount =
-    mode === "avoided" || showComparison ? toHiddenMoneyValue(comparisonInput) : "";
+  const canUseJointPayment = members.length === 2;
+  const effectivePaymentMode = canUseJointPayment ? paymentMode : "single_payer";
+  const savingContext: EntrySavingContext = showComparison ? "comparison" : "none";
+  const entryIntent = getEntryIntent(showComparison, effectivePaymentMode);
+  const hiddenAmountSpent = toHiddenMoneyValue(amountSpentInput);
+  const hiddenComparisonAmount = showComparison ? toHiddenMoneyValue(comparisonInput) : "";
   const primaryFieldError = getPrimaryFieldError(state.errors);
   const comparisonFieldError = getComparisonFieldError(state.errors);
   const comparisonDelta = getMoneyDelta(amountSpentInput, comparisonInput);
   const showLargeComparisonWarning =
-    mode === "spent" &&
     showComparison &&
     comparisonInput.trim().length > 0 &&
     Math.abs(comparisonDelta) >= 100;
-  const summaryAmount =
-    mode === "avoided"
-      ? formatMoneyPreview(comparisonInput)
-      : formatMoneyPreview(amountSpentInput);
+  const summaryAmount = formatMoneyPreview(amountSpentInput);
 
   function handleModeChange(nextMode: EntryMode) {
     setMode(nextMode);
-
-    if (nextMode === "avoided") {
-      setComparisonInput((current) => current || amountSpentInput);
-      setShowComparison(false);
-      return;
-    }
-
     setAmountSpentInput((current) => current || comparisonInput);
   }
 
   function handleIntentChange(nextIntent: EntryIntent) {
-    if (nextIntent === "avoided") {
-      handleModeChange("avoided");
-      return;
-    }
-
     handleModeChange("spent");
+    setPaymentMode(nextIntent === "joint" ? "joint_account" : "single_payer");
     setShowComparison(nextIntent === "comparison");
 
     if (nextIntent === "comparison") {
       setComparisonInput((current) => current || amountSpentInput);
+    }
+
+    if (nextIntent === "joint") {
+      setPaidByUserId(members[0]?.userId ?? paidByUserId);
+      setBeneficiaryUserIds(members.map((member) => member.userId));
     }
   }
 
@@ -259,6 +248,7 @@ export function CraftedEntryEditForm({
       <form ref={formRef} action={formAction}>
         <input type="hidden" name="mode" value={mode} />
         <input type="hidden" name="savingContext" value={savingContext} />
+        <input type="hidden" name="paymentMode" value={effectivePaymentMode} />
         <input type="hidden" name="categoryId" value={categoryId} />
         <input type="hidden" name="paidByUserId" value={paidByUserId} />
         {beneficiaryUserIds.map((userId) => (
@@ -301,7 +291,7 @@ export function CraftedEntryEditForm({
             <Mono className="text-xl text-muted-foreground">€</Mono>
           </div>
           <Serif className="mt-3 block text-sm text-ink-3">
-            {getSummaryText(mode, savingContext, amountSpentInput, comparisonInput)}
+            {getSummaryText(savingContext, amountSpentInput, comparisonInput)}
           </Serif>
         </section>
         <Rule />
@@ -320,7 +310,7 @@ export function CraftedEntryEditForm({
         ) : null}
 
         <div className="px-5 pb-4 pt-3">
-          <div className="grid grid-cols-3 gap-2">
+          <div className={cn("grid gap-2", canUseJointPayment ? "grid-cols-3" : "grid-cols-2")}>
             <button
               type="button"
               onClick={() => handleIntentChange("spent")}
@@ -352,27 +342,29 @@ export function CraftedEntryEditForm({
               </span>
               Speso + confronto
             </button>
-            <button
-              type="button"
-              onClick={() => handleIntentChange("avoided")}
-              className={cn(
-                "flex min-h-12 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
-                entryIntent === "avoided"
-                  ? "border-accent text-foreground"
-                  : "border-transparent text-ink-3 hover:text-foreground",
-              )}
-              aria-pressed={entryIntent === "avoided"}
-            >
-              <CircleOff className="size-4" aria-hidden="true" />
-              Non l&apos;ho comprato
-            </button>
+            {canUseJointPayment ? (
+              <button
+                type="button"
+                onClick={() => handleIntentChange("joint")}
+                className={cn(
+                  "flex min-h-12 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                  entryIntent === "joint"
+                    ? "border-accent text-foreground"
+                    : "border-transparent text-ink-3 hover:text-foreground",
+                )}
+                aria-pressed={entryIntent === "joint"}
+              >
+                <Users2 className="size-4" aria-hidden="true" />
+                Pagata insieme
+              </button>
+            ) : null}
           </div>
           <p className="mt-3 text-center text-xs leading-5 text-ink-3">
             {entryIntent === "spent"
               ? "Registra solo il denaro uscito davvero."
               : entryIntent === "comparison"
                 ? "Usalo quando hai scelto un'opzione più economica."
-                : "Segna quanto avresti speso se l'avessi comprato."}
+                : "Entrambi avete pagato la vostra metà."}
           </p>
         </div>
 
@@ -422,7 +414,7 @@ export function CraftedEntryEditForm({
               name="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
+              placeholder="Pranzo"
               className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
               aria-invalid={Boolean(state.errors?.title)}
               aria-describedby={state.errors?.title ? "entry-title-error" : undefined}
@@ -438,85 +430,76 @@ export function CraftedEntryEditForm({
               <input
                 type="text"
                 inputMode="decimal"
-                value={mode === "avoided" ? comparisonInput : amountSpentInput}
+                value={amountSpentInput}
                 onChange={(event) => {
                   const nextValue = normalizeMoneyInput(event.target.value);
-                  if (mode === "avoided") {
-                    setComparisonInput(nextValue);
-                    return;
-                  }
                   setAmountSpentInput(nextValue);
                 }}
-                placeholder={mode === "avoided" ? "18,00" : "12,00"}
+                placeholder="12,00"
                 className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
                 aria-invalid={Boolean(primaryFieldError)}
               />
-              <Label>{formatPrimaryFieldLabel(mode)}</Label>
+              <Label>Quanto hai speso</Label>
             </label>
             <FormFieldError message={primaryFieldError} />
           </div>
 
-          {mode === "spent" ? (
-            <>
-              <button
-                type="button"
-                onClick={() => {
-                  setShowComparison((current) => {
-                    if (current) {
-                      return false;
+          <>
+            <button
+              type="button"
+              onClick={() => {
+                setPaymentMode("single_payer");
+                setShowComparison((current) => {
+                  if (current) {
+                    return false;
+                  }
+
+                  setComparisonInput((prev) => prev || amountSpentInput);
+                  return true;
+                });
+              }}
+              className="flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 hover:text-foreground"
+            >
+              <ChevronDown
+                className={cn(
+                  "size-3.5 transition-transform duration-200",
+                  showComparison && "rotate-180",
+                )}
+                aria-hidden="true"
+              />
+              {showComparison
+                ? "Nascondi confronto"
+                : "Ho speso e voglio confrontarlo"}
+            </button>
+
+            {showComparison ? (
+              <div className="border-y border-line py-[var(--sp-field-y)]">
+                <label className="flex items-center justify-between gap-4">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={comparisonInput}
+                    onChange={(event) =>
+                      setComparisonInput(normalizeMoneyInput(event.target.value))
                     }
-
-                    setComparisonInput((prev) => prev || amountSpentInput);
-                    return true;
-                  });
-                }}
-                className="flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 hover:text-foreground"
-              >
-                <ChevronDown
-                  className={cn(
-                    "size-3.5 transition-transform duration-200",
-                    showComparison && "rotate-180",
-                  )}
-                  aria-hidden="true"
-                />
-                {showComparison
-                  ? "Nascondi confronto"
-                  : "Ho speso e voglio confrontarlo"}
-              </button>
-
-              {showComparison ? (
-                <div className="border-y border-line py-[var(--sp-field-y)]">
-                  <label className="flex items-center justify-between gap-4">
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={comparisonInput}
-                      onChange={(event) =>
-                        setComparisonInput(normalizeMoneyInput(event.target.value))
-                      }
-                      placeholder="45,00"
-                      className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
-                      aria-invalid={Boolean(comparisonFieldError)}
-                    />
-                    <Label>Quanto avresti speso di solito?</Label>
-                  </label>
-                  <p className="mt-2 text-xs text-ink-3">
-                    Usalo quando hai scelto un&apos;opzione più economica.
+                    placeholder="45,00"
+                    className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
+                    aria-invalid={Boolean(comparisonFieldError)}
+                  />
+                  <Label>Quanto avresti speso di solito?</Label>
+                </label>
+                <p className="mt-2 text-xs text-ink-3">
+                  Usalo quando hai scelto un&apos;opzione più economica.
+                </p>
+                {showLargeComparisonWarning ? (
+                  <p className="mt-2 rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
+                    Questo confronto pesa molto sulle statistiche.
                   </p>
-                  {showLargeComparisonWarning ? (
-                    <p className="mt-2 rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
-                      Questo confronto pesa molto sulle statistiche.
-                    </p>
-                  ) : null}
-                  <FormFieldError message={comparisonFieldError} />
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <p className="text-[13px] text-ink-3">
-              Segna quanto avresti speso se l&apos;avessi comprato. Non verrà contato nulla come speso davvero.
-            </p>
-          )}
+                ) : null}
+                <FormFieldError message={comparisonFieldError} />
+              </div>
+            ) : null}
+          </>
         </div>
 
         <div className="space-y-3 px-5 pb-3">
@@ -564,14 +547,21 @@ export function CraftedEntryEditForm({
                 />
               </div>
 
-              <EntryPeopleFields
-                members={members}
-                paidByUserId={paidByUserId}
-                beneficiaryUserIds={beneficiaryUserIds}
-                errors={state.errors}
-                onPaidByUserIdChange={setPaidByUserId}
-                onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
-              />
+              {effectivePaymentMode === "joint_account" ? (
+                <div className="rounded-[var(--r-control)] border border-line bg-surface-muted/60 px-4 py-3 text-sm leading-6 text-ink-3">
+                  Pagata insieme: l&apos;importo vale per entrambi e il saldo
+                  considera metà già pagata da ciascuno.
+                </div>
+              ) : (
+                <EntryPeopleFields
+                  members={members}
+                  paidByUserId={paidByUserId}
+                  beneficiaryUserIds={beneficiaryUserIds}
+                  errors={state.errors}
+                  onPaidByUserIdChange={setPaidByUserId}
+                  onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
+                />
+              )}
             </div>
           ) : (
             <input type="hidden" name="date" value={date} />

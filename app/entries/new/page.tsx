@@ -7,6 +7,7 @@ import {
   getDefaultBeneficiaryUserIds,
   getDefaultPaidByUserId,
 } from "@/src/lib/workspace-members";
+import { normalizeEntryPaymentMode } from "@/src/lib/entry-payment-mode";
 import {
   getCurrentUser,
   getCurrentWorkspaceMembers,
@@ -103,6 +104,7 @@ export default async function NewEntryPage({
   const alternativeCost = getSearchValue(query.alternativeCost)?.trim();
   const date = getSearchValue(query.date)?.trim();
   const note = getSearchValue(query.note)?.trim();
+  const paymentMode = normalizeEntryPaymentMode(getSearchValue(query.paymentMode));
   const returnTo = getSafeReturnTo(query.returnTo);
   const paidByUserIdRaw = getSearchValue(query.paidByUserId);
   const paidByUserId =
@@ -146,6 +148,7 @@ export default async function NewEntryPage({
         alternativeCost,
         date,
         note,
+        paymentMode,
         paidByUserId,
         beneficiaryUserIds: resolvedBeneficiaryUserIds,
       }}

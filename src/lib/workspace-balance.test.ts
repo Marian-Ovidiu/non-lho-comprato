@@ -215,5 +215,24 @@ describe("computeCoupleWorkspaceBalance", () => {
       assert.equal(result.status, "balanced");
       assert.equal(result.amount, 0);
     });
+
+    it("joint account entries count as paid equally by both members", () => {
+      const entries: WorkspaceBalanceEntry[] = [
+        {
+          realCost: 100,
+          paidByUserId: MARIAN_ID,
+          beneficiaryUserIds: [MARIAN_ID, MARTINA_ID],
+          paymentMode: "joint_account",
+        },
+      ];
+
+      const marian = computeCoupleWorkspaceBalance(MEMBERS, MARIAN_ID, entries);
+      const martina = computeCoupleWorkspaceBalance(MEMBERS, MARTINA_ID, entries);
+
+      assert.equal(marian.status, "balanced");
+      assert.equal(marian.amount, 0);
+      assert.equal(martina.status, "balanced");
+      assert.equal(martina.amount, 0);
+    });
   });
 });

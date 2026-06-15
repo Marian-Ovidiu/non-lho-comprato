@@ -1332,12 +1332,14 @@ function toMemberSpendingEntries(
   entries: Array<{
     realCost: unknown;
     paidByUserId: string | null;
+    paymentMode?: string | null;
     beneficiaries: Array<{ userId: string }>;
   }>,
 ): MemberSpendingEntry[] {
   return entries.map((entry) => ({
     realCost: toNumber(entry.realCost),
     paidByUserId: entry.paidByUserId,
+    paymentMode: entry.paymentMode,
     beneficiaryUserIds: entry.beneficiaries.map(
       (beneficiary) => beneficiary.userId,
     ),
@@ -1355,6 +1357,7 @@ export async function getWorkspaceMemberSpendingStats(
         select: {
           realCost: true,
           paidByUserId: true,
+          paymentMode: true,
           beneficiaries: {
             select: {
               userId: true,

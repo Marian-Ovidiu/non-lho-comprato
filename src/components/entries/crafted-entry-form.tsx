@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Loader2,
   Receipt,
+  Users2,
 } from "lucide-react";
 
 import { CraftedIcon, Label, Mono, Serif } from "@/components/crafted";
@@ -33,6 +34,10 @@ import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
+import {
+  normalizeEntryPaymentMode,
+  type EntryPaymentModeValue,
+} from "@/src/lib/entry-payment-mode";
 
 const EntryPeopleFields = dynamic(
   () =>
@@ -74,11 +79,12 @@ type EntryFormInitialValues = {
   alternativeCost?: string;
   paidByUserId?: string;
   beneficiaryUserIds?: string[];
+  paymentMode?: EntryPaymentModeValue;
   date?: string;
   note?: string;
 };
 
-type EntryIntent = "spent" | "comparison";
+type EntryIntent = "spent" | "comparison" | "joint";
 
 export type CraftedEntryFormProps = {
   categories: CategoryOption[];
@@ -138,7 +144,12 @@ function getSummaryText(
 
 function getEntryIntent(
   showComparison: boolean,
+  paymentMode: EntryPaymentModeValue,
 ): EntryIntent {
+  if (paymentMode === "joint_account") {
+    return "joint";
+  }
+
   return showComparison ? "comparison" : "spent";
 }
 
@@ -173,6 +184,9 @@ export function CraftedEntryForm({
   const [paidByUserId, setPaidByUserId] = useState(resolvedInitialPaidByUserId);
   const [beneficiaryUserIds, setBeneficiaryUserIds] = useState(
     resolvedInitialBeneficiaryUserIds,
+  );
+  const [paymentMode, setPaymentMode] = useState<EntryPaymentModeValue>(() =>
+    normalizeEntryPaymentMode(initialValues?.paymentMode),
   );
   const [showAdvanced, setShowAdvanced] = useState(
     Boolean(initialValues?.note?.trim()),
@@ -247,8 +261,10 @@ export function CraftedEntryForm({
     };
   }, []);
 
+  const canUseJointPayment = members.length === 2;
+  const effectivePaymentMode = canUseJointPayment ? paymentMode : "single_payer";
   const savingContext: EntrySavingContext = showComparison ? "comparison" : "none";
-  const entryIntent = getEntryIntent(showComparison);
+  const entryIntent = getEntryIntent(showComparison, effectivePaymentMode);
   const primaryFieldError = getPrimaryFieldError(state.errors);
   const comparisonFieldError = getComparisonFieldError(state.errors);
   const comparisonDelta = getMoneyDelta(amountSpentInput, comparisonInput);
@@ -278,10 +294,16 @@ export function CraftedEntryForm({
 
   function handleIntentChange(nextIntent: EntryIntent) {
     handleModeChange("spent");
+    setPaymentMode(nextIntent === "joint" ? "joint_account" : "single_payer");
     setShowComparison(nextIntent === "comparison");
 
     if (nextIntent === "comparison") {
       setComparisonInput((current) => current || amountSpentInput);
+    }
+
+    if (nextIntent === "joint") {
+      setPaidByUserId(members[0]?.userId ?? paidByUserId);
+      setBeneficiaryUserIds(members.map((member) => member.userId));
     }
   }
 
@@ -311,6 +333,7 @@ export function CraftedEntryForm({
       >
         <input type="hidden" name="mode" value={mode} />
         <input type="hidden" name="savingContext" value={savingContext} />
+        <input type="hidden" name="paymentMode" value={effectivePaymentMode} />
         {hiddenAmountSpent ? (
           <input type="hidden" name="amountSpent" value={hiddenAmountSpent} />
         ) : null}
@@ -349,7 +372,7 @@ export function CraftedEntryForm({
         ) : null}
 
         <div className="px-5 pb-4 pt-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className={cn("grid gap-2", canUseJointPayment ? "grid-cols-3" : "grid-cols-2")}>
             <button
               type="button"
               onClick={() => handleIntentChange("spent")}
@@ -381,11 +404,29 @@ export function CraftedEntryForm({
               </span>
               Speso + confronto
             </button>
+            {canUseJointPayment ? (
+              <button
+                type="button"
+                onClick={() => handleIntentChange("joint")}
+                className={cn(
+                  "flex min-h-12 items-center justify-center gap-1.5 border-b-[1.5px] px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
+                  entryIntent === "joint"
+                    ? "border-accent text-foreground"
+                    : "border-transparent text-ink-3 hover:text-foreground",
+                )}
+                aria-pressed={entryIntent === "joint"}
+              >
+                <Users2 className="size-4" aria-hidden="true" />
+                Pagata insieme
+              </button>
+            ) : null}
           </div>
           <p className="mt-3 text-center text-xs leading-5 text-ink-3">
             {entryIntent === "spent"
               ? "Registra solo il denaro uscito davvero."
-              : "Usalo quando hai scelto un'opzione più economica."}
+              : entryIntent === "comparison"
+                ? "Usalo quando hai scelto un'opzione più economica."
+                : "Entrambi avete pagato la vostra metà."}
           </p>
         </div>
 
@@ -409,7 +450,9 @@ export function CraftedEntryForm({
           ) : (
             <>
               <Serif className="mb-3 text-[16px] text-muted-foreground">
-                {entryIntent === "comparison"
+                {entryIntent === "joint"
+                  ? "stai registrando una spesa pagata insieme"
+                  : entryIntent === "comparison"
                     ? "stai confrontando una spesa"
                     : "stai registrando una spesa"}
               </Serif>
@@ -604,14 +647,21 @@ export function CraftedEntryForm({
                 />
               </div>
 
-              <EntryPeopleFields
-                members={members}
-                paidByUserId={paidByUserId}
-                beneficiaryUserIds={beneficiaryUserIds}
-                errors={state.errors}
-                onPaidByUserIdChange={setPaidByUserId}
-                onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
-              />
+              {effectivePaymentMode === "joint_account" ? (
+                <div className="rounded-[var(--r-control)] border border-line bg-surface-muted/60 px-4 py-3 text-sm leading-6 text-ink-3">
+                  Pagata insieme: l&apos;importo vale per entrambi e il saldo
+                  considera metà già pagata da ciascuno.
+                </div>
+              ) : (
+                <EntryPeopleFields
+                  members={members}
+                  paidByUserId={paidByUserId}
+                  beneficiaryUserIds={beneficiaryUserIds}
+                  errors={state.errors}
+                  onPaidByUserIdChange={setPaidByUserId}
+                  onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
+                />
+              )}
             </div>
           ) : (
             <input type="hidden" name="date" value={date} />

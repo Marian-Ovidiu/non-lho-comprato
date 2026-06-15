@@ -33,9 +33,15 @@ import { prisma } from "@/src/lib/prisma";
 import { buildPersonWhere, type PersonFilterValue } from "@/src/lib/person-filter";
 import type { LegacyPersonValue } from "@/src/lib/ui-person";
 import {
+  getDefaultPaidByUserId,
   resolveEntryPeopleFromRecord,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
+import {
+  normalizeEntryPaymentMode,
+  parseEntryPaymentModeFromForm,
+  type EntryPaymentModeValue,
+} from "@/src/lib/entry-payment-mode";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
@@ -82,6 +88,7 @@ type EntryWithCategory = {
   savedAmount: unknown;
   mode: unknown;
   savingContext: unknown;
+  paymentMode: unknown;
   date: Date;
   note: string | null;
   source: string;
@@ -107,6 +114,7 @@ type SerializableEntry = {
   categoryId: string;
   mode: EntryMode;
   savingContext: EntrySavingContext;
+  paymentMode: EntryPaymentModeValue;
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
@@ -137,6 +145,7 @@ type SerializableEntryEdit = {
   categoryId: string;
   mode: EntryMode;
   savingContext: EntrySavingContext;
+  paymentMode: EntryPaymentModeValue;
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
@@ -159,6 +168,7 @@ type EntryEditRecord = {
   savedAmount: unknown;
   mode: unknown;
   savingContext: unknown;
+  paymentMode: unknown;
   date: Date;
   note: string | null;
   source: string;
@@ -261,6 +271,53 @@ function toNumber(value: unknown): number {
   }
 
   return 0;
+}
+
+function resolveEntryPaymentAndOwnership(
+  formData: FormData,
+  members: WorkspaceMemberOption[],
+): {
+  paymentMode: EntryPaymentModeValue;
+  ownershipInput: {
+    paidByUserId: string;
+    beneficiaryUserIds: string[];
+  };
+  errors: Record<string, string>;
+} {
+  const paymentMode = parseEntryPaymentModeFromForm(formData);
+
+  if (paymentMode !== "joint_account") {
+    return {
+      paymentMode,
+      ownershipInput: {
+        paidByUserId: parsePaidByUserIdFromForm(formData),
+        beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
+      },
+      errors: {},
+    };
+  }
+
+  if (members.length !== 2) {
+    return {
+      paymentMode,
+      ownershipInput: {
+        paidByUserId: parsePaidByUserIdFromForm(formData),
+        beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
+      },
+      errors: {
+        paymentMode: "Pagata insieme è disponibile solo nei workspace con due membri",
+      },
+    };
+  }
+
+  return {
+    paymentMode,
+    ownershipInput: {
+      paidByUserId: getDefaultPaidByUserId(members),
+      beneficiaryUserIds: members.map((member) => member.userId),
+    },
+    errors: {},
+  };
 }
 
 function isMissingEntryBeneficiaryTable(error: unknown): boolean {
@@ -644,6 +701,7 @@ function serializeEntry(
     categoryId: entry.categoryId,
     mode: money.mode,
     savingContext: money.savingContext,
+    paymentMode: normalizeEntryPaymentMode(entry.paymentMode),
     realCost: money.realCost,
     alternativeCost: money.alternativeCost,
     savedAmount: money.savedAmount,
@@ -872,6 +930,7 @@ export async function getEntryById(
       categoryId: entry.categoryId,
       mode: money.mode,
       savingContext: money.savingContext,
+      paymentMode: normalizeEntryPaymentMode(entry.paymentMode),
       realCost: money.realCost,
       alternativeCost: money.alternativeCost,
       savedAmount: money.savedAmount,
@@ -1165,13 +1224,8 @@ export async function createEntry(
     members = [];
   }
 
-  const ownership = validateEntryOwnership(
-    {
-      paidByUserId: parsePaidByUserIdFromForm(formData),
-      beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
-    },
-    members,
-  );
+  const payment = resolveEntryPaymentAndOwnership(formData, members);
+  const ownership = validateEntryOwnership(payment.ownershipInput, members);
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -1183,6 +1237,7 @@ export async function createEntry(
     errors.categoryId = "Seleziona una categoria";
   }
   Object.assign(errors, entryMoney.errors);
+  Object.assign(errors, payment.errors);
 
   if (!ownership.ok) {
     Object.assign(errors, ownership.errors);
@@ -1258,6 +1313,7 @@ export async function createEntry(
         savedAmount: toDecimalString(money.savedAmount),
         mode: money.mode,
         savingContext: money.savingContext,
+        paymentMode: payment.paymentMode,
         date,
         isFirstEntryOfDay,
         note: note || null,
@@ -1325,13 +1381,8 @@ export async function updateEntry(
     members = [];
   }
 
-  const ownership = validateEntryOwnership(
-    {
-      paidByUserId: parsePaidByUserIdFromForm(formData),
-      beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
-    },
-    members,
-  );
+  const payment = resolveEntryPaymentAndOwnership(formData, members);
+  const ownership = validateEntryOwnership(payment.ownershipInput, members);
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -1343,6 +1394,7 @@ export async function updateEntry(
     errors.categoryId = "Seleziona una categoria";
   }
   Object.assign(errors, entryMoney.errors);
+  Object.assign(errors, payment.errors);
 
   if (!ownership.ok) {
     Object.assign(errors, ownership.errors);
@@ -1429,6 +1481,7 @@ export async function updateEntry(
           savedAmount: toDecimalString(money.savedAmount),
           mode: money.mode,
           savingContext: money.savingContext,
+          paymentMode: payment.paymentMode,
           date,
           note: note || null,
           paidByUserId: ownership.paidByUserId,
