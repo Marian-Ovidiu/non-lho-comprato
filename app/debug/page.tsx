@@ -6,7 +6,6 @@ import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-he
 import { DebugBrowserInfo, DebugTable } from "@/src/components/debug/debug-browser-info";
 import { Label, Rule, Mono } from "@/components/crafted";
 
-export const dynamic = "force-dynamic";
 
 const DEVELOPER_EMAIL = "h.marian914@gmail.com";
 

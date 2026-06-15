@@ -25,7 +25,6 @@ import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { buildCraftedDashboardProps } from "@/src/lib/crafted-dashboard-build";
 import type { HomeReflectionNoteProps } from "@/src/lib/home-reflection";
 
-export const dynamic = "force-dynamic";
 
 type HomePageProps = {
   searchParams: Promise<{

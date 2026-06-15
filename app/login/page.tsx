@@ -5,7 +5,6 @@ import { LoginPanel } from "@/src/components/auth/login-panel";
 import { TrustCopy } from "@/src/components/shared/trust-copy";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 
-export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
   const authUser = await getAuthenticatedUser();

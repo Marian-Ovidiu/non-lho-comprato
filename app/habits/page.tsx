@@ -24,7 +24,6 @@ import {
 } from "@/src/lib/workspace-context";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 
-export const dynamic = "force-dynamic";
 
 export default async function HabitsPage() {
   try {

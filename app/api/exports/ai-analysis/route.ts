@@ -12,7 +12,6 @@ import {
 } from "@/src/lib/ai-export";
 import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
 
-export const dynamic = "force-dynamic";
 
 const BATCH_SIZE = 1000;
 

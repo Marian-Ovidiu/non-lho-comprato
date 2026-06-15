@@ -1,31 +1,34 @@
-import { SUPPORTED_CURRENCIES } from "@/src/lib/workspace-currency";
+import { cacheLife } from "next/cache";
 
-export const revalidate = 86400; // 24 hours
+import { SUPPORTED_CURRENCIES } from "@/src/lib/workspace-currency";
 
 const BASE = "EUR";
 
-export async function GET() {
+async function fetchRates(): Promise<Record<string, number>> {
+  "use cache";
+  cacheLife("days");
+
   const symbols = SUPPORTED_CURRENCIES.map((c) => c.code)
     .filter((code) => code !== BASE)
     .join(",");
 
-  let rates: Record<string, number>;
+  const res = await fetch(
+    `https://api.frankfurter.app/latest?from=${BASE}&symbols=${symbols}`,
+  );
 
+  if (!res.ok) {
+    throw new Error(`upstream error: ${res.status}`);
+  }
+
+  const data = (await res.json()) as { rates?: Record<string, number> };
+  return { [BASE]: 1, ...(data.rates ?? {}) };
+}
+
+export async function GET() {
   try {
-    const res = await fetch(
-      `https://api.frankfurter.app/latest?from=${BASE}&symbols=${symbols}`,
-      { next: { revalidate: 86400 } },
-    );
-
-    if (!res.ok) {
-      return Response.json({ error: "upstream error" }, { status: 502 });
-    }
-
-    const data = (await res.json()) as { rates?: Record<string, number> };
-    rates = { [BASE]: 1, ...(data.rates ?? {}) };
+    const rates = await fetchRates();
+    return Response.json({ base: BASE, rates });
   } catch {
     return Response.json({ error: "fetch failed" }, { status: 502 });
   }
-
-  return Response.json({ base: BASE, rates });
 }

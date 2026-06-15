@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 
 import { Label, Mono, Rule } from "@/components/crafted";
 import { CraftedInviteLoginShell } from "@/src/components/invites/crafted-invite-login-shell";

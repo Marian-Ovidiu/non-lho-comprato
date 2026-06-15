@@ -11,6 +11,7 @@ const allowedDevOrigins =
 const nextConfig: NextConfig = {
   allowedDevOrigins,
   productionBrowserSourceMaps: shouldUploadSourcemaps(),
+  cacheComponents: true,
 };
 
 export default withSentryConfig(nextConfig, {

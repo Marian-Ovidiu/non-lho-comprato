@@ -13,7 +13,6 @@ import {
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
 
-export const dynamic = "force-dynamic";
 
 function getSearchValue(
   value: string | string[] | undefined,

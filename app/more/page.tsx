@@ -14,7 +14,6 @@ import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/sessio
 
 const DEVELOPER_EMAIL = "h.marian914@gmail.com";
 
-export const dynamic = "force-dynamic";
 
 type WorkspaceNextStep = NonNullable<CraftedMoreProps["workspaceNextStep"]>;
 

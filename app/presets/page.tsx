@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 
 import { getCategories } from "@/src/actions/entries";
 import { getPresets } from "@/src/actions/presets";

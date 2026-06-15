@@ -5,7 +5,6 @@ import { DeleteAccountForm } from "@/src/components/account/delete-account-form"
 import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 
-export const dynamic = "force-dynamic";
 
 export default async function DeleteAccountPage() {
   const authUser = await getAuthenticatedUser();

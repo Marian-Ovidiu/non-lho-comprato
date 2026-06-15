@@ -9,7 +9,6 @@ import {
   getCurrentWorkspaceMemberDetails,
 } from "@/src/lib/workspace-context";
 
-export const dynamic = "force-dynamic";
 
 function getMemberDisplayName(member: {
   name: string | null;

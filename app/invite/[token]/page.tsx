@@ -12,7 +12,6 @@ import {
   normalizeInviteEmail,
 } from "@/src/lib/workspace-invites";
 
-export const dynamic = "force-dynamic";
 
 type InvitePageProps = {
   params: Promise<{

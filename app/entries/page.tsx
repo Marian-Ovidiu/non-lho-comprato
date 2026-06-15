@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 
-export const dynamic = "force-dynamic";
 
 const newEntryHref = "/entries/new?returnTo=%2Fentries";
 

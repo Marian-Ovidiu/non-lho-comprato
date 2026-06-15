@@ -1,4 +1,3 @@
-export const dynamic = "force-dynamic";
 
 import { getCategories, getEntryById } from "@/src/actions/entries";
 import { CraftedEntryNotFound } from "@/src/components/entries/crafted-entry-not-found";

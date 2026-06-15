@@ -5,7 +5,6 @@ import { CraftedCategoryManagement } from "@/src/components/workspace/crafted-ca
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getWorkspaceCategories } from "@/src/actions/categories";
 
-export const dynamic = "force-dynamic";
 
 export default async function WorkspaceCategoriesPage() {
   let loadError: string | null = null;

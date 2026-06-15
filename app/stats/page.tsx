@@ -23,7 +23,6 @@ import {
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 
-export const dynamic = "force-dynamic";
 
 type StatsPageProps = {
   searchParams: Promise<{
