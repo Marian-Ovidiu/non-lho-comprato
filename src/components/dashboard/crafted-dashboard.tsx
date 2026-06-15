@@ -522,7 +522,6 @@ export function CraftedDashboard({
         <CraftedDashboardEmptyState
           title={emptyState.title}
           description={emptyState.description}
-          note={emptyState.note}
           actionLabel={emptyState.actionLabel}
         />
       ) : null}
