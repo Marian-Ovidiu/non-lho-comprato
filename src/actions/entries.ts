@@ -204,9 +204,9 @@ type DashboardEntryPreview = {
     slug: string;
   };
   date: Date;
-  realCost: unknown;
-  savedAmount: unknown;
-  alternativeCost: unknown;
+  realCost: number;
+  savedAmount: number;
+  alternativeCost: number;
   note: string | null;
 };
 
@@ -215,7 +215,7 @@ type DashboardReflectionEntry = {
     id: string;
     name: string;
   };
-  savedAmount: unknown;
+  savedAmount: number;
   date: Date;
 };
 
@@ -241,6 +241,11 @@ type EntriesPageOptions = {
 
 function toDecimalString(value: number): string {
   return value.toFixed(2);
+}
+
+function toFiniteNumber(value: unknown) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
 }
 
 function tryRevalidatePath(path: string) {
@@ -1054,8 +1059,16 @@ async function _cachedDashboardEntrySnapshot(workspaceId: string): Promise<Dashb
     return {
       entryCount,
       firstEntryDate: firstEntry?.date ?? null,
-      recentEntries,
-      weekEntries,
+      recentEntries: recentEntries.map((entry) => ({
+        ...entry,
+        realCost: toFiniteNumber(entry.realCost),
+        savedAmount: toFiniteNumber(entry.savedAmount),
+        alternativeCost: toFiniteNumber(entry.alternativeCost),
+      })),
+      weekEntries: weekEntries.map((entry) => ({
+        ...entry,
+        savedAmount: toFiniteNumber(entry.savedAmount),
+      })),
     };
   } catch (error) {
     console.error("Failed to load dashboard entry snapshot:", error);

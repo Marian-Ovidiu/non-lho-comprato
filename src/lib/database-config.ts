@@ -76,6 +76,16 @@ export function normalizeRuntimeDatabaseUrl(connectionString: string): string {
   return normalized;
 }
 
+export function shouldUseDatabaseSsl(connectionString: string): boolean {
+  const parts = parseDatabaseUrl(connectionString);
+
+  if (!parts) {
+    return false;
+  }
+
+  return !isLocalDatabaseHost(parts.host);
+}
+
 export function getRuntimeDatabaseUrl(): string {
   const connectionString = process.env.DATABASE_URL?.trim();
 

@@ -18,6 +18,10 @@ import {
   isWorkspaceDebugEnabled,
   logWorkspaceDebug,
 } from "@/src/lib/workspace-debug";
+import {
+  E2E_AUTH_COOKIE,
+  isE2ETestAuthEnabled,
+} from "@/src/lib/auth/e2e-test-auth";
 
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
 
@@ -45,6 +49,29 @@ export type AuthenticatedWorkspace = {
 
 const getSupabaseUser = cache(async () => {
   const startedAt = performance.now();
+
+  if (isE2ETestAuthEnabled()) {
+    const cookieStore = await cookies();
+    const testUserId = cookieStore.get(E2E_AUTH_COOKIE)?.value.trim();
+
+    if (testUserId) {
+      const testUser = await prisma.user.findUnique({
+        where: { id: testUserId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          image: true,
+        },
+      });
+
+      if (testUser) {
+        logPerformance("auth/e2e-test-user", startedAt);
+        return testUser satisfies AuthenticatedUser;
+      }
+    }
+  }
+
   const supabase = await createSupabaseServerClient();
 
   if (!supabase) {

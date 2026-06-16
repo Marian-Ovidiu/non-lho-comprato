@@ -29,7 +29,11 @@ export function CraftedGenerateInvite() {
           // user cancelled
         }
       } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(result.inviteUrl);
+        try {
+          await navigator.clipboard.writeText(result.inviteUrl);
+        } catch {
+          // Some browsers deny clipboard writes outside an explicit permission grant.
+        }
       }
     } else {
       setError(result.message);

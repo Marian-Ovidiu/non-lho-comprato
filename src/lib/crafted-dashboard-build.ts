@@ -63,6 +63,11 @@ function round2(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+function toFiniteNumber(value: unknown) {
+  const amount = Number(value);
+  return Number.isFinite(amount) ? amount : 0;
+}
+
 function buildStreakWeek(streakDates: string[], timeZone: string) {
   const activeDates = new Set(streakDates);
   const today = new Date();
@@ -183,7 +188,12 @@ export function buildCraftedDashboardProps(input: {
           : buildSecondaryGoalNote(goal),
       icon: getGoalCraftedIcon(goal.title),
     })),
-    recentEntries: input.recentEntries,
+    recentEntries: input.recentEntries.map((entry) => ({
+      ...entry,
+      realCost: toFiniteNumber(entry.realCost),
+      alternativeCost: toFiniteNumber(entry.alternativeCost),
+      savedAmount: toFiniteNumber(entry.savedAmount),
+    })),
     reflection: input.reflection,
     emptyState: input.emptyState,
     coupleBalance: input.coupleBalance,

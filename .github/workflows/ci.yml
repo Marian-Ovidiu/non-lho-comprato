@@ -2,16 +2,22 @@ name: CI
 
 on:
   pull_request:
+    branches:
+      - master
   push:
     branches:
-      - main
+      - master
 
 permissions:
   contents: read
 
 env:
-  DATABASE_URL: postgresql://localhost:5432/non_lho_comprato_ci
-  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/non_lho_comprato_ci
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/non_lho_comprato_ci
+  E2E_DATABASE_GUARD: non-lho-comprato-e2e
+  E2E_BASE_URL: http://localhost:3100
+  E2E_PORT: "3100"
+  NEXT_PUBLIC_APP_URL: http://localhost:3100
   NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
   NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
@@ -27,6 +33,20 @@ jobs:
     name: Validate, Test, Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: non_lho_comprato_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d non_lho_comprato_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout
@@ -41,5 +61,63 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Push schema to CI database
+        run: npm run test:e2e:db:push
+
       - name: Check
         run: npm run check
+
+  e2e:
+    name: Playwright E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: check
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: non_lho_comprato_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d non_lho_comprato_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npm run test:e2e:install
+
+      - name: Push schema to E2E database
+        run: npm run test:e2e:db:push
+
+      - name: Seed E2E database
+        run: npm run test:e2e:seed
+
+      - name: Run Playwright tests
+        run: npm run test:e2e
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            playwright-report
+            test-results
+          if-no-files-found: ignore

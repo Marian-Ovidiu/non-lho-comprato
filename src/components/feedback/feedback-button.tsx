@@ -29,7 +29,19 @@ type BrowserCtx = {
   displayMode: string;
 };
 
+const EMPTY_BROWSER_CTX: BrowserCtx = {
+  userAgent: "",
+  viewport: "",
+  timezone: "",
+  locale: "",
+  displayMode: "browser",
+};
+
 function readBrowserCtx(): BrowserCtx {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return EMPTY_BROWSER_CTX;
+  }
+
   const nav = navigator as Navigator & { standalone?: boolean };
   const standalone =
     nav.standalone === true ||
@@ -50,8 +62,7 @@ export function FeedbackButton() {
   const [open, setOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>("bug");
   const [state, formAction, isPending] = useActionState(submitFeedback, INITIAL_STATE);
-  // Computed once at mount — these values are stable within a session.
-  const [browserCtx] = useState<BrowserCtx>(readBrowserCtx);
+  const [browserCtx, setBrowserCtx] = useState<BrowserCtx>(EMPTY_BROWSER_CTX);
 
   const FEEDBACK_TYPES = [
     { value: "bug", label: t.feedback.typeBug },
@@ -68,7 +79,16 @@ export function FeedbackButton() {
   }, [state.success]);
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (nextOpen) {
+          setBrowserCtx(readBrowserCtx());
+        }
+
+        setOpen(nextOpen);
+      }}
+    >
       <DialogTrigger asChild>
         <button
           type="button"

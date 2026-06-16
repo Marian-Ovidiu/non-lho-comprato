@@ -40,6 +40,39 @@ Run it before opening a production PR or building a release artifact:
 npm run check
 ```
 
+## E2E Testing
+
+The Playwright suite must run against a dedicated test database, never against local
+or production data. The e2e scripts refuse to run unless `.env.e2e` contains
+`E2E_DATABASE_GUARD=non-lho-comprato-e2e`.
+
+1. Create the e2e env file:
+
+```bash
+cp .env.e2e.example .env.e2e
+```
+
+2. Point `DATABASE_URL` and `DIRECT_URL` in `.env.e2e` to a disposable e2e
+   database.
+
+3. Install the browser, sync the current schema and seed deterministic e2e data:
+
+```bash
+npm run test:e2e:install
+npm run test:e2e:db:push
+npm run test:e2e:seed
+```
+
+4. Run the browser tests:
+
+```bash
+npm run test:e2e
+```
+
+The e2e auth bridge is only enabled when `NODE_ENV !== "production"` and
+`E2E_TEST_AUTH_ENABLED=true`; in production the route returns 404 and the session
+bridge is inactive.
+
 ## Safe Release Artifact
 
 Do not zip the working tree manually. The working tree may contain local env files, IDE files, caches or agent files.

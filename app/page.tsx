@@ -9,7 +9,6 @@ import {
   isWorkspaceSetupNeeded,
 } from "@/src/lib/workspace-context";
 import { SetupWizard } from "@/src/components/onboarding/setup-wizard";
-import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 import { PublicAccessGate } from "@/src/components/public/public-access-gate";
 import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { CraftedDashboard } from "@/src/components/dashboard/crafted-dashboard";
@@ -304,12 +303,10 @@ export default async function Home({ searchParams }: HomePageProps) {
     counterpartUserId: null,
     counterpartLabel: null,
   };
-  let entriesLoadError: string | null = null;
-  let dashboardLoadError: string | null = null;
   const [
     [timeZone, currency, language, needsSetup],
-    snapshot,
-    metrics,
+    snapshotResult,
+    metricsResult,
   ] = await Promise.all([
     Promise.all([
       getCurrentWorkspaceTimezone(),
@@ -317,19 +314,23 @@ export default async function Home({ searchParams }: HomePageProps) {
       getCurrentWorkspaceLanguage(),
       isWorkspaceSetupNeeded(),
     ]),
-    getDashboardEntrySnapshot().catch((error) => {
-      unstable_rethrow(error);
-      entriesLoadError = formatEntryLoadError(error);
-      console.error("Failed to load dashboard entry snapshot:", error);
-      return null;
-    }),
-    getHomeDashboardMetrics().catch((error) => {
-      unstable_rethrow(error);
-      dashboardLoadError = formatEntryLoadError(error);
-      console.error("Failed to load dashboard summary:", error);
-      return null;
-    }),
+    getDashboardEntrySnapshot()
+      .then((snapshot) => ({ snapshot, error: null as string | null }))
+      .catch((error) => {
+        unstable_rethrow(error);
+        console.error("Failed to load dashboard entry snapshot:", error);
+        return { snapshot: null, error: formatEntryLoadError(error) };
+      }),
+    getHomeDashboardMetrics()
+      .then((metrics) => ({ metrics, error: null as string | null }))
+      .catch((error) => {
+        unstable_rethrow(error);
+        console.error("Failed to load dashboard summary:", error);
+        return { metrics: null, error: formatEntryLoadError(error) };
+      }),
   ]);
+  const { snapshot, error: entriesLoadError } = snapshotResult;
+  const { metrics, error: dashboardLoadError } = metricsResult;
 
   if (snapshot) {
     entryCount = snapshot.entryCount;

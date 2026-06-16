@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { isE2ETestAuthEnabled } from "@/src/lib/auth/e2e-test-auth";
 import { createSupabaseRequestClient } from "@/src/lib/supabase/server";
 import {
   checkRateLimit,
@@ -100,7 +101,8 @@ export async function updateSupabaseSession(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/privacy" ||
     pathname === "/delete-account" ||
-    pathname === "/account-deleted";
+    pathname === "/account-deleted" ||
+    (isE2ETestAuthEnabled() && pathname === "/api/test/auth");
 
   // The Supabase client refreshes expired tokens during `getUser()`. We must
   // write the refreshed cookies onto BOTH the forwarded request (so the

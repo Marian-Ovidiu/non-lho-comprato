@@ -59,12 +59,16 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
   ];
 
   useEffect(() => {
-    try {
-      const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (detected) setTimezone(detected);
-    } catch {
-      // ignore if Intl not available
-    }
+    const timeout = window.setTimeout(() => {
+      try {
+        const detected = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (detected) setTimezone(detected);
+      } catch {
+        // ignore if Intl not available
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, []);
 
   useEffect(() => {

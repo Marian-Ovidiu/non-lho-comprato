@@ -3,8 +3,9 @@ import { PrismaClient } from "@/src/lib/generated/prisma/client";
 import {
   getRuntimeDatabaseUrl,
   logDatabaseConfigHints,
+  shouldUseDatabaseSsl,
 } from "@/src/lib/database-config";
-import { Pool } from "pg";
+import { Pool, type PoolConfig } from "pg";
 
 declare global {
   var prisma: PrismaClient | undefined;
@@ -13,16 +14,20 @@ declare global {
 
 const connectionString = getRuntimeDatabaseUrl();
 logDatabaseConfigHints();
+const poolConfig: PoolConfig = {
+  connectionString,
+  max: 1,
+};
+
+if (shouldUseDatabaseSsl(connectionString)) {
+  poolConfig.ssl = {
+    rejectUnauthorized: false,
+  };
+}
 
 const pool =
   globalThis.prismaPool ??
-  new Pool({
-    connectionString,
-    ssl: {
-      rejectUnauthorized: false,
-    },
-    max: 1,
-  });
+  new Pool(poolConfig);
 
 if (process.env.NODE_ENV !== "production") {
   globalThis.prismaPool = pool;

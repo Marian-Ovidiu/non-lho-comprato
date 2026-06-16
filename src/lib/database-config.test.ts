@@ -4,6 +4,7 @@ import { afterEach, describe, it } from "node:test";
 import {
   getMigrationDatabaseUrl,
   normalizeRuntimeDatabaseUrl,
+  shouldUseDatabaseSsl,
 } from "@/src/lib/database-config";
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
@@ -32,6 +33,7 @@ describe("database URL normalization", () => {
     const localUrl = "postgresql://postgres:postgres@localhost:54322/nlc_clone";
 
     assert.equal(normalizeRuntimeDatabaseUrl(localUrl), localUrl);
+    assert.equal(shouldUseDatabaseSsl(localUrl), false);
   });
 
   it("respects explicit local sslmode=disable", () => {
@@ -60,6 +62,7 @@ describe("database URL normalization", () => {
     assert.equal(params.get("uselibpqcompat"), "true");
     assert.equal(params.get("sslmode"), "require");
     assert.equal(params.get("pgbouncer"), "true");
+    assert.equal(shouldUseDatabaseSsl(normalized), true);
   });
 
   it("does not duplicate existing non-local SSL parameters", () => {
