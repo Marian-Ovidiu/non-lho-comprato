@@ -14,6 +14,7 @@ import {
   THEME_STORAGE_KEY,
   type ThemePreference,
 } from "@/src/lib/theme";
+import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 
 type SetupWizardProps = {
@@ -22,16 +23,10 @@ type SetupWizardProps = {
   defaultLanguage: string;
 };
 
-const THEME_OPTIONS: Array<{ value: ThemePreference; label: string }> = [
-  { value: "dark", label: "Scuro" },
-  { value: "light", label: "Chiaro" },
-  { value: "system", label: "Sistema" },
-];
-
-function buildTimezoneOptions(detectedTimezone: string | null) {
+function buildTimezoneOptions(detectedTimezone: string | null, detectedLabel: string) {
   const options = [...SUPPORTED_TIMEZONES];
   if (detectedTimezone && !isSupportedTimezone(detectedTimezone)) {
-    options.unshift({ value: detectedTimezone, label: detectedTimezone, group: "Rilevato" });
+    options.unshift({ value: detectedTimezone, label: detectedTimezone, group: detectedLabel });
   }
   return options;
 }
@@ -47,6 +42,7 @@ function groupTimezones(options: ReturnType<typeof buildTimezoneOptions>) {
 }
 
 export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage }: SetupWizardProps) {
+  const t = useTranslations();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -55,6 +51,12 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
   const [currency, setCurrency] = useState(defaultCurrency);
   const [language, setLanguage] = useState(defaultLanguage);
   const [theme, setTheme] = useState<ThemePreference>(() => readThemePreference());
+
+  const themeOptions: Array<{ value: ThemePreference; label: string }> = [
+    { value: "dark", label: t.setupWizard.themeDark },
+    { value: "light", label: t.setupWizard.themeLight },
+    { value: "system", label: t.setupWizard.themeSystem },
+  ];
 
   useEffect(() => {
     try {
@@ -70,7 +72,7 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
     window.localStorage.setItem(THEME_STORAGE_KEY, theme);
   }, [theme]);
 
-  const timezoneOptions = buildTimezoneOptions(timezone);
+  const timezoneOptions = buildTimezoneOptions(timezone, t.setupWizard.detectedGroup);
   const groupedTimezones = groupTimezones(timezoneOptions);
 
   function handleSubmit() {
@@ -113,10 +115,10 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
               Non l&apos;ho comprato
             </p>
             <h1 className="font-serif text-[1.6rem] leading-snug text-foreground">
-              Prima di iniziare
+              {t.setupWizard.heading}
             </h1>
             <p className="text-sm text-muted-text">
-              Personalizza il tuo workspace. Puoi cambiare tutto in seguito.
+              {t.setupWizard.subtitle}
             </p>
           </div>
 
@@ -124,13 +126,13 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
 
             {/* Timezone */}
             <div className="py-4">
-              <p className="mb-2 text-[13px] font-medium text-ink-3">Fuso orario</p>
+              <p className="mb-2 text-[13px] font-medium text-ink-3">{t.setupWizard.timezoneLabel}</p>
               <div className="rounded-xl border border-line px-3 py-2.5">
                 <select
                   value={timezone}
                   onChange={(e) => setTimezone(e.target.value)}
                   disabled={pending}
-                  aria-label="Fuso orario"
+                  aria-label={t.setupWizard.timezoneLabel}
                   className="w-full bg-transparent text-[15px] text-foreground outline-none disabled:opacity-50"
                 >
                   {[...groupedTimezones.entries()].map(([group, zones]) => (
@@ -148,13 +150,13 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
 
             {/* Currency */}
             <div className="py-4">
-              <p className="mb-2 text-[13px] font-medium text-ink-3">Valuta</p>
+              <p className="mb-2 text-[13px] font-medium text-ink-3">{t.setupWizard.currencyLabel}</p>
               <div className="rounded-xl border border-line px-3 py-2.5">
                 <select
                   value={currency}
                   onChange={(e) => setCurrency(e.target.value)}
                   disabled={pending}
-                  aria-label="Valuta"
+                  aria-label={t.setupWizard.currencyLabel}
                   className="w-full bg-transparent text-[15px] text-foreground outline-none disabled:opacity-50"
                 >
                   {SUPPORTED_CURRENCIES.map((c) => (
@@ -168,8 +170,8 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
 
             {/* Language */}
             <div className="py-4">
-              <p className="mb-3 text-[13px] font-medium text-ink-3">Lingua categorie</p>
-              <div role="group" aria-label="Lingua" className="flex gap-5">
+              <p className="mb-3 text-[13px] font-medium text-ink-3">{t.setupWizard.langLabel}</p>
+              <div role="group" aria-label={t.setupWizard.langLabel} className="flex gap-5">
                 {SUPPORTED_LANGUAGES.map((lang) => {
                   const active = lang.code === language;
                   return (
@@ -195,9 +197,9 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
 
             {/* Theme */}
             <div className="py-4">
-              <p className="mb-3 text-[13px] font-medium text-ink-3">Tema</p>
-              <div role="group" aria-label="Tema" className="flex gap-5">
-                {THEME_OPTIONS.map((option) => {
+              <p className="mb-3 text-[13px] font-medium text-ink-3">{t.setupWizard.themeLabel}</p>
+              <div role="group" aria-label={t.setupWizard.themeLabel} className="flex gap-5">
+                {themeOptions.map((option) => {
                   const active = option.value === theme;
                   return (
                     <button
@@ -232,7 +234,7 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
               disabled={pending}
               className="w-full rounded-2xl bg-accent py-3.5 text-[15px] font-semibold text-background transition-opacity disabled:opacity-60"
             >
-              {pending ? "Salvo..." : "Inizia →"}
+              {pending ? t.setupWizard.savingButton : t.setupWizard.submitButton}
             </button>
 
             <button
@@ -241,7 +243,7 @@ export function SetupWizard({ defaultTimezone, defaultCurrency, defaultLanguage 
               disabled={pending}
               className="w-full py-2 text-sm text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
             >
-              Salta per ora
+              {t.setupWizard.skipButton}
             </button>
           </div>
 

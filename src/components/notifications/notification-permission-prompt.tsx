@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Bell } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 
 function isNotificationSupported(): boolean {
@@ -11,6 +12,7 @@ function isNotificationSupported(): boolean {
 }
 
 export function NotificationPermissionPrompt() {
+  const t = useTranslations();
   const [visible, setVisible] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const [requesting, setRequesting] = useState(false);
@@ -61,7 +63,7 @@ export function NotificationPermissionPrompt() {
   return (
     <div
       role="region"
-      aria-label="Richiesta permesso notifiche"
+      aria-label={t.notifications.permissionRegionLabel}
       className={cn(
         "fixed inset-x-0 z-50 flex justify-center px-4",
         "bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] md:bottom-6",
@@ -73,7 +75,7 @@ export function NotificationPermissionPrompt() {
           aria-hidden="true"
         />
         <p className="min-w-0 flex-1 text-sm text-foreground">
-          Attiva le notifiche per i promemoria. Funzionano quando l&apos;app è aperta.
+          {t.notifications.permissionPromptText}
         </p>
         <Button
           type="button"
@@ -82,7 +84,7 @@ export function NotificationPermissionPrompt() {
           disabled={requesting}
           onClick={() => void handleRequest()}
         >
-          {requesting ? "Attendi…" : "Consenti"}
+          {requesting ? t.notifications.requestingButton : t.notifications.allowButton}
         </Button>
       </div>
     </div>

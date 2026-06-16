@@ -3,12 +3,14 @@
 import { useState } from "react";
 
 import { generateOpenInviteAction } from "@/src/actions/workspace";
+import { useTranslations } from "@/src/components/language/language-context";
 import {
   CraftedInviteGenerateButton,
   CraftedInviteLinkPanel,
 } from "@/src/components/workspace/crafted-invite-link-panel";
 
 export function CraftedGenerateInvite() {
+  const t = useTranslations();
   const [pending, setPending] = useState(false);
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,7 +24,7 @@ export function CraftedGenerateInvite() {
       setInviteUrl(result.inviteUrl);
       if (navigator.share) {
         try {
-          await navigator.share({ title: "Unisciti al workspace", url: result.inviteUrl });
+          await navigator.share({ title: t.workspace.inviteShareTitle, url: result.inviteUrl });
         } catch {
           // user cancelled
         }

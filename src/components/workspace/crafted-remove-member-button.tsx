@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 
 import { removeWorkspaceMemberAction } from "@/src/actions/workspace";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type CraftedRemoveMemberButtonProps = {
   userId: string;
@@ -16,14 +17,15 @@ export function CraftedRemoveMemberButton({
   label,
   isCurrentUser = false,
 }: CraftedRemoveMemberButtonProps) {
+  const t = useTranslations();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   function handleRemove() {
     const confirmed = window.confirm(
       isCurrentUser
-        ? "Vuoi uscire da questo workspace? I movimenti già creati resteranno nello storico."
-        : `Rimuovere ${label} da questo workspace? I movimenti già creati resteranno nello storico.`,
+        ? t.workspace.removeSelfConfirm
+        : t.workspace.removeMemberConfirm(label),
     );
 
     if (!confirmed) {
@@ -48,7 +50,7 @@ export function CraftedRemoveMemberButton({
         {isPending ? (
           <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
         ) : null}
-        {isCurrentUser ? "Esci" : "Rimuovi"}
+        {isCurrentUser ? t.workspace.removeLeaveButton : t.workspace.removeMemberButton}
       </button>
       {message ? (
         <p className="max-w-56 text-xs leading-4 text-destructive">{message}</p>

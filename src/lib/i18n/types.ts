@@ -506,6 +506,65 @@ export type Translations = {
     loadErrorMembers: string;
     loadErrorWorkspace: string;
     loadErrorCategories: string;
+    catNameLabel: string;
+    catIconLabel: string;
+    catColorLabel: string;
+    catIconOptionalLabel: string;
+    catColorOptionalLabel: string;
+    catNamePlaceholder: string;
+    catSaveChanges: string;
+    catCancel: string;
+    catNewTitle: string;
+    catCreatePlaceholder: string;
+    catCreateButton: string;
+    catCreateCta: string;
+    catDefaultBadge: string;
+    catCustomBadge: string;
+    catArchivedBadge: string;
+    catEditButton: string;
+    catArchiveButton: string;
+    catRestoreButton: string;
+    catDeleteButton: string;
+    catDeleteConfirm: string;
+    catEditAriaLabel: (name: string) => string;
+    catArchiveAriaLabel: (name: string) => string;
+    catRestoreAriaLabel: (name: string) => string;
+    catDeleteAriaLabel: (name: string) => string;
+    catUsageMov: string;
+    catUsageRic: string;
+    catUsagePreset: string;
+    catActiveTitle: string;
+    catEmptyActive: string;
+    catArchivedTitle: (count: number) => string;
+    catResetTitle: string;
+    catResetDesc: string;
+    catResetButton: string;
+    catResetConfirm: string;
+    wsCreatedMessage: string;
+    wsCreatedInviteHint: string;
+    wsNamePlaceholder: string;
+    wsNameLabel: string;
+    wsCreatingButton: string;
+    wsCreateButton: string;
+    inviteLinkReady: string;
+    inviteCopied: string;
+    inviteCopy: string;
+    inviteShare: string;
+    inviteGenerateNew: string;
+    inviteShareTitle: string;
+    inviteGenerateButton: string;
+    inviteGeneratingButton: string;
+    joinedMessage: (name: string) => string;
+    joinLinkLabel: string;
+    joinLinkPlaceholder: string;
+    joinVerifyingButton: string;
+    joinButton: string;
+    removeSelfConfirm: string;
+    removeMemberConfirm: (label: string) => string;
+    removeLeaveButton: string;
+    removeMemberButton: string;
+    languageAriaLabel: string;
+    currencyAriaLabel: string;
   };
 
   entryNotFound: {
@@ -521,6 +580,91 @@ export type Translations = {
 
   shared: {
     dataLoadError: string;
+  };
+
+  setupWizard: {
+    heading: string;
+    subtitle: string;
+    timezoneLabel: string;
+    currencyLabel: string;
+    langLabel: string;
+    themeLabel: string;
+    themeDark: string;
+    themeLight: string;
+    themeSystem: string;
+    detectedGroup: string;
+    submitButton: string;
+    savingButton: string;
+    skipButton: string;
+  };
+
+  notifications: {
+    permissionRegionLabel: string;
+    permissionPromptText: string;
+    requestingButton: string;
+    allowButton: string;
+  };
+
+  aiExport: {
+    title: string;
+    description: string;
+    exportingButton: string;
+    successToast: string;
+    errorToast: string;
+    currentMonthOption: string;
+    allOption: string;
+  };
+
+  preset: {
+    avoided: string;
+    avoidedNote: (amount: string) => string;
+    comparisonDetail: (amount: string) => string;
+    savedBetter: (amount: string) => string;
+    spentMoreThan: (amount: string) => string;
+    normalSpend: string;
+    noComparison: string;
+    deleteConfirm: string;
+    useButton: string;
+    deleteButton: string;
+    editButton: string;
+    restoreButton: string;
+    emptyState: string;
+    defaultPresetInfo: string;
+    intentSpent: string;
+    intentComparison: string;
+    intentComparisonAria: string;
+    intentAvoided: string;
+    intentSpentDesc: string;
+    intentComparisonDesc: string;
+    intentAvoidedDesc: string;
+    titleLabel: string;
+    titlePlaceholderSpent: string;
+    titlePlaceholderAvoided: string;
+    categoryLabel: string;
+    categoryPlaceholder: string;
+    selectCategory: string;
+    noCategoriesAvailable: string;
+    wouldHaveSpent: string;
+    amountSpentLabel: string;
+    youSpent: string;
+    amountPlaceholderSpent: string;
+    amountPlaceholderAvoided: string;
+    hideComparison: string;
+    showComparison: string;
+    addComparison: string;
+    comparisonLabel: string;
+    comparisonLabelShort: string;
+    comparisonPlaceholder: string;
+    largeComparisonWarning: string;
+    noteLabel: string;
+    notePlaceholder: string;
+    updateButton: string;
+    saveButton: string;
+    savingButton: string;
+    newPresetTitle: string;
+    newPresetDesc: string;
+    hiddenFromQuickAdd: string;
+    visibleInQuickAdd: string;
   };
 
   report: {

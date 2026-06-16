@@ -5,6 +5,7 @@ import { CircleOff, Loader2, Receipt } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Label } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
 import { createPreset, updatePreset } from "@/src/actions/presets";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
@@ -101,6 +102,7 @@ export function CraftedPresetForm({
   categories: CategoryOption[];
   initialPreset?: CraftedPresetFormInitialValue;
 }) {
+  const t = useTranslations();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -220,8 +222,7 @@ export function CraftedPresetForm({
 
       {initialPreset && !initialPreset.id ? (
         <p className="border-y border-line py-3 text-sm leading-6 text-ink-3">
-          Stai partendo da un preset di default. Salvandolo crei un preset personale
-          modificabile.
+          {t.preset.defaultPresetInfo}
         </p>
       ) : null}
 
@@ -238,7 +239,7 @@ export function CraftedPresetForm({
           aria-pressed={presetIntent === "spent"}
         >
           <Receipt className="size-4" aria-hidden="true" />
-          Ho speso
+          {t.preset.intentSpent}
         </button>
         <button
           type="button"
@@ -250,12 +251,10 @@ export function CraftedPresetForm({
               : "border-transparent text-ink-3 hover:text-foreground",
           )}
           aria-pressed={presetIntent === "comparison"}
-          aria-label="Ho speso e voglio confrontarlo"
+          aria-label={t.preset.intentComparisonAria}
         >
-          <span className="font-num text-sm" aria-hidden="true">
-            ↘
-          </span>
-          Speso + confronto
+          <span className="font-num text-sm" aria-hidden="true">↘</span>
+          {t.preset.intentComparison}
         </button>
         <button
           type="button"
@@ -269,15 +268,15 @@ export function CraftedPresetForm({
           aria-pressed={presetIntent === "avoided"}
         >
           <CircleOff className="size-4" aria-hidden="true" />
-          Non l&apos;ho comprato
+          {t.preset.intentAvoided}
         </button>
       </div>
       <p className="-mt-2 text-xs leading-5 text-ink-3">
         {presetIntent === "spent"
-          ? "Preset per una spesa normale."
+          ? t.preset.intentSpentDesc
           : presetIntent === "comparison"
-            ? "Usalo quando hai scelto un'opzione più economica."
-            : "Segna quanto avresti speso se l'avessi comprato."}
+            ? t.preset.intentComparisonDesc
+            : t.preset.intentAvoidedDesc}
       </p>
 
       <div className="border-y border-line py-3">
@@ -287,10 +286,10 @@ export function CraftedPresetForm({
             name="title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
+            placeholder={mode === "avoided" ? t.preset.titlePlaceholderAvoided : t.preset.titlePlaceholderSpent}
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
           />
-          <Label>Titolo</Label>
+          <Label>{t.preset.titleLabel}</Label>
         </label>
         <FieldError message={state.errors?.title} />
       </div>
@@ -305,7 +304,7 @@ export function CraftedPresetForm({
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none"
           >
             <option value="" disabled>
-              Categoria
+              {t.preset.categoryPlaceholder}
             </option>
             {categories.map((category) => (
               <option key={category.id} value={category.id}>
@@ -313,7 +312,7 @@ export function CraftedPresetForm({
               </option>
             ))}
           </select>
-          <Label>Categoria</Label>
+          <Label>{t.preset.categoryLabel}</Label>
         </label>
         <FieldError message={state.errors?.categoryId} />
       </div>
@@ -335,15 +334,15 @@ export function CraftedPresetForm({
 
               setAmountSpent(event.target.value);
             }}
-            placeholder={mode === "avoided" ? "18,00" : "12,00"}
+            placeholder={mode === "avoided" ? t.preset.amountPlaceholderAvoided : t.preset.amountPlaceholderSpent}
             className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
           />
-          <Label>{mode === "avoided" ? "Avresti speso" : "Quanto hai speso"}</Label>
+          <Label>{mode === "avoided" ? t.preset.wouldHaveSpent : t.preset.amountSpentLabel}</Label>
         </label>
         <FieldError message={mode === "avoided" ? comparisonFieldError : primaryFieldError} />
         {mode === "avoided" ? (
           <p className="mt-2 text-xs leading-5 text-ink-3">
-            Segna quanto avresti speso se l&apos;avessi comprato.
+            {t.preset.intentAvoidedDesc}
           </p>
         ) : null}
       </div>
@@ -364,9 +363,7 @@ export function CraftedPresetForm({
             }}
             className="w-full text-left text-[13px] text-ink-3 transition-colors hover:text-foreground"
           >
-            {showComparison
-              ? "Nascondi confronto"
-              : "Ho speso e voglio confrontarlo"}
+            {showComparison ? t.preset.hideComparison : t.preset.showComparison}
           </button>
 
           {showComparison ? (
@@ -380,17 +377,17 @@ export function CraftedPresetForm({
                   step="0.01"
                   value={comparisonAmount}
                   onChange={(event) => setComparisonAmount(event.target.value)}
-                  placeholder="45,00"
+                  placeholder={t.preset.comparisonPlaceholder}
                   className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
                 />
-                <Label>Quanto avresti speso di solito?</Label>
+                <Label>{t.preset.comparisonLabel}</Label>
               </label>
               <p className="mt-2 text-xs leading-5 text-ink-3">
-                Usalo quando hai scelto un&apos;opzione più economica.
+                {t.preset.intentComparisonDesc}
               </p>
               {showLargeComparisonWarning ? (
                 <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
-                  Questo confronto pesa molto sulle statistiche.
+                  {t.preset.largeComparisonWarning}
                 </p>
               ) : null}
               <FieldError message={comparisonFieldError} />
@@ -405,7 +402,7 @@ export function CraftedPresetForm({
           rows={2}
           value={note}
           onChange={(event) => setNote(event.target.value)}
-          placeholder="Spesso capita dopo pranzo"
+          placeholder={t.preset.notePlaceholder}
           className="w-full resize-none bg-transparent text-sm outline-none placeholder:text-ink-3/70"
         />
       </div>
@@ -418,9 +415,9 @@ export function CraftedPresetForm({
         {pending ? (
           <Loader2 className="size-4 animate-spin" />
         ) : isEditing ? (
-          "Aggiorna preset"
+          t.preset.updateButton
         ) : (
-          "Salva preset"
+          t.preset.saveButton
         )}
       </button>
     </form>

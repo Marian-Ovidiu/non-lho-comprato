@@ -7,6 +7,7 @@ import { CircleOff, Receipt } from "lucide-react";
 import { createPreset } from "@/src/actions/presets";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
+import { useTranslations } from "@/src/components/language/language-context";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -62,6 +63,7 @@ function getComparisonFieldError(errors?: Record<string, string>) {
 }
 
 export function PresetForm({ categories }: PresetFormProps) {
+  const t = useTranslations();
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
@@ -111,10 +113,8 @@ export function PresetForm({ categories }: PresetFormProps) {
   return (
     <Card className="border-border shadow-sm">
       <CardHeader className="space-y-2 p-5 pb-0 sm:p-6">
-        <CardTitle>Nuovo preset</CardTitle>
-        <CardDescription>
-          Salva una spesa ricorrente o un confronto da riusare al volo.
-        </CardDescription>
+        <CardTitle>{t.preset.newPresetTitle}</CardTitle>
+        <CardDescription>{t.preset.newPresetDesc}</CardDescription>
       </CardHeader>
 
       <form ref={formRef} action={formAction}>
@@ -162,7 +162,7 @@ export function PresetForm({ categories }: PresetFormProps) {
                   )}
                 >
                   <Receipt className="size-4" aria-hidden="true" />
-                  Ho speso
+                  {t.preset.intentSpent}
                 </button>
                 <button
                   type="button"
@@ -179,17 +179,17 @@ export function PresetForm({ categories }: PresetFormProps) {
                   )}
                 >
                   <CircleOff className="size-4" aria-hidden="true" />
-                  Non l&apos;ho comprato
+                  {t.preset.intentAvoided}
                 </button>
               </div>
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="title">Titolo</Label>
+              <Label htmlFor="title">{t.preset.titleLabel}</Label>
               <Input
                 id="title"
                 name="title"
-                placeholder={mode === "avoided" ? "Delivery" : "Pranzo"}
+                placeholder={mode === "avoided" ? t.preset.titlePlaceholderAvoided : t.preset.titlePlaceholderSpent}
                 autoComplete="off"
                 aria-invalid={Boolean(state.errors?.title)}
               />
@@ -197,7 +197,7 @@ export function PresetForm({ categories }: PresetFormProps) {
             </div>
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="categoryId">Categoria</Label>
+              <Label htmlFor="categoryId">{t.preset.categoryLabel}</Label>
               <select
                 id="categoryId"
                 name="categoryId"
@@ -206,7 +206,7 @@ export function PresetForm({ categories }: PresetFormProps) {
                 aria-invalid={Boolean(state.errors?.categoryId)}
               >
                 <option value="" disabled>
-                  {hasCategories ? "Seleziona una categoria" : "Categorie non disponibili"}
+                  {hasCategories ? t.preset.selectCategory : t.preset.noCategoriesAvailable}
                 </option>
                 {categories.map((category) => (
                   <option key={category.id} value={category.id}>
@@ -219,7 +219,7 @@ export function PresetForm({ categories }: PresetFormProps) {
 
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="primaryAmount">
-                {mode === "avoided" ? "Avresti speso" : "Hai speso"}
+                {mode === "avoided" ? t.preset.wouldHaveSpent : t.preset.youSpent}
               </Label>
               <Input
                 id="primaryAmount"
@@ -236,7 +236,7 @@ export function PresetForm({ categories }: PresetFormProps) {
 
                   setAmountSpent(event.target.value);
                 }}
-                placeholder={mode === "avoided" ? "18.00" : "12.00"}
+                placeholder={mode === "avoided" ? t.preset.amountPlaceholderAvoided : t.preset.amountPlaceholderSpent}
                 aria-invalid={Boolean(mode === "avoided" ? comparisonFieldError : primaryFieldError)}
               />
               <FieldError message={mode === "avoided" ? comparisonFieldError : primaryFieldError} />
@@ -258,12 +258,12 @@ export function PresetForm({ categories }: PresetFormProps) {
                   }}
                   className="text-sm text-muted-foreground transition-colors hover:text-foreground"
                 >
-                  {showComparison ? "Nascondi confronto" : "Aggiungi confronto"}
+                  {showComparison ? t.preset.hideComparison : t.preset.addComparison}
                 </button>
 
                 {showComparison ? (
                   <>
-                    <Label htmlFor="comparisonAmount">Confronto</Label>
+                    <Label htmlFor="comparisonAmount">{t.preset.comparisonLabel}</Label>
                     <Input
                       id="comparisonAmount"
                       type="number"
@@ -272,7 +272,7 @@ export function PresetForm({ categories }: PresetFormProps) {
                       step="0.01"
                       value={comparisonAmount}
                       onChange={(event) => setComparisonAmount(event.target.value)}
-                      placeholder="45.00"
+                      placeholder={t.preset.comparisonPlaceholder}
                       aria-invalid={Boolean(comparisonFieldError)}
                     />
                     <FieldError message={comparisonFieldError} />
@@ -282,11 +282,11 @@ export function PresetForm({ categories }: PresetFormProps) {
             ) : null}
 
             <div className="space-y-2 sm:col-span-2">
-              <Label htmlFor="note">Nota</Label>
+              <Label htmlFor="note">{t.preset.noteLabel}</Label>
               <Textarea
                 id="note"
                 name="note"
-                placeholder="Spesso capita dopo pranzo"
+                placeholder={t.preset.notePlaceholder}
                 className="min-h-24"
               />
             </div>
@@ -295,7 +295,7 @@ export function PresetForm({ categories }: PresetFormProps) {
 
         <CardFooter className="justify-end border-t border-border bg-surface-muted/50 p-5 sm:p-6">
           <Button type="submit" className="w-full sm:w-auto" disabled={pending}>
-            {pending ? "Salvataggio..." : "Salva preset"}
+            {pending ? t.preset.savingButton : t.preset.saveButton}
           </Button>
         </CardFooter>
       </form>

@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 
 import { updateWorkspaceLanguageAction } from "@/src/actions/workspace";
 import { SUPPORTED_LANGUAGES } from "@/src/lib/workspace-language";
-import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 
 export function LanguageSelector() {
+  const t = useTranslations();
   const currentCode = useWorkspaceLanguage();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -26,7 +27,7 @@ export function LanguageSelector() {
 
   return (
     <div className="space-y-3">
-      <div role="group" aria-label="Lingua" className="flex gap-5">
+      <div role="group" aria-label={t.workspace.languageAriaLabel} className="flex gap-5">
         {SUPPORTED_LANGUAGES.map((lang) => {
           const active = lang.code === currentCode;
           return (

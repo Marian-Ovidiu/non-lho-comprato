@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Loader2 } from "lucide-react";
 
 import { Label as CraftedLabel } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
 import { createWorkspaceAction, generateOpenInviteAction } from "@/src/actions/workspace";
 import {
   CraftedInviteGenerateButton,
@@ -21,6 +22,7 @@ type CreateState = {
 const initialState: CreateState = { success: false, message: "" };
 
 export function CraftedCreateWorkspaceForm() {
+  const t = useTranslations();
   const router = useRouter();
   const [state, formAction, pending] = useActionState(
     async (_prev: CreateState, formData: FormData) => createWorkspaceAction(formData),
@@ -52,8 +54,8 @@ export function CraftedCreateWorkspaceForm() {
           <span className="flex items-start gap-2">
             <Check className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <span>
-              <span className="font-semibold">Workspace creato.</span> Genera un link per invitare
-              persone a unirsi.
+              <span className="font-semibold">{t.workspace.wsCreatedMessage}</span>{" "}
+              {t.workspace.wsCreatedInviteHint}
             </span>
           </span>
         </div>
@@ -78,11 +80,11 @@ export function CraftedCreateWorkspaceForm() {
             type="text"
             required
             maxLength={80}
-            placeholder="es. Io e Luca"
+            placeholder={t.workspace.wsNamePlaceholder}
             autoComplete="off"
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
           />
-          <CraftedLabel>Nome workspace</CraftedLabel>
+          <CraftedLabel>{t.workspace.wsNameLabel}</CraftedLabel>
         </div>
       </div>
 
@@ -101,7 +103,7 @@ export function CraftedCreateWorkspaceForm() {
         )}
       >
         {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
-        {pending ? "Creazione..." : "Crea workspace"}
+        {pending ? t.workspace.wsCreatingButton : t.workspace.wsCreateButton}
       </button>
     </form>
   );

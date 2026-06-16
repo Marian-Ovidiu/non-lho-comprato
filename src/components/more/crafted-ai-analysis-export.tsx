@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { FileDown, Loader2 } from "lucide-react";
 
 import { CraftedIcon, Serif } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 import {
   getAiExpenseExportFilename,
@@ -16,19 +17,6 @@ type ToastState = {
 } | null;
 
 const EXPORT_URL = "/api/exports/ai-analysis";
-const EXPORT_OPTIONS: Array<{
-  range: AiExpenseExportRange;
-  label: string;
-}> = [
-  {
-    range: "current-month",
-    label: "Export mese corrente",
-  },
-  {
-    range: "all",
-    label: "Export tutti i movimenti",
-  },
-];
 
 function getFilenameFromContentDisposition(header: string | null): string | null {
   if (!header) return null;
@@ -47,6 +35,11 @@ function getFilenameFromContentDisposition(header: string | null): string | null
 }
 
 export function CraftedAiAnalysisExport() {
+  const t = useTranslations();
+  const exportOptions: Array<{ range: AiExpenseExportRange; label: string }> = [
+    { range: "current-month", label: t.aiExport.currentMonthOption },
+    { range: "all", label: t.aiExport.allOption },
+  ];
   const [exportingRange, setExportingRange] = useState<AiExpenseExportRange | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
@@ -88,9 +81,9 @@ export function CraftedAiAnalysisExport() {
         URL.revokeObjectURL(objectUrl);
       }, 1000);
 
-      setToast({ kind: "success", message: "Export completato" });
+      setToast({ kind: "success", message: t.aiExport.successToast });
     } catch {
-      setToast({ kind: "error", message: "Export non riuscito" });
+      setToast({ kind: "error", message: t.aiExport.errorToast });
     } finally {
       setExportingRange(null);
     }
@@ -103,16 +96,15 @@ export function CraftedAiAnalysisExport() {
           <CraftedIcon name="receipt" size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
             <Serif className="text-sm text-muted-foreground">
-              Export per analisi AI
+              {t.aiExport.title}
             </Serif>
             <p className="mt-1 text-xs leading-5 text-ink-3">
-              Scarica un CSV pronto per analisi, scegliendo tra mese corrente e
-              storico completo.
+              {t.aiExport.description}
             </p>
           </div>
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
-          {EXPORT_OPTIONS.map((option) => {
+          {exportOptions.map((option) => {
             const isCurrentExport = exportingRange === option.range;
 
             return (
@@ -128,7 +120,7 @@ export function CraftedAiAnalysisExport() {
                 ) : (
                   <FileDown className="size-4" aria-hidden="true" />
                 )}
-                {isCurrentExport ? "Export in corso..." : option.label}
+                {isCurrentExport ? t.aiExport.exportingButton : option.label}
               </button>
             );
           })}

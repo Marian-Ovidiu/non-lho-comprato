@@ -5,20 +5,25 @@ import { useState } from "react";
 
 import { Mono, Rule } from "@/components/crafted";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 import {
   DEFAULT_QUICK_ADD_PRESETS,
   readHiddenDefaultPresetIds,
   writeHiddenDefaultPresetIds,
 } from "@/src/lib/quick-add-presets";
 
-function formatDefaultAmount(amount: number) {
-  return new Intl.NumberFormat("it-IT", {
+function formatDefaultAmount(amount: number, locale: string) {
+  return new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
     minimumFractionDigits: amount % 1 === 0 ? 0 : 2,
   }).format(amount);
 }
 
 export function CraftedDefaultPresetList() {
+  const t = useTranslations();
+  const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
   const currencySymbol = useCurrencySymbol();
   const [hiddenIds, setHiddenIds] = useState<string[]>(() =>
     readHiddenDefaultPresetIds(),
@@ -54,11 +59,11 @@ export function CraftedDefaultPresetList() {
                     <span aria-hidden="true">{preset.emoji}</span> {preset.title}
                   </p>
                   <p className="mt-0.5 text-xs text-ink-3">
-                    {preset.rangeLabel} · {isHidden ? "Nascosto dalla quick add" : "Visibile nella quick add"}
+                    {preset.rangeLabel} · {isHidden ? t.preset.hiddenFromQuickAdd : t.preset.visibleInQuickAdd}
                   </p>
                 </div>
                 <Mono className="shrink-0 text-sm font-medium whitespace-nowrap">
-                  {formatDefaultAmount(preset.amount)}{currencySymbol}
+                  {formatDefaultAmount(preset.amount, locale)}{currencySymbol}
                 </Mono>
               </div>
 
@@ -67,7 +72,7 @@ export function CraftedDefaultPresetList() {
                   href={`/presets?defaultPreset=${encodeURIComponent(preset.id)}`}
                   className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
                 >
-                  Modifica
+                  {t.preset.editButton}
                 </Link>
                 {isHidden ? (
                   <button
@@ -75,7 +80,7 @@ export function CraftedDefaultPresetList() {
                     onClick={() => restoreDefaultPreset(preset.id)}
                     className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
                   >
-                    Ripristina
+                    {t.preset.restoreButton}
                   </button>
                 ) : (
                   <button
@@ -83,7 +88,7 @@ export function CraftedDefaultPresetList() {
                     onClick={() => hideDefaultPreset(preset.id)}
                     className="text-[12px] text-destructive/70 hover:text-destructive"
                   >
-                    Elimina
+                    {t.preset.deleteButton}
                   </button>
                 )}
               </div>

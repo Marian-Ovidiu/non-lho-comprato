@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { updateWorkspaceCurrencyAction } from "@/src/actions/workspace";
 import { SUPPORTED_CURRENCIES } from "@/src/lib/workspace-currency";
 import { useCurrencyCode } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 
 export function CurrencySelector() {
+  const t = useTranslations();
   const currentCode = useCurrencyCode();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -29,7 +31,7 @@ export function CurrencySelector() {
       value={currentCode}
       onChange={handleChange}
       disabled={pending}
-      aria-label="Valuta workspace"
+      aria-label={t.workspace.currencyAriaLabel}
       className="w-full bg-transparent text-[15px] text-foreground outline-none disabled:opacity-50"
     >
       {SUPPORTED_CURRENCIES.map((currency) => (

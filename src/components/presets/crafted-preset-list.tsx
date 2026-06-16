@@ -16,14 +16,19 @@ import { formatDate } from "@/src/lib/formatters";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
-import { useLocalizedCategoryName } from "@/src/components/language/language-context";
+import { useLocalizedCategoryName, useTranslations } from "@/src/components/language/language-context";
+import type { Translations } from "@/src/lib/i18n/types";
 
 function toNumber(value: string): number {
   const parsed = Number(value.replace(",", "."));
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function getPresetMoneySummary(preset: SerializablePreset, currencySymbol: string) {
+function getPresetMoneySummary(
+  preset: SerializablePreset,
+  currencySymbol: string,
+  t: Translations["preset"],
+) {
   const amountSpent = toNumber(preset.amountSpent);
   const comparisonAmount = toNumber(preset.comparisonAmount);
   const savingImpact = toNumber(preset.savingImpact);
@@ -31,26 +36,26 @@ function getPresetMoneySummary(preset: SerializablePreset, currencySymbol: strin
   if (preset.mode === "avoided") {
     return {
       primaryAmount: `${formatCraftedCompact(comparisonAmount)}${currencySymbol}`,
-      detail: "Non comprato",
-      note: `${formatCraftedCompact(comparisonAmount)}${currencySymbol} non comprati`,
+      detail: t.avoided,
+      note: t.avoidedNote(`${formatCraftedCompact(comparisonAmount)}${currencySymbol}`),
     };
   }
 
   if (preset.savingContext === "comparison") {
     return {
       primaryAmount: `${formatCraftedCompact(amountSpent)}${currencySymbol}`,
-      detail: `${formatCraftedCompact(comparisonAmount)}${currencySymbol} di confronto`,
+      detail: t.comparisonDetail(`${formatCraftedCompact(comparisonAmount)}${currencySymbol}`),
       note:
         savingImpact >= 0
-          ? `${formatCraftedCompact(savingImpact)}${currencySymbol} risparmiati scegliendo meglio`
-          : `${formatCraftedCompact(Math.abs(savingImpact))}${currencySymbol} spesi in più del confronto`,
+          ? t.savedBetter(`${formatCraftedCompact(savingImpact)}${currencySymbol}`)
+          : t.spentMoreThan(`${formatCraftedCompact(Math.abs(savingImpact))}${currencySymbol}`),
     };
   }
 
   return {
     primaryAmount: `${formatCraftedCompact(amountSpent)}${currencySymbol}`,
-    detail: "Spesa normale",
-    note: "Senza confronto",
+    detail: t.normalSpend,
+    note: t.noComparison,
   };
 }
 
@@ -59,6 +64,7 @@ type CraftedPresetRowProps = {
 };
 
 export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
+  const t = useTranslations();
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
   const categoryName = useLocalizedCategoryName(preset.category.slug, preset.category.name);
@@ -67,7 +73,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
   });
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-  const summary = getPresetMoneySummary(preset, currencySymbol);
+  const summary = getPresetMoneySummary(preset, currencySymbol, t.preset);
 
   function handleCreate() {
     startTransition(async () => {
@@ -84,7 +90,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
   }
 
   function handleDelete() {
-    if (!window.confirm("Eliminare questo preset?")) return;
+    if (!window.confirm(t.preset.deleteConfirm)) return;
 
     startTransition(async () => {
       const result = await deletePreset(preset.id);
@@ -119,7 +125,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
             onClick={handleCreate}
             className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
           >
-            {isPending ? <Loader2 className="size-3.5 animate-spin" /> : "Usa preset"}
+            {isPending ? <Loader2 className="size-3.5 animate-spin" /> : t.preset.useButton}
           </button>
           <button
             type="button"
@@ -127,13 +133,13 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
             onClick={handleDelete}
             className="text-[12px] text-destructive/70 hover:text-destructive"
           >
-            Elimina
+            {t.preset.deleteButton}
           </button>
           <Link
             href={`/presets?edit=${encodeURIComponent(preset.id)}`}
             className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
           >
-            Modifica
+            {t.preset.editButton}
           </Link>
         </div>
 
@@ -148,10 +154,12 @@ export function CraftedPresetList({
 }: {
   presets: CraftedPresetRowProps["preset"][];
 }) {
+  const t = useTranslations();
+
   if (presets.length === 0) {
     return (
       <p className="border-y border-line py-8 text-center text-sm text-ink-3">
-        Ancora nessun preset. Salva una spesa, un confronto o un non comprato per riusarlo in un tocco.
+        {t.preset.emptyState}
       </p>
     );
   }

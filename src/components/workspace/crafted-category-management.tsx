@@ -15,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label as CraftedLabel, Rule, Serif } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
+import type { Translations } from "@/src/lib/i18n/types";
 
 import type { CategoryManagementItem } from "@/src/actions/categories";
 import {
@@ -34,11 +36,11 @@ const CATEGORY_INPUT_CLASS =
 const CATEGORY_BUTTON_CLASS =
   "rounded-[var(--r-cta)] border-line px-4";
 
-function usageSummary(item: CategoryManagementItem): string {
+function usageSummary(item: CategoryManagementItem, tw: Translations["workspace"]): string {
   const parts: string[] = [];
-  if (item.entriesCount > 0) parts.push(`${item.entriesCount} mov.`);
-  if (item.habitsCount > 0) parts.push(`${item.habitsCount} ric.`);
-  if (item.presetsCount > 0) parts.push(`${item.presetsCount} preset`);
+  if (item.entriesCount > 0) parts.push(`${item.entriesCount} ${tw.catUsageMov}`);
+  if (item.habitsCount > 0) parts.push(`${item.habitsCount} ${tw.catUsageRic}`);
+  if (item.presetsCount > 0) parts.push(`${item.presetsCount} ${tw.catUsagePreset}`);
   return parts.join(" · ");
 }
 
@@ -51,6 +53,7 @@ type EditFormProps = {
 };
 
 function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
+  const t = useTranslations();
   const [name, setName] = useState(category.name);
   const [icon, setIcon] = useState(category.icon ?? "");
   const [color, setColor] = useState(category.color ?? "");
@@ -77,13 +80,13 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 py-[var(--sp-row-y)]">
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="edit-cat-name" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Nome</label>
+        <label htmlFor="edit-cat-name" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">{t.workspace.catNameLabel}</label>
         <Input
           id="edit-cat-name"
           className={CATEGORY_INPUT_CLASS}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="Nome categoria"
+          placeholder={t.workspace.catNamePlaceholder}
           maxLength={80}
           required
           autoFocus
@@ -91,7 +94,7 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="edit-cat-icon" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Icona</label>
+          <label htmlFor="edit-cat-icon" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">{t.workspace.catIconLabel}</label>
           <Input
             id="edit-cat-icon"
             className={CATEGORY_INPUT_CLASS}
@@ -101,7 +104,7 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="edit-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Colore</label>
+          <label htmlFor="edit-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">{t.workspace.catColorLabel}</label>
           <Input
             id="edit-cat-color"
             className={CATEGORY_INPUT_CLASS}
@@ -115,7 +118,7 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" disabled={isPending} className={CATEGORY_BUTTON_CLASS}>
           {isPending ? <Loader2 className="animate-spin" aria-hidden /> : null}
-          Salva modifiche
+          {t.workspace.catSaveChanges}
         </Button>
         <Button
           type="button"
@@ -124,7 +127,7 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
           onClick={onClose}
           disabled={isPending}
         >
-          Annulla
+          {t.workspace.catCancel}
         </Button>
       </div>
     </form>
@@ -146,10 +149,11 @@ function CategoryRow({
   onEditToggle,
   onDone,
 }: CategoryRowProps) {
+  const t = useTranslations();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const counts = usageSummary(category);
+  const counts = usageSummary(category, t.workspace);
   const isArchived = category.archivedAt !== null;
 
   function runAction(fn: () => Promise<{ success: boolean; message: string }>) {
@@ -173,9 +177,7 @@ function CategoryRow({
   }
 
   function handleDelete() {
-    const confirmed = window.confirm(
-      "Elimina definitivamente solo se non è usata. Continuare?",
-    );
+    const confirmed = window.confirm(t.workspace.catDeleteConfirm);
     if (!confirmed) return;
     runAction(() => deleteCategory(category.id));
   }
@@ -200,11 +202,11 @@ function CategoryRow({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[15px] font-[450]">{category.name}</span>
             <span className="rounded-full border border-line px-[9px] py-[3px] font-num text-[9.5px] uppercase leading-none tracking-[0.12em] text-ink-3">
-              {category.isDefault ? "Default" : "Personalizzata"}
+              {category.isDefault ? t.workspace.catDefaultBadge : t.workspace.catCustomBadge}
             </span>
             {isArchived ? (
               <span className="rounded-full border border-warm/25 bg-warm/5 px-[9px] py-[3px] font-num text-[9.5px] uppercase leading-none tracking-[0.12em] text-warm">
-                Archiviata
+                {t.workspace.catArchivedBadge}
               </span>
             ) : null}
           </div>
@@ -231,11 +233,11 @@ function CategoryRow({
               type="button"
               onClick={() => onEditToggle(category.id)}
               disabled={isPending}
-              aria-label={`Modifica categoria ${category.name}`}
+              aria-label={t.workspace.catEditAriaLabel(category.name)}
               className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               <Pencil className="size-3.5" aria-hidden />
-              Modifica
+              {t.workspace.catEditButton}
             </button>
           ) : null}
           {!isArchived ? (
@@ -243,7 +245,7 @@ function CategoryRow({
               type="button"
               onClick={handleArchive}
               disabled={isPending}
-              aria-label={`Archivia categoria ${category.name}`}
+              aria-label={t.workspace.catArchiveAriaLabel(category.name)}
               className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               {isPending ? (
@@ -251,14 +253,14 @@ function CategoryRow({
               ) : (
                 <Archive className="size-3.5" aria-hidden />
               )}
-              Archivia
+              {t.workspace.catArchiveButton}
             </button>
           ) : (
             <button
               type="button"
               onClick={handleRestore}
               disabled={isPending}
-              aria-label={`Ripristina categoria ${category.name}`}
+              aria-label={t.workspace.catRestoreAriaLabel(category.name)}
               className="inline-flex items-center gap-1.5 text-[13px] text-muted-foreground underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
             >
               {isPending ? (
@@ -266,14 +268,14 @@ function CategoryRow({
               ) : (
                 <RotateCcw className="size-3.5" aria-hidden />
               )}
-              Ripristina
+              {t.workspace.catRestoreButton}
             </button>
           )}
           <button
             type="button"
             onClick={handleDelete}
             disabled={isPending}
-            aria-label={`Elimina categoria ${category.name}`}
+            aria-label={t.workspace.catDeleteAriaLabel(category.name)}
             className="inline-flex items-center gap-1.5 text-[13px] text-destructive underline-offset-4 transition-opacity hover:underline disabled:opacity-50"
           >
             {isPending ? (
@@ -281,7 +283,7 @@ function CategoryRow({
             ) : (
               <Trash2 className="size-3.5" aria-hidden />
             )}
-            Elimina
+            {t.workspace.catDeleteButton}
           </button>
         </div>
       </div>
@@ -300,6 +302,7 @@ type CreateFormProps = {
 };
 
 function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
+  const t = useTranslations();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("");
   const [color, setColor] = useState("");
@@ -328,15 +331,15 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
       onSubmit={handleSubmit}
       className="flex flex-col gap-3 border-y border-line py-[var(--sp-section-y)]"
     >
-      <CraftedLabel className="block">Nuova categoria</CraftedLabel>
+      <CraftedLabel className="block">{t.workspace.catNewTitle}</CraftedLabel>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="create-cat-name" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">Nome</label>
+        <label htmlFor="create-cat-name" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">{t.workspace.catNameLabel}</label>
         <Input
           id="create-cat-name"
           className={CATEGORY_INPUT_CLASS}
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="es. Caffè, Sport, Viaggi"
+          placeholder={t.workspace.catCreatePlaceholder}
           maxLength={80}
           required
           autoFocus
@@ -345,7 +348,7 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="create-cat-icon" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">
-            Icona (opzionale)
+            {t.workspace.catIconOptionalLabel}
           </label>
           <Input
             id="create-cat-icon"
@@ -357,7 +360,7 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
         </div>
         <div className="flex flex-col gap-1.5">
           <label htmlFor="create-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">
-            Colore (opzionale)
+            {t.workspace.catColorOptionalLabel}
           </label>
           <Input
             id="create-cat-color"
@@ -372,7 +375,7 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
       <div className="flex items-center gap-2">
         <Button type="submit" size="sm" disabled={isPending} className={CATEGORY_BUTTON_CLASS}>
           {isPending ? <Loader2 className="animate-spin" aria-hidden /> : null}
-          Crea categoria
+          {t.workspace.catCreateButton}
         </Button>
         <Button
           type="button"
@@ -381,7 +384,7 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
           onClick={onCancel}
           disabled={isPending}
         >
-          Annulla
+          {t.workspace.catCancel}
         </Button>
       </div>
     </form>
@@ -395,6 +398,7 @@ type Props = {
 };
 
 export function CraftedCategoryManagement({ initialCategories }: Props) {
+  const t = useTranslations();
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -412,9 +416,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
   }
 
   function handleReset() {
-    const confirmed = window.confirm(
-      "Ripristina le categorie predefinite mancanti o archiviate senza sovrascrivere le tue modifiche. Continuare?",
-    );
+    const confirmed = window.confirm(t.workspace.catResetConfirm);
     if (!confirmed) return;
     setResetMessage(null);
     startResetTransition(async () => {
@@ -443,7 +445,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
             onClick={() => setShowCreate(true)}
             className="w-full rounded-[var(--r-cta)] border-line"
           >
-            + Crea categoria
+            {t.workspace.catCreateCta}
           </Button>
         )}
       </section>
@@ -452,10 +454,10 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
 
       {/* Active */}
       <section className="-mx-4 px-[var(--sp-page-x)] py-[var(--sp-section-y)] sm:-mx-6 lg:-mx-8">
-        <CraftedLabel className="mb-4 block">Categorie attive</CraftedLabel>
+        <CraftedLabel className="mb-4 block">{t.workspace.catActiveTitle}</CraftedLabel>
         {activeCategories.length === 0 ? (
           <Serif className="text-sm text-ink-3">
-            Nessuna categoria attiva. Crea la prima o ripristina le predefinite.
+            {t.workspace.catEmptyActive}
           </Serif>
         ) : (
           <div>
@@ -485,7 +487,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
               className="flex w-full items-center justify-between"
             >
               <CraftedLabel>
-                Categorie archiviate ({archivedCategories.length})
+                {t.workspace.catArchivedTitle(archivedCategories.length)}
               </CraftedLabel>
               {showArchived ? (
                 <ChevronUp className="size-4 text-ink-3" aria-hidden />
@@ -519,11 +521,10 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
       {/* Reset */}
       <section className="-mx-4 px-[var(--sp-page-x)] py-[var(--sp-section-y)] sm:-mx-6 lg:-mx-8">
         <CraftedLabel className="mb-2 block">
-          Ripristina categorie predefinite
+          {t.workspace.catResetTitle}
         </CraftedLabel>
         <Serif className="mb-4 block text-sm text-ink-3">
-          Ripristina le categorie predefinite mancanti o archiviate senza
-          sovrascrivere le tue modifiche.
+          {t.workspace.catResetDesc}
         </Serif>
         <Button
           variant="outline"
@@ -535,7 +536,7 @@ export function CraftedCategoryManagement({ initialCategories }: Props) {
           {resetIsPending ? (
             <Loader2 className="animate-spin" aria-hidden />
           ) : null}
-          Ripristina predefinite
+          {t.workspace.catResetButton}
         </Button>
         {resetMessage ? (
           <p className="mt-2 text-xs text-muted-foreground">{resetMessage}</p>
