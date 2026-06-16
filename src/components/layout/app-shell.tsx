@@ -281,6 +281,14 @@ export function AppShell({
 
         <CraftedBottomBar workspace={workspace} currentUserId={currentUserId} />
         <FeedbackButton />
+        {/* Global polite live region — sr-only, for future programmatic announcements */}
+        <div
+          id="nlc-live-region"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="pointer-events-none fixed left-0 top-0 h-px w-px overflow-hidden opacity-0"
+        />
       </div>
     </ToastProvider>
     </CurrencyProvider>

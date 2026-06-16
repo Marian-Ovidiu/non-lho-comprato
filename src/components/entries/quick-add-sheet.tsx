@@ -931,6 +931,7 @@ export function QuickAddSheet({
             <button
               type="button"
               onClick={personalize}
+              aria-pressed={activePreset === "custom"}
               className={cn(
                 "flex min-h-20 items-start gap-3 rounded-[var(--r-card)] border px-3 py-3 text-left transition-[background-color,border-color,opacity,transform] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] sm:col-span-2",
                 "hover:bg-[var(--state-hover)] active:scale-[var(--state-press)] active:opacity-95",
@@ -991,6 +992,8 @@ export function QuickAddSheet({
             <div className="min-w-0 space-y-4">
               {state.message ? (
                 <div
+                  role={state.success ? "status" : "alert"}
+                  aria-live={state.success ? "polite" : "assertive"}
                   className={cn(
                     "rounded-[var(--r-control)] border px-4 py-3 text-sm leading-6 transition-[opacity,transform,background-color,border-color,color] duration-200",
                     state.success

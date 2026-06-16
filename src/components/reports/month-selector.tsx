@@ -33,7 +33,7 @@ export function MonthSelector({
           id="month"
           name="month"
           defaultValue={selectedMonth}
-          className="h-10 w-full min-w-[10.5rem] rounded-xl border border-border bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-ring/40"
+          className="h-10 w-full min-w-[10.5rem] rounded-xl border border-border bg-background px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-border focus-visible:ring-2 focus-visible:ring-ring/40"
         >
           {options.map((option) => (
             <option key={option.value} value={option.value}>
@@ -62,7 +62,7 @@ export function MonthSelector({
             id="month"
             name="month"
             defaultValue={selectedMonth}
-            className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40 dark:border-border dark:bg-accent dark:text-foreground dark:focus:border-border dark:focus:ring-border/40"
+            className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-border focus-visible:ring-2 focus-visible:ring-border/40 dark:border-border dark:bg-accent dark:text-foreground dark:focus-visible:border-border dark:focus-visible:ring-border/40"
           >
             {options.map((option) => (
               <option key={option.value} value={option.value}>

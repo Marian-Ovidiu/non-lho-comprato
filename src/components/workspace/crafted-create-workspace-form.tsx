@@ -82,6 +82,7 @@ export function CraftedCreateWorkspaceForm() {
             maxLength={80}
             placeholder={t.workspace.wsNamePlaceholder}
             autoComplete="off"
+            aria-label={t.workspace.wsNameLabel}
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
           />
           <CraftedLabel>{t.workspace.wsNameLabel}</CraftedLabel>

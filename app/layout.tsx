@@ -15,6 +15,7 @@ import {
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
+import { getHtmlLang } from "@/src/lib/workspace-language";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -61,14 +62,16 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const lang = await getHtmlLang();
+
   return (
     <html
-      lang="it"
+      lang={lang}
       className={`dark ${geistSans.variable} ${geistMono.variable} ${instrumentSerif.variable} h-full antialiased`}
       suppressHydrationWarning
     >

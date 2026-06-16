@@ -94,13 +94,13 @@
   --primary-foreground: #1a1206;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --green: #3f7d52;
+  --green: #4a9060;
   --success: var(--green);
-  --success-bg: rgba(63, 125, 82, 0.12);
+  --success-bg: rgba(74, 144, 96, 0.12);
   --destructive: #d96a4a;
   --destructive-foreground: #f4f1ea;
   --muted-text: #94918a;
-  --ink-3: #56544d;
+  --ink-3: #7e7c77;
   --text-3: var(--ink-3);
   --warm: #d9a651;
   --info: #94918a;
@@ -167,13 +167,13 @@
   --primary-foreground: #1a1206;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --green: #3f7d52;
+  --green: #4a9060;
   --success: var(--green);
-  --success-bg: rgba(63, 125, 82, 0.12);
+  --success-bg: rgba(74, 144, 96, 0.12);
   --destructive: #d96a4a;
   --destructive-foreground: #f4f1ea;
   --muted-text: #94918a;
-  --ink-3: #56544d;
+  --ink-3: #7e7c77;
   --text-3: var(--ink-3);
   --warm: #d9a651;
   --info: #94918a;
@@ -227,7 +227,7 @@
   --destructive: #d96a4a;
   --destructive-foreground: #f4f1ea;
   --muted-text: #6b6b70;
-  --ink-3: #a8a5a0;
+  --ink-3: #6e6c6a;
   --text-3: var(--ink-3);
   --warm: #d9a651;
   --info: #6b6b70;
@@ -267,6 +267,16 @@
     @apply min-h-[100dvh] bg-background text-foreground;
     background-color: var(--background);
     color: var(--foreground);
+  }
+
+  /* Keyboard focus: label containers that wrap a bare input/textarea
+     show a ring on the container itself (the input has outline-none since
+     the label provides the visual context). */
+  label:has(input:focus-visible),
+  label:has(textarea:focus-visible) {
+    outline: 2px solid color-mix(in srgb, var(--ring) 45%, transparent);
+    outline-offset: 2px;
+    border-radius: var(--r-control);
   }
 }
 

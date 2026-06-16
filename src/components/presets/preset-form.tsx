@@ -202,7 +202,7 @@ export function PresetForm({ categories }: PresetFormProps) {
                 id="categoryId"
                 name="categoryId"
                 defaultValue=""
-                className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus:border-border focus:ring-2 focus:ring-border/40"
+                className="h-10 w-full rounded-lg border border-border bg-surface px-3 text-sm text-foreground shadow-sm outline-none transition-colors focus-visible:border-border focus-visible:ring-2 focus-visible:ring-border/40"
                 aria-invalid={Boolean(state.errors?.categoryId)}
               >
                 <option value="" disabled>

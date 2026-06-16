@@ -74,6 +74,7 @@ export function CraftedGoalForm() {
             name="title"
             placeholder={t.goalForm.titlePlaceholder}
             autoComplete="off"
+            aria-label={t.goalForm.titleLabel}
             className="min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-ink-3/70"
             aria-invalid={Boolean(state.errors?.title)}
           />
@@ -92,6 +93,7 @@ export function CraftedGoalForm() {
             min="0"
             step="0.01"
             placeholder={t.goalForm.amountPlaceholder}
+            aria-label={t.goalForm.amountLabel(currencySymbol)}
             className="min-w-0 flex-1 bg-transparent font-num text-[15px] text-foreground outline-none placeholder:text-ink-3/70"
             aria-invalid={Boolean(state.errors?.targetAmount)}
           />

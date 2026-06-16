@@ -109,7 +109,8 @@ export function CraftedHabitForm({
             "border px-4 py-3 text-sm",
             state.success ? "border-green/30 text-green" : "border-destructive/30 text-destructive",
           )}
-          aria-live="polite"
+          role={state.success ? "status" : "alert"}
+          aria-live={state.success ? "polite" : "assertive"}
         >
           <span className="flex items-start gap-2">
             {state.success ? <Check className="mt-0.5 size-4 shrink-0" /> : null}

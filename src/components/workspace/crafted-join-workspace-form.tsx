@@ -59,6 +59,7 @@ export function CraftedJoinWorkspaceForm() {
             type="text"
             placeholder={t.workspace.joinLinkPlaceholder}
             required
+            aria-label={t.workspace.joinLinkLabel}
             aria-describedby={state.message && !state.success ? errorId : undefined}
             aria-invalid={Boolean(state.message && !state.success)}
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"

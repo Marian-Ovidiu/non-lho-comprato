@@ -428,7 +428,7 @@ export function CraftedEntryList({
       </div>
 
       <div className="px-5">
-        <div className="flex items-center gap-2.5 border-b border-line py-2.5">
+        <div className="flex items-center gap-2.5 border-b border-line py-2.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring/45 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:rounded-[var(--r-control)]">
           <CraftedIcon name="search" size={17} className="shrink-0 text-ink-3" />
           <input
             value={searchValue}
