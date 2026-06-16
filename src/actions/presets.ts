@@ -12,6 +12,7 @@ import {
   type EntryMoneyView,
   type EntrySavingContext,
 } from "@/src/lib/entry-domain";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import {
   getDefaultBeneficiaryUserIds,
@@ -662,8 +663,7 @@ export async function getPresets(): Promise<SerializablePreset[]> {
 
     return presets.map((preset) => serializePreset(preset, members));
   } catch (error) {
-    console.error("Failed to load presets:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load presets", error);
   }
 }
 

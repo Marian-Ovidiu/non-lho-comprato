@@ -6,6 +6,7 @@ import { unstable_rethrow } from "next/navigation";
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import {
   requireWorkspaceRole,
@@ -123,9 +124,7 @@ export async function getWorkspaceCategories(): Promise<CategoryManagementItem[]
       presetsCount: row._count.quickPresets,
     }));
   } catch (error) {
-    unstable_rethrow(error);
-    console.error("getWorkspaceCategories failed:", error);
-    return [];
+    logAndRethrowDataLoadError("getWorkspaceCategories failed", error);
   }
 }
 

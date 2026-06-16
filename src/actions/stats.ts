@@ -2,6 +2,7 @@
 
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildWorkspaceMemberEntryWhere } from "@/src/lib/workspace-member-filter";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { formatMoney } from "@/src/lib/formatters";
 import { prisma } from "@/src/lib/prisma";
 import { cacheLife, cacheTag } from "next/cache";
@@ -938,8 +939,7 @@ async function getHabitStatsFromMembers(
       })
       .sort((left, right) => right.totalSaved - left.totalSaved);
   } catch (error) {
-    console.error("Failed to load habit stats:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load habit stats", error);
   }
 }
 
@@ -1051,8 +1051,7 @@ export async function getStatsOverview(
     const workspaceId = await getCurrentWorkspaceId();
     return getEntryAggregateForWorkspace(workspaceId, memberUserId);
   } catch (error) {
-    console.error("Failed to load stats overview:", error);
-    return emptyOverview();
+    logAndRethrowDataLoadError("Failed to load stats overview", error);
   }
 }
 
@@ -1077,8 +1076,7 @@ async function _cachedMonthlyStats(workspaceId: string, timeZone: string): Promi
   try {
     return getMonthlyStatsForWorkspace(workspaceId, undefined, timeZone);
   } catch (error) {
-    console.error("Failed to load monthly stats:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load monthly stats", error);
   }
 }
 
@@ -1090,8 +1088,7 @@ async function _getMonthlyStatsDynamic(memberUserId: string): Promise<MonthlySta
     ]);
     return getMonthlyStatsForWorkspace(workspaceId, memberUserId, timeZone);
   } catch (error) {
-    console.error("Failed to load monthly stats:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load monthly stats", error);
   }
 }
 
@@ -1113,8 +1110,7 @@ async function _cachedCategoryStats(workspaceId: string): Promise<CategoryStatsI
   try {
     return getCategoryStatsForWorkspace(workspaceId, undefined);
   } catch (error) {
-    console.error("Failed to load category stats:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load category stats", error);
   }
 }
 
@@ -1123,8 +1119,7 @@ async function _getCategoryStatsDynamic(memberUserId: string): Promise<CategoryS
     const workspaceId = await getCurrentWorkspaceId();
     return getCategoryStatsForWorkspace(workspaceId, memberUserId);
   } catch (error) {
-    console.error("Failed to load category stats:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load category stats", error);
   }
 }
 
@@ -1192,8 +1187,7 @@ export async function getTopSavings(
       source: entry.source,
     }));
   } catch (error) {
-    console.error("Failed to load top savings:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load top savings", error);
   }
 }
 
@@ -1299,21 +1293,8 @@ export async function getHabitStats(
       })
       .sort((left, right) => right.totalSaved - left.totalSaved);
   } catch (error) {
-    console.error("Failed to load habit stats:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load habit stats", error);
   }
-}
-
-function emptyWorkspaceMemberSpendingStats(
-  members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
-): WorkspaceMemberSpendingStatsItem[] {
-  return members.map((member) => ({
-    userId: member.userId,
-    label: member.label,
-    totalPaidByUser: 0,
-    personalSpending: 0,
-    sharedSpending: 0,
-  }));
 }
 
 export async function getWorkspaceMemberSpendingStats(
@@ -1416,13 +1397,9 @@ export async function getWorkspaceMemberSpendingStats(
       };
     });
   } catch (error) {
-    console.error("Failed to load workspace member spending stats:", error);
-
-    try {
-      const members = await getCurrentWorkspaceMembers();
-      return emptyWorkspaceMemberSpendingStats(members);
-    } catch {
-      return [];
-    }
+    logAndRethrowDataLoadError(
+      "Failed to load workspace member spending stats",
+      error,
+    );
   }
 }

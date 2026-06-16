@@ -10,6 +10,7 @@ import {
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import {
   getCurrentWorkspaceId,
   getCurrentWorkspace,
@@ -119,9 +120,7 @@ export async function getCurrentWorkspaceMembersAction() {
   try {
     return await getCurrentWorkspaceMembers();
   } catch (error) {
-    unstable_rethrow(error);
-    console.error("getCurrentWorkspaceMembersAction failed:", error);
-    return [];
+    logAndRethrowDataLoadError("getCurrentWorkspaceMembersAction failed", error);
   }
 }
 

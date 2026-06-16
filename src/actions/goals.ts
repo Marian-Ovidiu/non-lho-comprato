@@ -7,6 +7,7 @@ import {
   entryNetImpactSql,
   toMetricNumber,
 } from "@/src/lib/entry-metrics-query";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import { getCurrentWorkspaceId } from "@/src/lib/workspace-context";
 
@@ -263,8 +264,7 @@ async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithPr
       };
     });
   } catch (error) {
-    console.error("Failed to load goals:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load goals", error);
   }
 }
 

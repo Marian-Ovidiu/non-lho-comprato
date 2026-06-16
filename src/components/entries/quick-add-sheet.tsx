@@ -441,6 +441,12 @@ export function QuickAddSheet({
         setMembers(loadedMembers);
       } catch (error) {
         console.error("Failed to load quick-add members:", error);
+        pushToast({
+          title: "Persone non disponibili",
+          description: "Non riesco a caricare i membri del workspace. Riprova tra poco.",
+          tone: "error",
+          duration: 5200,
+        });
       } finally {
         if (active) {
           setMembersLoading(false);
@@ -453,7 +459,7 @@ export function QuickAddSheet({
     return () => {
       active = false;
     };
-  }, []);
+  }, [pushToast]);
 
   useEffect(() => {
     if (!open) {
@@ -473,6 +479,12 @@ export function QuickAddSheet({
         }
       } catch (error) {
         console.error("Failed to load quick-add presets:", error);
+        pushToast({
+          title: "Preset non disponibili",
+          description: "Non riesco a caricare i preset salvati. Riprova tra poco.",
+          tone: "error",
+          duration: 5200,
+        });
       } finally {
         if (active) {
           setPresetsLoading(false);
@@ -485,7 +497,7 @@ export function QuickAddSheet({
     return () => {
       active = false;
     };
-  }, [open]);
+  }, [open, pushToast]);
 
   useEffect(() => {
     if (membersLoading || hasDraftBeenEditedRef.current) {

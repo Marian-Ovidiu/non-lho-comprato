@@ -59,7 +59,7 @@ export default async function NewEntryPage({
 
   try {
     const [categoriesResult, loadedMembers, loadedUser] = await Promise.all([
-      getCategories().catch(() => [] as CategoryOption[]),
+      getCategories(),
       getCurrentWorkspaceMembers(),
       getCurrentUser(),
     ]);

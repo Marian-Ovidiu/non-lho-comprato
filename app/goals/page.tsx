@@ -13,17 +13,24 @@ import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 
 export default async function GoalsPage() {
   let loadError: string | null = null;
+  let monthlyStatsError: string | null = null;
   let goals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
   let monthlyStats: Awaited<ReturnType<typeof getMonthlyStats>> = [];
 
   try {
-    [goals, monthlyStats] = await Promise.all([
-      getGoalsWithProgress(),
-      getMonthlyStats().catch(() => []),
-    ]);
+    goals = await getGoalsWithProgress();
   } catch (error) {
     loadError = formatEntryLoadError(error);
     console.error("Failed to load goals page:", error);
+  }
+
+  if (!loadError) {
+    try {
+      monthlyStats = await getMonthlyStats();
+    } catch (error) {
+      monthlyStatsError = formatEntryLoadError(error);
+      console.error("Failed to load goals monthly stats:", error);
+    }
   }
 
   const monthSaved = monthlyStats.at(-1)?.totalSaved ?? 0;
@@ -37,6 +44,15 @@ export default async function GoalsPage() {
           <DataLoadErrorBanner
             title="Impossibile caricare gli obiettivi"
             message={loadError}
+          />
+        </div>
+      ) : null}
+
+      {monthlyStatsError ? (
+        <div className="px-5 pt-5 pb-4">
+          <DataLoadErrorBanner
+            title="Riepilogo mensile non disponibile"
+            message={monthlyStatsError}
           />
         </div>
       ) : null}

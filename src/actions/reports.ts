@@ -3,6 +3,7 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { formatMoney } from "@/src/lib/formatters";
 import { getEntryExpenseKind } from "@/src/lib/entry-ownership";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import {
   buildStreakResult,
@@ -23,7 +24,6 @@ import {
   getMemberLabel,
   resolveEntryPeopleFromRecord,
   sortWorkspaceMembers,
-  type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 import {
   aggregateEntryMetrics,
@@ -530,8 +530,7 @@ export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOpti
     const currentMonth = normalizeMonthKeyFromDates(timeZone);
     return buildMonthOptionsFromKeys(rows.map((row) => row.month), currentMonth);
   } catch (error) {
-    console.error("Failed to load available report months:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load available report months", error);
   }
 }
 
@@ -897,15 +896,6 @@ export async function getMonthlyReport(
       },
     };
   } catch (error) {
-    console.error("Failed to load monthly report:", error);
-    const monthOptions = ensureSelectedMonthOption([], selectedMonth);
-    const members = await getCurrentWorkspaceMembers().catch(() => []);
-
-    return {
-      selectedMonth,
-      selectedMonthLabel: formatMonthLabel(selectedMonth),
-      monthOptions,
-      report: buildEmptyReport(selectedMonth, members),
-    };
+    logAndRethrowDataLoadError("Failed to load monthly report", error);
   }
 }

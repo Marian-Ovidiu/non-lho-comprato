@@ -11,6 +11,7 @@ import {
   type EntryMode,
   type EntrySavingContext,
 } from "@/src/lib/entry-domain";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import {
   entryMetricAggregateSelectSql,
   normalizeEntryMetricAggregate,
@@ -1095,9 +1096,7 @@ export async function getCategories() {
 
     return mergeCategoryOptions(activeCategories, archivedDefaultSlugs, language);
   } catch (error) {
-    unstable_rethrow(error);
-    console.warn("Falling back to static categories:", error);
-    return mergeCategoryOptions([]);
+    logAndRethrowDataLoadError("Failed to load entry categories", error);
   }
 }
 

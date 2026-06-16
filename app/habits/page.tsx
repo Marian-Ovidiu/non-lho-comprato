@@ -34,6 +34,7 @@ export default async function HabitsPage() {
   }
 
   let loadError: string | null = null;
+  let habitStatsError: string | null = null;
   let workspace: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
   let currentUser: Awaited<ReturnType<typeof getCurrentUser>> | null = null;
   let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
@@ -49,14 +50,22 @@ export default async function HabitsPage() {
       getCurrentWorkspaceMembers(),
       getHabits(),
     ]);
-    [todayOccurrences, categories, habitStats] = await Promise.all([
+    [todayOccurrences, categories] = await Promise.all([
       getTodayHabitOccurrences(),
       getCategories(),
-      getHabitStats().catch(() => []),
     ]);
   } catch (error) {
     loadError = formatEntryLoadError(error);
     console.error("Failed to load habits page:", error);
+  }
+
+  if (!loadError) {
+    try {
+      habitStats = await getHabitStats();
+    } catch (error) {
+      habitStatsError = formatEntryLoadError(error);
+      console.error("Failed to load habits stats:", error);
+    }
   }
 
   if (loadError || !workspace || !currentUser) {
@@ -96,6 +105,15 @@ export default async function HabitsPage() {
   return (
     <main className="pb-6">
       <HabitReminderBanner occurrences={todayOccurrences} />
+
+      {habitStatsError ? (
+        <div className="px-5 pb-4">
+          <DataLoadErrorBanner
+            title="Statistiche abitudini non disponibili"
+            message={habitStatsError}
+          />
+        </div>
+      ) : null}
 
       {isEmpty ? (
         <CraftedHabitsEmptyState />

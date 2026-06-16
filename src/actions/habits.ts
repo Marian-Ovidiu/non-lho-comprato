@@ -7,6 +7,7 @@ import { calculateEntryMoney } from "@/src/lib/entry-domain";
 import { upsertDefaultCategoryForWorkspace } from "@/src/features/categories/repository";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
+import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
 import {
@@ -1120,8 +1121,7 @@ export async function getHabits(): Promise<HabitListItem[]> {
 
     return habits.map(serializeHabitListItem);
   } catch (error) {
-    console.warn("Failed to load habits:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load habits", error);
   }
 }
 
@@ -1243,8 +1243,7 @@ async function _cachedTodayHabitOccurrences(workspaceId: string, timeZone: strin
 
     return occurrences.map(serializeTodayHabitOccurrence);
   } catch (error) {
-    console.warn("Failed to load today habit occurrences:", error);
-    return [];
+    logAndRethrowDataLoadError("Failed to load today habit occurrences", error);
   }
 }
 
