@@ -346,6 +346,7 @@ export async function ensureDefaultWorkspaceForUser(user: AppUserLike) {
           name: buildWorkspaceName(user),
           kind: "private",
           ownerUserId: user.id,
+          language: "en",
         },
       });
 

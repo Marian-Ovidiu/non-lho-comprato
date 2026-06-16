@@ -1,6 +1,6 @@
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
 
-export const DEFAULT_WORKSPACE_LANGUAGE = "it";
+export const DEFAULT_WORKSPACE_LANGUAGE = "en";
 
 export type SupportedLanguage = {
   code: string;
