@@ -8,6 +8,7 @@ import {
   markHabitOccurrenceSkipped,
   markHabitOccurrenceSpent,
 } from "@/src/actions/habits";
+import { useTranslations } from "@/src/components/language/language-context";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { cn } from "@/lib/utils";
 
@@ -44,6 +45,7 @@ export function CraftedHabitOccurrenceActions({
   currentStatus,
   onStatusChange,
 }: CraftedHabitOccurrenceActionsProps) {
+  const t = useTranslations();
   const [isPending, startTransition] = useTransition();
   const [pendingStatus, setPendingStatus] = useState<ActionStatus | null>(null);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -74,7 +76,7 @@ export function CraftedHabitOccurrenceActions({
         triggerHaptic(nextStatus === "avoided" ? "success" : "light");
         setPendingStatus(null);
       } catch {
-        setFeedback("Non riesco ad aggiornare la ricorrente adesso. Riprova tra poco.");
+        setFeedback(t.habitOccurrence.error);
         setPendingStatus(null);
       }
     });
@@ -86,21 +88,21 @@ export function CraftedHabitOccurrenceActions({
     return (
       <span className="inline-flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-accent">
         <DrawnCheck className="text-accent" />
-        Evitata
+        {t.habitOccurrence.avoided}
       </span>
     );
   }
 
   if (currentStatus === "spent") {
     return (
-      <span className="shrink-0 text-[12.5px] font-medium text-ink-3">Pagata</span>
+      <span className="shrink-0 text-[12.5px] font-medium text-ink-3">{t.habitOccurrence.paid}</span>
     );
   }
 
   if (currentStatus === "skipped") {
     return (
       <span className="shrink-0 text-[12.5px] font-medium text-ink-3">
-        Non applicabile
+        {t.habitOccurrence.notApplicable}
       </span>
     );
   }
@@ -117,7 +119,7 @@ export function CraftedHabitOccurrenceActions({
           {pendingStatus === "spent" ? (
             <Loader2 className="size-3 animate-spin" aria-hidden="true" />
           ) : (
-            "Pagata"
+            t.habitOccurrence.paid
           )}
         </button>
         <button
@@ -132,7 +134,7 @@ export function CraftedHabitOccurrenceActions({
           {pendingStatus === "avoided" ? (
             <DrawnCheck className="text-accent" />
           ) : (
-            "Evitata"
+            t.habitOccurrence.avoided
           )}
         </button>
       </div>
@@ -142,7 +144,7 @@ export function CraftedHabitOccurrenceActions({
         onClick={() => runAction(markHabitOccurrenceSkipped, "skipped")}
         className="text-[10px] text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
       >
-        Non applicabile
+        {t.habitOccurrence.notApplicable}
       </button>
       {feedback ? (
         <p className="max-w-[12rem] text-right text-[10px] leading-4 text-destructive">

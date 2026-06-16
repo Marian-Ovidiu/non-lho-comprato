@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { Label } from "@/components/ui/label";
+import { useTranslations } from "@/src/components/language/language-context";
 import {
   Select,
   SelectContent,
@@ -66,6 +67,7 @@ export function HabitScopeReminderFields({
   idPrefix,
   compact = false,
 }: HabitScopeReminderFieldsProps) {
+  const t = useTranslations();
   const sortedMembers = useMemo(
     () => sortWorkspaceMembers(members),
     [members],
@@ -104,7 +106,7 @@ export function HabitScopeReminderFields({
       />
 
       <div className={compact ? "space-y-2 sm:col-span-2" : "space-y-2"}>
-        <Label htmlFor={`${idPrefix}-target`}>Per chi</Label>
+        <Label htmlFor={`${idPrefix}-target`}>{t.habitCard.forLabel}</Label>
         <Select
           value={selection}
           onValueChange={handleSelectionChange}
@@ -124,14 +126,14 @@ export function HabitScopeReminderFields({
               </SelectItem>
             ))}
             {workspaceKind === "shared" ? (
-              <SelectItem value="shared">Condivisa</SelectItem>
+              <SelectItem value="shared">{t.habitCard.forShared}</SelectItem>
             ) : null}
           </SelectContent>
         </Select>
         <p className="text-xs text-muted-text">
           {workspaceKind === "shared"
-            ? "Puoi scegliere un utente specifico o la versione condivisa."
-            : "L'abitudine è personale e la assegni al membro scelto."}
+            ? t.habitCard.forHelp
+            : t.habitCard.forHelpPrivate}
         </p>
         <FormFieldError
           message={errors?.targetScope ?? errors?.targetUserId}
@@ -141,7 +143,7 @@ export function HabitScopeReminderFields({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-3">
-          <Label htmlFor={`${idPrefix}-reminder`}>Promemoria</Label>
+          <Label htmlFor={`${idPrefix}-reminder`}>{t.habitCard.reminderLabel}</Label>
           <label
             htmlFor={`${idPrefix}-reminder`}
             className={cn(
@@ -165,17 +167,17 @@ export function HabitScopeReminderFields({
               className="sr-only"
               disabled={disabled}
             />
-            {reminderEnabled ? "Attivo" : "Off"}
+            {reminderEnabled ? t.habitCard.reminderOn : t.habitCard.reminderOff}
           </label>
         </div>
         <p className="text-xs text-muted-text">
-          Ti ricorda di controllare le abitudini quando sei già al lavoro o in giro.
+          {t.habitCard.reminderHelp}
         </p>
       </div>
 
       {reminderEnabled ? (
         <div className="space-y-2 sm:col-span-2">
-          <Label htmlFor={`${idPrefix}-reminder-time`}>Orario</Label>
+          <Label htmlFor={`${idPrefix}-reminder-time`}>{t.habitCard.reminderTimeLabel}</Label>
           <input
             id={`${idPrefix}-reminder-time`}
             name="reminderTime"
@@ -186,7 +188,7 @@ export function HabitScopeReminderFields({
             disabled={disabled}
             aria-invalid={Boolean(errors?.reminderTime)}
           />
-          <p className="text-xs text-muted-text">Formato locale. Esempio: 09:30.</p>
+          <p className="text-xs text-muted-text">{t.habitCard.reminderTimeHelp}</p>
           <FormFieldError message={errors?.reminderTime} className="text-sm" />
         </div>
       ) : null}

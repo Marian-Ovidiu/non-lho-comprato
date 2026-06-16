@@ -11,6 +11,7 @@ import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { cn } from "@/lib/utils";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type CategoryOption = {
@@ -26,24 +27,24 @@ type CraftedHabitFormProps = {
   workspaceKind: "private" | "shared";
 };
 
-const weekdayOptions = [
-  { value: 1, label: "Lun" },
-  { value: 2, label: "Mar" },
-  { value: 3, label: "Mer" },
-  { value: 4, label: "Gio" },
-  { value: 5, label: "Ven" },
-  { value: 6, label: "Sab" },
-  { value: 7, label: "Dom" },
-] as const;
-
 export function CraftedHabitForm({
   categories,
   members,
   currentUserId,
   workspaceKind,
 }: CraftedHabitFormProps) {
+  const t = useTranslations();
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
+  const weekdayOptions = [
+    { value: 1, label: t.habitCard.weekdays[0] },
+    { value: 2, label: t.habitCard.weekdays[1] },
+    { value: 3, label: t.habitCard.weekdays[2] },
+    { value: 4, label: t.habitCard.weekdays[3] },
+    { value: 5, label: t.habitCard.weekdays[4] },
+    { value: 6, label: t.habitCard.weekdays[5] },
+    { value: 7, label: t.habitCard.weekdays[6] },
+  ] as const;
   const formRef = useRef<HTMLFormElement>(null);
   const defaultCategoryId =
     categories.find((category) => category.slug === "altro")?.id ??
@@ -82,7 +83,7 @@ export function CraftedHabitForm({
       weekdayOptions
         .filter((day) => selectedDays.includes(day.value))
         .map((day) => day.label),
-    [selectedDays],
+    [selectedDays, weekdayOptions],
   );
 
   function toggleDay(day: number) {
@@ -122,11 +123,11 @@ export function CraftedHabitForm({
           <input
             id="habit-name"
             name="name"
-            placeholder="Caffè al bar"
+            placeholder={t.habitForm.namePlaceholder}
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
             aria-describedby={state.errors?.name ? "habit-name-error" : undefined}
           />
-          <CraftedLabel>Nome</CraftedLabel>
+          <CraftedLabel>{t.habitForm.nameLabel}</CraftedLabel>
         </label>
         <FormFieldError id="habit-name-error" message={state.errors?.name} />
       </div>
@@ -146,7 +147,7 @@ export function CraftedHabitForm({
               </option>
             ))}
           </select>
-          <CraftedLabel>Categoria</CraftedLabel>
+          <CraftedLabel>{t.habitForm.categoryLabel}</CraftedLabel>
         </label>
         <FormFieldError id="habit-categoryId-error" message={state.errors?.categoryId} />
       </div>
@@ -160,11 +161,11 @@ export function CraftedHabitForm({
             inputMode="decimal"
             min="0"
             step="0.01"
-            placeholder="4,00"
+            placeholder={t.habitForm.amountPlaceholder}
             className="min-w-0 flex-1 bg-transparent font-num text-[15px] outline-none"
             aria-describedby={state.errors?.amount ? "habit-amount-error" : undefined}
           />
-          <CraftedLabel>Costo {currencySymbol}</CraftedLabel>
+          <CraftedLabel>{t.habitForm.amountLabel(currencySymbol)}</CraftedLabel>
         </label>
         <FormFieldError id="habit-amount-error" message={state.errors?.amount} />
         <input type="hidden" name="defaultBehavior" value="spent" />
@@ -186,7 +187,7 @@ export function CraftedHabitForm({
       />
 
       <div>
-        <CraftedLabel className="mb-3 block">Giorni</CraftedLabel>
+        <CraftedLabel className="mb-3 block">{t.habitForm.daysLabel}</CraftedLabel>
         <div className="flex flex-wrap gap-3">
           {weekdayOptions.map((day) => {
             const checked = selectedDays.includes(day.value);
@@ -227,10 +228,10 @@ export function CraftedHabitForm({
         {pending ? (
           <>
             <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            Salvataggio…
+            {t.habitForm.savingButton}
           </>
         ) : (
-          "Salva ricorrente"
+          t.habitForm.saveButton
         )}
       </button>
     </form>
