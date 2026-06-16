@@ -1,6 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server";
 
 import { createSupabaseRequestClient } from "@/src/lib/supabase/server";
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+  getClientIpFromHeaders,
+  type RateLimitRule,
+} from "@/src/lib/rate-limit";
 
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
 
@@ -29,6 +35,34 @@ function isStaticAssetPath(pathname: string) {
   );
 }
 
+function getProxyRateLimitRule(pathname: string): RateLimitRule | null {
+  if (pathname === "/auth/callback") {
+    return {
+      scope: "proxy:auth-callback:ip:minute",
+      limit: 30,
+      windowSeconds: 60,
+    };
+  }
+
+  if (pathname === "/api/exports/ai-analysis") {
+    return {
+      scope: "proxy:export:ip:minute",
+      limit: 20,
+      windowSeconds: 60,
+    };
+  }
+
+  if (pathname === "/invite" || pathname.startsWith("/invite/")) {
+    return {
+      scope: "proxy:invite:ip:minute",
+      limit: 60,
+      windowSeconds: 60,
+    };
+  }
+
+  return null;
+}
+
 export async function updateSupabaseSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const startedAt = performance.now();
@@ -39,6 +73,18 @@ export async function updateSupabaseSession(request: NextRequest) {
         headers: request.headers,
       },
     });
+  }
+
+  const proxyRateLimitRule = getProxyRateLimitRule(pathname);
+  if (proxyRateLimitRule) {
+    const proxyLimit = await checkRateLimit(proxyRateLimitRule, [
+      getClientIpFromHeaders(request.headers),
+      pathname,
+    ]);
+
+    if (!proxyLimit.allowed) {
+      return createRateLimitResponse(proxyLimit);
+    }
   }
 
   if (pathname === "/auth/callback") {

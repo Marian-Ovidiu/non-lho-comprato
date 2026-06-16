@@ -35,6 +35,10 @@ import {
   requireWorkspaceRole,
   WorkspaceRbacError,
 } from "@/src/features/workspaces/rbac";
+import {
+  checkRateLimit,
+  getClientIpFromRequestHeaders,
+} from "@/src/lib/rate-limit";
 
 type CreateWorkspaceResult = {
   success: boolean;
@@ -127,8 +131,13 @@ type GenerateOpenInviteResult = {
   inviteUrl?: string;
 };
 
+function rateLimitMessage() {
+  return "Troppi tentativi ravvicinati. Riprova tra poco.";
+}
+
 export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResult> {
   try {
+    const clientIp = await getClientIpFromRequestHeaders();
     const user = await getCurrentUser();
     const workspaceId = await getCurrentWorkspaceId();
 
@@ -147,6 +156,19 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
 
     if (!workspace) {
       return { success: false, message: "Nessuno workspace attivo." };
+    }
+
+    const workspaceLimit = await checkRateLimit(
+      {
+        scope: "invite:open:create:workspace:hour",
+        limit: 3,
+        windowSeconds: 60 * 60,
+      },
+      [workspace.id, user.id, clientIp],
+    );
+
+    if (!workspaceLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
     }
 
     const token = generateInviteToken();
@@ -212,8 +234,34 @@ export async function joinByLinkAction(
   }
 
   try {
+    const clientIp = await getClientIpFromRequestHeaders();
     const user = await getCurrentUser();
     const tokenHash = hashInviteToken(token);
+    const tokenLimit = await checkRateLimit(
+      {
+        scope: "invite:join:token:minute",
+        limit: 5,
+        windowSeconds: 60,
+      },
+      [tokenHash, clientIp],
+    );
+
+    if (!tokenLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
+    }
+
+    const userLimit = await checkRateLimit(
+      {
+        scope: "invite:join:user:minute",
+        limit: 10,
+        windowSeconds: 60,
+      },
+      [user.id, clientIp],
+    );
+
+    if (!userLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
+    }
 
     const invite = await prisma.workspaceInvite.findUnique({
       where: { tokenHash },

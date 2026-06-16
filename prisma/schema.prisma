@@ -272,6 +272,19 @@ model Feedback {
   @@index([type])
 }
 
+model RateLimitBucket {
+  key          String    @id
+  scope        String
+  windowStart  DateTime  @default(now())
+  count        Int       @default(0)
+  blockedUntil DateTime?
+  updatedAt    DateTime  @updatedAt
+
+  @@index([scope])
+  @@index([blockedUntil])
+  @@index([updatedAt])
+}
+
 model WorkspaceMember {
   id          String              @id @default(cuid())
   workspaceId String

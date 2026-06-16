@@ -6,6 +6,11 @@ import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+  getClientIpFromHeaders,
+} from "@/src/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -15,10 +20,50 @@ export async function GET(request: NextRequest) {
     nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
       ? nextPath
       : "/onboarding";
+  const clientIp = getClientIpFromHeaders(request.headers);
+
+  const ipLimit = await checkRateLimit(
+    {
+      scope: "auth:callback:ip:minute",
+      limit: 20,
+      windowSeconds: 60,
+    },
+    [clientIp, safeNextPath],
+  );
+
+  if (!ipLimit.allowed) {
+    return createRateLimitResponse(ipLimit);
+  }
 
   if (!code) {
+    const missingCodeLimit = await checkRateLimit(
+      {
+        scope: "auth:callback:missing-code:minute",
+        limit: 5,
+        windowSeconds: 60,
+      },
+      [clientIp],
+    );
+
+    if (!missingCodeLimit.allowed) {
+      return createRateLimitResponse(missingCodeLimit);
+    }
+
     console.error("[auth] callback missing code");
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  const codeLimit = await checkRateLimit(
+    {
+      scope: "auth:callback:code:hour",
+      limit: 3,
+      windowSeconds: 60 * 60,
+    },
+    [code, clientIp],
+  );
+
+  if (!codeLimit.allowed) {
+    return createRateLimitResponse(codeLimit);
   }
 
   const response = NextResponse.redirect(new URL(safeNextPath, request.url));

@@ -27,6 +27,10 @@ import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
+import {
+  checkRateLimit,
+  getClientIpFromRequestHeaders,
+} from "@/src/lib/rate-limit";
 import { revalidatePath } from "next/cache";
 
 type InviteWorkspace = {
@@ -66,6 +70,10 @@ function tryRevalidatePath(path: string) {
   }
 }
 
+function rateLimitMessage() {
+  return "Troppi tentativi ravvicinati. Riprova tra poco.";
+}
+
 export async function createWorkspaceInviteAction(
   formData: FormData,
 ): Promise<CreateWorkspaceInviteResult> {
@@ -88,6 +96,7 @@ export async function createWorkspaceInviteAction(
   }
 
   try {
+    const clientIp = await getClientIpFromRequestHeaders();
     const currentUser = await getCurrentUser();
     const currentWorkspace = await getCurrentWorkspace();
     const invitedEmail = normalizeInviteEmail(invitedEmailRaw);
@@ -121,6 +130,45 @@ export async function createWorkspaceInviteAction(
           email: "Usa un altro indirizzo email",
         },
       };
+    }
+
+    const userLimit = await checkRateLimit(
+      {
+        scope: "invite:create:user:day",
+        limit: 20,
+        windowSeconds: 24 * 60 * 60,
+      },
+      [currentUser.id],
+    );
+
+    if (!userLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
+    }
+
+    const workspaceLimit = await checkRateLimit(
+      {
+        scope: "invite:create:workspace:hour",
+        limit: 5,
+        windowSeconds: 60 * 60,
+      },
+      [currentWorkspace.id, currentUser.id, clientIp],
+    );
+
+    if (!workspaceLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
+    }
+
+    const emailLimit = await checkRateLimit(
+      {
+        scope: "invite:create:email:hour",
+        limit: 3,
+        windowSeconds: 60 * 60,
+      },
+      [currentWorkspace.id, invitedEmail],
+    );
+
+    if (!emailLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
     }
 
     const token = generateInviteToken();
@@ -240,8 +288,36 @@ export async function acceptWorkspaceInviteAction(
   }
 
   try {
+    const clientIp = await getClientIpFromRequestHeaders();
     const currentUser = await getCurrentUser();
-    const invite = await getWorkspaceInviteByTokenHash(hashInviteToken(token));
+    const tokenHash = hashInviteToken(token);
+    const tokenLimit = await checkRateLimit(
+      {
+        scope: "invite:accept:token:minute",
+        limit: 5,
+        windowSeconds: 60,
+      },
+      [tokenHash, clientIp],
+    );
+
+    if (!tokenLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
+    }
+
+    const userLimit = await checkRateLimit(
+      {
+        scope: "invite:accept:user:minute",
+        limit: 10,
+        windowSeconds: 60,
+      },
+      [currentUser.id, clientIp],
+    );
+
+    if (!userLimit.allowed) {
+      return { success: false, message: rateLimitMessage() };
+    }
+
+    const invite = await getWorkspaceInviteByTokenHash(tokenHash);
 
     if (!invite) {
       return {

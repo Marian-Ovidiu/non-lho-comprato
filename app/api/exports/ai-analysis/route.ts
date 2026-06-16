@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 
 import { prisma } from "@/src/lib/prisma";
-import { getCurrentWorkspace } from "@/src/lib/auth/session";
+import { getCurrentUser, getCurrentWorkspace } from "@/src/lib/auth/session";
 import {
   AI_EXPENSE_EXPORT_COLUMNS,
   getAiExpenseExportFilename,
@@ -11,7 +11,11 @@ import {
   type AiExpenseExportRange,
 } from "@/src/lib/ai-export";
 import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
-
+import {
+  checkRateLimit,
+  createRateLimitResponse,
+  getClientIpFromHeaders,
+} from "@/src/lib/rate-limit";
 
 const BATCH_SIZE = 1000;
 
@@ -154,11 +158,42 @@ async function fetchEntriesBatch(
 
 export async function GET(request: NextRequest) {
   let workspace: Awaited<ReturnType<typeof getCurrentWorkspace>>;
+  let user: Awaited<ReturnType<typeof getCurrentUser>>;
 
   try {
-    workspace = await getCurrentWorkspace();
+    [workspace, user] = await Promise.all([
+      getCurrentWorkspace(),
+      getCurrentUser(),
+    ]);
   } catch {
     return new Response("Unauthorized", { status: 401 });
+  }
+
+  const clientIp = getClientIpFromHeaders(request.headers);
+  const hourlyLimit = await checkRateLimit(
+    {
+      scope: "export:ai-analysis:hour",
+      limit: 3,
+      windowSeconds: 60 * 60,
+    },
+    [workspace.id, user.id, clientIp],
+  );
+
+  if (!hourlyLimit.allowed) {
+    return createRateLimitResponse(hourlyLimit);
+  }
+
+  const dailyLimit = await checkRateLimit(
+    {
+      scope: "export:ai-analysis:day",
+      limit: 10,
+      windowSeconds: 24 * 60 * 60,
+    },
+    [workspace.id, user.id],
+  );
+
+  if (!dailyLimit.allowed) {
+    return createRateLimitResponse(dailyLimit);
   }
 
   const timeZone = workspace.timezone ?? "Europe/Rome";
