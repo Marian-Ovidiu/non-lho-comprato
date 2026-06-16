@@ -132,6 +132,10 @@ export function AppShell({
   const router = useRouter();
   const t = getTranslations(language);
 
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
   const desktopNavItems = [
     { href: "/", label: t.nav.today },
     { href: "/entries", label: t.nav.entries },
