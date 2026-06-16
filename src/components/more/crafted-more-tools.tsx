@@ -8,8 +8,10 @@ import { PwaInstallSection } from "@/src/components/pwa/install-content-lazy";
 import { ThemeSelector } from "@/src/components/theme/theme-selector-lazy";
 import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button-lazy";
 import { JoinWorkspaceForm } from "@/src/components/workspace/join-workspace-form-lazy";
+import { useTranslations } from "@/src/components/language/language-context";
 
 export function CraftedMoreWorkspaceTools() {
+  const t = useTranslations();
   return (
     <div className="divide-y divide-line-soft border-y border-line">
       <div className="py-4">
@@ -19,7 +21,7 @@ export function CraftedMoreWorkspaceTools() {
         </div>
       </div>
       <div className="py-4">
-        <Label className="mb-3 block">Lingua categorie</Label>
+        <Label className="mb-3 block">{t.workspace.languageAriaLabel}</Label>
         <LanguageSelector />
       </div>
       <div className="py-4">
