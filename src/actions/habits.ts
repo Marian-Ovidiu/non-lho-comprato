@@ -859,11 +859,11 @@ export async function deleteHabit(
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const habit = await prisma.habit.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       select: {
         id: true,
-        workspaceId: true,
       },
     });
 
@@ -873,8 +873,6 @@ export async function deleteHabit(
         message: "Ricorrente non trovata",
       };
     }
-
-    await requireWorkspaceAccessForRecord(habit, "Ricorrente");
 
     await prisma.$transaction(async (tx) => {
       await applyHabitDeletionToLinkedEntries(tx, id, mode);
@@ -951,11 +949,11 @@ export async function updateHabit(
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const existingHabit = await prisma.habit.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       select: {
         id: true,
-        workspaceId: true,
         targetScope: true,
         targetUserId: true,
         reminderEnabled: true,
@@ -970,10 +968,7 @@ export async function updateHabit(
       };
     }
 
-    await requireWorkspaceAccessForRecord(existingHabit, "Ricorrente");
-
-    const [workspaceId, currentUser, members] = await Promise.all([
-      getCurrentWorkspaceId(),
+    const [currentUser, members] = await Promise.all([
       getCurrentUser(),
       getCurrentWorkspaceMembers(),
     ]);

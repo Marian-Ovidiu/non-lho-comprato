@@ -83,8 +83,8 @@ model Category {
 
 model Entry {
   id                String           @id @default(cuid())
-  workspaceId       String?
-  workspace         Workspace?       @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  workspaceId       String
+  workspace         Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   title             String
   categoryId        String
   category          Category         @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -132,8 +132,8 @@ model EntryBeneficiary {
 
 model Habit {
   id              String            @id @default(cuid())
-  workspaceId     String?
-  workspace       Workspace?        @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  workspaceId     String
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   name            String
   categoryId      String
   category        Category          @relation(fields: [categoryId], references: [id], onDelete: Restrict)
@@ -169,8 +169,8 @@ model HabitOccurrence {
 
 model Goal {
   id           String     @id @default(cuid())
-  workspaceId  String?
-  workspace    Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  workspaceId  String
+  workspace    Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   title        String
   targetAmount Decimal    @db.Decimal(10, 2)
   emoji        String?
@@ -186,8 +186,8 @@ model Goal {
 
 model QuickPreset {
   id              String     @id @default(cuid())
-  workspaceId     String?
-  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+  workspaceId     String
+  workspace       Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   title           String
   categoryId      String
   category        Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)

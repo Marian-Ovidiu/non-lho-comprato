@@ -24,7 +24,7 @@ async function main() {
         by: ["workspaceId"],
         _count: { _all: true },
       }),
-      prisma.entry.count({ where: { workspaceId: null } }),
+      Promise.resolve(0), // workspaceId is non-nullable; orphans are impossible
       prisma.entry.count(),
     ]);
 

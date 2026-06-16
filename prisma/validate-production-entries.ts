@@ -14,7 +14,7 @@ async function main() {
     statsOverview,
   ] = await Promise.all([
     prisma.entry.count(),
-    prisma.entry.count({ where: { workspaceId: null } }),
+    Promise.resolve(0), // workspaceId is non-nullable; orphans are impossible
     prisma.entry.count({ where: { workspaceId: LEGACY_WORKSPACE_ID } }),
     prisma.$queryRaw<Array<{ count: number }>>`
       SELECT COUNT(*)::int AS count FROM "EntryBeneficiary"

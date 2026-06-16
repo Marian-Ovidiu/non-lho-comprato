@@ -8,7 +8,6 @@ import { prisma } from "@/src/lib/prisma";
 import {
   getCurrentWorkspaceId,
   getCurrentWorkspaceScopedWhere,
-  requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 
 type GoalActionResult = {
@@ -283,11 +282,11 @@ export async function deleteGoal(goalId: string): Promise<GoalActionResult> {
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const goal = await prisma.goal.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       select: {
         id: true,
-        workspaceId: true,
       },
     });
 
@@ -298,14 +297,12 @@ export async function deleteGoal(goalId: string): Promise<GoalActionResult> {
       };
     }
 
-    await requireWorkspaceAccessForRecord(goal, "Obiettivo");
-
     await prisma.goal.delete({
       where: { id },
     });
 
     revalidateGoalPaths();
-    updateTag(`goals:${goal.workspaceId}`);
+    updateTag(`goals:${workspaceId}`);
 
     return {
       success: true,
@@ -333,12 +330,12 @@ export async function toggleGoalActive(
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const goal = await prisma.goal.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       select: {
         id: true,
         isActive: true,
-        workspaceId: true,
       },
     });
 
@@ -349,8 +346,6 @@ export async function toggleGoalActive(
       };
     }
 
-    await requireWorkspaceAccessForRecord(goal, "Obiettivo");
-
     await prisma.goal.update({
       where: { id },
       data: {
@@ -359,7 +354,7 @@ export async function toggleGoalActive(
     });
 
     revalidateGoalPaths();
-    updateTag(`goals:${goal.workspaceId}`);
+    updateTag(`goals:${workspaceId}`);
 
     return {
       success: true,

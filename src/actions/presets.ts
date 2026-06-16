@@ -24,7 +24,6 @@ import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
   getCurrentWorkspaceTimezone,
-  requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 
 type PresetActionResult = {
@@ -523,11 +522,11 @@ export async function updatePreset(
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const preset = await prisma.quickPreset.findUnique({
-      where: { id: presetId },
+      where: { id: presetId, workspaceId },
       select: {
         id: true,
-        workspaceId: true,
       },
     });
 
@@ -538,9 +537,6 @@ export async function updatePreset(
       };
     }
 
-    await requireWorkspaceAccessForRecord(preset, "Preset");
-
-    const workspaceId = await getCurrentWorkspaceId();
     const category = await resolveCategory(categoryId, workspaceId);
 
     if (!category) {
@@ -684,8 +680,9 @@ export async function createEntryFromPreset(
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const preset = await prisma.quickPreset.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       select: {
         title: true,
         categoryId: true,
@@ -694,7 +691,6 @@ export async function createEntryFromPreset(
         note: true,
         targetUserId: true,
         targetScope: true,
-        workspaceId: true,
       },
     });
 
@@ -704,8 +700,6 @@ export async function createEntryFromPreset(
         message: "Preset non trovato",
       };
     }
-
-    await requireWorkspaceAccessForRecord(preset, "Preset");
 
     const [currentUser, members, timeZone] = await Promise.all([
       getCurrentUser(),
@@ -778,11 +772,11 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const preset = await prisma.quickPreset.findUnique({
-      where: { id: presetId },
+      where: { id: presetId, workspaceId },
       select: {
         id: true,
-        workspaceId: true,
       },
     });
 
@@ -792,8 +786,6 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
         message: "Preset non trovato",
       };
     }
-
-    await requireWorkspaceAccessForRecord(preset, "Preset");
 
     await prisma.quickPreset.delete({
       where: { id: presetId },

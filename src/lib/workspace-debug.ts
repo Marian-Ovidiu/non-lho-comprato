@@ -55,9 +55,7 @@ export async function getWorkspaceEntryCounts(workspaceId: string) {
     prisma.entry.count({
       where: { workspaceId },
     }),
-    prisma.entry.count({
-      where: { workspaceId: null },
-    }),
+    Promise.resolve(0), // workspaceId is non-nullable; orphans are impossible
   ]);
 
   return {

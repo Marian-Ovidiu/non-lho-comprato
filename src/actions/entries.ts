@@ -858,11 +858,12 @@ export async function getEntryById(
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     let entry: EntryEditRecord | null = null;
 
     try {
       entry = await prisma.entry.findUnique({
-        where: { id },
+        where: { id, workspaceId },
         select: entryEditSelectWithBeneficiaries,
       });
     } catch (error) {
@@ -876,7 +877,7 @@ export async function getEntryById(
       });
 
       const legacyEntry = await prisma.entry.findUnique({
-        where: { id },
+        where: { id, workspaceId },
         select: entryEditSelect,
       });
 
@@ -891,8 +892,6 @@ export async function getEntryById(
     if (!entry) {
       return null;
     }
-
-    await requireWorkspaceAccessForRecord(entry, "Movimento");
 
     const members = await getCurrentWorkspaceMembers();
     const people = resolveEntryPeopleFromRecord(entry, members);
@@ -1372,13 +1371,13 @@ export async function updateEntry(
   const money = entryMoney.money;
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const existingEntry = await prisma.entry.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       select: {
         id: true,
         source: true,
         habitOccurrenceId: true,
-        workspaceId: true,
         createdByUserId: true,
         paidByUserId: true,
       },
@@ -1391,10 +1390,7 @@ export async function updateEntry(
       };
     }
 
-    await requireWorkspaceAccessForRecord(existingEntry, "Movimento");
-
     const currentUser = await getCurrentUser();
-    const workspaceId = await getCurrentWorkspaceId();
     const category = await resolveEntryCategory(categoryId, workspaceId);
 
     if (!category) {
@@ -1478,13 +1474,13 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
   }
 
   try {
+    const workspaceId = await getCurrentWorkspaceId();
     const entry = await prisma.entry.findUnique({
-      where: { id },
+      where: { id, workspaceId },
       select: {
         id: true,
         source: true,
         habitOccurrenceId: true,
-        workspaceId: true,
       },
     });
 
@@ -1494,8 +1490,6 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
         message: "Movimento non trovato",
       };
     }
-
-    await requireWorkspaceAccessForRecord(entry, "Movimento");
 
     if (entry.habitOccurrenceId) {
       const habitOccurrence = await prisma.habitOccurrence.findUnique({
@@ -1534,8 +1528,8 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
-    updateTag(`entries:${entry.workspaceId}`);
-    updateTag(`goals:${entry.workspaceId}`);
+    updateTag(`entries:${workspaceId}`);
+    updateTag(`goals:${workspaceId}`);
 
     return {
       success: true,
