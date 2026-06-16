@@ -1,5 +1,9 @@
 import { prisma } from "@/src/lib/prisma";
 import {
+  assertWorkspaceRecord,
+  type WorkspaceScopedRecord,
+} from "@/src/lib/workspace-isolation";
+import {
   dedupeWorkspaceMemberOptions,
   getWorkspaceMemberLabel,
   type WorkspaceMemberOption,
@@ -46,12 +50,7 @@ export type CurrentWorkspaceMemberDetail = {
   isCurrentUser: boolean;
 };
 
-type WorkspaceScopedRecord = {
-  workspaceId?: string | null;
-  habit?: {
-    workspaceId?: string | null;
-  } | null;
-};
+export { assertWorkspaceRecord, type WorkspaceScopedRecord } from "@/src/lib/workspace-isolation";
 
 export async function getCurrentUser(): Promise<CurrentUser> {
   return getAuthCurrentUser();
@@ -260,18 +259,8 @@ export async function requireWorkspaceAccessForRecord<
   T extends WorkspaceScopedRecord,
 >(record: T | null, resourceLabel = "record"): Promise<T> {
   const workspaceId = await getCurrentWorkspaceId();
-
-  if (!record) {
-    throw new Error(`${resourceLabel} not found`);
-  }
-
-  const recordWorkspaceId = record.workspaceId ?? record.habit?.workspaceId ?? null;
-
-  if (recordWorkspaceId !== workspaceId) {
-    throw new Error(`${resourceLabel} not found`);
-  }
-
-  return record;
+  assertWorkspaceRecord(record, workspaceId, resourceLabel);
+  return record as T;
 }
 
 export { getAuthenticatedUser, requireAuth, requireWorkspace } from "@/src/lib/auth/session";
