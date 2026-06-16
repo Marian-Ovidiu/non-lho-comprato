@@ -18,7 +18,7 @@ function isNotificationSupported(): boolean {
 
 function getLocalHourMinute(date = new Date()): { hour: number; minute: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    timeZone: "Europe/Rome",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,

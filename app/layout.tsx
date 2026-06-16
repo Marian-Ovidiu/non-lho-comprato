@@ -15,7 +15,7 @@ import {
 import { getThemeBootstrapScript } from "@/src/lib/theme";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { getWorkspaceShellContext } from "@/src/lib/workspace-context";
-import { getHtmlLang } from "@/src/lib/workspace-language";
+import { getHtmlLang } from "@/src/lib/workspace-language-server";
 import "./globals.css";
 
 const geistSans = Geist({
