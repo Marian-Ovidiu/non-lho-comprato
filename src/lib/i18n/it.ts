@@ -294,6 +294,26 @@ export const it: Translations = {
     recentEntries: "Ultimi movimenti",
     viewAll: "Vedi tutti i movimenti",
     addEntry: "Aggiungi movimento",
+    thisMonth: "Questo mese",
+    noReport: "Nessun report disponibile",
+    openReport: "Apri report",
+    noData: "Appena arrivano movimenti nel mese in corso, qui trovi il riepilogo.",
+    spentLabel: "Speso",
+    topCategory: "Categoria top",
+    netImpact: "Impatto netto",
+    noCategory: "Nessuna",
+  },
+
+  dailyCheckin: {
+    title: "Riepilogo di oggi",
+    close: "Chiudi",
+    spentToday: "Speso oggi",
+    netImpactToday: "Impatto netto oggi",
+    ledeSpent: (amount) => `Oggi hai già registrato ${amount} di spesa reale.`,
+    ledeSaved: "Oggi non hai ancora speso, ma hai già segnato impatto netto positivo.",
+    ledeEmpty: "Oggi è ancora aperto. Puoi registrare una spesa o aggiungere un confronto quando serve.",
+    pendingHabits: "Ricorrenti aperte",
+    registerExpense: "Registra una spesa",
   },
 
   goalsPreview: {

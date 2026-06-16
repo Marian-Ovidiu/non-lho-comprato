@@ -294,6 +294,26 @@ export const en: Translations = {
     recentEntries: "Recent entries",
     viewAll: "View all entries",
     addEntry: "Add entry",
+    thisMonth: "This month",
+    noReport: "No report available",
+    openReport: "Open report",
+    noData: "As soon as entries arrive for the current month, the summary will appear here.",
+    spentLabel: "Spent",
+    topCategory: "Top category",
+    netImpact: "Net impact",
+    noCategory: "None",
+  },
+
+  dailyCheckin: {
+    title: "Today's summary",
+    close: "Close",
+    spentToday: "Spent today",
+    netImpactToday: "Net impact today",
+    ledeSpent: (amount) => `You've already recorded ${amount} in real spending today.`,
+    ledeSaved: "You haven't spent anything today, but you've already logged a positive net impact.",
+    ledeEmpty: "Today is still open. Record an expense or add a comparison whenever you need.",
+    pendingHabits: "Open recurring",
+    registerExpense: "Record an expense",
   },
 
   goalsPreview: {

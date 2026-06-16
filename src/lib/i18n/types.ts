@@ -282,6 +282,26 @@ export type Translations = {
     recentEntries: string;
     viewAll: string;
     addEntry: string;
+    thisMonth: string;
+    noReport: string;
+    openReport: string;
+    noData: string;
+    spentLabel: string;
+    topCategory: string;
+    netImpact: string;
+    noCategory: string;
+  };
+
+  dailyCheckin: {
+    title: string;
+    close: string;
+    spentToday: string;
+    netImpactToday: string;
+    ledeSpent: (amount: string) => string;
+    ledeSaved: string;
+    ledeEmpty: string;
+    pendingHabits: string;
+    registerExpense: string;
   };
 
   goalsPreview: {

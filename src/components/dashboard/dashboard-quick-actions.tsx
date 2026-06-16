@@ -1,36 +1,41 @@
+"use client";
+
 import Link from "next/link";
 import { BarChart3, Layers3, PlusCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-
-const actions = [
-  {
-    href: "/entries/new",
-    title: "Registra una spesa",
-    description: "Aggiungi movimento o confronto",
-    icon: PlusCircle,
-  },
-  {
-    href: "/presets",
-    title: "Preset rapidi",
-    description: "Riusa spese e scorciatoie",
-    icon: Layers3,
-  },
-  {
-    href: "/stats",
-    title: "Statistiche",
-    description: "Guarda spesa e impatto netto",
-    icon: BarChart3,
-  },
-] as const;
+import { useTranslations } from "@/src/components/language/language-context";
 
 export function DashboardQuickActions() {
+  const t = useTranslations();
+
+  const actions = [
+    {
+      href: "/entries/new",
+      title: t.dashboardQuickActions.registerExpense,
+      description: t.dashboardQuickActions.registerExpenseDesc,
+      icon: PlusCircle,
+    },
+    {
+      href: "/presets",
+      title: t.dashboardQuickActions.quickPresets,
+      description: t.dashboardQuickActions.quickPresetsDesc,
+      icon: Layers3,
+    },
+    {
+      href: "/stats",
+      title: t.dashboardQuickActions.statistics,
+      description: t.dashboardQuickActions.statisticsDesc,
+      icon: BarChart3,
+    },
+  ] as const;
+
   return (
     <section className="space-y-4">
       <div className="space-y-1">
-        <h2 className="text-lg font-semibold text-foreground">Azioni rapide</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t.dashboardQuickActions.title}</h2>
         <p className="text-sm text-muted-text">
-          Parti da una spesa normale, poi aggiungi il confronto solo quando serve.
+          {t.dashboardQuickActions.desc}
         </p>
       </div>
 

@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatMoney } from "@/src/lib/formatters";
 import { spacing } from "@/src/lib/spacing";
 import { useCurrencyCode } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type MonthlyReportPreviewProps = {
   report: {
@@ -28,6 +29,7 @@ type MonthlyReportPreviewProps = {
 };
 
 export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
+  const t = useTranslations();
   const currencyCode = useCurrencyCode();
   return (
     <Card className="overflow-hidden border-border shadow-sm">
@@ -43,17 +45,17 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
             </div>
             <div className="space-y-1">
               <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-text">
-                Questo mese
+                {t.monthlyReportPreview.thisMonth}
               </p>
               <CardTitle className="text-base text-foreground">
-                {report?.label ?? "Nessun report disponibile"}
+                {report?.label ?? t.monthlyReportPreview.noReport}
               </CardTitle>
             </div>
           </div>
 
           <Button asChild variant="outline" size="sm" className="shrink-0">
             <Link href="/reports/monthly">
-              Apri report
+              {t.monthlyReportPreview.openReport}
               <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </Button>
@@ -63,13 +65,13 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
       <CardContent className={`space-y-3 ${spacing.cardBodyCompact}`}>
         {!report || !report.hasData ? (
           <p className="text-sm leading-5 text-muted-text">
-            Appena arrivano movimenti nel mese in corso, qui trovi il riepilogo.
+            {t.monthlyReportPreview.noData}
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Speso
+                {t.monthlyReportPreview.spentLabel}
               </p>
               <p className="mt-1 text-base font-semibold text-foreground sm:text-lg">
                 {formatMoney(report.overview.totalRealSpent ?? 0, currencyCode)}
@@ -78,16 +80,16 @@ export function MonthlyReportPreview({ report }: MonthlyReportPreviewProps) {
 
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Categoria top
+                {t.monthlyReportPreview.topCategory}
               </p>
               <p className="mt-1 truncate text-base font-semibold text-foreground sm:text-lg">
-                {report.bestCategory?.name ?? "Nessuna"}
+                {report.bestCategory?.name ?? t.monthlyReportPreview.noCategory}
               </p>
             </div>
 
             <div className="rounded-2xl border border-border bg-surface-muted px-4 py-3">
               <p className="text-xs uppercase tracking-[0.16em] text-muted-text">
-                Impatto netto
+                {t.monthlyReportPreview.netImpact}
               </p>
               <p className="mt-1 truncate text-base font-semibold text-foreground sm:text-lg">
                 {formatMoney(report.overview.totalSaved, currencyCode)}

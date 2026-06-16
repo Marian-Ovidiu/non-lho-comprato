@@ -8,6 +8,7 @@ import { Label, Mono, Rule, Serif } from "@/components/crafted";
 import { Button } from "@/components/ui/button";
 import { splitCraftedAmount } from "@/src/lib/crafted-money";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 
 type DailyCheckinOverlayProps = {
@@ -35,6 +36,7 @@ export function DailyCheckinOverlay({
   pendingHabitsCount,
   isVisible = true,
 }: DailyCheckinOverlayProps) {
+  const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -72,10 +74,10 @@ export function DailyCheckinOverlay({
     typeof pendingHabitsCount === "number" && pendingHabitsCount > 0;
 
   const lede = hasSpent
-    ? `Oggi hai già registrato ${spentHero.whole},${spentHero.decimals}${currencySymbol} di spesa reale.`
+    ? t.dailyCheckin.ledeSpent(`${spentHero.whole},${spentHero.decimals}${currencySymbol}`)
     : hasSaved
-      ? "Oggi non hai ancora speso, ma hai già segnato impatto netto positivo."
-      : "Oggi è ancora aperto. Puoi registrare una spesa o aggiungere un confronto quando serve.";
+      ? t.dailyCheckin.ledeSaved
+      : t.dailyCheckin.ledeEmpty;
 
   return (
     <div
@@ -99,19 +101,19 @@ export function DailyCheckinOverlay({
 
         <div className="mb-[18px] flex items-center justify-between gap-3">
           <span id="daily-checkin-title">
-            <Label>Riepilogo di oggi</Label>
+            <Label>{t.dailyCheckin.title}</Label>
           </span>
           <button
             type="button"
             onClick={() => setIsOpen(false)}
-            aria-label="Chiudi"
+            aria-label={t.dailyCheckin.close}
             className="flex size-[30px] items-center justify-center rounded-full text-ink-3 transition-colors hover:text-foreground"
           >
             <X className="size-[18px]" aria-hidden="true" />
           </button>
         </div>
 
-        <Label className="mb-3 block">Speso oggi</Label>
+        <Label className="mb-3 block">{t.dailyCheckin.spentToday}</Label>
         <div className="flex items-start gap-1.5">
           <Mono
             className={cn(
@@ -128,7 +130,7 @@ export function DailyCheckinOverlay({
 
         {hasSaved ? (
           <div className="mt-3">
-            <Label className="mb-1.5 block">Impatto netto oggi</Label>
+            <Label className="mb-1.5 block">{t.dailyCheckin.netImpactToday}</Label>
             <Mono className="text-lg font-medium text-accent">
               {savedToday.toLocaleString("it-IT", {
                 minimumFractionDigits: 2,
@@ -150,7 +152,7 @@ export function DailyCheckinOverlay({
               <span className="flex items-center gap-2.5">
                 <span className="size-[7px] rounded-full bg-accent" />
                 <span className="whitespace-nowrap text-sm font-[450]">
-                  Ricorrenti aperte
+                  {t.dailyCheckin.pendingHabits}
                 </span>
               </span>
               <Mono className="text-xl font-semibold">{pendingHabitsCount}</Mono>
@@ -164,7 +166,7 @@ export function DailyCheckinOverlay({
             asChild
             className="h-[52px] w-full rounded-[18px] text-[15px] font-bold"
           >
-            <Link href="/entries/new">Registra una spesa</Link>
+            <Link href="/entries/new">{t.dailyCheckin.registerExpense}</Link>
           </Button>
         </div>
       </div>
