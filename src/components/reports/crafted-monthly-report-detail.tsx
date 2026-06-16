@@ -7,8 +7,12 @@ import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate, formatMoney } from "@/src/lib/formatters";
 import { useCurrencyCode, useCurrencySymbol } from "@/src/components/currency/currency-context";
-import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
+import type { Translations } from "@/src/lib/i18n/types";
+
+type ReportT = Translations["report"];
 import { cn } from "@/lib/utils";
 import {
   buildMonthlyReportAnalyticsSnapshot,
@@ -45,10 +49,10 @@ function formatSignedMoney(value: number, currencySymbol: string): string {
   return `${prefix}${formatCraftedCompact(Math.abs(value))}${currencySymbol}`;
 }
 
-function getShortBalanceLabel(balanceRatio: number): string {
-  if (balanceRatio > 1.1) return "Sopra media";
-  if (balanceRatio < 0.9) return "Sotto media";
-  return "In pari";
+function getShortBalanceLabel(balanceRatio: number, t: ReportT): string {
+  if (balanceRatio > 1.1) return t.aboveAvg;
+  if (balanceRatio < 0.9) return t.belowAvg;
+  return t.balanced;
 }
 
 function getInitials(label: string): string {
@@ -64,20 +68,24 @@ function getInitials(label: string): string {
 }
 
 function getSummaryText({
+  isAllCategories,
   categoryLabel,
   snapshot,
   currencySymbol,
   currencyCode,
+  t,
 }: {
+  isAllCategories: boolean;
   categoryLabel: string;
   snapshot: MonthlyReportAnalyticsSnapshot;
   currencySymbol: string;
   currencyCode: string;
+  t: ReportT;
 }): string {
   if (!snapshot.hasData) {
-    return categoryLabel === "Tutte le categorie"
-      ? "Nessuna spesa registrata nel mese selezionato."
-      : `Nessuna spesa in ${categoryLabel.toLowerCase()} in questo mese.`;
+    return isAllCategories
+      ? t.noSpendingAll
+      : t.noSpendingCategory(categoryLabel.toLowerCase());
   }
 
   const topUser = snapshot.users[0];
@@ -93,27 +101,26 @@ function getSummaryText({
     previousWorkspaceTotal === null
       ? null
       : snapshot.totalPaidByWorkspace - previousWorkspaceTotal;
-  const categoryPrefix =
-    categoryLabel === "Tutte le categorie" ? "" : `${categoryLabel}: `;
+  const categoryPrefix = isAllCategories ? "" : `${categoryLabel}: `;
 
   const balancedText = topUser
     ? `${topUser.label} è ${topUser.balanceLabel.toLowerCase()}.`
-    : "La spesa del workspace è in equilibrio.";
+    : t.workspaceBalanced;
   const deltaText =
     workspaceDelta === null
-      ? "Il confronto col mese scorso non è disponibile."
+      ? t.noComparison
       : workspaceDelta > 0
-        ? `Rispetto al mese scorso siete sopra di ${formatSignedMoney(workspaceDelta, currencySymbol)}.`
+        ? t.aboveLastMonth(formatSignedMoney(workspaceDelta, currencySymbol))
         : workspaceDelta < 0
-          ? `Rispetto al mese scorso siete sotto di ${formatSignedMoney(Math.abs(workspaceDelta), currencySymbol)}.`
-          : "Rispetto al mese scorso siete allineati.";
+          ? t.belowLastMonth(formatSignedMoney(Math.abs(workspaceDelta), currencySymbol))
+          : t.alignedLastMonth;
 
   const savingText =
     snapshot.overview.totalSaved > 0
-      ? ` ${formatMoney(snapshot.overview.totalSaved, currencyCode)} impatto netto.`
+      ? t.netImpactSuffix(formatMoney(snapshot.overview.totalSaved, currencyCode))
       : "";
 
-  return `${categoryPrefix}${formatMoney(snapshot.overview.totalRealSpent, currencyCode)} spesi nel mese.${savingText} ${balancedText} ${deltaText}`;
+  return `${categoryPrefix}${t.spentInMonthAmount(formatMoney(snapshot.overview.totalRealSpent, currencyCode))}${savingText} ${balancedText} ${deltaText}`;
 }
 
 function buildCategoryOptions(
@@ -121,12 +128,15 @@ function buildCategoryOptions(
   reportEntries: MonthlyReportAnalyticsEntry[],
   previousEntries: MonthlyReportAnalyticsEntry[],
   language: string,
+  locale: string,
+  allCategoriesLabel: string,
+  deletedCategoryLabel: string,
 ): CategoryFilterOption[] {
   const options = new Map<string, CategoryFilterOption>();
 
   options.set(ALL_CATEGORY_VALUE, {
     value: ALL_CATEGORY_VALUE,
-    label: "Tutte le categorie",
+    label: allCategoriesLabel,
   });
 
   for (const category of categories) {
@@ -141,7 +151,7 @@ function buildCategoryOptions(
         value,
         label:
           getLocalizedCategoryName(entry.category.slug, language) ??
-          (entry.category.name || "Categoria eliminata"),
+          (entry.category.name || deletedCategoryLabel),
       });
     }
   }
@@ -150,7 +160,7 @@ function buildCategoryOptions(
     options.get(ALL_CATEGORY_VALUE)!,
     ...[...options.values()]
       .filter((option) => option.value !== ALL_CATEGORY_VALUE)
-      .sort((left, right) => left.label.localeCompare(right.label, "it")),
+      .sort((left, right) => left.label.localeCompare(right.label, locale)),
   ];
 }
 
@@ -172,7 +182,10 @@ function PersonBlock({
   index: number;
   showPrevious: boolean;
 }) {
+  const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
+  const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
   const personalPct =
     user.totalPaid > 0 ? (user.personalSpend / user.totalPaid) * 100 : 0;
   const sharedPct = user.totalPaid > 0 ? 100 - personalPct : 0;
@@ -193,8 +206,8 @@ function PersonBlock({
           <span className="truncate text-[15px] font-medium">{user.label}</span>
         </div>
         <span className="shrink-0 whitespace-nowrap rounded-full border border-line px-2.5 py-[3px] font-num text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
-          {getShortBalanceLabel(user.balanceRatio)} ·{" "}
-          {new Intl.NumberFormat("it-IT", {
+          {getShortBalanceLabel(user.balanceRatio, t.report)} ·{" "}
+          {new Intl.NumberFormat(locale, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           }).format(user.balanceRatio)}
@@ -204,7 +217,7 @@ function PersonBlock({
 
       <div className="mt-3.5 flex items-end justify-between gap-3">
         <div>
-          <Label className="mb-1.5 block">Totale pagato</Label>
+          <Label className="mb-1.5 block">{t.report.totalPaid}</Label>
           <Mono className="text-[30px] font-semibold leading-none">
             {formatCraftedCompact(user.totalPaid)}
             <span className="text-[13px] text-accent">{currencySymbol}</span>
@@ -224,7 +237,7 @@ function PersonBlock({
               className={cn(diff < 0 && "rotate-180")}
             />
             <Mono>{formatSignedMoney(diff, currencySymbol)}</Mono>
-            <span className="text-ink-3">vs mese scorso</span>
+            <span className="text-ink-3">{t.report.vsPrevMonth}</span>
           </div>
         ) : null}
       </div>
@@ -244,14 +257,14 @@ function PersonBlock({
           <div className="mt-2.5 flex items-center justify-between text-[12px] text-muted-foreground">
             <span className="inline-flex items-center gap-1.5">
               <span className="size-[7px] rounded-[2px] bg-foreground/85" />
-              Personale{" "}
+              {t.report.personal}{" "}
               <Mono className="text-foreground">
                 {formatCraftedCompact(user.personalSpend)}{currencySymbol}
               </Mono>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-[7px] rounded-[2px] bg-accent" />
-              Condivisa{" "}
+              {t.report.shared}{" "}
               <Mono className="text-foreground">
                 {formatCraftedCompact(user.sharedSpend)}{currencySymbol}
               </Mono>
@@ -260,7 +273,7 @@ function PersonBlock({
         </>
       ) : (
         <Serif className="mt-2 block text-[13px] text-ink-3">
-          Nessuna spesa pagata nel periodo.
+          {t.report.noSpendingPaid}
         </Serif>
       )}
     </div>
@@ -268,6 +281,7 @@ function PersonBlock({
 }
 
 function PayerCompare({ users }: { users: MonthlyReportAnalyticsUser[] }) {
+  const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const ranked = [...users]
     .filter((user) => user.totalPaid > 0)
@@ -282,7 +296,7 @@ function PayerCompare({ users }: { users: MonthlyReportAnalyticsUser[] }) {
   return (
     <>
       <section className="px-5 pb-1 pt-[22px]">
-        <Label>Chi ha pagato di più</Label>
+        <Label>{t.report.whoPayedMore}</Label>
       </section>
       <div className="px-5 pb-2">
         {ranked.map((user, index) => (
@@ -322,15 +336,16 @@ function MonthHighlights({
 }: {
   snapshot: MonthlyReportAnalyticsSnapshot;
 }) {
+  const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const { bestCategory, worstCategory, biggestSaving } = snapshot;
 
   return (
     <>
       <section className="px-5 pb-0.5 pt-[22px]">
-        <Label className="mb-1.5 block">Evidenze del mese</Label>
+        <Label className="mb-1.5 block">{t.report.monthHighlights}</Label>
         <Serif className="block text-[13px] text-ink-3">
-          Prima la spesa reale, poi non comprato e confronti positivi.
+          {t.report.monthHighlightsDesc}
         </Serif>
       </section>
 
@@ -349,7 +364,7 @@ function MonthHighlights({
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-[450]">{worstCategory.name}</p>
               <Serif className="mt-1 block text-[13px] text-ink-3">
-                la categoria dove hai speso di più
+                {t.report.topSpendingCategory}
               </Serif>
             </div>
             <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
@@ -373,7 +388,7 @@ function MonthHighlights({
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-[450]">{bestCategory.name}</p>
               <Serif className="mt-1 block text-[13px] text-ink-3">
-                miglior impatto netto positivo
+                {t.report.bestNetImpact}
               </Serif>
             </div>
             <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-green">
@@ -390,7 +405,7 @@ function MonthHighlights({
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline justify-between gap-3">
               <span className="block font-num text-[10px] font-normal uppercase tracking-[0.22em] text-green">
-                Miglior impatto positivo
+                {t.report.bestPositiveImpact}
               </span>
               <span className="shrink-0 rounded-full border border-line px-2.5 py-[3px] font-num text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
                 {biggestSaving.ownershipLabel}
@@ -399,8 +414,10 @@ function MonthHighlights({
             <p className="mt-2 text-[15px] font-[450]">{biggestSaving.title}</p>
             <Serif className="mt-1 block text-[13px] text-ink-3">
               {biggestSaving.categoryName} · {formatDate(biggestSaving.date)} ·{" "}
-              {formatCraftedCompact(biggestSaving.realCost)}{currencySymbol} invece di{" "}
-              {formatCraftedCompact(biggestSaving.alternativeCost)}{currencySymbol}
+              {t.report.insteadOf(
+                `${formatCraftedCompact(biggestSaving.realCost)}${currencySymbol}`,
+                `${formatCraftedCompact(biggestSaving.alternativeCost)}${currencySymbol}`,
+              )}
             </Serif>
           </div>
           <Mono className="shrink-0 whitespace-nowrap text-[17px] font-semibold text-green">
@@ -421,37 +438,49 @@ export function CraftedMonthlyReportDetail({
   report,
   categories,
 }: CraftedMonthlyReportDetailProps) {
+  const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const currencyCode = useCurrencyCode();
   const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY_VALUE);
 
   const categoryOptions = useMemo(
     () =>
-      buildCategoryOptions(categories, report.entries, report.previousMonthEntries, language),
-    [categories, report.entries, report.previousMonthEntries, language],
+      buildCategoryOptions(
+        categories,
+        report.entries,
+        report.previousMonthEntries,
+        language,
+        locale,
+        t.report.allCategories,
+        t.report.deletedCategory,
+      ),
+    [categories, report.entries, report.previousMonthEntries, language, locale, t.report.allCategories, t.report.deletedCategory],
   );
+
+  const isAllCategories = selectedCategory === ALL_CATEGORY_VALUE;
 
   const selectedCategoryLabel = useMemo(
     () =>
       categoryOptions.find((option) => option.value === selectedCategory)?.label ??
-      "Tutte le categorie",
-    [categoryOptions, selectedCategory],
+      t.report.allCategories,
+    [categoryOptions, selectedCategory, t.report.allCategories],
   );
 
   const filteredEntries = useMemo(() => {
-    if (selectedCategory === ALL_CATEGORY_VALUE) return report.entries;
+    if (isAllCategories) return report.entries;
     return report.entries.filter(
       (entry) => getCategoryKey(entry.category) === selectedCategory,
     );
-  }, [report.entries, selectedCategory]);
+  }, [report.entries, selectedCategory, isAllCategories]);
 
   const filteredPreviousEntries = useMemo(() => {
-    if (selectedCategory === ALL_CATEGORY_VALUE) return report.previousMonthEntries;
+    if (isAllCategories) return report.previousMonthEntries;
     return report.previousMonthEntries.filter(
       (entry) => getCategoryKey(entry.category) === selectedCategory,
     );
-  }, [report.previousMonthEntries, selectedCategory]);
+  }, [report.previousMonthEntries, selectedCategory, isAllCategories]);
 
   const snapshot = useMemo(
     () =>
@@ -464,8 +493,8 @@ export function CraftedMonthlyReportDetail({
   );
 
   const summaryText = useMemo(
-    () => getSummaryText({ categoryLabel: selectedCategoryLabel, snapshot, currencySymbol, currencyCode }),
-    [selectedCategoryLabel, snapshot, currencySymbol, currencyCode],
+    () => getSummaryText({ isAllCategories, categoryLabel: selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t: t.report }),
+    [isAllCategories, selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t.report],
   );
 
   const hasPreviousData = filteredPreviousEntries.length > 0;
@@ -473,7 +502,7 @@ export function CraftedMonthlyReportDetail({
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
       <section className="px-[var(--sp-page-x)] pb-3.5 pt-[var(--sp-section-y)]">
-        <Label className="mb-3.5 block">Dettaglio</Label>
+        <Label className="mb-3.5 block">{t.report.detailLabel}</Label>
         <div className="flex gap-4 overflow-x-auto pb-0.5">
           {categoryOptions.map((option) => {
             const selected = option.value === selectedCategory;
@@ -489,7 +518,7 @@ export function CraftedMonthlyReportDetail({
                     : "border-transparent font-[450] text-ink-3",
                 )}
               >
-                {option.value === ALL_CATEGORY_VALUE ? "Tutte" : option.label}
+                {option.value === ALL_CATEGORY_VALUE ? t.report.allCategoriesShort : option.label}
               </button>
             );
           })}
@@ -507,10 +536,9 @@ export function CraftedMonthlyReportDetail({
         <>
           <section className="px-[var(--sp-page-x)] pb-1 pt-[var(--sp-section-y)]">
             <div className="flex items-baseline justify-between gap-3">
-              <Label>Per persona</Label>
+              <Label>{t.report.byPerson}</Label>
               <Mono className="text-[11px] text-ink-3">
-                {snapshot.users.length}{" "}
-                {snapshot.users.length === 1 ? "membro" : "membri"}
+                {t.report.memberCount(snapshot.users.length)}
               </Mono>
             </div>
           </section>

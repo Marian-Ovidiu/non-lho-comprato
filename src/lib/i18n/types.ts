@@ -523,6 +523,57 @@ export type Translations = {
     dataLoadError: string;
   };
 
+  report: {
+    monthFallback: string;
+    reportTitle: (monthLabel: string) => string;
+    spentInMonth: string;
+    monthSummary: string;
+    netImpact: string;
+    entriesLabel: string;
+    netIndex: string;
+    noReport: string;
+    noReportDesc: string;
+    selectMonth: string;
+    showButton: string;
+    monthLabel: string;
+    streakSeriesLabel: string;
+    bestStreak: string;
+    currentStreak: string;
+    habitsOk: string;
+    habitsSkipped: (n: number) => string;
+    addEntry: string;
+    allCategories: string;
+    allCategoriesShort: string;
+    deletedCategory: string;
+    noSpendingAll: string;
+    noSpendingCategory: (cat: string) => string;
+    spentInMonthAmount: (amount: string) => string;
+    netImpactSuffix: (amount: string) => string;
+    workspaceBalanced: string;
+    noComparison: string;
+    aboveLastMonth: (amount: string) => string;
+    belowLastMonth: (amount: string) => string;
+    alignedLastMonth: string;
+    totalPaid: string;
+    vsPrevMonth: string;
+    personal: string;
+    shared: string;
+    noSpendingPaid: string;
+    aboveAvg: string;
+    belowAvg: string;
+    balanced: string;
+    whoPayedMore: string;
+    monthHighlights: string;
+    monthHighlightsDesc: string;
+    topSpendingCategory: string;
+    bestNetImpact: string;
+    bestPositiveImpact: string;
+    insteadOf: (real: string, alt: string) => string;
+    detailLabel: string;
+    byPerson: string;
+    memberCount: (n: number) => string;
+  };
+
   stats: {
     noCategoryData: string;
     categoryNetImpact: (amount: string) => string;

@@ -1,4 +1,7 @@
+"use client";
+
 import { Label } from "@/components/crafted";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type MonthOption = {
   value: string;
@@ -11,10 +14,11 @@ type CraftedMonthSelectorProps = {
 };
 
 export function CraftedMonthSelector({ months, selectedMonth }: CraftedMonthSelectorProps) {
+  const t = useTranslations();
   const options =
     months.length > 0
       ? months
-      : [{ value: selectedMonth, label: selectedMonth || "Seleziona un mese" }];
+      : [{ value: selectedMonth, label: selectedMonth || t.report.selectMonth }];
 
   return (
     <form action="/reports/monthly" method="get" className="flex items-end gap-4 border-y border-line py-3">
@@ -36,9 +40,9 @@ export function CraftedMonthSelector({ months, selectedMonth }: CraftedMonthSele
         type="submit"
         className="rounded-full border border-line px-4 py-2 text-[13px] font-semibold"
       >
-        Mostra
+        {t.report.showButton}
       </button>
-      <Label className="sr-only">Mese</Label>
+      <Label className="sr-only">{t.report.monthLabel}</Label>
     </form>
   );
 }
