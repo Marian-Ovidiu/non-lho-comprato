@@ -55,6 +55,11 @@ import { trackPostHogEvent } from "@/src/lib/posthog";
 import { getBrowserTodayDateKey, shiftDateKey } from "@/src/lib/workspace-dates";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
+import {
+  useTranslations,
+  useWorkspaceLanguage,
+} from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
 import type { EntryPaymentModeValue } from "@/src/lib/entry-payment-mode";
 import {
@@ -136,14 +141,14 @@ function getInitialDraft(
   };
 }
 
-function getPresetAmountLabel(amount: string, currencySymbol: string) {
+function getPresetAmountLabel(amount: string, currencySymbol: string, locale: string) {
   const parsed = Number(amount.replace(",", "."));
 
   if (!Number.isFinite(parsed)) {
     return `${amount} ${currencySymbol}`;
   }
 
-  return `${new Intl.NumberFormat("it-IT", {
+  return `${new Intl.NumberFormat(locale, {
     maximumFractionDigits: 2,
     minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
   }).format(parsed)} ${currencySymbol}`;
@@ -178,8 +183,8 @@ function getSavedPresetEmoji(preset: SerializablePreset) {
   return "•";
 }
 
-function buildSavedQuickPreset(preset: SerializablePreset, currencySymbol: string): QuickAddPreset {
-  const amountLabel = getPresetAmountLabel(preset.amountSpent, currencySymbol);
+function buildSavedQuickPreset(preset: SerializablePreset, currencySymbol: string, locale: string): QuickAddPreset {
+  const amountLabel = getPresetAmountLabel(preset.amountSpent, currencySymbol, locale);
 
   return {
     id: `saved:${preset.id}`,
@@ -297,6 +302,9 @@ export function QuickAddSheet({
   const router = useRouter();
   const pathname = usePathname();
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
+  const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
   const [open, setOpen] = useState(false);
   const [activePreset, setActivePreset] = useState<string | null>(null);
   const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
@@ -351,10 +359,10 @@ export function QuickAddSheet({
     return [
       ...savedPresets
         .filter((preset) => preset.mode !== "avoided")
-        .map((preset) => buildSavedQuickPreset(preset, currencySymbol)),
+        .map((preset) => buildSavedQuickPreset(preset, currencySymbol, locale)),
       ...visibleDefaults,
     ];
-  }, [hiddenDefaultPresetIds, savedPresets, currencySymbol]);
+  }, [hiddenDefaultPresetIds, savedPresets, currencySymbol, locale]);
   const presetMap = useMemo(
     () => new Map(quickAddPresets.map((preset) => [preset.id, preset])),
     [quickAddPresets],
@@ -522,19 +530,19 @@ export function QuickAddSheet({
     }
 
     pushToast({
-      title: "Tenuto",
-      description: "Movimento salvato. Puoi annullarlo per qualche secondo.",
+      title: t.quickAdd.successTitle,
+      description: t.quickAdd.successDesc,
       tone: "success",
       action: state.entryId
         ? {
-            label: "Annulla",
+            label: t.quickAdd.undoButton,
             onClick: async () => {
               const result = await deleteEntry(state.entryId ?? "");
 
               pushToast({
                 title: result.success
-                  ? "Movimento annullato"
-                  : "Annullamento non riuscito",
+                  ? t.quickAdd.undoSuccess
+                  : t.quickAdd.undoFailed,
                 description: result.message,
                 tone: result.success ? "default" : "error",
                 duration: result.success ? 3200 : 5200,
@@ -756,14 +764,14 @@ export function QuickAddSheet({
             <div className="flex min-w-0 items-start justify-between gap-4">
               <div className="min-w-0 flex-1 space-y-1">
                 <p className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">
-                  Aggiunta rapida
+                  {t.quickAdd.title}
                 </p>
                 <DialogTitle className="flex items-center gap-2 text-lg tracking-tight">
                   <Sparkles className="size-4 text-premium-accent" aria-hidden="true" />
-                  Nuovo movimento
+                  {t.quickAdd.dialogTitle}
                 </DialogTitle>
                 <DialogDescription className="max-w-md text-sm leading-5 text-muted-text">
-                  Scorciatoie pronte e salvataggio immediato.
+                  {t.quickAdd.desc}
                 </DialogDescription>
 
                 <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-transparent px-3 py-1.5">
@@ -778,7 +786,7 @@ export function QuickAddSheet({
                     {workspace.name}
                   </span>
                   <span className="shrink-0 rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-text">
-                    {workspace.isShared ? "Condiviso" : "Privato"}
+                    {workspace.isShared ? t.quickAdd.workspaceShared : t.quickAdd.workspacePrivate}
                   </span>
                 </div>
               </div>
@@ -791,7 +799,7 @@ export function QuickAddSheet({
                 onClick={() => setOpen(false)}
               >
                 <ChevronLeft className="size-4" aria-hidden="true" />
-                Chiudi
+                {t.quickAdd.close}
               </Button>
             </div>
           </div>
@@ -826,7 +834,7 @@ export function QuickAddSheet({
                       : "border-transparent text-ink-3 hover:text-foreground",
                   )}
                   aria-pressed={quickAddIntent === "comparison"}
-                  aria-label="Ho speso e voglio confrontarlo"
+                  aria-label={t.quickAdd.comparisonToggle}
                 >
                   <span className="font-num text-sm" aria-hidden="true">
                     ↘
@@ -852,16 +860,16 @@ export function QuickAddSheet({
               </div>
               <p className="mt-2 text-center text-xs leading-5 text-muted-text">
                 {quickAddIntent === "spent"
-                  ? "Solo denaro uscito davvero."
+                  ? t.quickAdd.onlyRealMoney
                   : quickAddIntent === "comparison"
-                    ? "Usalo quando hai scelto un'opzione più economica."
-                    : "Entrambi avete pagato la vostra metà."}
+                    ? t.quickAdd.cheaperOption
+                    : t.entryForm.jointDesc}
               </p>
             </div>
 
             {presetsLoading ? (
               <p className="sm:col-span-2 rounded-[var(--r-card)] border border-line bg-transparent px-4 py-3 text-sm text-muted-text">
-                Carico i preset salvati…
+                {t.quickAdd.loadingPresets}
               </p>
             ) : null}
 
@@ -925,10 +933,10 @@ export function QuickAddSheet({
 
               <span className="min-w-0 flex-1 space-y-0.5">
                 <span className="block text-sm font-medium text-foreground">
-                  Personalizza
+                  {t.quickAdd.customize}
                 </span>
                 <span className="block text-xs leading-4 text-muted-text">
-                  Compila titolo, importo e intento del movimento
+                  {t.quickAdd.customizeDesc}
                 </span>
               </span>
 
@@ -937,14 +945,14 @@ export function QuickAddSheet({
 
             <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-card)] border border-line bg-transparent px-4 py-3">
               <span className="text-xs leading-5 text-muted-text">
-                Per creare, modificare o eliminare preset vai alla pagina dedicata.
+                {t.quickAdd.presetHelp}
               </span>
               <Link
                 href="/presets"
                 onClick={() => setOpen(false)}
                 className="rounded-full border border-line px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-surface-muted"
               >
-                Gestisci preset
+                {t.quickAdd.managePresets}
               </Link>
             </div>
           </div>
@@ -989,7 +997,7 @@ export function QuickAddSheet({
               ) : null}
 
               <div className="space-y-2">
-                <Label htmlFor="quick-title">Titolo</Label>
+                <Label htmlFor="quick-title">{t.quickAdd.titleLabel}</Label>
                 <Input
                   id="quick-title"
                   className="h-10 rounded-[var(--r-control)] border-line bg-surface-muted px-3 focus-visible:ring-2 focus-visible:ring-ring/50"
@@ -1003,7 +1011,7 @@ export function QuickAddSheet({
                       title: event.target.value,
                     }));
                   }}
-                  placeholder="Pranzo"
+                  placeholder={t.quickAdd.titlePlaceholder}
                   autoComplete="off"
                   aria-invalid={Boolean(state.errors?.title)}
                 />
@@ -1012,7 +1020,7 @@ export function QuickAddSheet({
 
               <div className="grid min-w-0 gap-3 sm:grid-cols-[1.15fr_0.85fr]">
                 <div className="min-w-0 space-y-2">
-                  <Label htmlFor="quick-category">Categoria</Label>
+                  <Label htmlFor="quick-category">{t.quickAdd.categoryLabel}</Label>
                   <Select
                     name="categoryId"
                     value={draft.categoryId}
@@ -1029,7 +1037,7 @@ export function QuickAddSheet({
                       className="h-10 w-full min-w-0 rounded-[var(--r-control)] border-line bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring/50"
                       aria-invalid={Boolean(state.errors?.categoryId)}
                     >
-                      <SelectValue placeholder="Categoria" />
+                      <SelectValue placeholder={t.quickAdd.categoryPlaceholder} />
                     </SelectTrigger>
                     <SelectContent>
                       {categoryOptions.map((category) => (
@@ -1047,7 +1055,7 @@ export function QuickAddSheet({
 
                 <div className="min-w-0 space-y-2">
                   <Label htmlFor="quick-amount">
-                    Quanto hai speso
+                    {t.quickAdd.amountLabel}
                   </Label>
                   <Input
                     id="quick-amount"
@@ -1075,7 +1083,7 @@ export function QuickAddSheet({
               </div>
 
               <div className="min-w-0 space-y-2">
-                <Label htmlFor="quick-date">Data</Label>
+                <Label htmlFor="quick-date">{t.quickAdd.dateLabel}</Label>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     type="button"
@@ -1086,7 +1094,7 @@ export function QuickAddSheet({
                       setDraft((current) => ({ ...current, date: todayKey }));
                     }}
                   >
-                    Oggi
+                    {t.quickAdd.todayButton}
                   </Button>
                   <Button
                     type="button"
@@ -1097,7 +1105,7 @@ export function QuickAddSheet({
                       setDraft((current) => ({ ...current, date: yesterdayKey }));
                     }}
                   >
-                    Ieri
+                    {t.quickAdd.yesterdayButton}
                   </Button>
                 </div>
                 <div className="min-w-0 overflow-hidden">
@@ -1137,14 +1145,14 @@ export function QuickAddSheet({
                   }}
                 >
                   {comparisonEnabled
-                    ? "Nascondi confronto"
-                    : "Ho speso e voglio confrontarlo"}
+                    ? t.quickAdd.hideComparison
+                    : t.quickAdd.comparisonToggle}
                 </button>
 
                 {comparisonEnabled ? (
                   <>
                     <Label htmlFor="quick-comparisonAmount">
-                      Quanto avresti speso di solito?
+                      {t.quickAdd.comparisonAmountLabel}
                     </Label>
                     <Input
                       id="quick-comparisonAmount"
@@ -1170,11 +1178,11 @@ export function QuickAddSheet({
                       className="text-sm"
                     />
                     <p className="text-xs leading-5 text-muted-text">
-                      Usalo quando hai scelto un&apos;opzione più economica.
+                      {t.quickAdd.comparisonHelp}
                     </p>
                     {showLargeComparisonWarning ? (
                       <p className="rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
-                        Questo confronto pesa molto sulle statistiche.
+                        {t.quickAdd.largeComparisonWarning}
                       </p>
                     ) : null}
                   </>
@@ -1188,7 +1196,7 @@ export function QuickAddSheet({
                       className="size-3.5 animate-spin motion-reduce:animate-none"
                       aria-hidden="true"
                     />
-                    Cerco un confronto utile…
+                    {t.quickAdd.searchingSuggestion}
                   </p>
                 ) : null}
               </div>
@@ -1217,7 +1225,7 @@ export function QuickAddSheet({
                 </div>
               ) : membersLoading ? (
                 <p className="text-xs leading-5 text-muted-text" aria-live="polite">
-                  Carico i membri del workspace…
+                  {t.quickAdd.loadingMembers}
                 </p>
               ) : (
                 <EntryPeopleFields
@@ -1247,12 +1255,12 @@ export function QuickAddSheet({
                   (comparisonEnabled && hiddenComparisonAmount === "")
                 }
               >
-                {pending ? "Salvataggio..." : "Salva"}
+                {pending ? t.quickAdd.savingButton : t.quickAdd.saveButton}
               </Button>
 
               <Button asChild variant="outline" className="h-11 w-full rounded-[var(--r-cta)] border-line sm:flex-1">
                 <Link href={fullFormHref} onClick={() => setOpen(false)}>
-                  Vai al form completo
+                  {t.quickAdd.fullFormLink}
                 </Link>
               </Button>
             </div>

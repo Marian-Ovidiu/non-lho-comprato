@@ -150,6 +150,11 @@ export const it: Translations = {
     appliesToSingle: "Vale per una persona: viene trattata come spesa personale.",
     appliesToMultiple: (count) =>
       `Vale per ${count} persone: l'importo viene diviso tra loro.`,
+    noMembers: "Nessun membro disponibile in questo workspace.",
+    summarySaved: (amount) => `${amount} risparmiati scegliendo meglio`,
+    summarySpentMore: (amount) => `${amount} spesi in più del confronto`,
+    summaryInline: "in linea con il confronto",
+    expenseRecorded: "spesa registrata",
     saveButton: "Salva movimento",
     savingButton: "Salvataggio…",
     deleteButton: "Elimina",
@@ -515,6 +520,13 @@ export const it: Translations = {
     loadErrorMembers: "Impossibile caricare i partecipanti",
     loadErrorWorkspace: "Workspace non disponibile. Riprova tra poco.",
     loadErrorCategories: "Impossibile caricare le categorie",
+  },
+
+  entryNotFound: {
+    title: "Movimento non trovato.",
+    desc: "Il movimento potrebbe essere stato eliminato oppure l'indirizzo non è più valido.",
+    backButton: "Torna ai movimenti",
+    checkList: "Controlla l'elenco movimenti.",
   },
 
   subpageHeader: {

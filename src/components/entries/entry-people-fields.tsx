@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/src/components/language/language-context";
 import { FormFieldError } from "@/src/components/shared/form-field-error";
 import {
   getDefaultBeneficiaryUserIds,
@@ -40,20 +41,6 @@ function getMemberGridClass(count: number) {
   return "grid-cols-2 sm:grid-cols-3";
 }
 
-function getExpenseHelperText(
-  beneficiaryUserIds: readonly string[],
-): string | null {
-  if (beneficiaryUserIds.length === 1) {
-    return "Vale per una persona: viene trattata come spesa personale.";
-  }
-
-  if (beneficiaryUserIds.length > 1) {
-    return `Vale per ${beneficiaryUserIds.length} persone: l'importo viene diviso tra loro.`;
-  }
-
-  return null;
-}
-
 export function EntryPeopleFields({
   members,
   paidByUserId,
@@ -62,6 +49,7 @@ export function EntryPeopleFields({
   onPaidByUserIdChange,
   onBeneficiaryUserIdsChange,
 }: EntryPeopleFieldsProps) {
+  const t = useTranslations();
   const sortedMembers = sortWorkspaceMembers(members);
   const selectedPaidBy =
     paidByUserId &&
@@ -81,7 +69,12 @@ export function EntryPeopleFields({
     () => new Set(selectedBeneficiaryUserIds),
     [selectedBeneficiaryUserIds],
   );
-  const expenseHelperText = getExpenseHelperText(selectedBeneficiaryUserIds);
+  const expenseHelperText =
+    selectedBeneficiaryUserIds.length === 1
+      ? t.entryForm.appliesToSingle
+      : selectedBeneficiaryUserIds.length > 1
+        ? t.entryForm.appliesToMultiple(selectedBeneficiaryUserIds.length)
+        : null;
   const gridClass = getMemberGridClass(sortedMembers.length);
 
   useEffect(() => {
@@ -105,7 +98,7 @@ export function EntryPeopleFields({
   if (sortedMembers.length === 0) {
     return (
       <p className="text-sm text-muted-text">
-        Nessun membro disponibile in questo workspace.
+        {t.entryForm.noMembers}
       </p>
     );
   }
@@ -115,9 +108,9 @@ export function EntryPeopleFields({
       <input type="hidden" name="beneficiariesMode" value="explicit" />
 
       <div className="space-y-2">
-        <Label htmlFor="paidByUserId">Chi paga</Label>
+        <Label htmlFor="paidByUserId">{t.entryForm.paidByLabel}</Label>
         <p className="text-xs leading-5 text-muted-text">
-          È la persona che anticipa davvero i soldi.
+          {t.entryForm.paidByHelp}
         </p>
         <Select
           name="paidByUserId"
@@ -130,7 +123,7 @@ export function EntryPeopleFields({
             className="w-full"
             aria-invalid={Boolean(errors?.paidByUserId)}
           >
-            <SelectValue placeholder="Seleziona chi paga" />
+            <SelectValue placeholder={t.entryForm.paidByPlaceholder} />
           </SelectTrigger>
           <SelectContent>
             {sortedMembers.map((member) => (
@@ -145,10 +138,10 @@ export function EntryPeopleFields({
 
       <fieldset className="space-y-3">
         <legend className="text-sm font-medium text-foreground">
-          Vale per
+          {t.entryForm.appliesToLabel}
         </legend>
         <p className="text-xs leading-5 text-muted-text">
-          Seleziona chi beneficia della spesa. Questo decide se è personale o condivisa.
+          {t.entryForm.appliesToHelp}
         </p>
         {expenseHelperText ? (
           <p

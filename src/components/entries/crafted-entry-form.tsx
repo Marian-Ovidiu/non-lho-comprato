@@ -35,6 +35,7 @@ import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 import {
   normalizeEntryPaymentMode,
   type EntryPaymentModeValue,
@@ -126,22 +127,23 @@ function getSummaryText(
   amountSpentInput: string,
   comparisonInput: string,
   currencySymbol: string,
+  tForm: { summarySaved: (a: string) => string; summarySpentMore: (a: string) => string; summaryInline: string; expenseRecorded: string },
 ) {
   if (savingContext === "comparison") {
     const delta = getMoneyDelta(amountSpentInput, comparisonInput);
 
     if (delta > 0) {
-      return `${formatMoneyValue(delta)}${currencySymbol} risparmiati scegliendo meglio`;
+      return tForm.summarySaved(`${formatMoneyValue(delta)}${currencySymbol}`);
     }
 
     if (delta < 0) {
-      return `${formatMoneyValue(Math.abs(delta))}${currencySymbol} spesi in più del confronto`;
+      return tForm.summarySpentMore(`${formatMoneyValue(Math.abs(delta))}${currencySymbol}`);
     }
 
-    return "in linea con il confronto";
+    return tForm.summaryInline;
   }
 
-  return "spesa registrata";
+  return tForm.expenseRecorded;
 }
 
 function getEntryIntent(
@@ -169,6 +171,7 @@ export function CraftedEntryForm({
 }: CraftedEntryFormProps) {
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const redirectTimerRef = useRef<number | null>(null);
@@ -358,9 +361,9 @@ export function CraftedEntryForm({
             href={returnTo}
             className="text-sm text-muted-foreground transition-opacity hover:opacity-80"
           >
-            Annulla
+            {t.common.cancel}
           </Link>
-          <Label>Nuovo movimento</Label>
+          <Label>{t.entryForm.newTitle}</Label>
           <div className="w-14" aria-hidden="true" />
         </div>
 
@@ -388,7 +391,7 @@ export function CraftedEntryForm({
               aria-pressed={entryIntent === "spent"}
             >
               <Receipt className="size-4" aria-hidden="true" />
-              Ho speso
+              {t.entryForm.spentIntent}
             </button>
             <button
               type="button"
@@ -400,12 +403,12 @@ export function CraftedEntryForm({
                   : "border-transparent text-ink-3 hover:text-foreground",
               )}
               aria-pressed={entryIntent === "comparison"}
-              aria-label="Ho speso e voglio confrontarlo"
+              aria-label={t.entryForm.comparisonIntentLabel}
             >
               <span className="font-num text-sm" aria-hidden="true">
                 ↘
               </span>
-              Speso + confronto
+              {t.entryForm.comparisonIntent}
             </button>
             {canUseJointPayment ? (
               <button
@@ -420,16 +423,16 @@ export function CraftedEntryForm({
                 aria-pressed={entryIntent === "joint"}
               >
                 <Users2 className="size-4" aria-hidden="true" />
-                Pagata insieme
+                {t.entryForm.jointIntent}
               </button>
             ) : null}
           </div>
           <p className="mt-3 text-center text-xs leading-5 text-ink-3">
             {entryIntent === "spent"
-              ? "Registra solo il denaro uscito davvero."
+              ? t.entryForm.spentDesc
               : entryIntent === "comparison"
-                ? "Usalo quando hai scelto un'opzione più economica."
-                : "Entrambi avete pagato la vostra metà."}
+                ? t.entryForm.comparisonDesc
+                : t.entryForm.jointDesc}
           </p>
         </div>
 
@@ -454,10 +457,10 @@ export function CraftedEntryForm({
             <>
               <Serif className="mb-3 text-[16px] text-muted-foreground">
                 {entryIntent === "joint"
-                  ? "stai registrando una spesa pagata insieme"
+                  ? t.entryForm.registeredJoint
                   : entryIntent === "comparison"
-                    ? "stai confrontando una spesa"
-                    : "stai registrando una spesa"}
+                    ? t.entryForm.registeredComparison
+                    : t.entryForm.registeredExpense}
               </Serif>
               <div className="flex items-baseline justify-center gap-2">
                 <Mono className="text-[clamp(3rem,16vw,5rem)] font-semibold leading-[0.9] text-accent">
@@ -471,6 +474,7 @@ export function CraftedEntryForm({
                   amountSpentInput,
                   comparisonInput,
                   currencySymbol,
+                  t.entryForm,
                 )}
               </p>
             </>
@@ -478,8 +482,8 @@ export function CraftedEntryForm({
         </section>
 
         <div className="px-5 pb-2">
-          <Label className="mb-3 block">Categoria</Label>
-          <div className="flex gap-5 overflow-x-auto pb-1" role="group" aria-label="Categoria">
+          <Label className="mb-3 block">{t.entryForm.categoryLabel}</Label>
+          <div className="flex gap-5 overflow-x-auto pb-1" role="group" aria-label={t.entryForm.categoryLabel}>
             {categories.map((cat) => {
               const selected = categoryId === cat.id;
 
@@ -524,13 +528,13 @@ export function CraftedEntryForm({
               name="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Pranzo"
+              placeholder={t.entryForm.whatPlaceholder}
               autoComplete="off"
               className="min-w-0 flex-1 bg-transparent text-[15px] text-foreground outline-none placeholder:text-ink-3/70"
               aria-invalid={Boolean(state.errors?.title)}
               aria-describedby={state.errors?.title ? "entry-title-error" : undefined}
             />
-            <Label>Cosa</Label>
+            <Label>{t.entryForm.whatLabel}</Label>
           </label>
           <FormFieldError id="entry-title-error" message={state.errors?.title} />
         </div>
@@ -546,11 +550,11 @@ export function CraftedEntryForm({
                   const nextValue = normalizeMoneyInput(event.target.value);
                   setAmountSpentInput(nextValue);
                 }}
-                placeholder="12,00"
+                placeholder={t.entryForm.amountPlaceholder}
                 className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-ink-3/70"
                 aria-invalid={Boolean(primaryFieldError)}
               />
-              <Label>Quanto hai speso</Label>
+              <Label>{t.entryForm.amountLabel}</Label>
             </label>
             <FormFieldError message={primaryFieldError} className="mt-2 text-xs" />
           </div>
@@ -569,8 +573,8 @@ export function CraftedEntryForm({
                 aria-hidden="true"
               />
               {showComparison
-                ? "Nascondi confronto"
-                : "Ho speso e voglio confrontarlo"}
+                ? t.entryForm.hideComparison
+                : t.entryForm.toggleComparison}
             </button>
 
             {showComparison ? (
@@ -583,18 +587,18 @@ export function CraftedEntryForm({
                     onChange={(event) =>
                       setComparisonInput(normalizeMoneyInput(event.target.value))
                     }
-                    placeholder="45,00"
+                    placeholder={t.entryForm.comparisonAmountPlaceholder}
                     className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-ink-3/70"
                     aria-invalid={Boolean(comparisonFieldError)}
                   />
-                  <Label>Quanto avresti speso di solito?</Label>
+                  <Label>{t.entryForm.comparisonAmountLabel}</Label>
                 </label>
                 <p className="mt-2 text-xs text-ink-3">
-                  Usalo quando hai scelto un&apos;opzione più economica.
+                  {t.entryForm.comparisonHelp}
                 </p>
                 {showLargeComparisonWarning ? (
                   <p className="mt-2 rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
-                    Questo confronto pesa molto sulle statistiche.
+                    {t.entryForm.largeComparisonWarning}
                   </p>
                 ) : null}
                 <FormFieldError
@@ -619,13 +623,13 @@ export function CraftedEntryForm({
               )}
               aria-hidden="true"
             />
-            {showAdvanced ? "Nascondi dettagli" : "Data, nota, chi paga e vale per"}
+            {showAdvanced ? t.entryForm.advancedHide : t.entryForm.advancedToggle}
           </button>
 
           {showAdvanced ? (
             <div className="mb-5 space-y-4 border-t border-line pt-4">
               <div className="space-y-2 border-b border-line pb-3">
-                <label htmlFor="entry-date" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">Data</label>
+                <label htmlFor="entry-date" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">{t.entryForm.dateLabel}</label>
                 <input
                   id="entry-date"
                   type="date"
@@ -639,13 +643,13 @@ export function CraftedEntryForm({
               </div>
 
               <div className="space-y-2 border-b border-line pb-3">
-                <label htmlFor="entry-note" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">Nota</label>
+                <label htmlFor="entry-note" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">{t.entryForm.noteLabel}</label>
                 <textarea
                   id="entry-note"
                   name="note"
                   value={note}
                   onChange={(event) => setNote(event.target.value)}
-                  placeholder="Pasta al tonno invece di delivery"
+                  placeholder={t.entryForm.notePlaceholder}
                   rows={2}
                   className="w-full resize-none bg-transparent py-[var(--sp-stack-sm)] text-sm text-foreground outline-none placeholder:text-ink-3/70"
                 />
@@ -653,8 +657,7 @@ export function CraftedEntryForm({
 
               {effectivePaymentMode === "joint_account" ? (
                 <div className="rounded-[var(--r-control)] border border-line bg-surface-muted/60 px-4 py-3 text-sm leading-6 text-ink-3">
-                  Pagata insieme: l&apos;importo vale per entrambi e il saldo
-                  considera metà già pagata da ciascuno.
+                  {t.entryForm.jointPaymentInfo}
                 </div>
               ) : (
                 <EntryPeopleFields
@@ -692,11 +695,11 @@ export function CraftedEntryForm({
                   className="size-4 animate-spin motion-reduce:animate-none"
                   aria-hidden="true"
                 />
-                Salvataggio…
+                {t.entryForm.savingButton}
               </>
             ) : (
               <>
-                Salva movimento
+                {t.entryForm.saveButton}
                 <ArrowRight className="size-4" aria-hidden="true" />
               </>
             )}

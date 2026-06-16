@@ -40,6 +40,7 @@ import {
   type EntryPaymentModeValue,
 } from "@/src/lib/entry-payment-mode";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 
 type CategoryOption = {
   id: string;
@@ -108,22 +109,23 @@ function getSummaryText(
   amountSpentInput: string,
   comparisonInput: string,
   currencySymbol: string,
+  tForm: { summarySaved: (a: string) => string; summarySpentMore: (a: string) => string; summaryInline: string; expenseRecorded: string },
 ) {
   if (savingContext === "comparison") {
     const delta = getMoneyDelta(amountSpentInput, comparisonInput);
 
     if (delta > 0) {
-      return `${formatMoneyValue(delta)}${currencySymbol} risparmiati scegliendo meglio`;
+      return tForm.summarySaved(`${formatMoneyValue(delta)}${currencySymbol}`);
     }
 
     if (delta < 0) {
-      return `${formatMoneyValue(Math.abs(delta))}${currencySymbol} spesi in più del confronto`;
+      return tForm.summarySpentMore(`${formatMoneyValue(Math.abs(delta))}${currencySymbol}`);
     }
 
-    return "in linea con il confronto";
+    return tForm.summaryInline;
   }
 
-  return "spesa registrata";
+  return tForm.expenseRecorded;
 }
 
 function getEntryIntent(
@@ -148,6 +150,7 @@ export function CraftedEntryEditForm({
 }) {
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
+  const t = useTranslations();
   const formRef = useRef<HTMLFormElement>(null);
   const didHandleSuccessRef = useRef(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -274,17 +277,17 @@ export function CraftedEntryEditForm({
 
         <div className="flex items-center justify-between px-5 pb-1.5 pt-3">
           <Link href="/entries" className="text-sm text-muted-foreground hover:opacity-80">
-            Annulla
+            {t.common.cancel}
           </Link>
-          <Label>Modifica movimento</Label>
+          <Label>{t.entryForm.editTitle}</Label>
           <div className="w-14" aria-hidden="true" />
         </div>
 
         <section className="px-5 py-5 text-center">
           <Serif className="mb-3 text-sm text-muted-foreground">
             {entry.source === "habit"
-              ? "movimento collegato a una ricorrente"
-              : "stai aggiornando il movimento"}
+              ? t.entryForm.entryFromHabit
+              : t.entryForm.editDesc}
           </Serif>
           <div className="flex items-baseline justify-center gap-1.5">
             <Mono className="text-[clamp(2.5rem,12vw,3.75rem)] font-semibold leading-[0.9] text-accent">
@@ -293,7 +296,7 @@ export function CraftedEntryEditForm({
             <Mono className="text-xl text-muted-foreground">{currencySymbol}</Mono>
           </div>
           <Serif className="mt-3 block text-sm text-ink-3">
-            {getSummaryText(savingContext, amountSpentInput, comparisonInput, currencySymbol)}
+            {getSummaryText(savingContext, amountSpentInput, comparisonInput, currencySymbol, t.entryForm)}
           </Serif>
         </section>
         <Rule />
@@ -325,7 +328,7 @@ export function CraftedEntryEditForm({
               aria-pressed={entryIntent === "spent"}
             >
               <Receipt className="size-4" aria-hidden="true" />
-              Ho speso
+              {t.entryForm.spentIntent}
             </button>
             <button
               type="button"
@@ -337,12 +340,12 @@ export function CraftedEntryEditForm({
                   : "border-transparent text-ink-3 hover:text-foreground",
               )}
               aria-pressed={entryIntent === "comparison"}
-              aria-label="Ho speso e voglio confrontarlo"
+              aria-label={t.entryForm.comparisonIntentLabel}
             >
               <span className="font-num text-sm" aria-hidden="true">
                 ↘
               </span>
-              Speso + confronto
+              {t.entryForm.comparisonIntent}
             </button>
             {canUseJointPayment ? (
               <button
@@ -357,22 +360,22 @@ export function CraftedEntryEditForm({
                 aria-pressed={entryIntent === "joint"}
               >
                 <Users2 className="size-4" aria-hidden="true" />
-                Pagata insieme
+                {t.entryForm.jointIntent}
               </button>
             ) : null}
           </div>
           <p className="mt-3 text-center text-xs leading-5 text-ink-3">
             {entryIntent === "spent"
-              ? "Registra solo il denaro uscito davvero."
+              ? t.entryForm.spentDesc
               : entryIntent === "comparison"
-                ? "Usalo quando hai scelto un'opzione più economica."
-                : "Entrambi avete pagato la vostra metà."}
+                ? t.entryForm.comparisonDesc
+                : t.entryForm.jointDesc}
           </p>
         </div>
 
         <div className="px-5 pb-2">
-          <Label className="mb-3 block">Categoria</Label>
-          <div className="flex gap-5 overflow-x-auto pb-1" role="group" aria-label="Categoria">
+          <Label className="mb-3 block">{t.entryForm.categoryLabel}</Label>
+          <div className="flex gap-5 overflow-x-auto pb-1" role="group" aria-label={t.entryForm.categoryLabel}>
             {categories.map((cat) => {
               const selected = categoryId === cat.id;
 
@@ -416,12 +419,12 @@ export function CraftedEntryEditForm({
               name="title"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
-              placeholder="Pranzo"
+              placeholder={t.entryForm.whatPlaceholder}
               className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
               aria-invalid={Boolean(state.errors?.title)}
               aria-describedby={state.errors?.title ? "entry-title-error" : undefined}
             />
-            <Label>Cosa</Label>
+            <Label>{t.entryForm.whatLabel}</Label>
           </label>
           <FormFieldError id="entry-title-error" message={state.errors?.title} />
         </div>
@@ -437,11 +440,11 @@ export function CraftedEntryEditForm({
                   const nextValue = normalizeMoneyInput(event.target.value);
                   setAmountSpentInput(nextValue);
                 }}
-                placeholder="12,00"
+                placeholder={t.entryForm.amountPlaceholder}
                 className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
                 aria-invalid={Boolean(primaryFieldError)}
               />
-              <Label>Quanto hai speso</Label>
+              <Label>{t.entryForm.amountLabel}</Label>
             </label>
             <FormFieldError message={primaryFieldError} />
           </div>
@@ -470,8 +473,8 @@ export function CraftedEntryEditForm({
                 aria-hidden="true"
               />
               {showComparison
-                ? "Nascondi confronto"
-                : "Ho speso e voglio confrontarlo"}
+                ? t.entryForm.hideComparison
+                : t.entryForm.toggleComparison}
             </button>
 
             {showComparison ? (
@@ -484,18 +487,18 @@ export function CraftedEntryEditForm({
                     onChange={(event) =>
                       setComparisonInput(normalizeMoneyInput(event.target.value))
                     }
-                    placeholder="45,00"
+                    placeholder={t.entryForm.comparisonAmountPlaceholder}
                     className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
                     aria-invalid={Boolean(comparisonFieldError)}
                   />
-                  <Label>Quanto avresti speso di solito?</Label>
+                  <Label>{t.entryForm.comparisonAmountLabel}</Label>
                 </label>
                 <p className="mt-2 text-xs text-ink-3">
-                  Usalo quando hai scelto un&apos;opzione più economica.
+                  {t.entryForm.comparisonHelp}
                 </p>
                 {showLargeComparisonWarning ? (
                   <p className="mt-2 rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
-                    Questo confronto pesa molto sulle statistiche.
+                    {t.entryForm.largeComparisonWarning}
                   </p>
                 ) : null}
                 <FormFieldError message={comparisonFieldError} />
@@ -517,13 +520,13 @@ export function CraftedEntryEditForm({
               )}
               aria-hidden="true"
             />
-            {showAdvanced ? "Nascondi dettagli" : "Data, nota, chi paga e vale per"}
+            {showAdvanced ? t.entryForm.advancedHide : t.entryForm.advancedToggle}
           </button>
 
           {showAdvanced ? (
             <div className="space-y-4 border-t border-line pt-4">
               <div className="space-y-2 border-b border-line pb-3">
-                <label htmlFor="edit-date" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">Data</label>
+                <label htmlFor="edit-date" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">{t.entryForm.dateLabel}</label>
                 <input
                   id="edit-date"
                   name="date"
@@ -537,7 +540,7 @@ export function CraftedEntryEditForm({
               </div>
 
               <div className="space-y-2 border-b border-line pb-3">
-                <label htmlFor="edit-note" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">Nota</label>
+                <label htmlFor="edit-note" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">{t.entryForm.noteLabel}</label>
                 <textarea
                   id="edit-note"
                   name="note"
@@ -545,14 +548,13 @@ export function CraftedEntryEditForm({
                   onChange={(event) => setNote(event.target.value)}
                   rows={2}
                   className="w-full resize-none bg-transparent py-[var(--sp-stack-sm)] text-sm outline-none placeholder:text-ink-3/70"
-                  placeholder="Nota opzionale"
+                  placeholder={t.entryForm.notePlaceholder}
                 />
               </div>
 
               {effectivePaymentMode === "joint_account" ? (
                 <div className="rounded-[var(--r-control)] border border-line bg-surface-muted/60 px-4 py-3 text-sm leading-6 text-ink-3">
-                  Pagata insieme: l&apos;importo vale per entrambi e il saldo
-                  considera metà già pagata da ciascuno.
+                  {t.entryForm.jointPaymentInfo}
                 </div>
               ) : (
                 <EntryPeopleFields
@@ -591,10 +593,10 @@ export function CraftedEntryEditForm({
             {pending ? (
               <>
                 <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Salvataggio…
+                {t.entryForm.savingButton}
               </>
             ) : (
-              "Salva movimento"
+              t.entryForm.saveButton
             )}
           </button>
           <button
@@ -606,18 +608,18 @@ export function CraftedEntryEditForm({
             }}
             className="flex h-11 w-full items-center justify-center text-[13px] text-destructive/80 transition-colors hover:text-destructive disabled:opacity-50"
           >
-            Elimina movimento
+            {t.entryForm.deleteButton}
           </button>
         </div>
       </form>
 
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent className="border-line sm:max-w-md">
-          <DialogTitle>Elimina movimento</DialogTitle>
+          <DialogTitle>{t.entryForm.deleteButton}</DialogTitle>
           <DialogDescription>
             {entry.source === "habit"
-              ? "Il movimento verrà rimosso e l'occorrenza della ricorrente tornerà in sospeso."
-              : "Il movimento verrà rimosso dal registro. L'operazione non si può annullare."}
+              ? t.entryForm.deleteConfirmHabit
+              : t.entryForm.deleteConfirmNormal}
           </DialogDescription>
 
           {deleteMessage ? (
@@ -631,7 +633,7 @@ export function CraftedEntryEditForm({
               onClick={() => setDeleteOpen(false)}
               className="px-4 py-2.5 text-sm text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
             >
-              Annulla
+              {t.common.cancel}
             </button>
             <button
               type="button"
@@ -642,10 +644,10 @@ export function CraftedEntryEditForm({
               {isDeleting ? (
                 <>
                   <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-                  Eliminazione…
+                  {t.entryForm.deletingButton}
                 </>
               ) : (
-                "Elimina"
+                t.entryForm.deleteButton
               )}
             </button>
           </div>

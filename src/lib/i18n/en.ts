@@ -150,6 +150,11 @@ export const en: Translations = {
     appliesToSingle: "Applies to one person: treated as a personal expense.",
     appliesToMultiple: (count) =>
       `Applies to ${count} people: amount divided among them.`,
+    noMembers: "No members available in this workspace.",
+    summarySaved: (amount) => `${amount} saved by choosing better`,
+    summarySpentMore: (amount) => `${amount} more than comparison`,
+    summaryInline: "in line with comparison",
+    expenseRecorded: "expense recorded",
     saveButton: "Save entry",
     savingButton: "Saving…",
     deleteButton: "Delete",
@@ -509,6 +514,13 @@ export const en: Translations = {
     loadErrorMembers: "Can't load members",
     loadErrorWorkspace: "Workspace not available. Try again later.",
     loadErrorCategories: "Can't load categories",
+  },
+
+  entryNotFound: {
+    title: "Entry not found.",
+    desc: "The entry may have been deleted or the address is no longer valid.",
+    backButton: "Back to entries",
+    checkList: "Check the entry list.",
   },
 
   subpageHeader: {

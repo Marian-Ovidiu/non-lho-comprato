@@ -144,6 +144,11 @@ export type Translations = {
     appliesToHelp: string;
     appliesToSingle: string;
     appliesToMultiple: (count: number) => string;
+    noMembers: string;
+    summarySaved: (amount: string) => string;
+    summarySpentMore: (amount: string) => string;
+    summaryInline: string;
+    expenseRecorded: string;
     saveButton: string;
     savingButton: string;
     deleteButton: string;
@@ -481,6 +486,13 @@ export type Translations = {
     loadErrorMembers: string;
     loadErrorWorkspace: string;
     loadErrorCategories: string;
+  };
+
+  entryNotFound: {
+    title: string;
+    desc: string;
+    backButton: string;
+    checkList: string;
   };
 
   subpageHeader: {
