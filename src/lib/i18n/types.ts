@@ -96,6 +96,7 @@ export type Translations = {
     searching: string;
     searchError: string;
     loadError: string;
+    pageLoadError: string;
     entrySingular: string;
     entryPlural: string;
     spentLabel: string;
@@ -327,6 +328,16 @@ export type Translations = {
     delete: string;
     deleteConfirm: string;
     createFirst: string;
+    noteAchieved: string;
+    noteFeedingProgress: string;
+    noteRemaining: (amount: string, currency: string) => string;
+    noteMovingWithImpact: string;
+    notePaused: string;
+    noteAchievedShort: string;
+    noteStartedIn: (month: string) => string;
+    newGoalLabel: string;
+    loadError: string;
+    monthlyStatsError: string;
   };
 
   goalForm: {
@@ -361,6 +372,17 @@ export type Translations = {
     notApplicable: string;
     monthSavings: (amount: string, month: string) => string;
     occAbbr: string;
+    freqDaily: string;
+    freqWeekdays: string;
+    freqOnce: (day: string) => string;
+    avoidedNoteOne: (name: string) => string;
+    avoidedNoteTwo: (a: string, b: string) => string;
+    avoidedNoteMany: (names: string, last: string) => string;
+    completionStats: (confirmed: number, avoided: number) => string;
+    completionNone: string;
+    loadError: string;
+    statsLoadError: string;
+    workspaceDataUnavailable: string;
   };
 
   habitCard: {
@@ -397,6 +419,7 @@ export type Translations = {
     reminderHelp: string;
     reminderTimeLabel: string;
     reminderTimeHelp: string;
+    manageSectionLabel: string;
   };
 
   habitForm: {
@@ -716,6 +739,53 @@ export type Translations = {
     detailLabel: string;
     byPerson: string;
     memberCount: (n: number) => string;
+  };
+
+  topSavings: {
+    title: string;
+    subtitle: string;
+    empty: string;
+    recurring: string;
+    spentInsteadOf: (real: string, alt: string) => string;
+  };
+
+  statsEmpty: {
+    title: string;
+    desc: string;
+    action: string;
+    hint: string;
+  };
+
+  home: {
+    reflectionLabel: string;
+    reflectionCategoryTwice: (name: string) => string;
+    reflectionCategoryMost: (name: string) => string;
+    reflectionEntries: (count: number) => string;
+    reflectionFirstEntry: string;
+    reflectionEarlyWithSpend: string;
+    reflectionEarlyNoSpend: string;
+    phaseEmptyTitle: string;
+    phaseEmptyOnboardingTitle: string;
+    phaseEmptyDesc: string;
+    phaseEmptyOnboardingDesc: string;
+    phaseEmptyNote: string;
+    phaseFirstEntryTitle: string;
+    phaseFirstEntryDesc: string;
+    phaseFirstEntryNote: string;
+    phaseEarlyTitle: string;
+    phaseEarlyDesc: string;
+    phaseEarlyNote: string;
+    phaseFirstWeekTitle: string;
+    phaseFirstWeekDesc: string;
+    phaseFirstWeekNote: string;
+    phaseTodayTitle: string;
+    phaseTodayDesc: string;
+    phaseTodayNote: string;
+    phaseLightTitle: string;
+    phaseLightDesc: string;
+    phaseLightNote: string;
+    loadEntriesError: string;
+    loadDashboardError: string;
   };
 
   stats: {

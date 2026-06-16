@@ -22,6 +22,7 @@ import { getHomeDashboardMetrics } from "@/src/actions/dashboard";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { buildCraftedDashboardProps } from "@/src/lib/crafted-dashboard-build";
+import { getTranslations } from "@/src/lib/i18n";
 import type { HomeReflectionNoteProps } from "@/src/lib/home-reflection";
 
 
@@ -78,6 +79,7 @@ function getHomeReflection({
   entries,
   phase,
   monthRealSpent,
+  language,
 }: {
   entries: Array<{
     category: {
@@ -89,7 +91,10 @@ function getHomeReflection({
   }>;
   phase: HomePhase;
   monthRealSpent: number;
+  language: string;
 }): HomeReflection {
+  const t = getTranslations(language);
+
   if (entries.length === 0) {
     return null;
   }
@@ -123,38 +128,35 @@ function getHomeReflection({
 
   if (repeatedCategory) {
     return {
-      label: "Riflessione",
+      label: t.home.reflectionLabel,
       text:
         repeatedCategory.count === 2
-          ? `${repeatedCategory.name} è comparsa due volte questa settimana.`
-          : `${repeatedCategory.name} è la categoria che torna più spesso questa settimana.`,
+          ? t.home.reflectionCategoryTwice(repeatedCategory.name)
+          : t.home.reflectionCategoryMost(repeatedCategory.name),
     };
   }
 
   if (weekEntries.length >= 3) {
     return {
-      label: "Riflessione",
-      text:
-        weekEntries.length === 3
-          ? "Questa settimana hai già registrato 3 movimenti."
-          : `Questa settimana hai già registrato ${weekEntries.length} movimenti.`,
+      label: t.home.reflectionLabel,
+      text: t.home.reflectionEntries(weekEntries.length),
     };
   }
 
   if (phase === "first-entry" && entries.length === 1) {
     return {
-      label: "Riflessione",
-      text: "Il primo segnale è dentro. Ora il quadro può cominciare a farsi più chiaro.",
+      label: t.home.reflectionLabel,
+      text: t.home.reflectionFirstEntry,
     };
   }
 
   if (phase === "early-usage" || phase === "first-week") {
     return {
-      label: "Riflessione",
+      label: t.home.reflectionLabel,
       text:
         monthRealSpent > 0
-          ? "Rispetto all'inizio, il quadro delle spese è già più chiaro."
-          : "Il quadro si sta ancora formando, ma il ritmo comincia a vedersi.",
+          ? t.home.reflectionEarlyWithSpend
+          : t.home.reflectionEarlyNoSpend,
     };
   }
 
@@ -167,69 +169,69 @@ function getDashboardEmptyStateCopy({
   monthRealSpent,
   activeGoalsCount,
   todayHabitsCount,
+  language,
 }: {
   phase: HomePhase;
   arrivedFromOnboarding: boolean;
   monthRealSpent: number;
   activeGoalsCount: number;
   todayHabitsCount: number;
+  language: string;
 }) {
+  const t = getTranslations(language);
+
   if (phase === "empty" && monthRealSpent === 0 && activeGoalsCount === 0 && todayHabitsCount === 0) {
     return {
-      title: arrivedFromOnboarding ? "Il quadro è pronto" : "Ancora nessun movimento",
+      title: arrivedFromOnboarding ? t.home.phaseEmptyOnboardingTitle : t.home.phaseEmptyTitle,
       description: arrivedFromOnboarding
-        ? "Hai finito l'onboarding. Da qui puoi iniziare a registrare spese e movimenti, uno alla volta."
-        : "Aggiungi il primo movimento e la dashboard inizierà subito a leggere la spesa reale.",
-      note: "Bastano pochi secondi per iniziare.",
-      actionLabel: "Aggiungi movimento",
+        ? t.home.phaseEmptyOnboardingDesc
+        : t.home.phaseEmptyDesc,
+      note: t.home.phaseEmptyNote,
+      actionLabel: t.dashboard.addEntry,
     };
   }
 
   if (phase === "first-entry") {
     return {
-      title: "Il primo movimento è dentro",
-      description:
-        "Ora la dashboard può già leggere qualcosa. Il prossimo movimento renderà il quadro più chiaro.",
-      note: "La continuità si costruisce da qui.",
-      actionLabel: "Nuovo movimento",
+      title: t.home.phaseFirstEntryTitle,
+      description: t.home.phaseFirstEntryDesc,
+      note: t.home.phaseFirstEntryNote,
+      actionLabel: t.entryForm.newTitle,
     };
   }
 
   if (phase === "early-usage") {
     return {
-      title: "Un ritmo sta emergendo",
-      description:
-        "I primi movimenti stanno iniziando a raccontare una direzione. Ogni visita aggiunge contesto.",
-      note: "Il quadro diventa più utile con pochi, buoni ritorni.",
-      actionLabel: "Nuovo movimento",
+      title: t.home.phaseEarlyTitle,
+      description: t.home.phaseEarlyDesc,
+      note: t.home.phaseEarlyNote,
+      actionLabel: t.entryForm.newTitle,
     };
   }
 
   if (phase === "first-week") {
     return {
-      title: "Prima settimana in lettura",
-      description:
-        "Stai già vedendo un ritmo più riconoscibile. Il quadro della spesa comincia a restituire una forma chiara.",
-      note: "Il valore cresce quando il contesto si fa continuo.",
-      actionLabel: "Nuovo movimento",
+      title: t.home.phaseFirstWeekTitle,
+      description: t.home.phaseFirstWeekDesc,
+      note: t.home.phaseFirstWeekNote,
+      actionLabel: t.entryForm.newTitle,
     };
   }
 
   if (monthRealSpent > 0) {
     return {
-      title: "Giornata ancora aperta",
-      description: "Hai già registrato spese questo mese. Se serve, puoi aggiungere il prossimo movimento in pochi secondi.",
-      note: "Il prossimo tap aggiornerà subito il quadro.",
-      actionLabel: "Nuovo movimento",
+      title: t.home.phaseTodayTitle,
+      description: t.home.phaseTodayDesc,
+      note: t.home.phaseTodayNote,
+      actionLabel: t.entryForm.newTitle,
     };
   }
 
   return {
-    title: "Giornata leggera finora",
-    description:
-      "La dashboard è pronta. Se serve, un solo tap basta per registrare una spesa o un movimento evitato.",
-    note: "Puoi rientrare e uscire in pochi secondi.",
-    actionLabel: "Registra una spesa",
+    title: t.home.phaseLightTitle,
+    description: t.home.phaseLightDesc,
+    note: t.home.phaseLightNote,
+    actionLabel: t.dashboardQuickActions.registerExpense,
   };
 }
 
@@ -363,6 +365,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     entries: weekEntries,
     phase: homePhase,
     monthRealSpent,
+    language,
   });
 
   const dashboardEmptyState =
@@ -373,6 +376,7 @@ export default async function Home({ searchParams }: HomePageProps) {
           monthRealSpent,
           activeGoalsCount: activeGoals.length,
           todayHabitsCount: todayHabits.length,
+          language,
         })
       : null;
 
@@ -399,6 +403,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     },
     timeZone,
     currency,
+    language,
   });
 
   return (
@@ -429,7 +434,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       {entriesLoadError ? (
         <div className="px-5 pb-4">
           <DataLoadErrorBanner
-            title="Impossibile caricare i movimenti recenti"
+            title={getTranslations(language).home.loadEntriesError}
             message={entriesLoadError}
           />
         </div>
@@ -438,7 +443,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       {dashboardLoadError ? (
         <div className="px-5 pb-4">
           <DataLoadErrorBanner
-            title="Impossibile caricare il riepilogo della dashboard"
+            title={getTranslations(language).home.loadDashboardError}
             message={dashboardLoadError}
           />
         </div>

@@ -8,6 +8,7 @@ import {
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { getDateKey } from "@/src/lib/workspace-dates";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
+import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 
 type CategoryStatsItem = {
   categoryName: string;
@@ -50,8 +51,8 @@ const CATEGORY_TONES: CraftedDashboardProps["categories"][number]["tone"][] = [
   "muted",
 ];
 
-function getMonthLabel(date: Date, timeZone: string) {
-  const label = new Intl.DateTimeFormat("it-IT", {
+function getMonthLabel(date: Date, timeZone: string, language: string) {
+  const label = new Intl.DateTimeFormat(languageToLocale(language), {
     month: "long",
     timeZone,
   }).format(date);
@@ -78,7 +79,8 @@ function buildStreakWeek(streakDates: string[], timeZone: string) {
   });
 }
 
-function buildHabitsNote(habits: HabitOccurrence[]) {
+function buildHabitsNote(habits: HabitOccurrence[], language: string) {
+  const t = getTranslations(language);
   const avoided = habits
     .filter((occurrence) => occurrence.status === "avoided")
     .map((occurrence) => occurrence.habit.name.toLowerCase());
@@ -88,14 +90,14 @@ function buildHabitsNote(habits: HabitOccurrence[]) {
   }
 
   if (avoided.length === 1) {
-    return `${avoided[0]}, evitata.`;
+    return t.habits.avoidedNoteOne(avoided[0]!);
   }
 
   if (avoided.length === 2) {
-    return `${avoided[0]} e ${avoided[1]}, evitate.`;
+    return t.habits.avoidedNoteTwo(avoided[0]!, avoided[1]!);
   }
 
-  return `${avoided.slice(0, -1).join(", ")} e ${avoided.at(-1)}, evitate.`;
+  return t.habits.avoidedNoteMany(avoided.slice(0, -1).join(", "), avoided.at(-1)!);
 }
 
 export function buildCraftedCategories(
@@ -147,9 +149,10 @@ export function buildCraftedDashboardProps(input: {
   coupleBalance: CraftedDashboardProps["coupleBalance"];
   timeZone: string;
   currency: string;
+  language: string;
 }): CraftedDashboardProps {
   const now = new Date();
-  const monthLabel = getMonthLabel(now, input.timeZone);
+  const monthLabel = getMonthLabel(now, input.timeZone, input.language);
   const monthTrend = input.monthlyStats.slice(-6).map((item) => item.totalRealSpent);
   const previousMonth = input.monthlyStats.at(-2);
   const currentMonth = input.monthlyStats.at(-1);
@@ -175,7 +178,7 @@ export function buildCraftedDashboardProps(input: {
     habitsAvoided: input.todayHabits.filter(
       (occurrence) => occurrence.status === "avoided",
     ).length,
-    habitsNote: buildHabitsNote(input.todayHabits),
+    habitsNote: buildHabitsNote(input.todayHabits, input.language),
     goals: input.goals.slice(0, 2).map((goal, index) => ({
       id: goal.id,
       title: goal.title,
@@ -184,8 +187,8 @@ export function buildCraftedDashboardProps(input: {
       progressPercent: goal.progressPercent,
       note:
         index === 0
-          ? buildFeaturedGoalNote(goal, getCurrencySymbol(input.currency))
-          : buildSecondaryGoalNote(goal),
+          ? buildFeaturedGoalNote(goal, getCurrencySymbol(input.currency), input.language)
+          : buildSecondaryGoalNote(goal, input.language),
       icon: getGoalCraftedIcon(goal.title),
     })),
     recentEntries: input.recentEntries.map((entry) => ({

@@ -7,8 +7,9 @@ import { Label, Rule } from "@/components/crafted";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { buildCraftedGoalsProps } from "@/src/lib/crafted-goals-build";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
-import { getCurrentWorkspaceCurrency } from "@/src/lib/workspace-context";
+import { getCurrentWorkspaceCurrency, getCurrentWorkspaceLanguage } from "@/src/lib/workspace-context";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
+import { getTranslations } from "@/src/lib/i18n";
 
 
 export default async function GoalsPage() {
@@ -34,15 +35,19 @@ export default async function GoalsPage() {
   }
 
   const monthSaved = monthlyStats.at(-1)?.totalSaved ?? 0;
-  const currency = await getCurrentWorkspaceCurrency();
-  const craftedProps = buildCraftedGoalsProps(goals, monthSaved, getCurrencySymbol(currency));
+  const [currency, language] = await Promise.all([
+    getCurrentWorkspaceCurrency(),
+    getCurrentWorkspaceLanguage(),
+  ]);
+  const t = getTranslations(language);
+  const craftedProps = buildCraftedGoalsProps(goals, monthSaved, getCurrencySymbol(currency), language);
 
   return (
     <main className="pb-6">
       {loadError ? (
         <div className="px-5 pt-5 pb-4">
           <DataLoadErrorBanner
-            title="Impossibile caricare gli obiettivi"
+            title={t.goals.loadError}
             message={loadError}
           />
         </div>
@@ -51,7 +56,7 @@ export default async function GoalsPage() {
       {monthlyStatsError ? (
         <div className="px-5 pt-5 pb-4">
           <DataLoadErrorBanner
-            title="Riepilogo mensile non disponibile"
+            title={t.goals.monthlyStatsError}
             message={monthlyStatsError}
           />
         </div>
@@ -65,7 +70,7 @@ export default async function GoalsPage() {
 
       <section id="nuovo-obiettivo" className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
         {!loadError && goals.length > 0 ? <Rule className="mb-6" /> : null}
-        <Label className="mb-4 block">Nuovo obiettivo</Label>
+        <Label className="mb-4 block">{t.goals.newGoalLabel}</Label>
         <CraftedGoalForm />
       </section>
     </main>

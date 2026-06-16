@@ -1,5 +1,6 @@
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 
 export type CraftedGoalSource = {
   id: string;
@@ -45,8 +46,8 @@ export type CraftedGoalsProps = {
   };
 };
 
-function getCreatedMonthLabel(createdAt: string) {
-  const label = new Intl.DateTimeFormat("it-IT", {
+function getCreatedMonthLabel(createdAt: string, language: string) {
+  const label = new Intl.DateTimeFormat(languageToLocale(language), {
     month: "long",
     timeZone: "Europe/Rome",
   }).format(new Date(createdAt));
@@ -54,28 +55,36 @@ function getCreatedMonthLabel(createdAt: string) {
   return label.toLowerCase();
 }
 
-export function buildFeaturedGoalNote(goal: CraftedGoalSource, currencySymbol = "€") {
+export function buildFeaturedGoalNote(
+  goal: CraftedGoalSource,
+  currencySymbol = "€",
+  language = "it",
+) {
+  const t = getTranslations(language);
+
   if (goal.isCompleted) {
-    return "raggiunto.";
+    return t.goals.noteAchieved;
   }
 
   if (goal.remainingAmount <= 0) {
-    return "alimentato dall'impatto positivo.";
+    return t.goals.noteFeedingProgress;
   }
 
-  return `ti mancano ${formatCraftedCompact(goal.remainingAmount)}${currencySymbol} di impatto positivo.`;
+  return t.goals.noteRemaining(formatCraftedCompact(goal.remainingAmount), currencySymbol);
 }
 
-export function buildSecondaryGoalNote(goal: CraftedGoalSource) {
+export function buildSecondaryGoalNote(goal: CraftedGoalSource, language = "it") {
+  const t = getTranslations(language);
+
   if (goal.isCompleted) {
-    return "raggiunto";
+    return t.goals.noteAchievedShort;
   }
 
   if (goal.progressPercent >= 50 || goal.remainingAmount <= 0) {
-    return "si muove con l'impatto positivo";
+    return t.goals.noteMovingWithImpact;
   }
 
-  return `partita a ${getCreatedMonthLabel(goal.createdAt)}`;
+  return t.goals.noteStartedIn(getCreatedMonthLabel(goal.createdAt, language));
 }
 
 function mapGoal(
@@ -100,7 +109,9 @@ export function buildCraftedGoalsProps(
   goals: CraftedGoalSource[],
   monthSaved: number,
   currencySymbol = "€",
+  language = "it",
 ): CraftedGoalsProps {
+  const t = getTranslations(language);
   const activeGoals = goals
     .filter((goal) => goal.isActive && !goal.isCompleted)
     .sort(
@@ -112,13 +123,13 @@ export function buildCraftedGoalsProps(
   const achievedGoals = goals.filter((goal) => goal.isCompleted);
 
   const featured = activeGoals[0]
-    ? mapGoal(activeGoals[0], buildFeaturedGoalNote(activeGoals[0], currencySymbol))
+    ? mapGoal(activeGoals[0], buildFeaturedGoalNote(activeGoals[0], currencySymbol, language))
     : null;
 
   return {
     featured,
-    others: activeGoals.slice(1).map((goal) => mapGoal(goal, buildSecondaryGoalNote(goal))),
-    paused: pausedGoals.map((goal) => mapGoal(goal, "in pausa")),
+    others: activeGoals.slice(1).map((goal) => mapGoal(goal, buildSecondaryGoalNote(goal, language))),
+    paused: pausedGoals.map((goal) => mapGoal(goal, t.goals.notePaused)),
     achieved: achievedGoals.map((goal) => ({
       id: goal.id,
       title: goal.title,

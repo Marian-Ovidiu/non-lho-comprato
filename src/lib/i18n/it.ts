@@ -99,6 +99,7 @@ export const it: Translations = {
     searching: "Cerco…",
     searchError: "Non riesco a cercare i movimenti adesso.",
     loadError: "Non riesco a caricare altri movimenti adesso.",
+    pageLoadError: "Impossibile caricare i movimenti",
     entrySingular: "movimento",
     entryPlural: "movimenti",
     spentLabel: "spesi",
@@ -342,6 +343,16 @@ export const it: Translations = {
     deleteConfirm:
       "Vuoi eliminare questo obiettivo? L'operazione non si può annullare.",
     createFirst: "Crea il primo obiettivo",
+    noteAchieved: "raggiunto.",
+    noteFeedingProgress: "alimentato dall'impatto positivo.",
+    noteRemaining: (amount, currency) => `ti mancano ${amount}${currency} di impatto positivo.`,
+    noteMovingWithImpact: "si muove con l'impatto positivo",
+    notePaused: "in pausa",
+    noteAchievedShort: "raggiunto",
+    noteStartedIn: (month) => `partita a ${month}`,
+    newGoalLabel: "Nuovo obiettivo",
+    loadError: "Impossibile caricare gli obiettivi",
+    monthlyStatsError: "Riepilogo mensile non disponibile",
   },
 
   goalForm: {
@@ -378,6 +389,17 @@ export const it: Translations = {
     monthSavings: (amount, month) =>
       `${amount} di impatto netto dalle ricorrenti, a ${month}.`,
     occAbbr: "occ.",
+    freqDaily: "Ogni giorno",
+    freqWeekdays: "Feriali",
+    freqOnce: (day) => `Ogni ${day}`,
+    avoidedNoteOne: (name) => `${name}, già evitata.`,
+    avoidedNoteTwo: (a, b) => `${a} e ${b}, già evitate.`,
+    avoidedNoteMany: (names, last) => `${names} e ${last}, già evitate.`,
+    completionStats: (confirmed, avoided) => `${confirmed} confermate · ${avoided} evitate`,
+    completionNone: "Nessuna conferma ancora",
+    loadError: "Impossibile caricare le abitudini",
+    statsLoadError: "Statistiche abitudini non disponibili",
+    workspaceDataUnavailable: "Dati workspace non disponibili. Riprova tra poco.",
   },
 
   habitCard: {
@@ -420,6 +442,7 @@ export const it: Translations = {
       "Ti ricorda di controllare le abitudini quando sei già al lavoro o in giro.",
     reminderTimeLabel: "Orario",
     reminderTimeHelp: "Formato locale. Esempio: 09:30.",
+    manageSectionLabel: "Gestione abitudini",
   },
 
   habitForm: {
@@ -750,6 +773,53 @@ export const it: Translations = {
     detailLabel: "Dettaglio",
     byPerson: "Per persona",
     memberCount: (n) => `${n} ${n === 1 ? "membro" : "membri"}`,
+  },
+
+  topSavings: {
+    title: "Impatto positivo",
+    subtitle: "Non comprato e confronti dove hai speso meno del riferimento.",
+    empty: "Nessun impatto positivo ancora disponibile.",
+    recurring: "ricorrente",
+    spentInsteadOf: (real, alt) => `${real} spesi invece di ${alt}`,
+  },
+
+  statsEmpty: {
+    title: "Ancora nessun dato.",
+    desc: "Aggiungi i primi movimenti e qui compariranno le tendenze del mese.",
+    action: "Aggiungi il primo movimento",
+    hint: "Bastano pochi segnali per iniziare.",
+  },
+
+  home: {
+    reflectionLabel: "Riflessione",
+    reflectionCategoryTwice: (name) => `${name} è comparsa due volte questa settimana.`,
+    reflectionCategoryMost: (name) => `${name} è la categoria che torna più spesso questa settimana.`,
+    reflectionEntries: (count) => `Questa settimana hai già registrato ${count} movimenti.`,
+    reflectionFirstEntry: "Il primo segnale è dentro. Ora il quadro può cominciare a farsi più chiaro.",
+    reflectionEarlyWithSpend: "Rispetto all'inizio, il quadro delle spese è già più chiaro.",
+    reflectionEarlyNoSpend: "Il quadro si sta ancora formando, ma il ritmo comincia a vedersi.",
+    phaseEmptyTitle: "Ancora nessun movimento",
+    phaseEmptyOnboardingTitle: "Il quadro è pronto",
+    phaseEmptyDesc: "Aggiungi il primo movimento e la dashboard inizierà subito a leggere la spesa reale.",
+    phaseEmptyOnboardingDesc: "Hai finito l'onboarding. Da qui puoi iniziare a registrare spese e movimenti, uno alla volta.",
+    phaseEmptyNote: "Bastano pochi secondi per iniziare.",
+    phaseFirstEntryTitle: "Il primo movimento è dentro",
+    phaseFirstEntryDesc: "Ora la dashboard può già leggere qualcosa. Il prossimo movimento renderà il quadro più chiaro.",
+    phaseFirstEntryNote: "La continuità si costruisce da qui.",
+    phaseEarlyTitle: "Un ritmo sta emergendo",
+    phaseEarlyDesc: "I primi movimenti stanno iniziando a raccontare una direzione. Ogni visita aggiunge contesto.",
+    phaseEarlyNote: "Il quadro diventa più utile con pochi, buoni ritorni.",
+    phaseFirstWeekTitle: "Prima settimana in lettura",
+    phaseFirstWeekDesc: "Stai già vedendo un ritmo più riconoscibile. Il quadro della spesa comincia a restituire una forma chiara.",
+    phaseFirstWeekNote: "Il valore cresce quando il contesto si fa continuo.",
+    phaseTodayTitle: "Giornata ancora aperta",
+    phaseTodayDesc: "Hai già registrato spese questo mese. Se serve, puoi aggiungere il prossimo movimento in pochi secondi.",
+    phaseTodayNote: "Il prossimo tap aggiornerà subito il quadro.",
+    phaseLightTitle: "Giornata leggera finora",
+    phaseLightDesc: "La dashboard è pronta. Se serve, un solo tap basta per registrare una spesa o un movimento evitato.",
+    phaseLightNote: "Puoi rientrare e uscire in pochi secondi.",
+    loadEntriesError: "Impossibile caricare i movimenti recenti",
+    loadDashboardError: "Impossibile caricare il riepilogo della dashboard",
   },
 
   stats: {

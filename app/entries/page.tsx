@@ -7,13 +7,14 @@ import { CraftedEntriesHeader } from "@/src/components/entries/crafted-entries-h
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { Button } from "@/components/ui/button";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
-import { getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
+import { getCurrentWorkspaceLanguage, getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
+import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 
 
 const newEntryHref = "/entries/new?returnTo=%2Fentries";
 
-function getMonthLabel(date: Date) {
-  const label = new Intl.DateTimeFormat("it-IT", {
+function getMonthLabel(date: Date, language: string) {
+  const label = new Intl.DateTimeFormat(languageToLocale(language), {
     month: "long",
     timeZone: "Europe/Rome",
   }).format(date);
@@ -22,6 +23,8 @@ function getMonthLabel(date: Date) {
 }
 
 export default async function EntriesPage() {
+  const language = await getCurrentWorkspaceLanguage();
+  const t = getTranslations(language);
   const membersPromise = getCurrentWorkspaceMembers();
   let entriesPage: Awaited<ReturnType<typeof getEntriesPage>> | null = null;
   let monthSummary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
@@ -39,7 +42,7 @@ export default async function EntriesPage() {
     console.error("Failed to load entries:", error);
   }
 
-  const monthLabel = getMonthLabel(new Date());
+  const monthLabel = getMonthLabel(new Date(), language);
   const previousMonth = monthlyStats.at(-2);
 
   return (
@@ -54,7 +57,7 @@ export default async function EntriesPage() {
       {loadError ? (
         <div className="px-5 pb-4">
           <DataLoadErrorBanner
-            title="Impossibile caricare i movimenti"
+            title={t.entries.pageLoadError}
             message={loadError}
           />
         </div>
@@ -79,7 +82,7 @@ export default async function EntriesPage() {
 
       <div className="-mx-4 border-t border-line px-5 py-5 sm:-mx-6 lg:-mx-8">
         <Button asChild className="h-11 w-full rounded-2xl">
-          <Link href={newEntryHref}>Nuovo movimento</Link>
+          <Link href={newEntryHref}>{t.entryForm.newTitle}</Link>
         </Button>
       </div>
     </>

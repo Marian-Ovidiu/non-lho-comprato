@@ -20,9 +20,11 @@ import {
   getCurrentUser,
   getCurrentWorkspace,
   getCurrentWorkspaceCurrency,
+  getCurrentWorkspaceLanguage,
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
+import { getTranslations } from "@/src/lib/i18n";
 
 
 export default async function HabitsPage() {
@@ -42,6 +44,9 @@ export default async function HabitsPage() {
   let todayOccurrences: Awaited<ReturnType<typeof getTodayHabitOccurrences>> = [];
   let categories: Awaited<ReturnType<typeof getCategories>> = [];
   let habitStats: Awaited<ReturnType<typeof getHabitStats>> = [];
+
+  const language = await getCurrentWorkspaceLanguage();
+  const t = getTranslations(language);
 
   try {
     [workspace, currentUser, members, habits] = await Promise.all([
@@ -73,8 +78,8 @@ export default async function HabitsPage() {
       <main className="pb-6">
         <div className="px-5 pt-5 pb-4">
           <DataLoadErrorBanner
-            title="Impossibile caricare le abitudini"
-            message={loadError ?? "Dati workspace non disponibili. Riprova tra poco."}
+            title={t.habits.loadError}
+            message={loadError ?? t.habits.workspaceDataUnavailable}
           />
         </div>
       </main>
@@ -98,6 +103,7 @@ export default async function HabitsPage() {
     habits,
     habitStats,
     currencySymbol: getCurrencySymbol(currency),
+    language,
   });
 
   const isEmpty = habits.length === 0 && todayOccurrences.length === 0;
@@ -109,7 +115,7 @@ export default async function HabitsPage() {
       {habitStatsError ? (
         <div className="px-5 pb-4">
           <DataLoadErrorBanner
-            title="Statistiche abitudini non disponibili"
+            title={t.habits.statsLoadError}
             message={habitStatsError}
           />
         </div>
@@ -124,7 +130,7 @@ export default async function HabitsPage() {
       {!isEmpty && habits.length > 0 ? (
         <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
           <Rule className="mb-6" />
-          <Label className="mb-4 block">Gestione abitudini</Label>
+          <Label className="mb-4 block">{t.habitCard.manageSectionLabel}</Label>
           <HabitList
             habits={habits}
             categories={categoryOptions}
@@ -137,7 +143,7 @@ export default async function HabitsPage() {
 
       <section id="nuova-abitudine" className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
         {!isEmpty ? <Rule className="mb-6" /> : null}
-        <Label className="mb-4 block">Nuova abitudine</Label>
+        <Label className="mb-4 block">{t.habitForm.createTitle}</Label>
         <CraftedHabitForm
           categories={categoryOptions}
           members={members}

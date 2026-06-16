@@ -1,15 +1,6 @@
 import type { CraftedIconName } from "@/components/crafted";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-
-const weekdayOptions = [
-  { value: 1, label: "Lun" },
-  { value: 2, label: "Mar" },
-  { value: 3, label: "Mer" },
-  { value: 4, label: "Gio" },
-  { value: 5, label: "Ven" },
-  { value: 6, label: "Sab" },
-  { value: 7, label: "Dom" },
-] as const;
+import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 
 export type CraftedTodayHabit = {
   id: string;
@@ -42,46 +33,52 @@ export type CraftedHabitsProps = {
   monthLabel: string;
 };
 
-function getActiveDayLabels(activeDays: unknown): string[] {
-  if (!Array.isArray(activeDays)) {
-    return [];
-  }
-
-  return weekdayOptions
-    .filter((day) => activeDays.map((value) => Number(value)).includes(day.value))
-    .map((day) => day.label);
+function getActiveDayIndices(activeDays: unknown): number[] {
+  if (!Array.isArray(activeDays)) return [];
+  return activeDays.map((value) => Number(value)).filter((n) => n >= 1 && n <= 7);
 }
 
-export function formatHabitFrequency(activeDays: unknown) {
-  const labels = getActiveDayLabels(activeDays);
+export function formatHabitFrequency(activeDays: unknown, language = "it") {
+  const t = getTranslations(language);
+  const indices = getActiveDayIndices(activeDays);
 
-  if (labels.length === 0 || labels.length === 7) {
-    return "Ogni giorno";
+  if (indices.length === 0 || indices.length === 7) {
+    return t.habits.freqDaily;
   }
 
-  if (labels.length === 5 && !labels.includes("Sab") && !labels.includes("Dom")) {
-    return "Feriali";
+  // Mon–Fri only (indices 1–5, no 6=Sat, no 7=Sun)
+  if (indices.length === 5 && !indices.includes(6) && !indices.includes(7)) {
+    return t.habits.freqWeekdays;
   }
 
-  if (labels.length === 1) {
-    return `Ogni ${labels[0]!.toLowerCase()}`;
+  if (indices.length === 1) {
+    const label = t.habitCard.weekdays[indices[0]! - 1] ?? String(indices[0]);
+    return t.habits.freqOnce(label);
   }
 
-  return labels.join(", ");
+  return indices.map((i) => t.habitCard.weekdays[i - 1]).filter(Boolean).join(", ");
 }
 
-export function formatHabitSub(amount: number, activeDays: unknown, currencySymbol = "€") {
-  const amountLabel = amount.toLocaleString("it-IT", {
+export function formatHabitSub(
+  amount: number,
+  activeDays: unknown,
+  currencySymbol = "€",
+  language = "it",
+) {
+  const locale = languageToLocale(language);
+  const amountLabel = amount.toLocaleString(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
 
-  return `${amountLabel}${currencySymbol} · ${formatHabitFrequency(activeDays).toLowerCase()}`;
+  return `${amountLabel}${currencySymbol} · ${formatHabitFrequency(activeDays, language).toLowerCase()}`;
 }
 
 export function buildHabitsNote(
   occurrences: Array<{ status: string; habit: { name: string } }>,
+  language = "it",
 ) {
+  const t = getTranslations(language);
   const avoided = occurrences
     .filter((occurrence) => occurrence.status === "avoided")
     .map((occurrence) => occurrence.habit.name.toLowerCase());
@@ -91,18 +88,18 @@ export function buildHabitsNote(
   }
 
   if (avoided.length === 1) {
-    return `${avoided[0]}, già evitata.`;
+    return t.habits.avoidedNoteOne(avoided[0]!);
   }
 
   if (avoided.length === 2) {
-    return `${avoided[0]} e ${avoided[1]}, già evitate.`;
+    return t.habits.avoidedNoteTwo(avoided[0]!, avoided[1]!);
   }
 
-  return `${avoided.slice(0, -1).join(", ")} e ${avoided.at(-1)}, già evitate.`;
+  return t.habits.avoidedNoteMany(avoided.slice(0, -1).join(", "), avoided.at(-1)!);
 }
 
-function getMonthLabel() {
-  const label = new Intl.DateTimeFormat("it-IT", {
+function getMonthLabel(language: string) {
+  const label = new Intl.DateTimeFormat(languageToLocale(language), {
     month: "long",
     timeZone: "Europe/Rome",
   }).format(new Date());
@@ -115,6 +112,7 @@ export function buildCraftedHabitsProps({
   habits,
   habitStats,
   currencySymbol = "€",
+  language = "it",
 }: {
   todayOccurrences: Array<{
     id: string;
@@ -150,7 +148,9 @@ export function buildCraftedHabitsProps({
     totalSaved: number;
   }>;
   currencySymbol?: string;
+  language?: string;
 }): CraftedHabitsProps {
+  const t = getTranslations(language);
   const statsByHabitId = new Map(habitStats.map((item) => [item.habitId, item]));
   const avoidedToday = todayOccurrences.filter(
     (occurrence) => occurrence.status === "avoided",
@@ -164,7 +164,7 @@ export function buildCraftedHabitsProps({
       id: occurrence.id,
       habitId: occurrence.habitId,
       name: occurrence.habit.name,
-      sub: formatHabitSub(occurrence.habit.amount, occurrence.habit.activeDays, currencySymbol),
+      sub: formatHabitSub(occurrence.habit.amount, occurrence.habit.activeDays, currencySymbol, language),
       icon: getCategoryCraftedIcon(occurrence.habit.category),
       status: occurrence.status,
     })),
@@ -177,12 +177,12 @@ export function buildCraftedHabitsProps({
         return {
           id: habit.id,
           name: habit.name,
-          freq: formatHabitFrequency(habit.activeDays),
+          freq: formatHabitFrequency(habit.activeDays, language),
           icon: getCategoryCraftedIcon(habit.category),
           completionLabel:
             considered > 0
-              ? `${considered} confermate · ${stats?.avoidedCount ?? 0} evitate`
-              : "Nessuna conferma ancora",
+              ? t.habits.completionStats(considered, stats?.avoidedCount ?? 0)
+              : t.habits.completionNone,
           progressPercent: stats?.disciplineRatePercent ?? 0,
           monthImpact: stats?.totalSaved ?? 0,
         };
@@ -190,9 +190,9 @@ export function buildCraftedHabitsProps({
     avoidedToday,
     pendingToday,
     totalToday: todayOccurrences.length,
-    habitsNote: buildHabitsNote(todayOccurrences),
+    habitsNote: buildHabitsNote(todayOccurrences, language),
     activeCount: habits.filter((habit) => habit.isActive).length,
     monthSaved: habitStats.reduce((sum, item) => sum + item.totalSaved, 0),
-    monthLabel: getMonthLabel(),
+    monthLabel: getMonthLabel(language),
   };
 }

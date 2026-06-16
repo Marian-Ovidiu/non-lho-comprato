@@ -25,7 +25,7 @@ export function CraftedEntriesHeader({
       <Label className="mb-4 block">{t.nav.entries} — {monthLabel.toLowerCase()}</Label>
       <div className="flex items-end justify-between gap-4">
         <div>
-          <Label className="mb-1.5 block">Speso</Label>
+          <Label className="mb-1.5 block">{t.entries.spentLabel}</Label>
           <div className="flex items-baseline gap-2">
             <Mono className="text-[clamp(2.75rem,14vw,3.75rem)] font-semibold leading-[0.85] tracking-[-0.05em]">
               {formatCraftedCompact(totalRealSpent)}
