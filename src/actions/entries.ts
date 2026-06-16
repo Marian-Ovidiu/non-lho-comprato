@@ -11,7 +11,11 @@ import {
   type EntryMode,
   type EntrySavingContext,
 } from "@/src/lib/entry-domain";
-import { aggregateEntryMetrics } from "@/src/lib/entry-metrics";
+import {
+  entryMetricAggregateSelectSql,
+  normalizeEntryMetricAggregate,
+  type EntryMetricAggregateRow,
+} from "@/src/lib/entry-metrics-query";
 import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
 import { resolveIsFirstEntryOfDay } from "@/src/lib/entry-first-of-day";
 import { getGlobalStreak } from "@/src/actions/streaks";
@@ -938,16 +942,14 @@ async function _cachedDashboardSummary(workspaceId: string, timeZone: string): P
   const now = new Date();
   const { start, end } = getMonthRangeForMonthKey(getMonthKey(now, timeZone), timeZone);
 
-  const entries = await prisma.entry.findMany({
-    where: { workspaceId, date: { gte: start, lt: end } },
-    select: {
-      realCost: true,
-      alternativeCost: true,
-      savedAmount: true,
-      mode: true,
-      savingContext: true,
-    },
-  });
+  const rows = await prisma.$queryRaw<EntryMetricAggregateRow[]>(Prisma.sql`
+    SELECT ${entryMetricAggregateSelectSql}
+    FROM "Entry" e
+    WHERE e."workspaceId" = ${workspaceId}
+      AND e."date" >= ${start}
+      AND e."date" < ${end}
+  `);
+  const agg = normalizeEntryMetricAggregate(rows[0]);
 
   if (isWorkspaceDebugEnabled()) {
     const allTimeCount = await prisma.entry.count({ where: { workspaceId } });
@@ -955,12 +957,10 @@ async function _cachedDashboardSummary(workspaceId: string, timeZone: string): P
       workspaceId,
       monthStart: start.toISOString(),
       nextMonthStart: end.toISOString(),
-      entriesThisMonth: entries.length,
+      entriesThisMonth: agg.entriesCount,
       entriesAllTimeInWorkspace: allTimeCount,
     });
   }
-
-  const agg = aggregateEntryMetrics(entries);
 
   return {
     totalRealSpent: agg.totalSpentReal,

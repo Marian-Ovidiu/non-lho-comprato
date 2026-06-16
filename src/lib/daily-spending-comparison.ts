@@ -9,6 +9,12 @@ export type DailySpendingEntry = {
   realCost: unknown;
 };
 
+export type DailySpendingAggregateRow = {
+  dateKey: string;
+  totalRealSpent: number;
+  entriesCount: number;
+};
+
 export type DailySpendingCell = {
   day: number;
   dateKey: string | null;
@@ -128,6 +134,29 @@ function aggregateDailyTotals(
   return { dayTotals, dayEntryCounts };
 }
 
+function aggregateDailyRows(
+  rows: readonly DailySpendingAggregateRow[],
+): {
+  dayTotals: Map<string, number>;
+  dayEntryCounts: Map<string, number>;
+} {
+  const dayTotals = new Map<string, number>();
+  const dayEntryCounts = new Map<string, number>();
+
+  for (const row of rows) {
+    dayTotals.set(
+      row.dateKey,
+      round2((dayTotals.get(row.dateKey) ?? 0) + row.totalRealSpent),
+    );
+    dayEntryCounts.set(
+      row.dateKey,
+      (dayEntryCounts.get(row.dateKey) ?? 0) + row.entriesCount,
+    );
+  }
+
+  return { dayTotals, dayEntryCounts };
+}
+
 function hasEntriesInMonth(
   dayEntryCounts: Map<string, number>,
   monthKey: string,
@@ -242,8 +271,11 @@ function computeMonthToDateDelta(
   return round2(currentSum - previousSum);
 }
 
-export function buildDailySpendingComparison(
-  entries: readonly DailySpendingEntry[],
+function buildDailySpendingComparisonFromTotals(
+  totals: {
+    dayTotals: Map<string, number>;
+    dayEntryCounts: Map<string, number>;
+  },
   timeZone: string,
   now: Date = new Date(),
   selectedMonthKey?: string,
@@ -251,7 +283,7 @@ export function buildDailySpendingComparison(
   const todayParts = getDateParts(now, timeZone);
   const todayKey = getDateKey(now, timeZone);
   const todayMonthKey = buildMonthKey(todayParts.year, todayParts.month);
-  const { dayTotals, dayEntryCounts } = aggregateDailyTotals(entries, timeZone);
+  const { dayTotals, dayEntryCounts } = totals;
 
   const selectedMonthParts = selectedMonthKey
     ? parseMonthKey(selectedMonthKey)
@@ -307,4 +339,32 @@ export function buildDailySpendingComparison(
       currentMonth.monthKey === todayMonthKey ? todayParts.day : 31,
     ),
   };
+}
+
+export function buildDailySpendingComparison(
+  entries: readonly DailySpendingEntry[],
+  timeZone: string,
+  now: Date = new Date(),
+  selectedMonthKey?: string,
+): DailySpendingComparison {
+  return buildDailySpendingComparisonFromTotals(
+    aggregateDailyTotals(entries, timeZone),
+    timeZone,
+    now,
+    selectedMonthKey,
+  );
+}
+
+export function buildDailySpendingComparisonFromRows(
+  rows: readonly DailySpendingAggregateRow[],
+  timeZone: string,
+  now: Date = new Date(),
+  selectedMonthKey?: string,
+): DailySpendingComparison {
+  return buildDailySpendingComparisonFromTotals(
+    aggregateDailyRows(rows),
+    timeZone,
+    now,
+    selectedMonthKey,
+  );
 }

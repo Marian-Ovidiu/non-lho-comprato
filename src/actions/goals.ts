@@ -2,13 +2,13 @@
 
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
-import { type EntryMoneyLike } from "@/src/lib/entry-domain";
-import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
-import { prisma } from "@/src/lib/prisma";
+import { Prisma } from "@/src/lib/generated/prisma/client";
 import {
-  getCurrentWorkspaceId,
-  getCurrentWorkspaceScopedWhere,
-} from "@/src/lib/workspace-context";
+  entryNetImpactSql,
+  toMetricNumber,
+} from "@/src/lib/entry-metrics-query";
+import { prisma } from "@/src/lib/prisma";
+import { getCurrentWorkspaceId } from "@/src/lib/workspace-context";
 
 type GoalActionResult = {
   success: boolean;
@@ -124,10 +124,6 @@ function getProgressAmount(
   return totalAll;
 }
 
-function getGoalContribution(entry: EntryMoneyLike): number {
-  return Math.max(0, calculateEntryMetrics(entry).netImpact);
-}
-
 export async function createGoal(
   formData: FormData,
 ): Promise<GoalActionResult> {
@@ -200,7 +196,7 @@ async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithPr
   cacheLife("hours");
 
   try {
-    const [goals, entries] = await Promise.all([
+    const [goals, totalRows, userRows] = await Promise.all([
       prisma.goal.findMany({
         where: { workspaceId },
         select: {
@@ -217,32 +213,33 @@ async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithPr
           { createdAt: "desc" },
         ],
       }),
-      prisma.entry.findMany({
-        where: { workspaceId },
-        select: {
-          beneficiaries: { select: { userId: true } },
-          realCost: true,
-          alternativeCost: true,
-          savedAmount: true,
-          mode: true,
-          savingContext: true,
-        },
-      }),
+      prisma.$queryRaw<Array<{ totalAll: unknown }>>(Prisma.sql`
+        SELECT COALESCE(SUM(GREATEST(${entryNetImpactSql}, 0::numeric)), 0)::text AS "totalAll"
+        FROM "Entry" e
+        WHERE e."workspaceId" = ${workspaceId}
+      `),
+      prisma.$queryRaw<Array<{ userId: string; total: unknown }>>(Prisma.sql`
+        SELECT
+          eb."userId",
+          COALESCE(SUM(GREATEST(${entryNetImpactSql}, 0::numeric)), 0)::text AS "total"
+        FROM "Entry" e
+        INNER JOIN "EntryBeneficiary" eb ON eb."entryId" = e."id"
+        WHERE e."workspaceId" = ${workspaceId}
+          AND NOT EXISTS (
+            SELECT 1
+            FROM "EntryBeneficiary" other
+            WHERE other."entryId" = e."id"
+              AND other."userId" <> eb."userId"
+          )
+        GROUP BY eb."userId"
+      `),
     ]);
 
     const totalByUserId = new Map<string, number>();
-    let totalAll = 0;
+    const totalAll = round2(toMetricNumber(totalRows[0]?.totalAll));
 
-    for (const entry of entries) {
-      const contribution = getGoalContribution(entry);
-      if (contribution <= 0) continue;
-
-      totalAll = round2(totalAll + contribution);
-
-      if (entry.beneficiaries.length === 1) {
-        const userId = entry.beneficiaries[0]!.userId;
-        totalByUserId.set(userId, round2((totalByUserId.get(userId) ?? 0) + contribution));
-      }
+    for (const row of userRows) {
+      totalByUserId.set(row.userId, round2(toMetricNumber(row.total)));
     }
 
     return goals.map((goal) => {

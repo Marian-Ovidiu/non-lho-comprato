@@ -1,11 +1,7 @@
 "use server";
 
-import type { Prisma } from "@/src/lib/generated/prisma/client";
+import { Prisma } from "@/src/lib/generated/prisma/client";
 import { buildWorkspaceMemberEntryWhere } from "@/src/lib/workspace-member-filter";
-import {
-  aggregateMemberSpendingStats,
-  type MemberSpendingEntry,
-} from "@/src/lib/member-spending-stats";
 import { formatMoney } from "@/src/lib/formatters";
 import { prisma } from "@/src/lib/prisma";
 import { cacheLife, cacheTag } from "next/cache";
@@ -17,15 +13,21 @@ import {
 } from "@/src/lib/workspace-context";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import {
-  buildDailySpendingComparison,
+  buildDailySpendingComparisonFromRows,
   type DailySpendingComparison,
 } from "@/src/lib/daily-spending-comparison";
-import { getMonthKey } from "@/src/lib/workspace-dates";
+import { getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
 import type { StatsOverview } from "@/src/lib/stats-overview";
 import {
-  aggregateEntryMetrics,
-  calculateEntryMetrics,
-} from "@/src/lib/entry-metrics";
+  entryMetricAggregateSelectSql,
+  entryMetricDateRangeSql,
+  entryMetricMemberFilterSql,
+  entryNetImpactSql,
+  normalizeEntryMetricAggregate,
+  toMetricNumber,
+  type EntryMetricAggregateRow,
+  type EntryMetricDateRange,
+} from "@/src/lib/entry-metrics-query";
 import {
   getCurrentStatsMonthKey,
   getStatsMonthLabel,
@@ -114,23 +116,6 @@ type DecimalLike = {
   toString?: () => string;
 };
 
-type StatsEntryRow = {
-  id: string;
-  title: string;
-  date: Date;
-  realCost: unknown;
-  alternativeCost: unknown;
-  savedAmount: unknown;
-  mode: "spent" | "avoided";
-  savingContext: "none" | "comparison";
-  source: "manual" | "habit";
-  categoryId: string;
-  category: {
-    name: string;
-    slug: string;
-  };
-};
-
 type StatsMonthlyCategoryRow = {
   categoryName: string;
   categorySlug: string;
@@ -138,6 +123,33 @@ type StatsMonthlyCategoryRow = {
   totalAlternativeCost: number;
   totalSaved: number;
   entriesCount: number;
+};
+
+type StatsMonthlyMetricRow = EntryMetricAggregateRow & {
+  month: string;
+};
+
+type StatsCategoryMetricRow = EntryMetricAggregateRow & {
+  categoryId: string;
+  categoryName: string;
+  categorySlug: string;
+};
+
+type StatsDailySpendingMetricRow = {
+  dateKey: string;
+  totalRealSpent: unknown;
+  entriesCount: number;
+};
+
+type StatsTopSavingsMetricRow = {
+  id: string;
+  title: string;
+  date: Date;
+  realCost: unknown;
+  alternativeCost: unknown;
+  savedAmount: unknown;
+  source: "manual" | "habit";
+  categoryName: string;
 };
 
 type StatsPageData = {
@@ -188,37 +200,30 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function buildOverviewFromTotals(input: {
-  totalRealSpent: unknown;
-  totalAlternativeCost: unknown;
-  totalSaved: unknown;
-  entriesCount: number;
-}): StatsOverview {
-  if (input.entriesCount === 0) {
+function buildOverviewFromAggregate(
+  agg: ReturnType<typeof normalizeEntryMetricAggregate>,
+): StatsOverview {
+  if (agg.entriesCount === 0) {
     return emptyOverview();
   }
 
-  const totalRealSpent = round2(toNumber(input.totalRealSpent));
-  const totalAlternativeCost = round2(toNumber(input.totalAlternativeCost));
-  const totalSaved = round2(toNumber(input.totalSaved));
-
   return {
-    totalRealSpent,
-    totalAlternativeCost,
-    totalSaved,
-    netImpact: totalSaved,
-    avoidedAmount: 0,
-    comparisonSaved: 0,
-    comparisonOverspent: 0,
-    grossPositiveImpact: 0,
-    largeComparisonImpact: 0,
-    ordinaryImpact: totalSaved,
-    entriesCount: input.entriesCount,
-    averageSavedPerEntry: round2(totalSaved / input.entriesCount),
+    totalRealSpent: agg.totalSpentReal,
+    totalAlternativeCost: agg.totalWouldHaveSpent,
+    totalSaved: agg.totalNetImpact,
+    netImpact: agg.totalNetImpact,
+    avoidedAmount: agg.totalAvoidedAmount,
+    comparisonSaved: agg.totalComparisonSaved,
+    comparisonOverspent: agg.totalComparisonOverspent,
+    grossPositiveImpact: agg.totalGrossPositiveImpact,
+    largeComparisonImpact: agg.largeComparisonImpact,
+    ordinaryImpact: agg.ordinaryImpact,
+    entriesCount: agg.entriesCount,
+    averageSavedPerEntry: round2(agg.totalNetImpact / agg.entriesCount),
     savingRatePercent:
-      totalAlternativeCost === 0
+      agg.totalWouldHaveSpent === 0
         ? 0
-        : round2((totalSaved / totalAlternativeCost) * 100),
+        : round2((agg.totalNetImpact / agg.totalWouldHaveSpent) * 100),
   };
 }
 
@@ -514,16 +519,6 @@ function buildSpendingTrendInsight(monthlyStats: MonthlyStatsItem[]): StatsInsig
   };
 }
 
-async function buildStatsEntryWhere(
-  memberUserId: string | undefined,
-  members: WorkspaceMemberOption[],
-): Promise<Prisma.EntryWhereInput> {
-  return {
-    ...buildWorkspaceMemberEntryWhere(memberUserId, members),
-    ...(await getCurrentWorkspaceScopedWhere()),
-  };
-}
-
 async function buildStatsHabitOccurrenceWhere(
   memberUserId: string | undefined,
   members: WorkspaceMemberOption[],
@@ -550,191 +545,6 @@ async function buildStatsHabitOccurrenceWhere(
   };
 }
 
-function getStatsFromEntries(
-  entries: StatsEntryRow[],
-  timeZone: string,
-): Pick<
-  StatsPageData,
-  "overview" | "monthlyStats" | "categoryStats" | "topSavings" | "insights"
-> {
-  if (entries.length === 0) {
-    return {
-      overview: emptyOverview(),
-      monthlyStats: [],
-      categoryStats: [],
-      topSavings: [],
-      insights: [],
-    };
-  }
-
-  // Group entries for aggregation
-  const byMonth = new Map<string, StatsEntryRow[]>();
-  const byCategoryId = new Map<
-    string,
-    { name: string; slug: string; entries: StatsEntryRow[] }
-  >();
-  const byMonthByCategory = new Map<string, Map<string, StatsEntryRow[]>>();
-
-  for (const entry of entries) {
-    const monthKey = getMonthKey(entry.date, timeZone);
-
-    const monthGroup = byMonth.get(monthKey) ?? [];
-    monthGroup.push(entry);
-    byMonth.set(monthKey, monthGroup);
-
-    const catGroup = byCategoryId.get(entry.categoryId) ?? {
-      name: entry.category.name,
-      slug: entry.category.slug,
-      entries: [],
-    };
-    catGroup.entries.push(entry);
-    byCategoryId.set(entry.categoryId, catGroup);
-
-    const monthCatMap =
-      byMonthByCategory.get(monthKey) ?? new Map<string, StatsEntryRow[]>();
-    const monthCatGroup = monthCatMap.get(entry.categoryId) ?? [];
-    monthCatGroup.push(entry);
-    monthCatMap.set(entry.categoryId, monthCatGroup);
-    byMonthByCategory.set(monthKey, monthCatMap);
-  }
-
-  // Overall aggregate
-  const overallAgg = aggregateEntryMetrics(entries);
-  const overview: StatsOverview = {
-    totalRealSpent: overallAgg.totalSpentReal,
-    totalAlternativeCost: overallAgg.totalWouldHaveSpent,
-    totalSaved: overallAgg.totalNetImpact,
-    netImpact: overallAgg.totalNetImpact,
-    avoidedAmount: overallAgg.totalAvoidedAmount,
-    comparisonSaved: overallAgg.totalComparisonSaved,
-    comparisonOverspent: overallAgg.totalComparisonOverspent,
-    grossPositiveImpact: overallAgg.totalGrossPositiveImpact,
-    largeComparisonImpact: overallAgg.largeComparisonImpact,
-    ordinaryImpact: overallAgg.ordinaryImpact,
-    entriesCount: overallAgg.entriesCount,
-    averageSavedPerEntry:
-      overallAgg.entriesCount === 0
-        ? 0
-        : round2(overallAgg.totalNetImpact / overallAgg.entriesCount),
-    savingRatePercent:
-      overallAgg.totalWouldHaveSpent === 0
-        ? 0
-        : round2(
-            (overallAgg.totalNetImpact / overallAgg.totalWouldHaveSpent) * 100,
-          ),
-  };
-
-  // Monthly stats
-  const monthlyStats = Array.from(byMonth.entries())
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([month, monthEntries]) => {
-      const agg = aggregateEntryMetrics(monthEntries);
-      return {
-        month,
-        label: getMonthLabelFromKey(month),
-        totalRealSpent: agg.totalSpentReal,
-        totalAlternativeCost: agg.totalWouldHaveSpent,
-        totalSaved: agg.totalNetImpact,
-        netImpact: agg.totalNetImpact,
-        avoidedAmount: agg.totalAvoidedAmount,
-        comparisonSaved: agg.totalComparisonSaved,
-        comparisonOverspent: agg.totalComparisonOverspent,
-        grossPositiveImpact: agg.totalGrossPositiveImpact,
-        largeComparisonImpact: agg.largeComparisonImpact,
-        ordinaryImpact: agg.ordinaryImpact,
-        entriesCount: agg.entriesCount,
-      };
-    });
-
-  // Category stats
-  const categoryStats = Array.from(byCategoryId.entries())
-    .map(([categoryId, group]) => {
-      const agg = aggregateEntryMetrics(group.entries);
-      return {
-        categoryId,
-        categoryName: group.name,
-        categorySlug: group.slug,
-        totalRealSpent: agg.totalSpentReal,
-        totalAlternativeCost: agg.totalWouldHaveSpent,
-        totalSaved: agg.totalNetImpact,
-        netImpact: agg.totalNetImpact,
-        avoidedAmount: agg.totalAvoidedAmount,
-        comparisonSaved: agg.totalComparisonSaved,
-        comparisonOverspent: agg.totalComparisonOverspent,
-        grossPositiveImpact: agg.totalGrossPositiveImpact,
-        entriesCount: agg.entriesCount,
-        averageSaved:
-          agg.entriesCount === 0
-            ? 0
-            : round2(agg.totalNetImpact / agg.entriesCount),
-      };
-    })
-    .sort(
-      (left, right) =>
-        right.totalRealSpent - left.totalRealSpent ||
-        right.totalSaved - left.totalSaved ||
-        left.categoryName.localeCompare(right.categoryName, "it"),
-    );
-
-  // Top savings: entries with positive netImpact, computed from entry costs
-  const topSavings: TopSavingsItem[] = [];
-  for (const entry of entries) {
-    const entryMetrics = calculateEntryMetrics(entry);
-    if (entryMetrics.netImpact > 0) {
-      topSavings.push({
-        id: entry.id,
-        title: entry.title,
-        categoryName: entry.category.name,
-        date: entry.date,
-        realCost: entryMetrics.spentReal,
-        alternativeCost: entryMetrics.wouldHaveSpent,
-        savedAmount: entryMetrics.netImpact,
-        source: entry.source,
-      });
-    }
-  }
-  topSavings.sort(
-    (left, right) =>
-      right.savedAmount - left.savedAmount ||
-      right.date.getTime() - left.date.getTime(),
-  );
-
-  // Build monthly-category grouping for insight functions
-  const monthlyCategoryGrouped = new Map<
-    string,
-    Map<string, StatsMonthlyCategoryRow>
-  >();
-  for (const [monthKey, monthCatMap] of byMonthByCategory.entries()) {
-    const catRows = new Map<string, StatsMonthlyCategoryRow>();
-    for (const [catId, catEntries] of monthCatMap.entries()) {
-      const agg = aggregateEntryMetrics(catEntries);
-      catRows.set(catId, {
-        categoryName: catEntries[0]!.category.name,
-        categorySlug: catEntries[0]!.category.slug,
-        totalRealSpent: agg.totalSpentReal,
-        totalAlternativeCost: agg.totalWouldHaveSpent,
-        totalSaved: agg.totalNetImpact,
-        entriesCount: agg.entriesCount,
-      });
-    }
-    monthlyCategoryGrouped.set(monthKey, catRows);
-  }
-
-  const insights = [
-    buildSpendingCategoryInsight(monthlyStats, monthlyCategoryGrouped, categoryStats),
-    buildSavingCategoryInsight(monthlyStats, monthlyCategoryGrouped, categoryStats),
-    buildSpendingTrendInsight(monthlyStats),
-  ];
-
-  return {
-    overview,
-    monthlyStats,
-    categoryStats,
-    topSavings: topSavings.slice(0, 10),
-    insights,
-  };
-}
-
 function buildStatsMonthOptionsFromMonthlyStats(
   monthlyStats: MonthlyStatsItem[],
   selectedMonthKey: string,
@@ -758,27 +568,271 @@ function buildStatsMonthOptionsFromMonthlyStats(
     }));
 }
 
-function filterEntriesForStatsPeriod(
-  entries: StatsEntryRow[],
+function getStatsPeriodDateRange(
   period: StatsPeriod,
   selectedMonthKey: string,
   timeZone: string,
-): StatsEntryRow[] {
+): EntryMetricDateRange {
   if (period === "all") {
-    return entries;
+    return {};
   }
 
-  const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
+  if (period === "month") {
+    return getMonthRangeForMonthKey(selectedMonthKey, timeZone);
+  }
 
-  return entries.filter((entry) => {
-    const entryMonthKey = getMonthKey(entry.date, timeZone);
+  const selectedYear = Number(getStatsYearFromMonthKey(selectedMonthKey));
+  const start = getMonthRangeForMonthKey(`${selectedYear}-01`, timeZone).start;
+  const end = getMonthRangeForMonthKey(`${selectedYear + 1}-01`, timeZone).start;
 
-    if (period === "year") {
-      return entryMonthKey.startsWith(selectedYear);
-    }
+  return { start, end };
+}
 
-    return entryMonthKey === selectedMonthKey;
+function getPreviousMonthKey(monthKey: string): string {
+  const [yearPart, monthPart] = monthKey.split("-");
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+
+  if (
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    month < 1 ||
+    month > 12
+  ) {
+    return monthKey;
+  }
+
+  if (month === 1) {
+    return `${year - 1}-12`;
+  }
+
+  return `${year}-${String(month - 1).padStart(2, "0")}`;
+}
+
+function buildMonthlyStatsFromRows(rows: StatsMonthlyMetricRow[]): MonthlyStatsItem[] {
+  return rows.map((row) => {
+    const agg = normalizeEntryMetricAggregate(row);
+    return {
+      month: row.month,
+      label: getMonthLabelFromKey(row.month),
+      totalRealSpent: agg.totalSpentReal,
+      totalAlternativeCost: agg.totalWouldHaveSpent,
+      totalSaved: agg.totalNetImpact,
+      netImpact: agg.totalNetImpact,
+      avoidedAmount: agg.totalAvoidedAmount,
+      comparisonSaved: agg.totalComparisonSaved,
+      comparisonOverspent: agg.totalComparisonOverspent,
+      grossPositiveImpact: agg.totalGrossPositiveImpact,
+      largeComparisonImpact: agg.largeComparisonImpact,
+      ordinaryImpact: agg.ordinaryImpact,
+      entriesCount: agg.entriesCount,
+    };
   });
+}
+
+function buildCategoryStatsFromRows(rows: StatsCategoryMetricRow[]): CategoryStatsItem[] {
+  return rows
+    .map((row) => {
+      const agg = normalizeEntryMetricAggregate(row);
+      return {
+        categoryId: row.categoryId,
+        categoryName: row.categoryName,
+        categorySlug: row.categorySlug,
+        totalRealSpent: agg.totalSpentReal,
+        totalAlternativeCost: agg.totalWouldHaveSpent,
+        totalSaved: agg.totalNetImpact,
+        netImpact: agg.totalNetImpact,
+        avoidedAmount: agg.totalAvoidedAmount,
+        comparisonSaved: agg.totalComparisonSaved,
+        comparisonOverspent: agg.totalComparisonOverspent,
+        grossPositiveImpact: agg.totalGrossPositiveImpact,
+        entriesCount: agg.entriesCount,
+        averageSaved:
+          agg.entriesCount === 0
+            ? 0
+            : round2(agg.totalNetImpact / agg.entriesCount),
+      };
+    })
+    .sort(
+      (left, right) =>
+        right.totalRealSpent - left.totalRealSpent ||
+        right.totalSaved - left.totalSaved ||
+        left.categoryName.localeCompare(right.categoryName, "it"),
+    );
+}
+
+function buildMonthlyCategoryGroupedFromRows(
+  rows: Array<StatsCategoryMetricRow & { month: string }>,
+): Map<string, Map<string, StatsMonthlyCategoryRow>> {
+  const grouped = new Map<string, Map<string, StatsMonthlyCategoryRow>>();
+
+  for (const row of rows) {
+    const agg = normalizeEntryMetricAggregate(row);
+    const categoryMap = grouped.get(row.month) ?? new Map();
+    categoryMap.set(row.categoryId, {
+      categoryName: row.categoryName,
+      categorySlug: row.categorySlug,
+      totalRealSpent: agg.totalSpentReal,
+      totalAlternativeCost: agg.totalWouldHaveSpent,
+      totalSaved: agg.totalNetImpact,
+      entriesCount: agg.entriesCount,
+    });
+    grouped.set(row.month, categoryMap);
+  }
+
+  return grouped;
+}
+
+async function getEntryAggregateForWorkspace(
+  workspaceId: string,
+  memberUserId: string | undefined,
+  range: EntryMetricDateRange = {},
+): Promise<StatsOverview> {
+  const rows = await prisma.$queryRaw<EntryMetricAggregateRow[]>(Prisma.sql`
+    SELECT ${entryMetricAggregateSelectSql}
+    FROM "Entry" e
+    WHERE e."workspaceId" = ${workspaceId}
+      ${entryMetricMemberFilterSql(memberUserId)}
+      ${entryMetricDateRangeSql(range)}
+  `);
+
+  return buildOverviewFromAggregate(normalizeEntryMetricAggregate(rows[0]));
+}
+
+async function getMonthlyStatsForWorkspace(
+  workspaceId: string,
+  memberUserId: string | undefined,
+  timeZone: string,
+  range: EntryMetricDateRange = {},
+): Promise<MonthlyStatsItem[]> {
+  const rows = await prisma.$queryRaw<StatsMonthlyMetricRow[]>(Prisma.sql`
+    SELECT
+      to_char(e."date" AT TIME ZONE ${timeZone}, 'YYYY-MM') AS "month",
+      ${entryMetricAggregateSelectSql}
+    FROM "Entry" e
+    WHERE e."workspaceId" = ${workspaceId}
+      ${entryMetricMemberFilterSql(memberUserId)}
+      ${entryMetricDateRangeSql(range)}
+    GROUP BY "month"
+    ORDER BY "month" ASC
+  `);
+
+  return buildMonthlyStatsFromRows(rows);
+}
+
+async function getCategoryStatsForWorkspace(
+  workspaceId: string,
+  memberUserId: string | undefined,
+  range: EntryMetricDateRange = {},
+): Promise<CategoryStatsItem[]> {
+  const rows = await prisma.$queryRaw<StatsCategoryMetricRow[]>(Prisma.sql`
+    SELECT
+      c."id" AS "categoryId",
+      c."name" AS "categoryName",
+      c."slug" AS "categorySlug",
+      ${entryMetricAggregateSelectSql}
+    FROM "Entry" e
+    INNER JOIN "Category" c ON c."id" = e."categoryId"
+    WHERE e."workspaceId" = ${workspaceId}
+      ${entryMetricMemberFilterSql(memberUserId)}
+      ${entryMetricDateRangeSql(range)}
+    GROUP BY c."id", c."name", c."slug"
+  `);
+
+  return buildCategoryStatsFromRows(rows);
+}
+
+async function getMonthlyCategoryRowsForWorkspace(
+  workspaceId: string,
+  memberUserId: string | undefined,
+  timeZone: string,
+  range: EntryMetricDateRange = {},
+): Promise<Array<StatsCategoryMetricRow & { month: string }>> {
+  return prisma.$queryRaw<Array<StatsCategoryMetricRow & { month: string }>>(Prisma.sql`
+    SELECT
+      to_char(e."date" AT TIME ZONE ${timeZone}, 'YYYY-MM') AS "month",
+      c."id" AS "categoryId",
+      c."name" AS "categoryName",
+      c."slug" AS "categorySlug",
+      ${entryMetricAggregateSelectSql}
+    FROM "Entry" e
+    INNER JOIN "Category" c ON c."id" = e."categoryId"
+    WHERE e."workspaceId" = ${workspaceId}
+      ${entryMetricMemberFilterSql(memberUserId)}
+      ${entryMetricDateRangeSql(range)}
+    GROUP BY "month", c."id", c."name", c."slug"
+    ORDER BY "month" ASC
+  `);
+}
+
+async function getTopSavingsForWorkspace(
+  workspaceId: string,
+  memberUserId: string | undefined,
+  range: EntryMetricDateRange = {},
+  limit = 10,
+): Promise<TopSavingsItem[]> {
+  const safeLimit = Math.max(0, Math.floor(limit));
+  if (safeLimit === 0) {
+    return [];
+  }
+
+  const rows = await prisma.$queryRaw<StatsTopSavingsMetricRow[]>(Prisma.sql`
+    SELECT
+      e."id",
+      e."title",
+      e."date",
+      e."realCost",
+      e."alternativeCost",
+      ${entryNetImpactSql}::text AS "savedAmount",
+      e."source",
+      c."name" AS "categoryName"
+    FROM "Entry" e
+    INNER JOIN "Category" c ON c."id" = e."categoryId"
+    WHERE e."workspaceId" = ${workspaceId}
+      ${entryMetricMemberFilterSql(memberUserId)}
+      ${entryMetricDateRangeSql(range)}
+      AND ${entryNetImpactSql} > 0
+    ORDER BY ${entryNetImpactSql} DESC, e."date" DESC
+    LIMIT ${safeLimit}
+  `);
+
+  return rows.map((row) => ({
+    id: row.id,
+    title: row.title,
+    categoryName: row.categoryName,
+    date: row.date,
+    realCost: round2(toMetricNumber(row.realCost)),
+    alternativeCost: round2(toMetricNumber(row.alternativeCost)),
+    savedAmount: round2(toMetricNumber(row.savedAmount)),
+    source: row.source,
+  }));
+}
+
+async function getDailySpendingRowsForWorkspace(
+  workspaceId: string,
+  memberUserId: string | undefined,
+  timeZone: string,
+  selectedMonthKey: string,
+): Promise<StatsDailySpendingMetricRow[]> {
+  const currentMonthRange = getMonthRangeForMonthKey(selectedMonthKey, timeZone);
+  const previousMonthRange = getMonthRangeForMonthKey(
+    getPreviousMonthKey(selectedMonthKey),
+    timeZone,
+  );
+
+  return prisma.$queryRaw<StatsDailySpendingMetricRow[]>(Prisma.sql`
+    SELECT
+      to_char(e."date" AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS "dateKey",
+      COALESCE(SUM(e."realCost"), 0)::text AS "totalRealSpent",
+      COUNT(*)::int AS "entriesCount"
+    FROM "Entry" e
+    WHERE e."workspaceId" = ${workspaceId}
+      ${entryMetricMemberFilterSql(memberUserId)}
+      AND e."date" >= ${previousMonthRange.start}
+      AND e."date" < ${currentMonthRange.end}
+    GROUP BY "dateKey"
+    ORDER BY "dateKey" ASC
+  `);
 }
 
 async function getHabitStatsFromMembers(
@@ -895,61 +949,77 @@ export async function getStatsPageData(
   options: StatsPageDataOptions = {},
 ): Promise<StatsPageData> {
   const now = options.now ?? new Date();
-  const timeZone = await getCurrentWorkspaceTimezone();
   const selectedPeriod = options.period ?? "month";
+  const [timeZone, workspaceId, workspaceMembers] = await Promise.all([
+    getCurrentWorkspaceTimezone(),
+    getCurrentWorkspaceId(),
+    members ?? getCurrentWorkspaceMembers(),
+  ]);
   const selectedMonthKey = normalizeStatsMonthKey(timeZone, options.selectedMonthKey, now);
   const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
   const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
-  const workspaceMembers = members ?? (await getCurrentWorkspaceMembers());
-  const [entryWhere, habitStats] = await Promise.all([
-    buildStatsEntryWhere(memberUserId, workspaceMembers),
-    getHabitStatsFromMembers(memberUserId, workspaceMembers),
-  ]);
-
-  const entries = await prisma.entry.findMany({
-    where: entryWhere,
-    orderBy: {
-      date: "asc",
-    },
-    select: {
-      id: true,
-      title: true,
-      date: true,
-      realCost: true,
-      alternativeCost: true,
-      savedAmount: true,
-      mode: true,
-      savingContext: true,
-      source: true,
-      categoryId: true,
-      category: {
-        select: {
-          name: true,
-          slug: true,
-        },
-      },
-    },
-  });
-
-  const allTimeEntryStats = getStatsFromEntries(entries, timeZone);
-  const periodEntries = filterEntriesForStatsPeriod(
-    entries,
+  const periodRange = getStatsPeriodDateRange(
     selectedPeriod,
     selectedMonthKey,
     timeZone,
   );
-  const entryStats = getStatsFromEntries(periodEntries, timeZone);
-  const insights = entryStats.insights.slice(0, 3);
+  const [
+    allTimeOverview,
+    periodOverview,
+    allTimeMonthlyStats,
+    periodMonthlyStats,
+    categoryStats,
+    monthlyCategoryRows,
+    topSavings,
+    dailyRows,
+    habitStats,
+  ] = await Promise.all([
+    getEntryAggregateForWorkspace(workspaceId, memberUserId),
+    getEntryAggregateForWorkspace(workspaceId, memberUserId, periodRange),
+    getMonthlyStatsForWorkspace(workspaceId, memberUserId, timeZone),
+    getMonthlyStatsForWorkspace(workspaceId, memberUserId, timeZone, periodRange),
+    getCategoryStatsForWorkspace(workspaceId, memberUserId, periodRange),
+    getMonthlyCategoryRowsForWorkspace(
+      workspaceId,
+      memberUserId,
+      timeZone,
+      periodRange,
+    ),
+    getTopSavingsForWorkspace(workspaceId, memberUserId, periodRange, 10),
+    getDailySpendingRowsForWorkspace(
+      workspaceId,
+      memberUserId,
+      timeZone,
+      selectedMonthKey,
+    ),
+    getHabitStatsFromMembers(memberUserId, workspaceMembers),
+  ]);
+  const monthlyCategoryGrouped =
+    buildMonthlyCategoryGroupedFromRows(monthlyCategoryRows);
+  const insights = [
+    buildSpendingCategoryInsight(
+      periodMonthlyStats,
+      monthlyCategoryGrouped,
+      categoryStats,
+    ),
+    buildSavingCategoryInsight(
+      periodMonthlyStats,
+      monthlyCategoryGrouped,
+      categoryStats,
+    ),
+    buildSpendingTrendInsight(periodMonthlyStats),
+  ].slice(0, 3);
   const monthOptions = buildStatsMonthOptionsFromMonthlyStats(
-    allTimeEntryStats.monthlyStats,
+    allTimeMonthlyStats,
     selectedMonthKey,
     now,
     timeZone,
   );
-  const dailySpendingComparison = buildDailySpendingComparison(
-    entries.map((entry) => ({
-      date: entry.date,
-      realCost: entry.realCost,
+  const dailySpendingComparison = buildDailySpendingComparisonFromRows(
+    dailyRows.map((row) => ({
+      dateKey: row.dateKey,
+      totalRealSpent: round2(toMetricNumber(row.totalRealSpent)),
+      entriesCount: row.entriesCount,
     })),
     timeZone,
     now,
@@ -957,11 +1027,11 @@ export async function getStatsPageData(
   );
 
   return {
-    overview: entryStats.overview,
-    allTimeOverview: allTimeEntryStats.overview,
-    monthlyStats: allTimeEntryStats.monthlyStats,
-    categoryStats: entryStats.categoryStats,
-    topSavings: entryStats.topSavings,
+    overview: periodOverview,
+    allTimeOverview,
+    monthlyStats: allTimeMonthlyStats,
+    categoryStats,
+    topSavings,
     habitStats,
     insights,
     dailySpendingComparison,
@@ -970,7 +1040,7 @@ export async function getStatsPageData(
     selectedMonthLabel,
     selectedYear,
     monthOptions,
-    hasAnyStatsData: entries.length > 0 || habitStats.length > 0,
+    hasAnyStatsData: allTimeOverview.entriesCount > 0 || habitStats.length > 0,
   };
 }
 
@@ -978,24 +1048,8 @@ export async function getStatsOverview(
   memberUserId?: string,
 ): Promise<StatsOverview> {
   try {
-    const totals = await prisma.entry.aggregate({
-      where: await buildEntryWhere(memberUserId),
-      _sum: {
-        realCost: true,
-        alternativeCost: true,
-        savedAmount: true,
-      },
-      _count: {
-        _all: true,
-      },
-    });
-
-    return buildOverviewFromTotals({
-      totalRealSpent: totals._sum.realCost,
-      totalAlternativeCost: totals._sum.alternativeCost,
-      totalSaved: totals._sum.savedAmount,
-      entriesCount: totals._count._all,
-    });
+    const workspaceId = await getCurrentWorkspaceId();
+    return getEntryAggregateForWorkspace(workspaceId, memberUserId);
   } catch (error) {
     console.error("Failed to load stats overview:", error);
     return emptyOverview();
@@ -1021,48 +1075,7 @@ async function _cachedMonthlyStats(workspaceId: string, timeZone: string): Promi
   cacheLife("hours");
 
   try {
-    const entries = await prisma.entry.findMany({
-      where: { workspaceId },
-      select: {
-        date: true,
-        realCost: true,
-        alternativeCost: true,
-        savedAmount: true,
-      },
-      orderBy: { date: "asc" },
-    });
-
-    if (entries.length === 0) return [];
-
-    const grouped = new Map<string, { totalRealSpent: number; totalAlternativeCost: number; totalSaved: number; entriesCount: number }>();
-
-    for (const entry of entries) {
-      const monthKey = getMonthKey(entry.date, timeZone);
-      const current = grouped.get(monthKey) ?? { totalRealSpent: 0, totalAlternativeCost: 0, totalSaved: 0, entriesCount: 0 };
-      current.totalRealSpent = round2(current.totalRealSpent + toNumber(entry.realCost));
-      current.totalAlternativeCost = round2(current.totalAlternativeCost + toNumber(entry.alternativeCost));
-      current.totalSaved = round2(current.totalSaved + toNumber(entry.savedAmount));
-      current.entriesCount += 1;
-      grouped.set(monthKey, current);
-    }
-
-    return Array.from(grouped.entries())
-      .sort(([l], [r]) => l.localeCompare(r))
-      .map(([month, totals]) => ({
-        month,
-        label: getMonthLabelFromKey(month),
-        totalRealSpent: totals.totalRealSpent,
-        totalAlternativeCost: totals.totalAlternativeCost,
-        totalSaved: totals.totalSaved,
-        netImpact: totals.totalSaved,
-        avoidedAmount: 0,
-        comparisonSaved: 0,
-        comparisonOverspent: 0,
-        grossPositiveImpact: 0,
-        largeComparisonImpact: 0,
-        ordinaryImpact: totals.totalSaved,
-        entriesCount: totals.entriesCount,
-      }));
+    return getMonthlyStatsForWorkspace(workspaceId, undefined, timeZone);
   } catch (error) {
     console.error("Failed to load monthly stats:", error);
     return [];
@@ -1070,73 +1083,12 @@ async function _cachedMonthlyStats(workspaceId: string, timeZone: string): Promi
 }
 
 async function _getMonthlyStatsDynamic(memberUserId: string): Promise<MonthlyStatsItem[]> {
-  const timeZone = await getCurrentWorkspaceTimezone();
   try {
-    const entries = await prisma.entry.findMany({
-      where: await buildEntryWhere(memberUserId),
-      select: {
-        date: true,
-        realCost: true,
-        alternativeCost: true,
-        savedAmount: true,
-      },
-      orderBy: {
-        date: "asc",
-      },
-    });
-
-    if (entries.length === 0) {
-      return [];
-    }
-
-    const grouped = new Map<
-      string,
-      {
-        totalRealSpent: number;
-        totalAlternativeCost: number;
-        totalSaved: number;
-        entriesCount: number;
-      }
-    >();
-
-    for (const entry of entries) {
-      const monthKey = getMonthKey(entry.date, timeZone);
-      const current = grouped.get(monthKey) ?? {
-        totalRealSpent: 0,
-        totalAlternativeCost: 0,
-        totalSaved: 0,
-        entriesCount: 0,
-      };
-
-      current.totalRealSpent = round2(
-        current.totalRealSpent + toNumber(entry.realCost),
-      );
-      current.totalAlternativeCost = round2(
-        current.totalAlternativeCost + toNumber(entry.alternativeCost),
-      );
-      current.totalSaved = round2(current.totalSaved + toNumber(entry.savedAmount));
-      current.entriesCount += 1;
-
-      grouped.set(monthKey, current);
-    }
-
-    return Array.from(grouped.entries())
-      .sort(([left], [right]) => left.localeCompare(right))
-      .map(([month, totals]) => ({
-        month,
-        label: getMonthLabelFromKey(month),
-        totalRealSpent: totals.totalRealSpent,
-        totalAlternativeCost: totals.totalAlternativeCost,
-        totalSaved: totals.totalSaved,
-        netImpact: totals.totalSaved,
-        avoidedAmount: 0,
-        comparisonSaved: 0,
-        comparisonOverspent: 0,
-        grossPositiveImpact: 0,
-        largeComparisonImpact: 0,
-        ordinaryImpact: totals.totalSaved,
-        entriesCount: totals.entriesCount,
-      }));
+    const [workspaceId, timeZone] = await Promise.all([
+      getCurrentWorkspaceId(),
+      getCurrentWorkspaceTimezone(),
+    ]);
+    return getMonthlyStatsForWorkspace(workspaceId, memberUserId, timeZone);
   } catch (error) {
     console.error("Failed to load monthly stats:", error);
     return [];
@@ -1159,49 +1111,7 @@ async function _cachedCategoryStats(workspaceId: string): Promise<CategoryStatsI
   cacheLife("hours");
 
   try {
-    const grouped = await prisma.entry.groupBy({
-      by: ["categoryId"],
-      where: { workspaceId },
-      _sum: { realCost: true, alternativeCost: true, savedAmount: true },
-      _count: { _all: true },
-    });
-
-    if (grouped.length === 0) return [];
-
-    const categoryIds = grouped.map((item) => item.categoryId);
-    const categories = await prisma.category.findMany({
-      where: { id: { in: categoryIds } },
-      select: { id: true, name: true, slug: true },
-    });
-    const categoryById = new Map(categories.map((c) => [c.id, c]));
-
-    return grouped
-      .map((totals) => {
-        const category = categoryById.get(totals.categoryId);
-        const entriesCount = totals._count._all;
-        const totalSaved = round2(toNumber(totals._sum.savedAmount));
-        return {
-          categoryId: totals.categoryId,
-          categoryName: category?.name ?? "Senza categoria",
-          categorySlug: category?.slug ?? totals.categoryId,
-          totalRealSpent: round2(toNumber(totals._sum.realCost)),
-          totalAlternativeCost: round2(toNumber(totals._sum.alternativeCost)),
-          totalSaved,
-          netImpact: totalSaved,
-          avoidedAmount: 0,
-          comparisonSaved: 0,
-          comparisonOverspent: 0,
-          grossPositiveImpact: 0,
-          entriesCount,
-          averageSaved: entriesCount === 0 ? 0 : round2(totalSaved / entriesCount),
-        };
-      })
-      .sort(
-        (l, r) =>
-          r.totalRealSpent - l.totalRealSpent ||
-          r.totalSaved - l.totalSaved ||
-          l.categoryName.localeCompare(r.categoryName, "it"),
-      );
+    return getCategoryStatsForWorkspace(workspaceId, undefined);
   } catch (error) {
     console.error("Failed to load category stats:", error);
     return [];
@@ -1210,69 +1120,8 @@ async function _cachedCategoryStats(workspaceId: string): Promise<CategoryStatsI
 
 async function _getCategoryStatsDynamic(memberUserId: string): Promise<CategoryStatsItem[]> {
   try {
-    const grouped = await prisma.entry.groupBy({
-      by: ["categoryId"],
-      where: await buildEntryWhere(memberUserId),
-      _sum: {
-        realCost: true,
-        alternativeCost: true,
-        savedAmount: true,
-      },
-      _count: {
-        _all: true,
-      },
-    });
-
-    if (grouped.length === 0) {
-      return [];
-    }
-
-    const categoryIds = grouped.map((item) => item.categoryId);
-    const categories = await prisma.category.findMany({
-      where: {
-        id: {
-          in: categoryIds,
-        },
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-      },
-    });
-    const categoryById = new Map(
-      categories.map((category) => [category.id, category]),
-    );
-
-    return grouped
-      .map((totals) => {
-        const category = categoryById.get(totals.categoryId);
-        const entriesCount = totals._count._all;
-        const totalSaved = round2(toNumber(totals._sum.savedAmount));
-
-        return {
-          categoryId: totals.categoryId,
-          categoryName: category?.name ?? "Senza categoria",
-          categorySlug: category?.slug ?? totals.categoryId,
-          totalRealSpent: round2(toNumber(totals._sum.realCost)),
-          totalAlternativeCost: round2(toNumber(totals._sum.alternativeCost)),
-          totalSaved,
-          netImpact: totalSaved,
-          avoidedAmount: 0,
-          comparisonSaved: 0,
-          comparisonOverspent: 0,
-          grossPositiveImpact: 0,
-          entriesCount,
-          averageSaved:
-            entriesCount === 0 ? 0 : round2(totalSaved / entriesCount),
-        };
-      })
-      .sort(
-        (left, right) =>
-          right.totalRealSpent - left.totalRealSpent ||
-          right.totalSaved - left.totalSaved ||
-          left.categoryName.localeCompare(right.categoryName, "it"),
-      );
+    const workspaceId = await getCurrentWorkspaceId();
+    return getCategoryStatsForWorkspace(workspaceId, memberUserId);
   } catch (error) {
     console.error("Failed to load category stats:", error);
     return [];
@@ -1467,48 +1316,92 @@ function emptyWorkspaceMemberSpendingStats(
   }));
 }
 
-function toMemberSpendingEntries(
-  entries: Array<{
-    realCost: unknown;
-    paidByUserId: string | null;
-    paymentMode?: string | null;
-    beneficiaries: Array<{ userId: string }>;
-  }>,
-): MemberSpendingEntry[] {
-  return entries.map((entry) => ({
-    realCost: toNumber(entry.realCost),
-    paidByUserId: entry.paidByUserId,
-    paymentMode: entry.paymentMode,
-    beneficiaryUserIds: entry.beneficiaries.map(
-      (beneficiary) => beneficiary.userId,
-    ),
-  }));
-}
-
 export async function getWorkspaceMemberSpendingStats(
   memberUserId?: string,
 ): Promise<WorkspaceMemberSpendingStatsItem[]> {
   try {
-    const [members, entries] = await Promise.all([
+    const [workspaceId, members] = await Promise.all([
+      getCurrentWorkspaceId(),
       getCurrentWorkspaceMembers(),
-      prisma.entry.findMany({
-        where: await buildEntryWhere(memberUserId),
-        select: {
-          realCost: true,
-          paidByUserId: true,
-          paymentMode: true,
-          beneficiaries: {
-            select: {
-              userId: true,
-            },
-          },
-        },
-      }),
     ]);
 
-    const totalsByUserId = aggregateMemberSpendingStats(
-      members.map((member) => member.userId),
-      toMemberSpendingEntries(entries),
+    const rows = await prisma.$queryRaw<
+      Array<{
+        userId: string;
+        totalPaidByUser: unknown;
+        personalSpending: unknown;
+        sharedSpending: unknown;
+      }>
+    >(Prisma.sql`
+      WITH entry_beneficiary_counts AS (
+        SELECT
+          e."id",
+          e."realCost",
+          e."paidByUserId",
+          e."paymentMode",
+          COUNT(DISTINCT eb."userId")::int AS "beneficiaryCount"
+        FROM "Entry" e
+        LEFT JOIN "EntryBeneficiary" eb ON eb."entryId" = e."id"
+        WHERE e."workspaceId" = ${workspaceId}
+          ${entryMetricMemberFilterSql(memberUserId)}
+        GROUP BY e."id", e."realCost", e."paidByUserId", e."paymentMode"
+      ),
+      member_totals AS (
+        SELECT
+          "paidByUserId" AS "userId",
+          SUM("realCost") AS "totalPaidByUser",
+          0::numeric AS "personalSpending",
+          SUM(CASE WHEN "beneficiaryCount" > 1 THEN "realCost" ELSE 0::numeric END) AS "sharedSpending"
+        FROM entry_beneficiary_counts
+        WHERE "paidByUserId" IS NOT NULL
+          AND "paymentMode"::text <> 'joint_account'
+        GROUP BY "paidByUserId"
+
+        UNION ALL
+
+        SELECT
+          eb."userId",
+          SUM(e."realCost" / NULLIF(counts."beneficiaryCount", 0)) AS "totalPaidByUser",
+          0::numeric AS "personalSpending",
+          SUM(e."realCost" / NULLIF(counts."beneficiaryCount", 0)) AS "sharedSpending"
+        FROM "Entry" e
+        INNER JOIN entry_beneficiary_counts counts ON counts."id" = e."id"
+        INNER JOIN "EntryBeneficiary" eb ON eb."entryId" = e."id"
+        WHERE counts."paymentMode"::text = 'joint_account'
+          AND counts."beneficiaryCount" > 1
+        GROUP BY eb."userId"
+
+        UNION ALL
+
+        SELECT
+          eb."userId",
+          0::numeric AS "totalPaidByUser",
+          SUM(e."realCost") AS "personalSpending",
+          0::numeric AS "sharedSpending"
+        FROM "Entry" e
+        INNER JOIN entry_beneficiary_counts counts ON counts."id" = e."id"
+        INNER JOIN "EntryBeneficiary" eb ON eb."entryId" = e."id"
+        WHERE counts."beneficiaryCount" = 1
+        GROUP BY eb."userId"
+      )
+      SELECT
+        "userId",
+        COALESCE(SUM("totalPaidByUser"), 0)::text AS "totalPaidByUser",
+        COALESCE(SUM("personalSpending"), 0)::text AS "personalSpending",
+        COALESCE(SUM("sharedSpending"), 0)::text AS "sharedSpending"
+      FROM member_totals
+      GROUP BY "userId"
+    `);
+
+    const totalsByUserId = new Map(
+      rows.map((row) => [
+        row.userId,
+        {
+          totalPaidByUser: round2(toMetricNumber(row.totalPaidByUser)),
+          personalSpending: round2(toMetricNumber(row.personalSpending)),
+          sharedSpending: round2(toMetricNumber(row.sharedSpending)),
+        },
+      ]),
     );
 
     return members.map((member) => {

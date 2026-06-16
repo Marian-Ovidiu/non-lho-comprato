@@ -113,6 +113,7 @@ model Entry {
   @@index([createdByUserId])
   @@index([paidByUserId])
   @@index([workspaceId, date])
+  @@index([workspaceId, paidByUserId, date])
   @@index([workspaceId, categoryId, date])
   @@index([workspaceId, savedAmount, date])
 }
@@ -128,6 +129,7 @@ model EntryBeneficiary {
   @@unique([entryId, userId])
   @@index([entryId])
   @@index([userId])
+  @@index([userId, entryId])
 }
 
 model Habit {
