@@ -20,7 +20,10 @@ export function getLegacySecondaryUserId() {
 }
 
 export function isLegacyAuthBridgeEnabled() {
-  return process.env.ENABLE_LEGACY_AUTH_BRIDGE?.trim().toLowerCase() === "true";
+  return (
+    process.env.NODE_ENV !== "production" &&
+    process.env.ENABLE_LEGACY_AUTH_BRIDGE?.trim().toLowerCase() === "true"
+  );
 }
 
 export function getProductionWorkspaceDisplayName() {
