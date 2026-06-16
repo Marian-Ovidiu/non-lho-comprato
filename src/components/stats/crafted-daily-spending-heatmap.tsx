@@ -12,6 +12,11 @@ import type {
 } from "@/src/lib/daily-spending-comparison";
 import { formatMoney } from "@/src/lib/formatters";
 import { useCurrencyCode, useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
+import type { Translations } from "@/src/lib/i18n/types";
+
+type HeatmapStrings = Translations["stats"];
 
 type CraftedDailySpendingHeatmapProps = {
   data: DailySpendingComparison;
@@ -75,8 +80,8 @@ function formatSignedMoney(value: number, currencyCode: string): string {
   return normalized;
 }
 
-function formatSignedPercent(value: number): string {
-  const normalized = new Intl.NumberFormat("it-IT", {
+function formatSignedPercent(value: number, locale: string): string {
+  const normalized = new Intl.NumberFormat(locale, {
     maximumFractionDigits: 1,
     minimumFractionDigits: 0,
   }).format(Math.abs(value));
@@ -124,8 +129,8 @@ function buildDateKey(parts: MonthParts, day: number): string {
   return `${parts.year}-${String(parts.month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
-function formatMonthLabel(parts: MonthParts): string {
-  const raw = new Intl.DateTimeFormat("it-IT", {
+function formatMonthLabel(parts: MonthParts, locale: string): string {
+  const raw = new Intl.DateTimeFormat(locale, {
     month: "short",
     year: "numeric",
     timeZone: "Europe/Rome",
@@ -135,9 +140,9 @@ function formatMonthLabel(parts: MonthParts): string {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
-function formatDateKeyLong(dateKey: string | null): string {
+function formatDateKeyLong(dateKey: string | null, locale: string, dateUnavailable: string): string {
   if (!dateKey) {
-    return "Data non disponibile";
+    return dateUnavailable;
   }
 
   const [yearPart, monthPart, dayPart] = dateKey.split("-");
@@ -149,7 +154,7 @@ function formatDateKeyLong(dateKey: string | null): string {
     return dateKey;
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -168,26 +173,26 @@ function hasHeatmapData(data: DailySpendingComparison): boolean {
   );
 }
 
-function getSubtitle(data: DailySpendingComparison, currencyCode: string): string {
+function getSubtitle(data: DailySpendingComparison, currencyCode: string, locale: string, hs: HeatmapStrings): string {
   const previousLabel =
     data.previousMonth?.label ??
     (() => {
       const currentParts = parseMonthKey(data.currentMonth.monthKey);
       return currentParts
-        ? formatMonthLabel(getPreviousMonthParts(currentParts))
-        : "mese precedente";
+        ? formatMonthLabel(getPreviousMonthParts(currentParts), locale)
+        : hs.previousMonthFallback;
     })();
   const previousAbbrev = getMonthAbbrev(previousLabel).toLowerCase();
 
   if (data.monthToDateDelta === null) {
-    return `${data.currentMonth.label} · confronto giorno per giorno con ${previousAbbrev}`;
+    return hs.subtitleDayByDay(data.currentMonth.label, previousAbbrev);
   }
 
   const scope = data.currentMonth.days.some((cell) => cell.isToday)
-    ? "finora"
-    : "totale";
+    ? hs.soFar
+    : hs.monthTotalScope;
 
-  return `${data.currentMonth.label} · ${formatSignedMoney(data.monthToDateDelta, currencyCode)} ${scope} vs ${previousAbbrev}`;
+  return hs.subtitleWithDelta(data.currentMonth.label, formatSignedMoney(data.monthToDateDelta, currencyCode), scope, previousAbbrev);
 }
 
 function getIntensityLevel(spent: number, maxDailySpent: number): number {
@@ -216,6 +221,8 @@ function buildDayDetails(
   cell: DailySpendingCell,
   data: DailySpendingComparison,
   currencySymbol: string,
+  locale: string,
+  hs: HeatmapStrings,
 ): DayDetails {
   const currentParts = parseMonthKey(data.currentMonth.monthKey);
   const previousParts = currentParts ? getPreviousMonthParts(currentParts) : null;
@@ -242,23 +249,23 @@ function buildDayDetails(
     ? round2((delta / previousTotal) * 100)
     : null;
 
-  let note = "Confronto con lo stesso giorno del mese precedente.";
+  let note = hs.comparisonNote;
 
   if (cell.isFuture) {
-    note = "Giorno futuro: il totale corrente non e ancora consolidato.";
+    note = hs.futureNote;
   } else if (!previousDateExists) {
-    note = `Nel mese precedente non esiste il giorno ${cell.day}.`;
+    note = hs.noPreviousDayNote(cell.day);
   } else if (!hasPreviousData) {
-    note = `Nessun dato registrato il ${formatDateKeyLong(previousDateKey)}.`;
+    note = hs.noPreviousDataNote(formatDateKeyLong(previousDateKey, locale, hs.dateUnavailable));
   } else if (percentDelta === null) {
-    note = `Differenza percentuale non calcolabile perche il dato precedente e 0,00 ${currencySymbol}.`;
+    note = hs.deltaNotCalcNote(currencySymbol);
   }
 
   return {
     cell,
-    currentLabel: formatDateKeyLong(cell.dateKey),
+    currentLabel: formatDateKeyLong(cell.dateKey, locale, hs.dateUnavailable),
     previousDateExists,
-    previousLabel: previousDateExists ? formatDateKeyLong(previousDateKey) : null,
+    previousLabel: previousDateExists ? formatDateKeyLong(previousDateKey, locale, hs.dateUnavailable) : null,
     previousTotal,
     previousEntriesCount,
     hasPreviousData,
@@ -268,24 +275,24 @@ function buildDayDetails(
   };
 }
 
-function getDayAriaLabel(details: DayDetails, currencyCode: string): string {
+function getDayAriaLabel(details: DayDetails, currencyCode: string, hs: HeatmapStrings): string {
   const parts = [
     details.currentLabel,
-    `${formatMoney(details.cell.totalRealSpent, currencyCode)} spesi davvero`,
+    hs.ariaSpentForReal(formatMoney(details.cell.totalRealSpent, currencyCode)),
   ];
 
   if (details.previousDateExists && details.previousLabel) {
     parts.push(
       details.hasPreviousData
         ? `${details.previousLabel}: ${formatMoney(details.previousTotal ?? 0, currencyCode)}`
-        : `${details.previousLabel}: nessun dato`,
+        : hs.ariaNoData(details.previousLabel),
     );
   } else {
-    parts.push("giorno corrispondente del mese precedente non esistente");
+    parts.push(hs.ariaNoPrevDay);
   }
 
   if (details.delta !== null) {
-    parts.push(`differenza ${formatSignedMoney(details.delta, currencyCode)}`);
+    parts.push(hs.ariaDiff(formatSignedMoney(details.delta, currencyCode)));
   }
 
   return parts.join(". ");
@@ -294,11 +301,15 @@ function getDayAriaLabel(details: DayDetails, currencyCode: string): string {
 function DayDetailPopover({
   details,
   currencyCode,
+  locale,
+  hs,
   className,
   style,
 }: {
   details: DayDetails;
   currencyCode: string;
+  locale: string;
+  hs: HeatmapStrings;
   className?: string;
   style?: CSSProperties;
 }) {
@@ -328,50 +339,50 @@ function DayDetailPopover({
         </p>
         {details.cell.isFuture ? (
           <span className="shrink-0 rounded-full border border-line bg-surface-muted px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-ink-3">
-            Futuro
+            {hs.futureBadge}
           </span>
         ) : details.cell.isToday ? (
           <span className="shrink-0 rounded-full border border-accent/25 bg-accent/10 px-2 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-accent">
-            Oggi
+            {hs.todayBadge}
           </span>
         ) : null}
       </div>
 
       <div className="mt-2.5 space-y-1.5 text-[12px] leading-5">
         <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Speso davvero</span>
+          <span className="text-ink-3">{hs.realSpentLabel}</span>
           <Mono className="font-semibold text-foreground">
             {formatMoney(details.cell.totalRealSpent, currencyCode)}
           </Mono>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Movimenti</span>
+          <span className="text-ink-3">{hs.entriesLabel}</span>
           <Mono className="font-semibold text-foreground">
             {details.cell.entriesCount}
           </Mono>
         </div>
         <div className="flex items-start justify-between gap-3">
           <span className="min-w-0 text-ink-3">
-            {details.previousLabel ?? "Mese precedente"}
+            {details.previousLabel ?? hs.prevMonthLabel}
           </span>
           <Mono className="shrink-0 font-semibold text-foreground">
             {details.previousDateExists
               ? formatMoney(details.previousTotal ?? 0, currencyCode)
-              : "n.d."}
+              : hs.notAvailable}
           </Mono>
         </div>
         <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-1.5">
-          <span className="text-ink-3">Differenza</span>
+          <span className="text-ink-3">{hs.diffLabel}</span>
           <Mono className={cn("font-semibold", deltaTone)}>
-            {details.delta === null ? "Non calcolabile" : formatSignedMoney(details.delta, currencyCode)}
+            {details.delta === null ? hs.notCalculable : formatSignedMoney(details.delta, currencyCode)}
           </Mono>
         </div>
         <div className="flex items-center justify-between gap-3">
-          <span className="text-ink-3">Percentuale</span>
+          <span className="text-ink-3">{hs.percentLabel}</span>
           <Mono className={cn("font-semibold", deltaTone)}>
             {details.percentDelta === null
-              ? "Non calcolabile"
-              : formatSignedPercent(details.percentDelta)}
+              ? hs.notCalculable
+              : formatSignedPercent(details.percentDelta, locale)}
           </Mono>
         </div>
       </div>
@@ -383,28 +394,32 @@ function DayDetailPopover({
   );
 }
 
-function IntensityLegend({ maxDailySpent, currency }: { maxDailySpent: number; currency: string }) {
+function IntensityLegend({ maxDailySpent, currency, hs }: { maxDailySpent: number; currency: string; hs: HeatmapStrings }) {
   return (
     <div className="flex items-center justify-end gap-2 text-[10px] text-ink-3">
-      <span>Meno</span>
+      <span>{hs.lessLabel}</span>
       <div className="flex gap-1">
         {INTENSITY_CLASS.map((className, level) => (
           <div
             key={level}
             className={cn("size-4 rounded-md border", className)}
             title={
-              level === 0 ? "Nessuna spesa" : formatMoney((maxDailySpent * level) / 5, currency)
+              level === 0 ? hs.noSpendingTitle : formatMoney((maxDailySpent * level) / 5, currency)
             }
             aria-hidden="true"
           />
         ))}
       </div>
-      <span>Più speso</span>
+      <span>{hs.moreLabel}</span>
     </div>
   );
 }
 
 export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatmapProps) {
+  const t = useTranslations();
+  const hs = t.stats;
+  const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
   const rootRef = useRef<HTMLElement | null>(null);
   const currencySymbol = useCurrencySymbol();
   const currencyCode = useCurrencyCode();
@@ -420,8 +435,8 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
   );
   const activeDetails = useMemo(() => {
     const activeCell = currentDays.find((cell) => cell.day === activeDay);
-    return activeCell ? buildDayDetails(activeCell, data, currencySymbol) : null;
-  }, [activeDay, currentDays, data, currencySymbol]);
+    return activeCell ? buildDayDetails(activeCell, data, currencySymbol, locale, hs) : null;
+  }, [activeDay, currentDays, data, currencySymbol, locale, hs]);
 
   function getPopoverPosition(
     day: number,
@@ -506,22 +521,22 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
 
   return (
     <section ref={rootRef} className="px-5 py-5">
-      <Label className="mb-2 block">Spesa giornaliera</Label>
-      <Serif className="mb-4 block text-sm text-ink-3">{getSubtitle(data, currencyCode)}</Serif>
+      <Label className="mb-2 block">{hs.dailySpendingLabel}</Label>
+      <Serif className="mb-4 block text-sm text-ink-3">{getSubtitle(data, currencyCode, locale, hs)}</Serif>
 
       {!hasData ? (
         <p className="py-8 text-sm text-ink-3">
-          Nessuna spesa registrata in questo mese o in quello precedente.
+          {hs.noHeatmapData}
         </p>
       ) : (
         <>
           <div className="-mx-1 overflow-x-auto px-1 pb-2">
             <ol
               className="grid min-w-[21rem] grid-cols-7 gap-1.5 sm:min-w-0 sm:gap-2"
-              aria-label={`Heatmap di ${data.currentMonth.label}`}
+              aria-label={hs.heatmapAriaLabel(data.currentMonth.label)}
             >
               {currentDays.map((cell) => {
-                const details = buildDayDetails(cell, data, currencySymbol);
+                const details = buildDayDetails(cell, data, currencySymbol, locale, hs);
                 const level = getIntensityLevel(cell.totalRealSpent, maxCurrentDailySpent);
                 const isActive = activeDay === cell.day;
 
@@ -529,7 +544,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                   <li key={cell.dateKey} className="relative min-w-0">
                     <button
                       type="button"
-                      aria-label={getDayAriaLabel(details, currencyCode)}
+                      aria-label={getDayAriaLabel(details, currencyCode, hs)}
                       aria-describedby={isActive ? "daily-spending-heatmap-detail" : undefined}
                       aria-expanded={isActive}
                       onClick={(event) =>
@@ -568,7 +583,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                         )}
                         {cell.isFuture ? (
                           <span className="text-[8px] uppercase tracking-[0.12em] opacity-80">
-                            Fut
+                            {hs.futureShort}
                           </span>
                         ) : null}
                       </span>
@@ -584,6 +599,8 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                 <DayDetailPopover
                   details={activeDetails}
                   currencyCode={currencyCode}
+                  locale={locale}
+                  hs={hs}
                   className="fixed z-[70]"
                   style={{
                     left: popoverPosition.left,
@@ -598,19 +615,18 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
           <div className="mt-4 space-y-3 border-t border-line-soft pt-4">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-xs leading-5 text-muted-foreground">
-                Ogni quadrato e un giorno di{" "}
-                {data.currentMonth.label.toLowerCase()}. Tocca un giorno per vedere il confronto.
+                {hs.heatmapDesc(data.currentMonth.label.toLowerCase())}
               </p>
-              <IntensityLegend maxDailySpent={maxCurrentDailySpent} currency={currencyCode} />
+              <IntensityLegend maxDailySpent={maxCurrentDailySpent} currency={currencyCode} hs={hs} />
             </div>
 
             {data.monthToDateDelta !== null ? (
               <p className="text-xs leading-5 text-muted-foreground">
-                Totale {data.currentMonth.days.some((cell) => cell.isToday) ? "progressivo" : "mese"}:{" "}
+                {data.currentMonth.days.some((cell) => cell.isToday) ? hs.monthProgress : hs.monthTotal}:{" "}
                 <Mono className="font-semibold text-foreground">
                   {formatCraftedCompact(data.currentMonth.totalRealSpent)}{currencySymbol}
                 </Mono>{" "}
-                in {data.currentMonth.label.toLowerCase()},{" "}
+                {hs.inMonth(data.currentMonth.label.toLowerCase())},{" "}
                 <Mono
                   className={cn(
                     "font-semibold",
@@ -623,7 +639,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                 >
                   {formatSignedMoney(data.monthToDateDelta, currencyCode)}
                 </Mono>{" "}
-                rispetto allo stesso periodo del mese precedente.
+                {hs.comparedToPrevious}
               </p>
             ) : null}
           </div>

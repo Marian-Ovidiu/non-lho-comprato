@@ -36,7 +36,7 @@ import {
 } from "@/components/crafted/motion";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
-import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
 import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
@@ -61,12 +61,13 @@ function CraftedCategoryBars({
 }: {
   categories: CraftedStatsProps["categories"];
 }) {
+  const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const language = useWorkspaceLanguage();
   if (categories.length === 0) {
     return (
       <p className="px-5 py-8 text-sm text-ink-3">
-        Nessun dato per categoria ancora disponibile.
+        {t.stats.noCategoryData}
       </p>
     );
   }
@@ -96,7 +97,7 @@ function CraftedCategoryBars({
           </div>
           {category.saved > 0 ? (
             <Serif className="mb-2 block text-[12.5px] text-ink-3">
-              {formatCraftedCompact(category.saved)}{currencySymbol} impatto netto
+              {t.stats.categoryNetImpact(`${formatCraftedCompact(category.saved)}${currencySymbol}`)}
             </Serif>
           ) : null}
           <ProgressLine
@@ -125,6 +126,7 @@ export function CraftedStats({
   topSavings = [],
   habitStats = [],
 }: CraftedStatsComponentProps) {
+  const t = useTranslations();
   const period = selectedPeriod;
   const currencySymbol = useCurrencySymbol();
 
@@ -198,29 +200,29 @@ export function CraftedStats({
             />
             <span className="text-[12.5px] text-muted-foreground">
               <Mono className="text-foreground">{Math.abs(trendPct)}%</Mono>{" "}
-              {trendPct > 0 ? "sopra" : "sotto"} la tua media
+              {trendPct > 0 ? t.stats.trendAbove : t.stats.trendBelow} {t.stats.trendAverage}
             </span>
           </div>
         ) : null}
       </section>
 
       <section className="px-5 pb-1">
-        <Label className="mb-3 block">Bilancio</Label>
+        <Label className="mb-3 block">{t.stats.balanceLabel}</Label>
       </section>
       <StatTrio
         items={[
           {
-            label: "Speso",
+            label: t.stats.spentLabel,
             value: <CraftedAmount value={periodOverview.totalRealSpent} />,
             suffix: currencySymbol,
           },
           {
-            label: "Impatto netto",
+            label: t.stats.netImpactLabel,
             value: <CraftedAmount value={periodOverview.totalSaved} />,
             suffix: currencySymbol,
           },
           {
-            label: "Movimenti",
+            label: t.stats.entriesLabel,
             value: (
               <CraftedAmount
                 value={period === "all" ? overview.entriesCount : hero.entriesCount}
@@ -232,23 +234,23 @@ export function CraftedStats({
       />
       <details>
         <summary className="flex cursor-pointer list-none items-center justify-between border-t border-line-soft px-[var(--sp-page-x)] py-[var(--sp-row-y)] font-num text-[10px] uppercase tracking-[0.22em] text-ink-3 hover:text-foreground [&::-webkit-details-marker]:hidden">
-          <span>Dettagli del periodo</span>
+          <span>{t.stats.periodDetails}</span>
           <span className="text-sm leading-none text-ink-3" aria-hidden="true">⌄</span>
         </summary>
         <StatTrio
           items={[
             {
-              label: "Avresti speso",
+              label: t.stats.wouldHaveSpent,
               value: <CraftedAmount value={periodOverview.totalAlternativeCost} />,
               suffix: currencySymbol,
             },
             {
-              label: "Impatto medio",
+              label: t.stats.avgImpact,
               value: <CraftedAmount value={periodOverview.averageSavedPerEntry} />,
               suffix: currencySymbol,
             },
             {
-              label: "Indice netto",
+              label: t.stats.netIndex,
               value: (
                 <CraftedAmount
                   value={periodOverview.savingRatePercent}
@@ -264,16 +266,16 @@ export function CraftedStats({
 
       <section className="px-[var(--sp-page-x)] pb-2 pt-[var(--sp-section-y)]">
         <div className="mb-3.5 flex items-baseline justify-between gap-3">
-          <Label>Spesa ultimi 12 mesi</Label>
+          <Label>{t.stats.last12Months}</Label>
           {maxChartSpent > 0 ? (
             <Mono className="text-[11px] text-ink-3">
-              max {formatCraftedCompact(maxChartSpent)}{currencySymbol}
+              {t.stats.chartMax(`${formatCraftedCompact(maxChartSpent)}${currencySymbol}`)}
             </Mono>
           ) : null}
         </div>
 
         {chartData.length === 0 ? (
-          <p className="py-10 text-sm text-ink-3">Nessun dato mensile ancora disponibile.</p>
+          <p className="py-10 text-sm text-ink-3">{t.stats.noMonthlyData}</p>
         ) : (
           <div className="flex h-[120px] items-end gap-1.5">
             {chartData.map((month) => (
@@ -288,7 +290,7 @@ export function CraftedStats({
                     month.isActive ? "bg-accent" : "bg-ink-3",
                   )}
                   style={{ height: `${Math.max(month.heightPct, month.totalRealSpent > 0 ? 4 : 0)}%` }}
-                  title={`${month.initial}: ${formatCraftedCompact(month.totalRealSpent)}${currencySymbol} spesi`}
+                  title={t.stats.monthBarTitle(month.initial, `${formatCraftedCompact(month.totalRealSpent)}${currencySymbol}`)}
                 />
                 <Mono
                   className={cn(
@@ -317,8 +319,8 @@ export function CraftedStats({
           <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
             <Label className="mb-3.5 block">
               {period === "month"
-                ? `Categoria principale di ${queenMonthLabel}`
-                : "Categoria principale del periodo"}
+                ? t.stats.mainCategoryMonth(queenMonthLabel)
+                : t.stats.mainCategoryPeriod}
             </Label>
             <div className="flex items-center gap-4">
               <CraftedIcon
@@ -332,13 +334,12 @@ export function CraftedStats({
                   <Mono className="text-[28px] font-semibold leading-none">
                     {formatCraftedCompact(initialQueen.spent)}{currencySymbol}
                   </Mono>
-                  <span className="text-sm text-muted-foreground">spesi in {initialQueen.name}</span>
+                  <span className="text-sm text-muted-foreground">{t.stats.spentIn(initialQueen.name)}</span>
                 </div>
                 <Serif className="mt-1 block text-sm text-ink-3">
-                  il {initialQueen.pct}% di tutto, in {initialQueen.entriesCount}{" "}
-                  {initialQueen.entriesCount === 1 ? "movimento" : "movimenti"}.
+                  {t.stats.queenDetail(initialQueen.pct, initialQueen.entriesCount)}
                   {initialQueen.saved > 0
-                    ? ` ${formatCraftedCompact(initialQueen.saved)}${currencySymbol} impatto netto.`
+                    ? t.stats.queenNetImpact(`${formatCraftedCompact(initialQueen.saved)}${currencySymbol}`)
                     : ""}
                 </Serif>
               </div>
@@ -349,7 +350,7 @@ export function CraftedStats({
       ) : null}
 
       <section className="px-5 py-5 pb-2">
-        <Label>Per categoria</Label>
+        <Label>{t.stats.byCategoryLabel}</Label>
       </section>
       <CraftedCategoryBars categories={categories} />
       <Rule />
@@ -360,16 +361,16 @@ export function CraftedStats({
       <StatTrio
         items={[
           {
-            label: "Media spesa/mese",
+            label: t.stats.avgMonthlySpent,
             value: <CraftedAmount value={averageMonthlySpent} />,
             suffix: currencySymbol,
           },
           {
-            label: "Giorni attivi",
+            label: t.stats.activeDays,
             value: <CraftedAmount value={activeDays} maximumFractionDigits={0} />,
           },
           {
-            label: "Movimenti",
+            label: t.stats.entriesLabel,
             value: (
               <CraftedAmount
                 value={period === "all" ? overview.entriesCount : hero.entriesCount}
@@ -384,7 +385,7 @@ export function CraftedStats({
         <>
           <Rule />
           <section className="px-5 py-5">
-            <Label className="mb-4 block">Ricorrenti</Label>
+            <Label className="mb-4 block">{t.stats.habitsLabel}</Label>
             <div>
               {habitStats.map((habit, index) => (
                 <div
@@ -397,7 +398,7 @@ export function CraftedStats({
                   <div className="min-w-0">
                     <p className="text-sm font-medium">{habit.habitName}</p>
                     <p className="mt-0.5 text-xs text-ink-3">
-                      {Math.round(habit.disciplineRatePercent)}% disciplina
+                      {t.stats.disciplineRate(Math.round(habit.disciplineRatePercent))}
                     </p>
                   </div>
                   <Mono className="text-sm font-medium whitespace-nowrap">

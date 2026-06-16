@@ -5,17 +5,8 @@ import { useTransition } from "react";
 
 import { Label, Mono } from "@/components/crafted";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/src/components/language/language-context";
 import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
-
-const PERIOD_TABS: Array<{
-  id: StatsPeriod;
-  label: string;
-  detail: string;
-}> = [
-  { id: "month", label: "Mese", detail: "mese selezionato" },
-  { id: "year", label: "Anno", detail: "anno del mese scelto" },
-  { id: "all", label: "Sempre", detail: "tutti i dati" },
-];
 
 type CraftedStatsPeriodFilterProps = {
   selectedPeriod: StatsPeriod;
@@ -32,6 +23,7 @@ export function CraftedStatsPeriodFilter({
   selectedYear,
   monthOptions,
 }: CraftedStatsPeriodFilterProps) {
+  const t = useTranslations();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -40,6 +32,12 @@ export function CraftedStatsPeriodFilter({
     monthOptions.length > 0
       ? monthOptions
       : [{ month: selectedMonthKey, label: selectedMonthLabel, entriesCount: 0 }];
+
+  const periodTabs: Array<{ id: StatsPeriod; label: string; detail: string }> = [
+    { id: "month", label: t.stats.periodMonth, detail: t.stats.periodMonthDetail },
+    { id: "year", label: t.stats.periodYear, detail: t.stats.periodYearDetail },
+    { id: "all", label: t.stats.periodAll, detail: t.stats.periodAllDetail },
+  ];
 
   function replaceStatsParams(updates: {
     period?: StatsPeriod;
@@ -67,17 +65,21 @@ export function CraftedStatsPeriodFilter({
     <section aria-labelledby="stats-period-filter" className="px-5 pt-5 pb-0">
       <div className="mb-3 flex items-end justify-between gap-3">
         <Label>
-          <span id="stats-period-filter">Periodo</span>
+          <span id="stats-period-filter">{t.stats.periodLabel}</span>
         </Label>
         {isPending ? (
           <Mono className="text-[10px] uppercase tracking-[0.18em] text-ink-3">
-            Aggiorno
+            {t.stats.updating}
           </Mono>
         ) : null}
       </div>
 
-      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1" role="group" aria-label="Filtro periodo statistiche">
-        {PERIOD_TABS.map((tab) => {
+      <div
+        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
+        role="group"
+        aria-label={t.stats.periodFilterAriaLabel}
+      >
+        {periodTabs.map((tab) => {
           const selected = selectedPeriod === tab.id;
 
           return (
@@ -115,7 +117,7 @@ export function CraftedStatsPeriodFilter({
           htmlFor="stats-month"
           className="shrink-0 text-[9px] font-medium uppercase tracking-[0.16em] text-ink-3"
         >
-          Mese
+          {t.stats.monthSelectLabel}
         </label>
         <select
           id="stats-month"
