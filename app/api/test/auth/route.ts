@@ -10,6 +10,7 @@ import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
+import { markWorkspaceSelectedForUser } from "@/src/lib/workspace-last-selection";
 
 type TestAuthRequestBody = {
   userId?: string;
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
   });
 
   if (workspaceId) {
+    await markWorkspaceSelectedForUser(user.id, workspaceId);
     cookieStore.set(
       WORKSPACE_SELECTION_COOKIE,
       workspaceId,

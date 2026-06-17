@@ -58,6 +58,7 @@ type WorkspaceRecord = {
   currency: string;
   language: string;
   ownerUserId: string;
+  lastSelectedAt: Date | null;
 };
 
 function toWorkspaceRecord(workspace: {
@@ -68,6 +69,7 @@ function toWorkspaceRecord(workspace: {
   currency: string;
   language: string;
   ownerUserId: string;
+  lastSelectedAt?: Date | null;
 }): WorkspaceRecord {
   return {
     id: workspace.id,
@@ -77,6 +79,7 @@ function toWorkspaceRecord(workspace: {
     currency: workspace.currency,
     language: workspace.language,
     ownerUserId: workspace.ownerUserId,
+    lastSelectedAt: workspace.lastSelectedAt ?? null,
   };
 }
 
@@ -140,6 +143,7 @@ export async function adoptProductionWorkspaceForUser(
     currency: workspace.currency,
     language: workspace.language,
     ownerUserId: workspace.ownerUserId,
+    lastSelectedAt: null,
   };
 }
 
@@ -426,7 +430,7 @@ export async function ensureLegacyWorkspaceForUser(userId: string) {
 }
 
 export async function getAccessibleWorkspacesForUserId(userId: string) {
-  return prisma.workspace.findMany({
+  const workspaces = await prisma.workspace.findMany({
     where: {
       OR: [
         {
@@ -449,8 +453,24 @@ export async function getAccessibleWorkspacesForUserId(userId: string) {
       currency: true,
       language: true,
       ownerUserId: true,
+      members: {
+        where: {
+          userId,
+        },
+        select: {
+          lastSelectedAt: true,
+        },
+        take: 1,
+      },
     },
   });
+
+  return workspaces.map((workspace) =>
+    toWorkspaceRecord({
+      ...workspace,
+      lastSelectedAt: workspace.members?.[0]?.lastSelectedAt ?? null,
+    }),
+  );
 }
 
 export async function resolveWorkspaceForAuthenticatedUser(
@@ -494,12 +514,23 @@ function pickAccessibleWorkspace(
     return null;
   }
 
-  const privateWorkspace = accessibleWorkspaces.find(
-    (workspace) => workspace.id === getPrivateWorkspaceId(userId),
+  const lastSelectedWorkspace = accessibleWorkspaces
+    .filter((workspace) => workspace.lastSelectedAt)
+    .sort(
+      (left, right) =>
+        right.lastSelectedAt!.getTime() - left.lastSelectedAt!.getTime(),
+    )[0];
+
+  if (lastSelectedWorkspace) {
+    return lastSelectedWorkspace;
+  }
+
+  const sharedWorkspace = accessibleWorkspaces.find(
+    (workspace) => workspace.kind === "shared",
   );
 
-  if (privateWorkspace) {
-    return privateWorkspace;
+  if (sharedWorkspace) {
+    return sharedWorkspace;
   }
 
   const ownedWorkspace = accessibleWorkspaces.find(
@@ -508,6 +539,14 @@ function pickAccessibleWorkspace(
 
   if (ownedWorkspace) {
     return ownedWorkspace;
+  }
+
+  const privateWorkspace = accessibleWorkspaces.find(
+    (workspace) => workspace.id === getPrivateWorkspaceId(userId),
+  );
+
+  if (privateWorkspace) {
+    return privateWorkspace;
   }
 
   return accessibleWorkspaces[0] ?? null;

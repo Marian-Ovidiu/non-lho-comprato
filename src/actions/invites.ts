@@ -27,6 +27,7 @@ import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
+import { markWorkspaceSelectedForUser } from "@/src/lib/workspace-last-selection";
 import {
   checkRateLimit,
   getClientIpFromRequestHeaders,
@@ -391,6 +392,7 @@ export async function acceptWorkspaceInviteAction(
       }
 
       const cookieStore = await cookies();
+      await markWorkspaceSelectedForUser(currentUser.id, invite.workspaceId);
       cookieStore.set(
         WORKSPACE_SELECTION_COOKIE,
         invite.workspaceId,
@@ -449,11 +451,13 @@ export async function acceptWorkspaceInviteAction(
           workspaceId: invite.workspaceId,
           userId: currentUser.id,
           role: invite.role,
+          lastSelectedAt: acceptedAt,
         },
       });
     });
 
     const cookieStore = await cookies();
+    await markWorkspaceSelectedForUser(currentUser.id, invite.workspaceId);
     cookieStore.set(
       WORKSPACE_SELECTION_COOKIE,
       invite.workspaceId,

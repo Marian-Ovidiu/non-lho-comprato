@@ -85,9 +85,14 @@ async function authenticateE2EUser(
 }
 
 async function closeDailySummaryIfVisible(page: Page) {
-  const closeButton = page.getByRole("button", { name: /Chiudi/i });
+  const closeButton = page.getByRole("button", { name: /Chiudi|Close/i });
 
-  if (await closeButton.isVisible().catch(() => false)) {
+  if (
+    await closeButton
+      .waitFor({ state: "visible", timeout: 1_000 })
+      .then(() => true)
+      .catch(() => false)
+  ) {
     await closeButton.click();
   }
 }

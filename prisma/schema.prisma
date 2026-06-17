@@ -292,6 +292,7 @@ model WorkspaceMember {
   workspaceId String
   userId      String
   role        WorkspaceMemberRole @default(member)
+  lastSelectedAt DateTime?
   workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime            @default(now())
@@ -299,6 +300,7 @@ model WorkspaceMember {
   @@unique([workspaceId, userId])
   @@index([workspaceId])
   @@index([userId])
+  @@index([userId, lastSelectedAt])
 }
 
 model WorkspaceInvite {

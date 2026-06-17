@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 
 import { Label, Mono, Rule, Serif } from "@/components/crafted";
@@ -63,7 +64,7 @@ export function DailyCheckinOverlay({
     return () => window.cancelAnimationFrame(frame);
   }, [isVisible]);
 
-  if (!isVisible || !isOpen) {
+  if (typeof document === "undefined" || !isVisible || !isOpen) {
     return null;
   }
 
@@ -79,7 +80,7 @@ export function DailyCheckinOverlay({
       ? t.dailyCheckin.ledeSaved
       : t.dailyCheckin.ledeEmpty;
 
-  return (
+  return createPortal(
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-background/60 p-0 backdrop-blur-[3px] sm:items-center sm:p-4"
       role="presentation"
@@ -93,6 +94,7 @@ export function DailyCheckinOverlay({
         className={cn(
           "w-full max-w-lg border border-line bg-surface",
           "rounded-t-[28px] px-[22px] pb-[calc(env(safe-area-inset-bottom)+1.75rem)] pt-2.5",
+          "max-h-[calc(100dvh_-_env(safe-area-inset-bottom)_-_0.75rem)] overflow-y-auto overscroll-contain",
           "shadow-[0_-24px_60px_-30px_rgba(0,0,0,0.8)]",
           "sm:rounded-[24px] sm:pb-7 sm:shadow-2xl",
         )}
@@ -170,6 +172,7 @@ export function DailyCheckinOverlay({
           </Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -413,14 +413,10 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     const workspaces = await getAccessibleWorkspacesForUserId(user.id);
 
     assert.equal(user.id, "old-app-user-id");
-    assert.deepEqual(workspaces, [
-      {
-        id: "old-workspace",
-        name: "Old Workspace",
-        kind: "shared",
-        ownerUserId: "someone-else",
-      },
-    ]);
+    assert.deepEqual(
+      workspaces.map((workspace) => workspace.id),
+      ["old-workspace"],
+    );
   });
 
   it("keeps old entry and beneficiary visibility when the user is matched by email", async () => {

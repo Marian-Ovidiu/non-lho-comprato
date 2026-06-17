@@ -9,6 +9,7 @@ import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
 } from "@/src/lib/workspace-selection";
+import { markWorkspaceSelectedForUser } from "@/src/lib/workspace-last-selection";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import {
@@ -91,6 +92,7 @@ export async function createWorkspaceAction(
           workspaceId: ws.id,
           userId: user.id,
           role: "owner",
+          lastSelectedAt: new Date(),
         },
       });
 
@@ -317,10 +319,17 @@ export async function joinByLinkAction(
         }
 
         await tx.workspaceMember.create({
-          data: { workspaceId: invite.workspaceId, userId: user.id, role: invite.role },
+          data: {
+            workspaceId: invite.workspaceId,
+            userId: user.id,
+            role: invite.role,
+            lastSelectedAt: new Date(),
+          },
         });
       });
     }
+
+    await markWorkspaceSelectedForUser(user.id, invite.workspaceId);
 
     const cookieStore = await cookies();
     cookieStore.set(
@@ -377,14 +386,14 @@ export async function switchWorkspaceAction(
     return { success: false };
   }
 
+  await markWorkspaceSelectedForUser(user.id, workspace.id);
+
   const cookieStore = await cookies();
   cookieStore.set(
     WORKSPACE_SELECTION_COOKIE,
     workspace.id,
     getWorkspaceSelectionCookieOptions(),
   );
-
-  revalidatePath("/", "layout");
 
   return { success: true };
 }

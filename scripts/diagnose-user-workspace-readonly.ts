@@ -17,15 +17,26 @@ async function main() {
   for (const user of users) {
     await adoptProductionWorkspaceForUser(user.id);
 
-    const accessibleWorkspaces = await prisma.workspace.findMany({
+    const accessibleWorkspaces = (await prisma.workspace.findMany({
       where: {
         OR: [
           { ownerUserId: user.id },
           { members: { some: { userId: user.id } } },
         ],
       },
-      select: { id: true, name: true, kind: true, ownerUserId: true, timezone: true, currency: true, language: true },
-    });
+      select: {
+        id: true,
+        name: true,
+        kind: true,
+        ownerUserId: true,
+        timezone: true,
+        currency: true,
+        language: true,
+      },
+    })).map((workspace) => ({
+      ...workspace,
+      lastSelectedAt: null,
+    }));
 
     const scenarios = [
       { label: "no-cookie", selectedWorkspaceId: null as string | null },

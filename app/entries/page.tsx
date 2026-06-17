@@ -1,11 +1,8 @@
-import Link from "next/link";
-
 import { getDashboardSummary, getEntriesPage } from "@/src/actions/entries";
 import { getMonthlyStats } from "@/src/actions/stats";
 import { CraftedEntryList } from "@/src/components/entries/crafted-entry-list";
 import { CraftedEntriesHeader } from "@/src/components/entries/crafted-entries-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
-import { Button } from "@/components/ui/button";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getCurrentWorkspaceLanguage, getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
@@ -52,6 +49,7 @@ export default async function EntriesPage() {
         entriesCount={monthSummary?.entriesCount ?? 0}
         totalRealSpent={monthSummary?.totalRealSpent ?? 0}
         totalSaved={monthSummary?.totalSaved ?? 0}
+        newEntryHref={newEntryHref}
       />
 
       {loadError ? (
@@ -79,12 +77,6 @@ export default async function EntriesPage() {
             : null
         }
       />
-
-      <div className="-mx-4 border-t border-line px-5 py-5 sm:-mx-6 lg:-mx-8">
-        <Button asChild className="h-11 w-full rounded-2xl">
-          <Link href={newEntryHref}>{t.entryForm.newTitle}</Link>
-        </Button>
-      </div>
     </>
   );
 }

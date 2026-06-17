@@ -11,6 +11,7 @@ import {
   createRateLimitResponse,
   getClientIpFromHeaders,
 } from "@/src/lib/rate-limit";
+import { markWorkspaceSelectedForUser } from "@/src/lib/workspace-last-selection";
 
 export async function GET(request: NextRequest) {
   const requestUrl = new URL(request.url);
@@ -87,7 +88,7 @@ export async function GET(request: NextRequest) {
 
   if (user) {
     try {
-      const { workspace } = await resolveWorkspaceForAuthenticatedUser({
+      const { user: appUser, workspace } = await resolveWorkspaceForAuthenticatedUser({
         id: user.id,
         email: user.email ?? null,
         name:
@@ -99,6 +100,7 @@ export async function GET(request: NextRequest) {
           (user.user_metadata?.picture as string | undefined) ??
           null,
       });
+      await markWorkspaceSelectedForUser(appUser.id, workspace.id);
 
       response.cookies.set(
         WORKSPACE_SELECTION_COOKIE,

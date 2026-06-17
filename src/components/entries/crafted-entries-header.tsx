@@ -1,5 +1,8 @@
 "use client";
 
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
 import { Label, Mono } from "@/components/crafted";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
@@ -10,6 +13,7 @@ type CraftedEntriesHeaderProps = {
   entriesCount: number;
   totalRealSpent: number;
   totalSaved: number;
+  newEntryHref: string;
 };
 
 export function CraftedEntriesHeader({
@@ -17,12 +21,22 @@ export function CraftedEntriesHeader({
   entriesCount,
   totalRealSpent,
   totalSaved,
+  newEntryHref,
 }: CraftedEntriesHeaderProps) {
   const currencySymbol = useCurrencySymbol();
   const t = useTranslations();
   return (
     <section className="-mx-4 px-5 pb-5 pt-7 sm:-mx-6 lg:-mx-8">
-      <Label className="mb-4 block">{t.nav.entries} — {monthLabel.toLowerCase()}</Label>
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <Label>{t.nav.entries} — {monthLabel.toLowerCase()}</Label>
+        <Link
+          href={newEntryHref}
+          className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-accent px-3 text-[13px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
+        >
+          <Plus className="size-3.5" aria-hidden="true" />
+          {t.entryForm.newTitle}
+        </Link>
+      </div>
       <div className="flex items-end justify-between gap-4">
         <div>
           <Label className="mb-1.5 block">{t.entries.spentLabel}</Label>
