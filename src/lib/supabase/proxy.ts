@@ -1,6 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import { isE2ETestAuthEnabled } from "@/src/lib/auth/e2e-test-auth";
+import {
+  E2E_AUTH_COOKIE,
+  isE2ETestAuthEnabled,
+} from "@/src/lib/auth/e2e-test-auth";
 import { createSupabaseRequestClient } from "@/src/lib/supabase/server";
 import {
   checkRateLimit,
@@ -109,6 +112,13 @@ export async function updateSupabaseSession(request: NextRequest) {
   // downstream Server Components / Server Actions read the fresh token) and the
   // response (so the browser stores it). See supabase-ssr middleware guidance.
   let response = NextResponse.next({ request });
+
+  if (
+    isE2ETestAuthEnabled() &&
+    request.cookies.get(E2E_AUTH_COOKIE)?.value.trim()
+  ) {
+    return response;
+  }
 
   const supabase = createSupabaseRequestClient({
     getAll: () => request.cookies.getAll(),
