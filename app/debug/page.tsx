@@ -1,13 +1,11 @@
 import { notFound } from "next/navigation";
 
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
+import { isAdminEmail } from "@/src/lib/auth/admin-guard";
 import { getDebugPageData } from "@/src/lib/debug-page-data";
 import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { DebugBrowserInfo, DebugTable } from "@/src/components/debug/debug-browser-info";
 import { Label, Rule, Mono } from "@/components/crafted";
-
-
-const DEVELOPER_EMAIL = "h.marian914@gmail.com";
 
 function DebugSection({
   title,
@@ -51,7 +49,7 @@ function FeedbackTypeLabel({ type }: { type: string }) {
 export default async function DebugPage() {
   const user = await getAuthenticatedUser();
 
-  if (!user || user.email !== DEVELOPER_EMAIL) {
+  if (!user || !isAdminEmail(user.email)) {
     notFound();
   }
 
@@ -195,7 +193,8 @@ export default async function DebugPage() {
             token di sessione o contenuto di localStorage.
           </p>
           <p className="mt-1.5">
-            Accesso consentito solo all&apos;account: <Mono>{DEVELOPER_EMAIL}</Mono>
+            Accesso consentito solo agli admin configurati via{" "}
+            <Mono>ADMIN_EMAILS</Mono>.
           </p>
         </div>
       </DebugSection>
