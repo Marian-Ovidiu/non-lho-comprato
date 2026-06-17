@@ -1167,11 +1167,6 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
       skipDuplicates: true,
     });
 
-    if (result.count > 0) {
-      tryRevalidatePaths();
-      updateTag(`habits:${workspaceWhere.workspaceId}`);
-    }
-
     return { createdCount: result.count };
   } catch (error) {
     console.error("Failed to ensure today habit occurrences:", error);
@@ -1360,12 +1355,6 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
         finalizedCount += 1;
       }
     });
-
-    if (finalizedCount > 0) {
-      tryRevalidatePaths();
-      updateTag(`habits:${workspaceId}`);
-      updateTag(`entries:${workspaceId}`);
-    }
 
     return { finalizedCount };
   } catch (error) {
