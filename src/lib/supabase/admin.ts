@@ -16,3 +16,18 @@ export function createSupabaseAdminClient() {
     },
   });
 }
+
+/**
+ * Returns true when account deletion can safely proceed:
+ * - Admin client is available (Supabase auth user will be deleted), OR
+ * - We are not in production (local/test environments allow data-only deletion).
+ *
+ * In production without SUPABASE_SERVICE_ROLE_KEY the Supabase auth user would
+ * survive the deletion, leaving the account half-deleted. We block early instead.
+ */
+export function isAdminDeletionAvailable(
+  adminClient: ReturnType<typeof createSupabaseAdminClient>,
+): boolean {
+  if (adminClient !== null) return true;
+  return process.env.NODE_ENV !== "production";
+}

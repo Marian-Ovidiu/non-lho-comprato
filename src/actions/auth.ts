@@ -7,7 +7,7 @@ import { deleteAppAccountData } from "@/src/lib/account-deletion";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { getCurrentUser } from "@/src/lib/auth/session";
 import { prisma } from "@/src/lib/prisma";
-import { createSupabaseAdminClient } from "@/src/lib/supabase/admin";
+import { createSupabaseAdminClient, isAdminDeletionAvailable } from "@/src/lib/supabase/admin";
 import { createSupabaseMutableClient } from "@/src/lib/supabase/server";
 
 export type DeleteAccountState = {
@@ -48,14 +48,22 @@ export async function deleteAccountAction(
     };
   }
 
+  const admin = createSupabaseAdminClient();
+
+  if (!isAdminDeletionAvailable(admin)) {
+    return {
+      success: false,
+      message:
+        "Eliminazione account temporaneamente non disponibile. Contatta il supporto.",
+    };
+  }
+
   try {
     const appUser = await getCurrentUser();
 
     await prisma.$transaction(async (tx) => {
       await deleteAppAccountData(tx, appUser.id);
     });
-
-    const admin = createSupabaseAdminClient();
 
     if (admin) {
       const { error } = await admin.auth.admin.deleteUser(authUser.id);
@@ -66,10 +74,6 @@ export async function deleteAccountAction(
           status: error.status,
         });
       }
-    } else {
-      console.warn(
-        "[account-deletion] SUPABASE_SERVICE_ROLE_KEY missing; app data deleted and local session signed out.",
-      );
     }
 
     const supabase = await createSupabaseMutableClient();
