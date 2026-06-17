@@ -96,7 +96,7 @@ Expected result: no matches. If grep prints paths, the artifact is not safe to s
 
 ## Environment Hygiene
 
-- Commit `.env.example` only.
-- Keep `.env`, `.env.local`, `.env.merge-source` and all other real env files ignored.
+- Commit `.env.example` and `.env.e2e.example` only (both are explicitly allowed in `.gitignore`).
+- Keep `.env`, `.env.local`, `.env.e2e`, `.env.merge-source` and all other real env files ignored.
 - Rotate secrets if a real env file was ever included in an artifact or shared outside the secret manager.
 - Keep legacy flags disabled in production.
