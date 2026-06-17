@@ -231,7 +231,7 @@ test("open invite adds a new member to the shared workspace", async ({ page }) =
   await page.goto(inviteUrl);
   await expect(page.getByRole("heading", { name: /Invito condiviso/i })).toBeVisible();
   await expect(page.getByText(E2E_SHARED_WORKSPACE_NAME).first()).toBeVisible();
-  await page.getByRole("button", { name: /Accetta invito/i }).click();
+  await page.getByRole("button", { name: /Accetta invito|Accept invite/i }).click();
   await expect(page.getByText(/Invito accettato/i)).toBeVisible();
   await expect(
     page.getByRole("button", { name: /Cambia workspace: Casa E2E/i }),
