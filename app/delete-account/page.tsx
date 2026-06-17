@@ -76,8 +76,7 @@ export default function PublicDeleteAccountPage() {
               {supportEmail}
             </a>{" "}
             dalla mail collegata all&apos;account e indica che vuoi eliminare account
-            e dati. TODO: sostituire questo indirizzo con la mail reale del
-            progetto prima della pubblicazione.
+            e dati. Risponderemo nel minor tempo possibile.
           </p>
         </section>
       </div>

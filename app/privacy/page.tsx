@@ -18,9 +18,7 @@ export default function PrivacyPage() {
           Privacy policy
         </h1>
         <Serif className="block max-w-2xl text-base leading-7 text-muted-foreground">
-          Testo semplice sui dati trattati dall&apos;app. TODO: verificare con il
-          titolare del progetto eventuali dettagli legali, fiscali o provider
-          aggiuntivi prima della pubblicazione.
+          Testo semplice e trasparente sui dati trattati dall&apos;app.
         </Serif>
       </section>
 
@@ -38,8 +36,10 @@ export default function PrivacyPage() {
           <p>
             Possiamo trattare dati tecnici minimi, come informazioni di sessione,
             dispositivo, lingua, fuso orario, errori applicativi e log necessari
-            a sicurezza e funzionamento. TODO: confermare la lista definitiva di
-            analytics, crash reporting e hosting usati in produzione.
+            a sicurezza e funzionamento. Per hosting, autenticazione, monitoraggio
+            errori e analisi utilizzo possiamo avvalerci di servizi tecnici come
+            Supabase, Vercel, Sentry e PostHog. I dati non vengono mai venduti a
+            terzi.
           </p>
         </section>
 
@@ -75,9 +75,10 @@ export default function PrivacyPage() {
             senza collegamento al tuo account, per conservare lo storico comune.
           </p>
           <p>
-            Se non riesci ad accedere, usa la pagina pubblica /delete-account o
-            scrivi a {supportEmail}. TODO: sostituire questo indirizzo con la
-            mail reale del progetto.
+            Se non riesci ad accedere, usa la pagina pubblica{" "}
+            <a className="text-accent underline-offset-4 hover:underline" href="/delete-account">/delete-account</a>{" "}
+            o scrivi a{" "}
+            <a className="text-accent underline-offset-4 hover:underline" href={`mailto:${supportEmail}`}>{supportEmail}</a>.
           </p>
         </section>
 
