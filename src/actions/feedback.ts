@@ -5,6 +5,15 @@ import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { ensureAppUserForAuthUser } from "@/src/lib/auth/provisioning";
 import { getCurrentWorkspaceId } from "@/src/lib/workspace-context";
 import { validateFeedback } from "@/src/features/feedback/validation";
+import {
+  guardFeedbackRateLimit,
+  FEEDBACK_IP_RULE,
+  FEEDBACK_USER_RULE,
+} from "@/src/features/feedback/submit-guard";
+import {
+  checkRateLimit,
+  getClientIpFromRequestHeaders,
+} from "@/src/lib/rate-limit";
 
 export type FeedbackActionState = {
   success: boolean;
@@ -54,6 +63,23 @@ export async function submitFeedback(
     userId = appUser?.id ?? null;
   } catch {
     // auth context unavailable — feedback still accepted anonymously
+  }
+
+  // Rate limit: 5/10 min per IP (always), 20/day per user (when authenticated).
+  // If the rate-limit DB check itself fails, fall through rather than blocking.
+  try {
+    const clientIp = await getClientIpFromRequestHeaders();
+    const ipLimit = await checkRateLimit(FEEDBACK_IP_RULE, [clientIp]);
+    const userLimit = userId
+      ? await checkRateLimit(FEEDBACK_USER_RULE, [userId])
+      : null;
+
+    const guard = guardFeedbackRateLimit(ipLimit, userLimit);
+    if (!guard.allowed) {
+      return { success: false, message: guard.message };
+    }
+  } catch (error) {
+    console.error("[feedback] Rate limit check failed:", error);
   }
 
   try {
