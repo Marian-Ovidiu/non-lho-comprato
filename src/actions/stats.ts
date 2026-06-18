@@ -1,6 +1,7 @@
 "use server";
 
 import { Prisma } from "@/src/lib/generated/prisma/client";
+import { EntrySource } from "@/src/lib/generated/prisma/enums";
 import { buildWorkspaceMemberEntryWhere } from "@/src/lib/workspace-member-filter";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { formatMoney } from "@/src/lib/formatters";
@@ -78,7 +79,7 @@ export type TopSavingsItem = {
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
-  source: "manual" | "habit";
+  source: EntrySource;
 };
 
 type StatsInsightTone = "default" | "success" | "premium" | "warning";
@@ -149,7 +150,7 @@ type StatsTopSavingsMetricRow = {
   realCost: unknown;
   alternativeCost: unknown;
   savedAmount: unknown;
-  source: "manual" | "habit";
+  source: EntrySource;
   categoryName: string;
 };
 

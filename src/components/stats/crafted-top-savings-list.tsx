@@ -3,6 +3,7 @@
 import Link from "next/link";
 
 import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
+import { EntrySource } from "@/src/lib/generated/prisma/enums";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import { formatDate } from "@/src/lib/formatters";
@@ -18,7 +19,7 @@ export type CraftedTopSavingsItem = {
   realCost: number;
   alternativeCost: number;
   savedAmount: number;
-  source: "manual" | "habit";
+  source: EntrySource;
 };
 
 type CraftedTopSavingsListProps = {
