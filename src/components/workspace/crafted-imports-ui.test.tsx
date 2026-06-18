@@ -245,7 +245,7 @@ describe("Import CSV UI", () => {
       />,
     );
 
-    assert.match(markup, /Nessun suggerimento/);
+    assert.doesNotMatch(markup, /Suggerita:/);
     assert.match(markup, /Non ci sono categorie disponibili/);
   });
 

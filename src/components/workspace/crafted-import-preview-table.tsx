@@ -193,9 +193,11 @@ export function CraftedImportPreviewTable({
                       ) : null}
                       {transaction.categoryIdSuggested ? (
                         <p className="mt-1 text-xs text-ink-3">
-                          <span className="inline-flex items-center rounded-full border border-line bg-surface-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-foreground">
-                            {suggestedCategoryName ? `Suggerita: ${suggestedCategoryName}` : "Nessun suggerimento"}
-                          </span>
+                          {suggestedCategoryName ? (
+                            <span className="inline-flex items-center rounded-full border border-line bg-surface-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-foreground">
+                              Suggerita: {suggestedCategoryName}
+                            </span>
+                          ) : null}
                         </p>
                       ) : null}
                       {transaction.errorMessage ? (
