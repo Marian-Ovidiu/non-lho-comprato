@@ -18,14 +18,16 @@ import {
   type EntryMetricAggregateRow,
 } from "@/src/lib/entry-metrics-query";
 import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
-import { resolveIsFirstEntryOfDay } from "@/src/lib/entry-first-of-day";
-import { getGlobalStreak } from "@/src/actions/streaks";
 import {
   parseBeneficiaryUserIdsFromForm,
   parsePaidByUserIdFromForm,
   validateEntryOwnership,
 } from "@/src/lib/entry-ownership";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
+import {
+  createEntryFromNormalizedInput,
+  type CreateEntryResult,
+} from "@/src/actions/entry-create";
 import {
   getEntryFormText as getText,
   resolveEntryMoneyFromForm,
@@ -71,17 +73,6 @@ import {
   type ExpenseSuggestionResult,
 } from "@/src/lib/expense-suggestion";
 import { isWorkspaceDebugEnabled, logWorkspaceDebug } from "@/src/lib/workspace-debug";
-
-type CreateEntryResult = {
-  success: boolean;
-  message: string;
-  entryId?: string;
-  errors?: Record<string, string>;
-  isFirstEntryCreated?: boolean;
-  isFirstEntryOfDay?: boolean;
-  streakFrom?: number;
-  streakTo?: number;
-};
 
 type EntryWithCategory = {
   id: string;
@@ -1230,9 +1221,6 @@ export async function createEntry(
   try {
     const currentUser = await getCurrentUser();
     const workspaceId = await getCurrentWorkspaceId();
-    const existingEntryCount = await prisma.entry.count({
-      where: await getCurrentWorkspaceScopedWhere(),
-    });
     const category = await resolveEntryCategory(categoryId, workspaceId);
 
     if (!category) {
@@ -1245,68 +1233,27 @@ export async function createEntry(
       };
     }
 
-    const [workspaceWhere, timeZone] = await Promise.all([
-      getCurrentWorkspaceScopedWhere(),
-      getCurrentWorkspaceTimezone(),
-    ]);
-    const isFirstEntryOfDay = await resolveIsFirstEntryOfDay(
-      date,
-      timeZone,
-      workspaceWhere,
-      prisma,
-    );
-    let streakFrom: number | undefined;
-    let streakTo: number | undefined;
-
-    if (isFirstEntryOfDay) {
-      streakFrom = (await getGlobalStreak()).currentStreak;
-    }
-
-    const entry = await prisma.entry.create({
-      data: {
+    return createEntryFromNormalizedInput(
+      {
         workspaceId,
+        currentUserId: currentUser.id,
         title,
         categoryId: category.id,
-        realCost: toDecimalString(money.realCost),
-        alternativeCost: toDecimalString(money.alternativeCost),
-        savedAmount: toDecimalString(money.savedAmount),
-        mode: money.mode,
-        savingContext: money.savingContext,
-        paymentMode: payment.paymentMode,
         date,
-        isFirstEntryOfDay,
         note: note || null,
-        source: "manual",
+        money,
+        paymentMode: payment.paymentMode,
         paidByUserId: ownership.paidByUserId,
-        beneficiaries: {
-          create: ownership.beneficiaryUserIds.map((userId) => ({ userId })),
-        },
-        createdByUserId: currentUser.id,
+        beneficiaryUserIds: ownership.beneficiaryUserIds,
+        source: "manual",
         visibility: EntryVisibility.workspace,
       },
-    });
-
-    if (isFirstEntryOfDay) {
-      streakTo = (await getGlobalStreak()).currentStreak;
-    }
-
-    tryRevalidatePath("/");
-    tryRevalidatePath("/entries");
-    tryRevalidatePath("/stats");
-    tryRevalidatePath("/workspace/budgets");
-    tryRevalidatePath("/more");
-    updateTag(`entries:${workspaceId}`);
-    updateTag(`goals:${workspaceId}`);
-
-    return {
-      success: true,
-      message: "Entrata salvata con successo",
-      entryId: entry.id,
-      isFirstEntryCreated: existingEntryCount === 0,
-      isFirstEntryOfDay,
-      streakFrom,
-      streakTo,
-    };
+      {
+        prisma,
+        revalidatePath: tryRevalidatePath,
+        updateTag,
+      },
+    );
   } catch (error) {
     unstable_rethrow(error);
     console.error("Failed to create entry:", error);

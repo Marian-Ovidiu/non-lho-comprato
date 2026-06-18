@@ -117,6 +117,12 @@ export function CraftedMore({
                 icon="target"
               />
               <CraftedMoreRow
+                href="/workspace/imports"
+                label="Import CSV"
+                detail="Carica un estratto conto CSV e conferma solo le righe utili."
+                icon="receipt"
+              />
+              <CraftedMoreRow
                 href="/workspace/new"
                 label={t.more.newWorkspaceLabel}
                 detail={t.more.newWorkspaceDetail}

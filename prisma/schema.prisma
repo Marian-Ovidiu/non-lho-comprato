@@ -15,6 +15,7 @@ datasource db {
 enum EntrySource {
   manual
   habit
+  imported
 }
 
 enum WorkspaceKind {
@@ -69,6 +70,26 @@ enum BudgetScope {
   category
 }
 
+enum ImportSource {
+  bank_csv
+}
+
+enum ImportBatchStatus {
+  parsing
+  ready
+  partial
+  completed
+  failed
+}
+
+enum ImportedTransactionStatus {
+  pending
+  confirmed
+  ignored
+  duplicate
+  error
+}
+
 model Category {
   id           String        @id @default(cuid())
   workspaceId  String
@@ -83,6 +104,8 @@ model Category {
   habits       Habit[]
   quickPresets QuickPreset[]
   budgets      Budget[]
+  importedTransactionsSuggested ImportedTransaction[] @relation("ImportedTransactionCategorySuggested")
+  importedTransactionsConfirmed ImportedTransaction[] @relation("ImportedTransactionCategoryConfirmed")
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -117,6 +140,7 @@ model Entry {
   paidByUser        User?            @relation("EntryPaidBy", fields: [paidByUserId], references: [id], onDelete: SetNull)
   habitOccurrenceId String?          @unique
   habitOccurrence   HabitOccurrence? @relation(fields: [habitOccurrenceId], references: [id], onDelete: SetNull)
+  importedTransactions ImportedTransaction[] @relation("ImportedTransactionEntry")
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
@@ -236,6 +260,72 @@ model Budget {
   @@index([workspaceId, categoryId])
 }
 
+model ImportBatch {
+  id                String               @id @default(cuid())
+  workspaceId       String
+  workspace         Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdByUserId    String
+  createdBy         User                 @relation(fields: [createdByUserId], references: [id], onDelete: Cascade)
+  source            ImportSource         @default(bank_csv)
+  originalFilename  String?
+  mimeType          String?
+  fileSize          Int?
+  delimiter         String?
+  status            ImportBatchStatus    @default(parsing)
+  headerRowJson     Json?
+  columnMappingJson Json?
+  rowCount          Int                  @default(0)
+  parsedCount       Int                  @default(0)
+  confirmedCount    Int                  @default(0)
+  ignoredCount      Int                  @default(0)
+  duplicateCount    Int                  @default(0)
+  errorMessage      String?
+  transactions      ImportedTransaction[]
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+
+  @@index([workspaceId, status])
+  @@index([createdByUserId])
+  @@index([source])
+}
+
+model ImportedTransaction {
+  id                String                    @id @default(cuid())
+  workspaceId       String
+  workspace         Workspace                 @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  importBatchId     String
+  importBatch       ImportBatch               @relation(fields: [importBatchId], references: [id], onDelete: Cascade)
+  source            ImportSource              @default(bank_csv)
+  sourceRowIndex    Int
+  externalId        String?
+  fingerprint       String
+  date              DateTime?
+  description       String
+  merchantName      String?
+  amount            Decimal?                  @db.Decimal(10, 2)
+  currency          String?
+  status            ImportedTransactionStatus @default(pending)
+  categoryIdSuggested String?
+  categorySuggested Category?                 @relation("ImportedTransactionCategorySuggested", fields: [categoryIdSuggested], references: [id], onDelete: SetNull)
+  categoryIdConfirmed String?
+  categoryConfirmed Category?                 @relation("ImportedTransactionCategoryConfirmed", fields: [categoryIdConfirmed], references: [id], onDelete: SetNull)
+  entryId           String?
+  entry             Entry?                    @relation("ImportedTransactionEntry", fields: [entryId], references: [id], onDelete: SetNull)
+  duplicateOfId     String?
+  duplicateOf       ImportedTransaction?      @relation("ImportedTransactionDuplicate", fields: [duplicateOfId], references: [id], onDelete: SetNull)
+  duplicateTransactions ImportedTransaction[] @relation("ImportedTransactionDuplicate")
+  rawJson           Json?
+  errorMessage      String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  @@unique([importBatchId, sourceRowIndex])
+  @@index([workspaceId, source, fingerprint])
+  @@index([workspaceId, status])
+  @@index([entryId])
+  @@index([importBatchId])
+}
+
 model User {
   id                   String            @id
   email                String?           @unique
@@ -254,6 +344,7 @@ model User {
   targetGoals          Goal[]              @relation("GoalTargetUser")
   targetPresets        QuickPreset[]       @relation("QuickPresetTargetUser")
   feedbacks            Feedback[]          @relation("FeedbackUser")
+  createdImportBatches ImportBatch[]
 }
 
 model Workspace {
@@ -270,6 +361,8 @@ model Workspace {
   invites      WorkspaceInvite[]
   categories   Category[]
   budgets      Budget[]
+  importBatches ImportBatch[]
+  importedTransactions ImportedTransaction[]
   entries      Entry[]
   habits       Habit[]
   goals        Goal[]
