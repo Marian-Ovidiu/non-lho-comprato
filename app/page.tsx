@@ -24,6 +24,7 @@ import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { buildCraftedDashboardProps } from "@/src/lib/crafted-dashboard-build";
 import { getTranslations } from "@/src/lib/i18n";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
+import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import type { HomeReflectionNoteProps } from "@/src/lib/home-reflection";
 
 
@@ -304,6 +305,11 @@ export default async function Home({ searchParams }: HomePageProps) {
     categoryBudgets: [],
     hasAnyBudget: false,
   };
+  let budgetAlertSelection: BudgetAlertSelection = {
+    primaryAlerts: [],
+    pageAlerts: [],
+    hasAlerts: false,
+  };
   let workspaceBalance: HomeDashboardMetrics["workspaceBalance"] = {
     supported: false,
     status: "unsupported",
@@ -359,6 +365,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     monthlyStats = metrics.monthlyStats;
     categoryStats = metrics.categoryStats;
     budgetDashboardState = metrics.budgetData.dashboardBudgetState;
+    budgetAlertSelection = metrics.budgetAlertSelection;
     activeGoals = metrics.goals;
     todayHabits = metrics.todayHabits;
     pendingHabitsCount = metrics.pendingHabitsCount;
@@ -409,6 +416,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       counterpartLabel: workspaceBalance.counterpartLabel,
     },
     budgetDashboardState,
+    budgetAlertSelection,
     timeZone,
     currency,
     language,

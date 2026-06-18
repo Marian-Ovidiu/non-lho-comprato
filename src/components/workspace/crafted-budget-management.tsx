@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Label, Rule, Serif } from "@/components/crafted";
+import { CraftedBudgetAlertList } from "@/src/components/budget/crafted-budget-alert-list";
 import { CraftedBudgetForm } from "@/src/components/workspace/crafted-budget-form";
 import { CraftedBudgetRow } from "@/src/components/workspace/crafted-budget-row";
 import { deleteBudgetAction } from "@/src/actions/budgets";
@@ -11,18 +12,21 @@ import type {
   BudgetCategoryOption,
   BudgetSummaryView,
 } from "@/src/lib/budget-summary";
+import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import { sortBudgetSummariesForManagement } from "@/src/lib/budget-summary";
 
 type CraftedBudgetManagementProps = {
   initialBudgets: BudgetSummaryView[];
   categories: BudgetCategoryOption[];
   currency: string;
+  alertSelection: BudgetAlertSelection;
 };
 
 export function CraftedBudgetManagement({
   initialBudgets,
   categories,
   currency,
+  alertSelection,
 }: CraftedBudgetManagementProps) {
   const router = useRouter();
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
@@ -82,6 +86,13 @@ export function CraftedBudgetManagement({
       <Serif className="mt-3 block max-w-2xl text-sm leading-6 text-muted-foreground">
         I budget usano solo la spesa reale dei movimenti. Risparmi, confronto e scelte buone restano disponibili come metrica separata.
       </Serif>
+
+      <CraftedBudgetAlertList
+        alerts={alertSelection.pageAlerts}
+        title="Da controllare"
+        description="Alcuni budget stanno andando più veloce del previsto."
+        className="mt-6"
+      />
 
       <CraftedBudgetForm
         key={editingBudget ? editingBudget.id : `create-${resetToken}`}

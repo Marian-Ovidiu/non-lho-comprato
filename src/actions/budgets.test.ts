@@ -113,6 +113,16 @@ async function createFakeBudgetWorld() {
   ];
   const budgets: SeedBudget[] = [];
   const entries: SeedEntry[] = [];
+  const queryCounts = {
+    budgetFindMany: 0,
+    budgetFindFirst: 0,
+    budgetCreate: 0,
+    budgetUpdate: 0,
+    budgetDelete: 0,
+    categoryFindMany: 0,
+    categoryFindFirst: 0,
+    entryFindMany: 0,
+  };
   let budgetCounter = 0;
 
   function withCategoryRelation(budget: SeedBudget) {
@@ -167,17 +177,20 @@ async function createFakeBudgetWorld() {
   const prisma = {
     budget: {
       async findMany({ where }: { where?: BudgetWhere }) {
+        queryCounts.budgetFindMany += 1;
         return budgets
           .filter((budget) => (where ? matchesBudget(budget, where) : true))
           .map(withCategoryRelation);
       },
       async findFirst({ where }: { where?: BudgetWhere }) {
+        queryCounts.budgetFindFirst += 1;
         return (
           budgets.find((budget) => (where ? matchesBudget(budget, where) : true)) ??
           null
         );
       },
       async create(args: Record<string, unknown>) {
+        queryCounts.budgetCreate += 1;
         const data = args.data as Record<string, unknown>;
         const id = `budget-${++budgetCounter}`;
         const budget: SeedBudget = {
@@ -196,6 +209,7 @@ async function createFakeBudgetWorld() {
         return { id };
       },
       async update(args: Record<string, unknown>) {
+        queryCounts.budgetUpdate += 1;
         const where = args.where as { id: string };
         const data = args.data as Record<string, unknown>;
         const budget = budgets.find((item) => item.id === where.id);
@@ -216,6 +230,7 @@ async function createFakeBudgetWorld() {
         return { id: budget.id };
       },
       async delete(args: Record<string, unknown>) {
+        queryCounts.budgetDelete += 1;
         const where = args.where as { id: string };
         const index = budgets.findIndex((item) => item.id === where.id);
         if (index < 0) {
@@ -227,6 +242,7 @@ async function createFakeBudgetWorld() {
     },
     category: {
       async findMany({ where }: { where?: CategoryWhere }) {
+        queryCounts.categoryFindMany += 1;
         return categories.filter((category) => {
           if (where?.workspaceId && category.workspaceId !== where.workspaceId) {
             return false;
@@ -235,6 +251,7 @@ async function createFakeBudgetWorld() {
         });
       },
       async findFirst({ where }: { where?: CategoryWhere }) {
+        queryCounts.categoryFindFirst += 1;
         return (
           categories.find((category) => {
             if (where?.workspaceId && category.workspaceId !== where.workspaceId) {
@@ -250,6 +267,7 @@ async function createFakeBudgetWorld() {
     },
     entry: {
       async findMany({ where }: { where?: EntryWhere }) {
+        queryCounts.entryFindMany += 1;
         return entries
           .filter((entry) => {
             if (where?.workspaceId && entry.workspaceId !== where.workspaceId) {
@@ -301,6 +319,7 @@ async function createFakeBudgetWorld() {
     entries,
     prisma,
     actions,
+    queryCounts,
     addEntry(entry: SeedEntry) {
       entries.push(entry);
     },
@@ -527,5 +546,102 @@ describe("budget actions", () => {
       pageData.dashboardBudgetState.categoryBudgets[0]?.id,
       categoryBudget?.id,
     );
+    assert.equal(pageData.alertSelection.hasAlerts, true);
+    assert.ok(pageData.alertSelection.primaryAlerts.length >= 1);
+    assert.equal(world.queryCounts.budgetFindMany, 1);
+    assert.equal(world.queryCounts.categoryFindMany, 1);
+    assert.equal(world.queryCounts.entryFindMany, 1);
+  });
+
+  it("does not return alert selection when all budgets are ok", async () => {
+    const world = await createFakeBudgetWorld();
+
+    await world.actions.createBudgetAction(
+      buildFormData({
+        scope: "workspace",
+        period: "monthly",
+        amount: "200",
+        scopeKey: "workspace",
+        currency: "EUR",
+      }),
+    );
+
+    world.addEntry({
+      workspaceId: world.workspace.id,
+      categoryId: "category-1",
+      realCost: 20,
+      alternativeCost: 30,
+      savedAmount: 10,
+      mode: "spent",
+      date: new Date("2026-07-10T10:00:00.000Z"),
+    });
+
+    const pageData = await world.actions.getWorkspaceBudgetsAction();
+
+    assert.equal(pageData.alertSelection.hasAlerts, false);
+    assert.equal(pageData.alertSelection.primaryAlerts.length, 0);
+    assert.equal(pageData.alertSelection.pageAlerts.length, 0);
+    assert.equal(world.queryCounts.budgetFindMany, 1);
+    assert.equal(world.queryCounts.categoryFindMany, 1);
+    assert.equal(world.queryCounts.entryFindMany, 1);
+  });
+
+  it("limits alert selection to at most two primary alerts", async () => {
+    const world = await createFakeBudgetWorld();
+
+    await world.actions.createBudgetAction(
+      buildFormData({
+        scope: "workspace",
+        period: "monthly",
+        amount: "50",
+        scopeKey: "workspace",
+        currency: "EUR",
+      }),
+    );
+    await world.actions.createBudgetAction(
+      buildFormData({
+        scope: "category",
+        period: "monthly",
+        amount: "20",
+        categoryId: "category-1",
+        scopeKey: "category-1",
+        currency: "EUR",
+      }),
+    );
+    await world.actions.createBudgetAction(
+      buildFormData({
+        scope: "category",
+        period: "monthly",
+        amount: "20",
+        categoryId: "category-2",
+        scopeKey: "category-2",
+        currency: "EUR",
+      }),
+    );
+
+    world.addEntry({
+      workspaceId: world.workspace.id,
+      categoryId: "category-1",
+      realCost: 40,
+      alternativeCost: 60,
+      savedAmount: 20,
+      mode: "spent",
+      date: new Date("2026-07-10T10:00:00.000Z"),
+    });
+    world.addEntry({
+      workspaceId: world.workspace.id,
+      categoryId: "category-2",
+      realCost: 40,
+      alternativeCost: 60,
+      savedAmount: 20,
+      mode: "spent",
+      date: new Date("2026-07-11T10:00:00.000Z"),
+    });
+
+    const pageData = await world.actions.getWorkspaceBudgetsAction();
+
+    assert.equal(pageData.alertSelection.hasAlerts, true);
+    assert.ok(pageData.alertSelection.primaryAlerts.length <= 2);
+    assert.ok(pageData.alertSelection.pageAlerts.length >= 2);
   });
 });

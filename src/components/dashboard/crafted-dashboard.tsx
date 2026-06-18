@@ -33,7 +33,9 @@ import { useTranslations, useWorkspaceLanguage } from "@/src/components/language
 import { languageToLocale } from "@/src/lib/i18n";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
+import { CraftedBudgetAlertList } from "@/src/components/budget/crafted-budget-alert-list";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
+import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 
 type CraftedCategoryRow = {
   name: string;
@@ -96,6 +98,7 @@ export type CraftedDashboardProps = {
     counterpartLabel: string | null;
   };
   budgetDashboardState: BudgetDashboardSelection;
+  budgetAlertSelection: BudgetAlertSelection;
 };
 
 const CATEGORY_TONE_CLASS: Record<CraftedCategoryRow["tone"], string> = {
@@ -226,6 +229,7 @@ export function CraftedDashboard({
   emptyState,
   coupleBalance,
   budgetDashboardState,
+  budgetAlertSelection,
 }: CraftedDashboardProps) {
   const currencySymbol = useCurrencySymbol();
   const language = useWorkspaceLanguage();
@@ -311,6 +315,12 @@ export function CraftedDashboard({
 
       <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <Label className="mb-3 block">Budget</Label>
+        <CraftedBudgetAlertList
+          alerts={budgetAlertSelection.primaryAlerts}
+          title="Da controllare"
+          description="Alcuni budget stanno accelerando."
+          className="mb-4"
+        />
         {budgetDashboardState.hasAnyBudget ? (
           <div className="space-y-4">
             {budgetDashboardState.mainBudget ? (

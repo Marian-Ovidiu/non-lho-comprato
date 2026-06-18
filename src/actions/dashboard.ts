@@ -112,6 +112,7 @@ export async function getHomeDashboardMetrics() {
     streakDates: globalStreak.streakDates,
     monthlyStats: loadedMonthlyStats,
     categoryStats: loadedCategoryStats,
+    budgetAlertSelection: loadedBudgetData.alertSelection,
     budgetData: loadedBudgetData,
   };
   }, { label: "home-dashboard-metrics" });

@@ -50,6 +50,7 @@ export default async function WorkspaceBudgetsPage() {
         initialBudgets={data.budgets}
         categories={data.categories}
         currency={data.workspace.currency}
+        alertSelection={data.alertSelection}
       />
     </main>
   );

@@ -10,6 +10,7 @@ import { getDateKey } from "@/src/lib/workspace-dates";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
+import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 
 type CategoryStatsItem = {
   categoryName: string;
@@ -149,6 +150,7 @@ export function buildCraftedDashboardProps(input: {
   emptyState: CraftedDashboardProps["emptyState"];
   coupleBalance: CraftedDashboardProps["coupleBalance"];
   budgetDashboardState: BudgetDashboardSelection;
+  budgetAlertSelection: BudgetAlertSelection;
   timeZone: string;
   currency: string;
   language: string;
@@ -203,5 +205,6 @@ export function buildCraftedDashboardProps(input: {
     emptyState: input.emptyState,
     coupleBalance: input.coupleBalance,
     budgetDashboardState: input.budgetDashboardState,
+    budgetAlertSelection: input.budgetAlertSelection,
   };
 }

@@ -27,6 +27,10 @@ import {
   type BudgetSummarySource,
   type BudgetSummaryView,
 } from "@/src/lib/budget-summary";
+import {
+  selectBudgetAlertSelection,
+  type BudgetAlertSelection,
+} from "@/src/lib/budget-alerts";
 import { getBudgetPeriodRange } from "@/src/lib/budget-period";
 
 export type BudgetActionResult = {
@@ -50,6 +54,7 @@ export type WorkspaceBudgetPageData = {
   categories: BudgetCategoryOption[];
   budgets: BudgetSummaryView[];
   dashboardBudgetState: ReturnType<typeof selectDashboardBudgetSelection>;
+  alertSelection: BudgetAlertSelection;
 };
 
 type BudgetPrismaLike = {
@@ -234,6 +239,7 @@ async function loadWorkspaceBudgetPageData(
     categories,
     budgets: sortBudgetSummariesForManagement(summarizedBudgets),
     dashboardBudgetState: selectDashboardBudgetSelection(summarizedBudgets),
+    alertSelection: selectBudgetAlertSelection(summarizedBudgets),
   };
 }
 
