@@ -251,7 +251,7 @@ type OccurrenceWithHabit = {
 };
 
 function tryRevalidatePaths() {
-  for (const path of ["/", "/entries", "/habits", "/stats"]) {
+  for (const path of ["/", "/entries", "/habits", "/stats", "/workspace/budgets", "/more"]) {
     try {
       revalidatePath(path);
     } catch (error) {
@@ -261,7 +261,7 @@ function tryRevalidatePaths() {
 }
 
 function revalidateHabitOccurrencePaths() {
-  for (const path of ["/habits", "/"]) {
+  for (const path of ["/habits", "/", "/workspace/budgets", "/more"]) {
     try {
       revalidatePath(path);
     } catch (error) {

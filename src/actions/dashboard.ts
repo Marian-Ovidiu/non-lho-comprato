@@ -1,6 +1,7 @@
 "use server";
 
 import { getDashboardSummary } from "@/src/actions/entries";
+import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getTodayHabitOccurrences } from "@/src/actions/habits";
 import { getCategoryStats, getMonthlyStats } from "@/src/actions/stats";
@@ -85,6 +86,7 @@ export async function getHomeDashboardMetrics() {
     globalStreak,
     loadedMonthlyStats,
     loadedCategoryStats,
+    loadedBudgetData,
   ] = await Promise.all([
     getDashboardSummary(),
     getTodayDashboardSummary(),
@@ -94,6 +96,7 @@ export async function getHomeDashboardMetrics() {
     getGlobalStreak(),
     getMonthlyStats(),
     getCategoryStats(),
+    getWorkspaceBudgetsAction(),
   ]);
 
   return {
@@ -109,6 +112,7 @@ export async function getHomeDashboardMetrics() {
     streakDates: globalStreak.streakDates,
     monthlyStats: loadedMonthlyStats,
     categoryStats: loadedCategoryStats,
+    budgetData: loadedBudgetData,
   };
   }, { label: "home-dashboard-metrics" });
 }

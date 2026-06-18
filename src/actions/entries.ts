@@ -1293,6 +1293,8 @@ export async function createEntry(
     tryRevalidatePath("/");
     tryRevalidatePath("/entries");
     tryRevalidatePath("/stats");
+    tryRevalidatePath("/workspace/budgets");
+    tryRevalidatePath("/more");
     updateTag(`entries:${workspaceId}`);
     updateTag(`goals:${workspaceId}`);
 
@@ -1452,6 +1454,8 @@ export async function updateEntry(
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
+    tryRevalidatePath("/workspace/budgets");
+    tryRevalidatePath("/more");
     updateTag(`entries:${workspaceId}`);
     updateTag(`goals:${workspaceId}`);
 
@@ -1540,6 +1544,8 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
+    tryRevalidatePath("/workspace/budgets");
+    tryRevalidatePath("/more");
     updateTag(`entries:${workspaceId}`);
     updateTag(`goals:${workspaceId}`);
 

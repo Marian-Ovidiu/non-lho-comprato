@@ -9,6 +9,7 @@ import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { getDateKey } from "@/src/lib/workspace-dates";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
+import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 
 type CategoryStatsItem = {
   categoryName: string;
@@ -147,6 +148,7 @@ export function buildCraftedDashboardProps(input: {
   reflection: CraftedDashboardProps["reflection"];
   emptyState: CraftedDashboardProps["emptyState"];
   coupleBalance: CraftedDashboardProps["coupleBalance"];
+  budgetDashboardState: BudgetDashboardSelection;
   timeZone: string;
   currency: string;
   language: string;
@@ -200,5 +202,6 @@ export function buildCraftedDashboardProps(input: {
     reflection: input.reflection,
     emptyState: input.emptyState,
     coupleBalance: input.coupleBalance,
+    budgetDashboardState: input.budgetDashboardState,
   };
 }

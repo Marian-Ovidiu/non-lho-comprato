@@ -111,6 +111,12 @@ export function CraftedMore({
                 icon="receipt"
               />
               <CraftedMoreRow
+                href="/workspace/budgets"
+                label="Budget"
+                detail="Controlla la spesa reale del workspace e delle categorie."
+                icon="target"
+              />
+              <CraftedMoreRow
                 href="/workspace/new"
                 label={t.more.newWorkspaceLabel}
                 detail={t.more.newWorkspaceDetail}

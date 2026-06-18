@@ -23,6 +23,7 @@ import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-ban
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { buildCraftedDashboardProps } from "@/src/lib/crafted-dashboard-build";
 import { getTranslations } from "@/src/lib/i18n";
+import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 import type { HomeReflectionNoteProps } from "@/src/lib/home-reflection";
 
 
@@ -298,6 +299,11 @@ export default async function Home({ searchParams }: HomePageProps) {
   let streakDates: string[] = [];
   let monthlyStats: HomeDashboardMetrics["monthlyStats"] = [];
   let categoryStats: HomeDashboardMetrics["categoryStats"] = [];
+  let budgetDashboardState: BudgetDashboardSelection = {
+    mainBudget: null,
+    categoryBudgets: [],
+    hasAnyBudget: false,
+  };
   let workspaceBalance: HomeDashboardMetrics["workspaceBalance"] = {
     supported: false,
     status: "unsupported",
@@ -352,6 +358,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     streakDates = metrics.streakDates;
     monthlyStats = metrics.monthlyStats;
     categoryStats = metrics.categoryStats;
+    budgetDashboardState = metrics.budgetData.dashboardBudgetState;
     activeGoals = metrics.goals;
     todayHabits = metrics.todayHabits;
     pendingHabitsCount = metrics.pendingHabitsCount;
@@ -401,6 +408,7 @@ export default async function Home({ searchParams }: HomePageProps) {
       amount: workspaceBalance.amount,
       counterpartLabel: workspaceBalance.counterpartLabel,
     },
+    budgetDashboardState,
     timeZone,
     currency,
     language,

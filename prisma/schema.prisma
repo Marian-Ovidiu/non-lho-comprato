@@ -59,6 +59,16 @@ enum HabitOccurrenceStatus {
   skipped
 }
 
+enum BudgetPeriod {
+  weekly
+  monthly
+}
+
+enum BudgetScope {
+  workspace
+  category
+}
+
 model Category {
   id           String        @id @default(cuid())
   workspaceId  String
@@ -72,6 +82,7 @@ model Category {
   entries      Entry[]
   habits       Habit[]
   quickPresets QuickPreset[]
+  budgets      Budget[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
 
@@ -206,6 +217,25 @@ model QuickPreset {
   @@index([targetUserId])
 }
 
+model Budget {
+  id          String       @id @default(cuid())
+  workspaceId String
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  scope       BudgetScope
+  scopeKey    String
+  categoryId  String?
+  category    Category?    @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  period      BudgetPeriod
+  amount      Decimal      @db.Decimal(10, 2)
+  currency    String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@unique([workspaceId, period, scope, scopeKey])
+  @@index([workspaceId, period])
+  @@index([workspaceId, categoryId])
+}
+
 model User {
   id                   String            @id
   email                String?           @unique
@@ -239,6 +269,7 @@ model Workspace {
   members      WorkspaceMember[]
   invites      WorkspaceInvite[]
   categories   Category[]
+  budgets      Budget[]
   entries      Entry[]
   habits       Habit[]
   goals        Goal[]

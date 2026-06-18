@@ -20,6 +20,7 @@ import {
   formatCraftedCompact,
   formatCraftedEntryAmount,
 } from "@/src/lib/crafted-money";
+import { CraftedBudgetSummary } from "@/src/components/budget/crafted-budget-summary";
 import {
   CraftedAmount,
   CraftedOdometer,
@@ -32,6 +33,7 @@ import { useTranslations, useWorkspaceLanguage } from "@/src/components/language
 import { languageToLocale } from "@/src/lib/i18n";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
+import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 
 type CraftedCategoryRow = {
   name: string;
@@ -93,6 +95,7 @@ export type CraftedDashboardProps = {
     amount: number;
     counterpartLabel: string | null;
   };
+  budgetDashboardState: BudgetDashboardSelection;
 };
 
 const CATEGORY_TONE_CLASS: Record<CraftedCategoryRow["tone"], string> = {
@@ -222,6 +225,7 @@ export function CraftedDashboard({
   reflection,
   emptyState,
   coupleBalance,
+  budgetDashboardState,
 }: CraftedDashboardProps) {
   const currencySymbol = useCurrencySymbol();
   const language = useWorkspaceLanguage();
@@ -302,6 +306,56 @@ export function CraftedDashboard({
 
       <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <DashboardQuickActions />
+      </div>
+      <Rule />
+
+      <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <Label className="mb-3 block">Budget</Label>
+        {budgetDashboardState.hasAnyBudget ? (
+          <div className="space-y-4">
+            {budgetDashboardState.mainBudget ? (
+              <CraftedBudgetSummary
+                budget={budgetDashboardState.mainBudget}
+                manageHref="/workspace/budgets"
+                manageLabel="Gestisci budget"
+              />
+            ) : (
+              <div className="border border-line bg-surface-muted/35 rounded-[var(--r-card)] px-4 py-4">
+                <Serif className="text-sm text-muted-foreground">
+                  Hai solo budget categoria attivi. Apri la gestione budget per aggiungere un budget globale.
+                </Serif>
+                <div className="mt-4">
+                  <Button asChild variant="outline" className="h-10 rounded-[var(--r-cta)] border-line px-4">
+                    <Link href="/workspace/budgets">Gestisci budget</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {budgetDashboardState.categoryBudgets.length > 0 ? (
+              <div className="space-y-3">
+                <Label className="mb-1 block">Budget categoria</Label>
+                {budgetDashboardState.categoryBudgets.map((budget) => (
+                  <CraftedBudgetSummary
+                    key={budget.id}
+                    budget={budget}
+                    compact
+                    manageHref="/workspace/budgets"
+                    manageLabel="Gestisci budget"
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <CraftedBudgetSummary
+            empty
+            title="Imposta il tuo primo budget"
+            description="Crea un budget globale o per categoria e controlla quanto stai spendendo rispetto al ritmo previsto."
+            actionLabel="Imposta il tuo primo budget"
+            actionHref="/workspace/budgets"
+          />
+        )}
       </div>
       <Rule />
 
