@@ -255,9 +255,7 @@ describe("Import CSV UI", () => {
         profileLabel="Account"
         workspaceName="Workspace"
         workspaceLabel="Privato"
-        workspaceInitials="WS"
         isAuthenticated
-        workspaceNextStep={null}
         showWorkspaceTools
         workspaceSection={<div />}
         appSection={<div />}

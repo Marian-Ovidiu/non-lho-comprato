@@ -29,6 +29,7 @@ export type Translations = {
     today: string;
     entries: string;
     goals: string;
+    habits: string;
     stats: string;
     more: string;
     mainNavLabel: string;

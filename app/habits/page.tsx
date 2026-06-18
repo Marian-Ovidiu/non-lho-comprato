@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
 import {
   ensureTodayHabitOccurrences,
   finalizeOldPendingOccurrences,
@@ -110,6 +113,21 @@ export default async function HabitsPage() {
 
   return (
     <main className="pb-6">
+      <section className="-mx-4 px-5 pb-5 pt-7 sm:-mx-6 lg:-mx-8">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-[clamp(1.75rem,8vw,2.25rem)] font-semibold tracking-[-0.03em]">
+            {t.nav.habits}
+          </h1>
+          <Link
+            href="#nuova-abitudine"
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-accent px-3 text-[13px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+            {t.habitForm.createTitle}
+          </Link>
+        </div>
+      </section>
+
       <HabitReminderBanner occurrences={todayOccurrences} />
 
       {habitStatsError ? (

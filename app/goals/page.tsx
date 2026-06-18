@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { Plus } from "lucide-react";
+
 import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getMonthlyStats } from "@/src/actions/stats";
 import { CraftedGoalForm } from "@/src/components/goals/crafted-goal-form";
@@ -44,8 +47,23 @@ export default async function GoalsPage() {
 
   return (
     <main className="pb-6">
+      <section className="-mx-4 px-5 pb-5 pt-7 sm:-mx-6 lg:-mx-8">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="text-[clamp(1.75rem,8vw,2.25rem)] font-semibold tracking-[-0.03em]">
+            {t.nav.goals}
+          </h1>
+          <Link
+            href="#nuovo-obiettivo"
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-accent px-3 text-[13px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+            {t.goals.newGoalLabel}
+          </Link>
+        </div>
+      </section>
+
       {loadError ? (
-        <div className="px-5 pt-5 pb-4">
+        <div className="px-5 pb-4">
           <DataLoadErrorBanner
             title={t.goals.loadError}
             message={loadError}
@@ -54,7 +72,7 @@ export default async function GoalsPage() {
       ) : null}
 
       {monthlyStatsError ? (
-        <div className="px-5 pt-5 pb-4">
+        <div className="px-5 pb-4">
           <DataLoadErrorBanner
             title={t.goals.monthlyStatsError}
             message={monthlyStatsError}

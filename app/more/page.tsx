@@ -16,25 +16,6 @@ import { getCurrentWorkspaceLanguage } from "@/src/lib/workspace-context";
 
 const DEVELOPER_EMAIL = "h.marian914@gmail.com";
 
-
-type WorkspaceNextStep = NonNullable<CraftedMoreProps["workspaceNextStep"]>;
-
-function getWorkspaceNextStep(
-  workspace: Awaited<ReturnType<typeof getCurrentWorkspace>>,
-): WorkspaceNextStep | null {
-  if (workspace.kind === "private") {
-    return {
-      title: "Workspace privato",
-      description:
-        "Se vuoi lavorare con altre persone, il prossimo passo utile è creare uno spazio condiviso.",
-      actionLabel: "Crea workspace condiviso",
-      href: "/workspace/new",
-    };
-  }
-
-  return null;
-}
-
 export default async function MorePage() {
   const language = await getCurrentWorkspaceLanguage();
   const t = getTranslations(language);
@@ -60,18 +41,6 @@ export default async function MorePage() {
       ? t.common.shared
       : t.common.private
     : "Nessun workspace";
-  const workspaceInitials = workspace
-    ? workspace.name
-        .split(" ")
-        .map((part) => part.trim().charAt(0))
-        .filter(Boolean)
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : "NL";
-  const workspaceNextStep = workspace
-    ? getWorkspaceNextStep(workspace)
-    : null;
 
   return (
     <main>
@@ -87,9 +56,7 @@ export default async function MorePage() {
         profileLabel={profileLabel}
         workspaceName={workspace?.name ?? null}
         workspaceLabel={workspaceLabel}
-        workspaceInitials={workspaceInitials}
         isAuthenticated={Boolean(authUser)}
-        workspaceNextStep={workspaceNextStep}
         showWorkspaceTools={Boolean(workspace)}
         workspaceSection={<CraftedMoreWorkspaceTools />}
         appSection={<CraftedMoreAppTools />}

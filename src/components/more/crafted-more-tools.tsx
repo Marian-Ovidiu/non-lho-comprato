@@ -13,10 +13,10 @@ import { useTranslations } from "@/src/components/language/language-context";
 export function CraftedMoreWorkspaceTools() {
   const t = useTranslations();
   return (
-    <div className="divide-y divide-line-soft border-y border-line">
+    <>
       <div className="py-4">
         <Label className="mb-1.5 block">Valuta</Label>
-        <div className="border border-line rounded-xl px-3 py-2.5 mt-2">
+        <div className="mt-2 rounded-xl border border-line px-3 py-2.5">
           <CurrencySelector />
         </div>
       </div>
@@ -32,13 +32,13 @@ export function CraftedMoreWorkspaceTools() {
         <Label className="mb-3 block">Unisciti</Label>
         <JoinWorkspaceForm />
       </div>
-    </div>
+    </>
   );
 }
 
 export function CraftedMoreAppTools() {
   return (
-    <div className="divide-y divide-line-soft border-y border-line">
+    <>
       <div className="py-4">
         <Label className="mb-3 block">Tema</Label>
         <ThemeSelector variant="crafted" />
@@ -48,6 +48,6 @@ export function CraftedMoreAppTools() {
         <Label className="mb-3 block">Export AI</Label>
         <AiAnalysisExportCard />
       </div>
-    </div>
+    </>
   );
 }

@@ -3,14 +3,11 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2 } from "lucide-react";
-
-import { Rule } from "@/components/crafted";
+import { CraftedIcon, Rule } from "@/components/crafted";
 import { PullToRefresh, ToastProvider } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { CraftedBottomBar } from "@/src/components/layout/crafted-bottom-bar";
-import { CraftedMasthead } from "@/src/components/layout/crafted-masthead";
 import { FeedbackButton } from "@/src/components/feedback/feedback-button";
 import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-reminder-on-open";
 import { InstallButton } from "@/src/components/pwa/install-button";
@@ -139,7 +136,7 @@ export function AppShell({
   const desktopNavItems = [
     { href: "/", label: t.nav.today },
     { href: "/entries", label: t.nav.entries },
-    { href: "/goals", label: t.nav.goals },
+    { href: "/habits", label: t.nav.habits },
     { href: "/stats", label: t.nav.stats },
     { href: "/more", label: t.nav.more },
   ];
@@ -209,41 +206,22 @@ export function AppShell({
       <div className="min-h-[100dvh] bg-background text-foreground">
         <header className="sticky top-0 z-30 bg-background">
           <div className="mx-auto w-full max-w-5xl">
-            <CraftedMasthead
-              trailing={
-                <div className="hidden items-center gap-1 sm:flex">
-                  <InstallButton compact />
-                  <AccountButton
-                    isAuthenticated={auth.isAuthenticated}
-                    userLabel={auth.userLabel}
-                    t={t}
-                  />
-                </div>
-              }
-            />
-            <Rule />
-
-            <div className="flex items-center justify-between gap-3 px-5 py-2.5">
-              <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center justify-between gap-3 px-5 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
+              <div className="flex min-w-0 flex-1 items-center gap-2.5">
+                <Link
+                  href="/"
+                  aria-label="Home"
+                  className="shrink-0 text-accent transition-opacity hover:opacity-70"
+                  onClick={() => triggerHaptic("subtle")}
+                >
+                  <CraftedIcon name="flame" size={16} />
+                </Link>
                 <WorkspaceSwitcher
                   currentWorkspace={workspace}
                   availableWorkspaces={availableWorkspaces}
                 />
-                {isWorkspaceSwitching ? (
-                  <p
-                    className="inline-flex items-center gap-1 text-[10px] font-medium uppercase tracking-[0.16em] text-accent"
-                    aria-live="polite"
-                  >
-                    <Loader2
-                      className="size-3 animate-spin motion-reduce:animate-none"
-                      aria-hidden="true"
-                    />
-                    {t.workspaceSwitcher.switching}
-                  </p>
-                ) : null}
               </div>
-
-              <div className="flex shrink-0 items-center gap-1 sm:hidden">
+              <div className="flex shrink-0 items-center gap-1">
                 <InstallButton compact />
                 <AccountButton
                   isAuthenticated={auth.isAuthenticated}

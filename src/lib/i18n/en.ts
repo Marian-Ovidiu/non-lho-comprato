@@ -31,6 +31,7 @@ export const en: Translations = {
     today: "Today",
     entries: "Entries",
     goals: "Goals",
+    habits: "Habits",
     stats: "Stats",
     more: "More",
     mainNavLabel: "Main navigation",
