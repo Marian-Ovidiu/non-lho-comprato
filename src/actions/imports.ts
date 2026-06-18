@@ -17,6 +17,9 @@ import {
   createImportedTransactionFingerprint,
 } from "@/src/lib/imports/import-fingerprint";
 import {
+  suggestMerchantCategory,
+} from "@/src/lib/imports/merchant-categorizer";
+import {
   mapCsvRowToImportedTransactionDraft,
   validateCsvImportMapping,
 } from "@/src/lib/imports/import-mapping";
@@ -94,6 +97,7 @@ type ImportCategoryRecord = {
   workspaceId: string;
   name: string;
   slug: string;
+  isDefault: boolean;
   color: string | null;
   icon: string | null;
   archivedAt: Date | null;
@@ -102,6 +106,7 @@ type ImportCategoryRecord = {
 type ImportWorkspaceRecord = {
   id: string;
   currency: string | null;
+  language: string | null;
 };
 
 type ImportUserRecord = {
@@ -124,6 +129,7 @@ type ImportPrismaLike = {
   };
   category: {
     findFirst(args: Record<string, unknown>): Promise<ImportCategoryRecord | null>;
+    findMany(args: Record<string, unknown>): Promise<ImportCategoryRecord[]>;
   };
 };
 
@@ -351,6 +357,7 @@ function mapTransactionUpdatePayload(
   draft: ReturnType<typeof mapCsvRowToImportedTransactionDraft>,
   fingerprint: string,
   duplicateOfId: string | null,
+  categoryIdSuggested: string | null,
 ): Record<string, unknown> {
   return {
     date: draft.date,
@@ -358,6 +365,7 @@ function mapTransactionUpdatePayload(
     merchantName: draft.merchantName,
     amount: draft.amount === null ? null : toDecimalString(draft.amount),
     currency: draft.currency,
+    categoryIdSuggested,
     status:
       draft.status === "error"
         ? "error"
@@ -451,8 +459,18 @@ async function updateTransactionsFromMapping(params: {
   transactions: ImportedTransactionRecord[];
   mapping: CsvImportColumnMapping;
   defaultCurrency: string;
+  workspaceLanguage: string | null;
+  categories: ImportCategoryRecord[];
 }): Promise<void> {
-  const { deps, batch, transactions, mapping, defaultCurrency } = params;
+  const {
+    deps,
+    batch,
+    transactions,
+    mapping,
+    defaultCurrency,
+    workspaceLanguage,
+    categories,
+  } = params;
   const existingTransactions = await deps.prisma.importedTransaction.findMany({
     where: {
       workspaceId: batch.workspaceId,
@@ -510,11 +528,22 @@ async function updateTransactionsFromMapping(params: {
             currency: draft.currency,
           });
 
+    const categorySuggestion =
+      draft.status === "error"
+        ? null
+        : suggestMerchantCategory({
+            merchantName: draft.merchantName,
+            description: draft.description,
+            locale: workspaceLanguage,
+            categories,
+          });
+
     const duplicateOfId = fingerprint ? seenFingerprints.get(fingerprint) ?? null : null;
     const payload = mapTransactionUpdatePayload(
       draft,
       fingerprint,
       duplicateOfId,
+      categorySuggestion?.categoryIdSuggested ?? null,
     );
 
     if (duplicateOfId) {
@@ -856,6 +885,25 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         orderBy: [{ sourceRowIndex: "asc" }],
       });
 
+      const workspaceCategories = await deps.prisma.category.findMany({
+        where: {
+          workspaceId: workspace.id,
+          archivedAt: null,
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          isDefault: true,
+          archivedAt: true,
+        },
+        orderBy: [
+          { archivedAt: { sort: "asc", nulls: "first" } },
+          { isDefault: "desc" },
+          { slug: "asc" },
+        ],
+      });
+
       if (transactions.length === 0) {
         await deps.prisma.importBatch.update({
           where: { id: batch.id },
@@ -884,6 +932,8 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         transactions,
         mapping,
         defaultCurrency: workspace.currency || "EUR",
+        workspaceLanguage: workspace.language ?? null,
+        categories: workspaceCategories,
       });
 
       const updatedBatch = await syncImportBatchCounters(deps, batch.id);

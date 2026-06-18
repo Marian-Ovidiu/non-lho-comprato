@@ -18,6 +18,7 @@ type ImportedTransactionPreview = {
   amount: string | number | null;
   currency: string | null;
   status: "pending" | "confirmed" | "ignored" | "duplicate" | "error";
+  categoryIdSuggested: string | null;
   categoryIdConfirmed: string | null;
   errorMessage: string | null;
 };
@@ -54,6 +55,17 @@ function formatDate(date: Date | null): string {
   }).format(date);
 }
 
+function resolveSuggestedCategoryName(
+  categoryIdSuggested: string | null,
+  categories: ImportCategoryOption[],
+): string | null {
+  if (!categoryIdSuggested) {
+    return null;
+  }
+
+  return categories.find((category) => category.id === categoryIdSuggested)?.name ?? null;
+}
+
 export function CraftedImportPreviewTable({
   batchId,
   transactions,
@@ -63,6 +75,7 @@ export function CraftedImportPreviewTable({
   const pendingRows = transactions.filter((transaction) => transaction.status === "pending");
   const hasSelectableRows = pendingRows.length > 0;
   const defaultCategoryId = categories[0]?.id ?? "";
+  const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
 
   async function handleConfirmAction(formData: FormData): Promise<void> {
     await confirmImportedTransactionsAction(formData);
@@ -155,7 +168,13 @@ export function CraftedImportPreviewTable({
               </tr>
             </thead>
             <tbody className="divide-y divide-line-soft bg-background">
-              {transactions.map((transaction) => (
+              {transactions.map((transaction) => {
+                const suggestedCategoryName = resolveSuggestedCategoryName(
+                  transaction.categoryIdSuggested,
+                  categories,
+                );
+
+                return (
                 <tr key={transaction.id} className={cn(transaction.status === "confirmed" ? "bg-surface-muted/25" : undefined)}>
                   <td className="px-3 py-3 align-top">
                     <CraftedImportRowActions
@@ -172,6 +191,13 @@ export function CraftedImportPreviewTable({
                       {transaction.merchantName && transaction.merchantName !== transaction.description ? (
                         <p className="mt-1 text-xs text-ink-3">{transaction.description}</p>
                       ) : null}
+                      {transaction.categoryIdSuggested ? (
+                        <p className="mt-1 text-xs text-ink-3">
+                          <span className="inline-flex items-center rounded-full border border-line bg-surface-muted px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-foreground">
+                            {suggestedCategoryName ? `Suggerita: ${suggestedCategoryName}` : "Nessun suggerimento"}
+                          </span>
+                        </p>
+                      ) : null}
                       {transaction.errorMessage ? (
                         <p className="mt-1 text-xs text-destructive">{transaction.errorMessage}</p>
                       ) : null}
@@ -181,10 +207,15 @@ export function CraftedImportPreviewTable({
                     <Mono className="text-sm">{formatMoney(transaction.amount, transaction.currency ?? currency)}</Mono>
                   </td>
                   <td className="px-3 py-3 align-top text-ink-3">
-                    {transaction.categoryIdConfirmed ? "Confermata" : transaction.status === "pending" ? "Da confermare" : "—"}
+                    {transaction.categoryIdConfirmed
+                      ? `Confermata: ${categoryNameById.get(transaction.categoryIdConfirmed) ?? "—"}`
+                      : transaction.status === "pending"
+                        ? "Da confermare"
+                        : "—"}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

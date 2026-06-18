@@ -91,6 +91,7 @@ describe("Import CSV UI", () => {
             amount: "-12.34",
             currency: "EUR",
             status: "pending",
+            categoryIdSuggested: "category-1",
             categoryIdConfirmed: null,
             errorMessage: null,
           },
@@ -103,6 +104,7 @@ describe("Import CSV UI", () => {
             amount: "-12.34",
             currency: "EUR",
             status: "duplicate",
+            categoryIdSuggested: null,
             categoryIdConfirmed: null,
             errorMessage: null,
           },
@@ -115,6 +117,7 @@ describe("Import CSV UI", () => {
             amount: null,
             currency: null,
             status: "error",
+            categoryIdSuggested: null,
             categoryIdConfirmed: null,
             errorMessage: "Dati mancanti",
           },
@@ -126,9 +129,40 @@ describe("Import CSV UI", () => {
     assert.match(markup, /Conferma selezionate/);
     assert.match(markup, /Ignora selezionate/);
     assert.match(markup, /Bar Centrale/);
+    assert.match(markup, /Suggerita: Spesa/);
+    assert.doesNotMatch(markup, /Confermata:/);
     assert.match(markup, /Duplicata/);
     assert.match(markup, /Dati mancanti/);
     assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 1);
+  });
+
+  it("preview non inventa un suggerimento quando categoryIdSuggested è null", () => {
+    const markup = renderToStaticMarkup(
+      <CraftedImportPreviewTable
+        batchId="batch-1"
+        currency="EUR"
+        categories={[{ id: "category-1", name: "Spesa" }]}
+        transactions={[
+          {
+            id: "tx-1",
+            sourceRowIndex: 1,
+            date: new Date("2026-06-01T00:00:00.000Z"),
+            description: "Bar",
+            merchantName: null,
+            amount: "-12.34",
+            currency: "EUR",
+            status: "pending",
+            categoryIdSuggested: null,
+            categoryIdConfirmed: null,
+            errorMessage: null,
+          },
+        ]}
+      />,
+    );
+
+    assert.doesNotMatch(markup, /Suggerita:/);
+    assert.doesNotMatch(markup, /Nessun suggerimento/);
+    assert.match(markup, /Da confermare/);
   });
 
   it("righe duplicate/error non sono confermabili", () => {
@@ -147,6 +181,7 @@ describe("Import CSV UI", () => {
             amount: "-12.34",
             currency: "EUR",
             status: "pending",
+            categoryIdSuggested: null,
             categoryIdConfirmed: null,
             errorMessage: null,
           },
@@ -159,6 +194,7 @@ describe("Import CSV UI", () => {
             amount: "-12.34",
             currency: "EUR",
             status: "duplicate",
+            categoryIdSuggested: "category-1",
             categoryIdConfirmed: null,
             errorMessage: null,
           },
@@ -171,6 +207,7 @@ describe("Import CSV UI", () => {
             amount: null,
             currency: null,
             status: "error",
+            categoryIdSuggested: "missing-category",
             categoryIdConfirmed: null,
             errorMessage: "Dato mancante",
           },
@@ -181,6 +218,35 @@ describe("Import CSV UI", () => {
     assert.equal((markup.match(/type="checkbox"/g) ?? []).length, 1);
     assert.match(markup, /Duplicate/);
     assert.match(markup, /Dato mancante/);
+    assert.match(markup, /Suggerita: Spesa/);
+  });
+
+  it("preview non va in crash se la categoria suggerita non è disponibile", () => {
+    const markup = renderToStaticMarkup(
+      <CraftedImportPreviewTable
+        batchId="batch-1"
+        currency="EUR"
+        categories={[]}
+        transactions={[
+          {
+            id: "tx-1",
+            sourceRowIndex: 1,
+            date: new Date("2026-06-01T00:00:00.000Z"),
+            description: "Bar",
+            merchantName: null,
+            amount: "-12.34",
+            currency: "EUR",
+            status: "pending",
+            categoryIdSuggested: "missing-category",
+            categoryIdConfirmed: null,
+            errorMessage: null,
+          },
+        ]}
+      />,
+    );
+
+    assert.match(markup, /Nessun suggerimento/);
+    assert.match(markup, /Non ci sono categorie disponibili/);
   });
 
   it("link menu Import CSV presente", () => {

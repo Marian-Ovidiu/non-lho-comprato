@@ -54,6 +54,7 @@ type SeedTransaction = {
 type SeedCategory = {
   id: string;
   workspaceId: string;
+  isDefault: boolean;
   name: string;
   slug: string;
   color: string | null;
@@ -83,16 +84,21 @@ async function createImportWorld() {
     image: null,
   };
 
-  const workspaces: Record<string, { id: string; currency: string; timezone: string }> = {
+  const workspaces: Record<
+    string,
+    { id: string; currency: string; timezone: string; language: string }
+  > = {
     "workspace-1": {
       id: "workspace-1",
       currency: "EUR",
       timezone: "Europe/Rome",
+      language: "it",
     },
     "workspace-foreign": {
       id: "workspace-foreign",
       currency: "EUR",
       timezone: "Europe/Rome",
+      language: "en",
     },
   };
 
@@ -100,6 +106,7 @@ async function createImportWorld() {
     {
       id: "category-1",
       workspaceId: "workspace-1",
+      isDefault: false,
       name: "Spesa",
       slug: "spesa",
       color: null,
@@ -107,8 +114,49 @@ async function createImportWorld() {
       archivedAt: null,
     },
     {
+      id: "category-cigarettes",
+      workspaceId: "workspace-1",
+      isDefault: false,
+      name: "Sigarette / Accessori",
+      slug: "sigarette-accessori",
+      color: null,
+      icon: null,
+      archivedAt: null,
+    },
+    {
+      id: "category-subscriptions",
+      workspaceId: "workspace-1",
+      isDefault: false,
+      name: "Abbonamenti",
+      slug: "abbonamenti",
+      color: null,
+      icon: null,
+      archivedAt: null,
+    },
+    {
+      id: "category-delivery",
+      workspaceId: "workspace-1",
+      isDefault: false,
+      name: "Delivery",
+      slug: "delivery",
+      color: null,
+      icon: null,
+      archivedAt: null,
+    },
+    {
+      id: "category-archived",
+      workspaceId: "workspace-1",
+      isDefault: false,
+      name: "Tabacco",
+      slug: "tabacco",
+      color: null,
+      icon: null,
+      archivedAt: new Date("2026-01-01T00:00:00.000Z"),
+    },
+    {
       id: "category-foreign",
       workspaceId: "workspace-foreign",
+      isDefault: false,
       name: "Altro",
       slug: "altro",
       color: null,
@@ -332,6 +380,20 @@ async function createImportWorld() {
           }) ?? null
         );
       },
+      async findMany(args: Record<string, unknown>) {
+        const where = (args.where as Record<string, unknown>) ?? {};
+        return categories
+          .filter((category) => {
+            if (where.workspaceId && category.workspaceId !== where.workspaceId) {
+              return false;
+            }
+            if (where.archivedAt === null && category.archivedAt !== null) {
+              return false;
+            }
+            return true;
+          })
+          .map((category) => ({ ...category }));
+      },
     },
   };
 
@@ -473,6 +535,182 @@ describe("import actions", () => {
     assert.equal(mappingResult.success, true);
     assert.equal(state.transactions.every((tx) => tx.status === "pending"), true);
     assert.equal(state.batches[0]?.parsedCount, 2);
+    assert.equal(state.transactions.every((tx) => tx.categoryIdConfirmed === null), true);
+  });
+
+  it("saveImportMappingAction valorizza categoryIdSuggested per TABACCHERIA", async () => {
+    const { actions, state } = await createImportWorld();
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Merchant,Descrizione,Importo
+        01/06/2026,TABACCHERIA MARIO,acquisto,-12.34
+      `)),
+    );
+
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+    assert.equal(uploadResult.success, true);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("merchantName", "Merchant");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+
+    const mappingResult = await actions.saveImportMappingAction(mappingData);
+
+    assert.equal(mappingResult.success, true);
+    assert.equal(state.transactions[0]?.categoryIdSuggested, "category-cigarettes");
+    assert.equal(state.transactions[0]?.categoryIdConfirmed, null);
+  });
+
+  it("saveImportMappingAction valorizza categoryIdSuggested per LIDL", async () => {
+    const { actions, state } = await createImportWorld();
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Merchant,Descrizione,Importo
+        01/06/2026,LIDL,spesa,-23.10
+      `)),
+    );
+
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+    assert.equal(uploadResult.success, true);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("merchantName", "Merchant");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+
+    const mappingResult = await actions.saveImportMappingAction(mappingData);
+
+    assert.equal(mappingResult.success, true);
+    assert.equal(state.transactions[0]?.categoryIdSuggested, "category-1");
+  });
+
+  it("saveImportMappingAction non suggerisce categorie archiviate o di altro workspace", async () => {
+    const { actions, state } = await createImportWorld();
+
+    const archivedCategory = state.categories.find(
+      (category) => category.id === "category-1",
+    );
+    assert.ok(archivedCategory);
+    archivedCategory!.archivedAt = new Date("2026-06-01T00:00:00.000Z");
+
+    state.categories.push({
+      id: "category-foreign-spesa",
+      workspaceId: "workspace-foreign",
+      isDefault: false,
+      name: "Spesa",
+      slug: "spesa",
+      color: null,
+      icon: null,
+      archivedAt: null,
+    });
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Merchant,Descrizione,Importo
+        01/06/2026,LIDL,spesa,-23.10
+      `)),
+    );
+
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+    assert.equal(uploadResult.success, true);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("merchantName", "Merchant");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+
+    const mappingResult = await actions.saveImportMappingAction(mappingData);
+
+    assert.equal(mappingResult.success, true);
+    assert.equal(state.transactions[0]?.categoryIdSuggested, null);
+  });
+
+  it("confirmImportedTransactionsAction non usa automaticamente categoryIdSuggested come conferma", async () => {
+    const { actions, state } = await createImportWorld();
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Merchant,Descrizione,Importo
+        01/06/2026,TABACCHERIA MARIO,acquisto,-12.34
+      `)),
+    );
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+    assert.equal(uploadResult.success, true);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("merchantName", "Merchant");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+
+    const mappingResult = await actions.saveImportMappingAction(mappingData);
+    assert.equal(mappingResult.success, true);
+    assert.equal(state.transactions[0]?.categoryIdSuggested, "category-cigarettes");
+
+    const confirmData = new FormData();
+    confirmData.append("batchId", String(uploadResult.batchId));
+    confirmData.append("transactionIds", state.transactions[0]!.id);
+
+    const confirmResult = await actions.confirmImportedTransactionsAction(confirmData);
+
+    assert.equal(confirmResult.success, false);
+    assert.equal(state.createdEntries.length, 0);
+  });
+
+  it("saveImportMappingAction usa fallback it/en con workspace language sconosciuta", async () => {
+    const { actions, state } = await createImportWorld();
+    state.workspace.language = "zz";
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Merchant,Descrizione,Importo
+        01/06/2026,LIDL,spesa,-23.10
+      `)),
+    );
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+    assert.equal(uploadResult.success, true);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("merchantName", "Merchant");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+
+    const mappingResult = await actions.saveImportMappingAction(mappingData);
+
+    assert.equal(mappingResult.success, true);
+    assert.equal(state.transactions[0]?.categoryIdSuggested, "category-1");
   });
 
   it("mapping mancante colonna fallisce", async () => {
