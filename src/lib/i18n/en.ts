@@ -889,5 +889,6 @@ export const en: Translations = {
     monthTotal: "month total",
     inMonth: (monthLabel) => `in ${monthLabel}`,
     comparedToPrevious: "compared to the same period last month.",
+    viewMonthlyReport: "View full monthly report →",
   },
 };

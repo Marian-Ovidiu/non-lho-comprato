@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 
 import {
   CraftedIcon,
@@ -409,6 +410,20 @@ export function CraftedStats({
               ))}
             </div>
           </section>
+        </>
+      ) : null}
+
+      {period === "month" ? (
+        <>
+          <Rule />
+          <div className="px-[var(--sp-page-x)] py-[var(--sp-row-y)]">
+            <Link
+              href={`/reports/monthly?month=${selectedMonthKey}`}
+              className="text-sm text-ink-3 hover:text-foreground transition-colors"
+            >
+              {t.stats.viewMonthlyReport}
+            </Link>
+          </div>
         </>
       ) : null}
     </Stagger>

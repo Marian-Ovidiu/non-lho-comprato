@@ -1,3 +1,5 @@
+import type { EntryMetricsAggregate } from "@/src/lib/entry-metrics";
+
 export type StatsOverview = {
   totalRealSpent: number;
   totalAlternativeCost: number;
@@ -13,3 +15,29 @@ export type StatsOverview = {
   averageSavedPerEntry: number;
   savingRatePercent: number;
 };
+
+function round2(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+export function overviewFromAggregate(agg: EntryMetricsAggregate): StatsOverview {
+  return {
+    totalRealSpent: agg.totalSpentReal,
+    totalAlternativeCost: agg.totalWouldHaveSpent,
+    totalSaved: agg.totalNetImpact,
+    netImpact: agg.totalNetImpact,
+    avoidedAmount: agg.totalAvoidedAmount,
+    comparisonSaved: agg.totalComparisonSaved,
+    comparisonOverspent: agg.totalComparisonOverspent,
+    grossPositiveImpact: agg.totalGrossPositiveImpact,
+    largeComparisonImpact: agg.largeComparisonImpact,
+    ordinaryImpact: agg.ordinaryImpact,
+    entriesCount: agg.entriesCount,
+    averageSavedPerEntry:
+      agg.entriesCount === 0 ? 0 : round2(agg.totalNetImpact / agg.entriesCount),
+    savingRatePercent:
+      agg.totalWouldHaveSpent === 0
+        ? 0
+        : round2((agg.totalNetImpact / agg.totalWouldHaveSpent) * 100),
+  };
+}

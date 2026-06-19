@@ -29,6 +29,7 @@ import {
   aggregateEntryMetrics,
   calculateEntryMetrics,
 } from "@/src/lib/entry-metrics";
+import { overviewFromAggregate } from "@/src/lib/stats-overview";
 
 type DecimalLike = {
   toString?: () => string;
@@ -652,14 +653,8 @@ export async function getMonthlyReport(
     }
 
     const agg = aggregateEntryMetrics(monthEntries);
-    const totalRealSpent = agg.totalSpentReal;
-    const totalAlternativeCost = agg.totalWouldHaveSpent;
-    const totalSaved = agg.totalNetImpact;
-    const entriesCount = agg.entriesCount;
-    const savingRatePercent =
-      totalAlternativeCost === 0
-        ? 0
-        : round2((totalSaved / totalAlternativeCost) * 100);
+    const overview = overviewFromAggregate(agg);
+    const { totalRealSpent, totalSaved, entriesCount } = overview;
 
     const memberSplit = buildMemberSplit(
       monthEntries,
@@ -870,20 +865,7 @@ export async function getMonthlyReport(
           name: member.name,
           email: member.email,
         })),
-        overview: {
-          totalRealSpent,
-          totalAlternativeCost,
-          totalSaved,
-          netImpact: agg.totalNetImpact,
-          avoidedAmount: agg.totalAvoidedAmount,
-          comparisonSaved: agg.totalComparisonSaved,
-          comparisonOverspent: agg.totalComparisonOverspent,
-          grossPositiveImpact: agg.totalGrossPositiveImpact,
-          largeComparisonImpact: agg.largeComparisonImpact,
-          ordinaryImpact: agg.ordinaryImpact,
-          entriesCount,
-          savingRatePercent,
-        },
+        overview,
         memberSplit,
         bestCategory,
         worstCategory,

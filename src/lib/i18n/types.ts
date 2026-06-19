@@ -872,5 +872,6 @@ export type Translations = {
     monthTotal: string;
     inMonth: (monthLabel: string) => string;
     comparedToPrevious: string;
+    viewMonthlyReport: string;
   };
 };

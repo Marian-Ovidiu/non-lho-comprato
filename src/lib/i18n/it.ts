@@ -906,5 +906,6 @@ export const it: Translations = {
     monthTotal: "mese",
     inMonth: (monthLabel) => `in ${monthLabel}`,
     comparedToPrevious: "rispetto allo stesso periodo del mese precedente.",
+    viewMonthlyReport: "Vedi report mensile completo →",
   },
 };

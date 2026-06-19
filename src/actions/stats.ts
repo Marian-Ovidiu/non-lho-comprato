@@ -19,7 +19,7 @@ import {
   type DailySpendingComparison,
 } from "@/src/lib/daily-spending-comparison";
 import { getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
-import type { StatsOverview } from "@/src/lib/stats-overview";
+import { overviewFromAggregate, type StatsOverview } from "@/src/lib/stats-overview";
 import {
   entryMetricAggregateSelectSql,
   entryMetricDateRangeSql,
@@ -202,32 +202,6 @@ function toNumber(value: unknown): number {
   return 0;
 }
 
-function buildOverviewFromAggregate(
-  agg: ReturnType<typeof normalizeEntryMetricAggregate>,
-): StatsOverview {
-  if (agg.entriesCount === 0) {
-    return emptyOverview();
-  }
-
-  return {
-    totalRealSpent: agg.totalSpentReal,
-    totalAlternativeCost: agg.totalWouldHaveSpent,
-    totalSaved: agg.totalNetImpact,
-    netImpact: agg.totalNetImpact,
-    avoidedAmount: agg.totalAvoidedAmount,
-    comparisonSaved: agg.totalComparisonSaved,
-    comparisonOverspent: agg.totalComparisonOverspent,
-    grossPositiveImpact: agg.totalGrossPositiveImpact,
-    largeComparisonImpact: agg.largeComparisonImpact,
-    ordinaryImpact: agg.ordinaryImpact,
-    entriesCount: agg.entriesCount,
-    averageSavedPerEntry: round2(agg.totalNetImpact / agg.entriesCount),
-    savingRatePercent:
-      agg.totalWouldHaveSpent === 0
-        ? 0
-        : round2((agg.totalNetImpact / agg.totalWouldHaveSpent) * 100),
-  };
-}
 
 async function buildEntryWhere(
   memberUserId: string | undefined,
@@ -291,23 +265,6 @@ function getMonthLabelFromKey(monthKey: string): string {
   return formatMonthLabel(year, monthIndex);
 }
 
-function emptyOverview(): StatsOverview {
-  return {
-    totalRealSpent: 0,
-    totalAlternativeCost: 0,
-    totalSaved: 0,
-    netImpact: 0,
-    avoidedAmount: 0,
-    comparisonSaved: 0,
-    comparisonOverspent: 0,
-    grossPositiveImpact: 0,
-    largeComparisonImpact: 0,
-    ordinaryImpact: 0,
-    entriesCount: 0,
-    averageSavedPerEntry: 0,
-    savingRatePercent: 0,
-  };
-}
 
 function formatSignedMoney(value: number): string {
   const normalized = formatMoney(Math.abs(value));
@@ -698,7 +655,7 @@ async function getEntryAggregateForWorkspace(
       ${entryMetricDateRangeSql(range)}
   `);
 
-  return buildOverviewFromAggregate(normalizeEntryMetricAggregate(rows[0]));
+  return overviewFromAggregate(normalizeEntryMetricAggregate(rows[0]));
 }
 
 async function getMonthlyStatsForWorkspace(
