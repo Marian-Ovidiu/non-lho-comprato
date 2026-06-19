@@ -236,6 +236,16 @@ export type Translations = {
     recentEntries: string;
     viewAllEntries: string;
     addEntry: string;
+    sixMonthsLabel: string;
+    inMonth: string;
+    budgetSectionLabel: string;
+    budgetAlertTitle: string;
+    budgetAlertDesc: string;
+    manageBudget: string;
+    onlyCategoryBudgets: string;
+    categoryBudgetsLabel: string;
+    firstBudgetTitle: string;
+    firstBudgetDesc: string;
   };
 
   coupleBalance: {

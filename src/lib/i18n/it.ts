@@ -245,6 +245,16 @@ export const it: Translations = {
     recentEntries: "Ultimi movimenti",
     viewAllEntries: "Vedi tutti i movimenti",
     addEntry: "Aggiungi movimento",
+    sixMonthsLabel: "6 mesi",
+    inMonth: "a",
+    budgetSectionLabel: "Budget",
+    budgetAlertTitle: "Da controllare",
+    budgetAlertDesc: "Alcuni budget stanno accelerando.",
+    manageBudget: "Gestisci budget",
+    onlyCategoryBudgets: "Hai solo budget categoria attivi. Apri la gestione budget per aggiungere un budget globale.",
+    categoryBudgetsLabel: "Budget categoria",
+    firstBudgetTitle: "Imposta il tuo primo budget",
+    firstBudgetDesc: "Crea un budget globale o per categoria e controlla quanto stai spendendo rispetto al ritmo previsto.",
   },
 
   coupleBalance: {

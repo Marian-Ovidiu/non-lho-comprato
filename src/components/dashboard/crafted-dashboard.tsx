@@ -108,7 +108,7 @@ const CATEGORY_TONE_CLASS: Record<CraftedCategoryRow["tone"], string> = {
   muted: "bg-ink-3",
 };
 
-function CraftedSparkline({ values }: { values: number[] }) {
+function CraftedSparkline({ values, label }: { values: number[]; label: string }) {
   if (values.length < 2) {
     return null;
   }
@@ -143,7 +143,7 @@ function CraftedSparkline({ values }: { values: number[] }) {
         />
         <circle cx="100" cy={lastY} r="2.4" fill="var(--accent)" />
       </svg>
-      <Label className="mt-1.5 block tracking-[0.14em]">6 mesi</Label>
+      <Label className="mt-1.5 block tracking-[0.14em]">{label}</Label>
     </div>
   );
 }
@@ -249,7 +249,7 @@ export function CraftedDashboard({
               suffixClassName="mt-1 text-lg text-accent"
             />
           </div>
-          <CraftedSparkline values={monthTrend} />
+          <CraftedSparkline values={monthTrend} label={t.dashboard.sixMonthsLabel} />
         </div>
 
         <div className="mt-3 flex items-end justify-between gap-3">
@@ -310,62 +310,6 @@ export function CraftedDashboard({
 
       <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <DashboardQuickActions />
-      </div>
-      <Rule />
-
-      <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <Label className="mb-3 block">Budget</Label>
-        <CraftedBudgetAlertList
-          alerts={budgetAlertSelection.primaryAlerts}
-          title="Da controllare"
-          description="Alcuni budget stanno accelerando."
-          className="mb-4"
-        />
-        {budgetDashboardState.hasAnyBudget ? (
-          <div className="space-y-4">
-            {budgetDashboardState.mainBudget ? (
-              <CraftedBudgetSummary
-                budget={budgetDashboardState.mainBudget}
-                manageHref="/workspace/budgets"
-                manageLabel="Gestisci budget"
-              />
-            ) : (
-              <div className="border border-line bg-surface-muted/35 rounded-[var(--r-card)] px-4 py-4">
-                <Serif className="text-sm text-muted-foreground">
-                  Hai solo budget categoria attivi. Apri la gestione budget per aggiungere un budget globale.
-                </Serif>
-                <div className="mt-4">
-                  <Button asChild variant="outline" className="h-10 rounded-[var(--r-cta)] border-line px-4">
-                    <Link href="/workspace/budgets">Gestisci budget</Link>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {budgetDashboardState.categoryBudgets.length > 0 ? (
-              <div className="space-y-3">
-                <Label className="mb-1 block">Budget categoria</Label>
-                {budgetDashboardState.categoryBudgets.map((budget) => (
-                  <CraftedBudgetSummary
-                    key={budget.id}
-                    budget={budget}
-                    compact
-                    manageHref="/workspace/budgets"
-                    manageLabel="Gestisci budget"
-                  />
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <CraftedBudgetSummary
-            empty
-            title="Imposta il tuo primo budget"
-            description="Crea un budget globale o per categoria e controlla quanto stai spendendo rispetto al ritmo previsto."
-            actionLabel="Imposta il tuo primo budget"
-            actionHref="/workspace/budgets"
-          />
-        )}
       </div>
       <Rule />
 
@@ -437,6 +381,62 @@ export function CraftedDashboard({
           <Rule />
         </>
       ) : null}
+
+      <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <Label className="mb-3 block">{t.dashboard.budgetSectionLabel}</Label>
+        <CraftedBudgetAlertList
+          alerts={budgetAlertSelection.primaryAlerts}
+          title={t.dashboard.budgetAlertTitle}
+          description={t.dashboard.budgetAlertDesc}
+          className="mb-4"
+        />
+        {budgetDashboardState.hasAnyBudget ? (
+          <div className="space-y-4">
+            {budgetDashboardState.mainBudget ? (
+              <CraftedBudgetSummary
+                budget={budgetDashboardState.mainBudget}
+                manageHref="/workspace/budgets"
+                manageLabel={t.dashboard.manageBudget}
+              />
+            ) : (
+              <div className="border border-line bg-surface-muted/35 rounded-[var(--r-card)] px-4 py-4">
+                <Serif className="text-sm text-muted-foreground">
+                  {t.dashboard.onlyCategoryBudgets}
+                </Serif>
+                <div className="mt-4">
+                  <Button asChild variant="outline" className="h-10 rounded-[var(--r-cta)] border-line px-4">
+                    <Link href="/workspace/budgets">{t.dashboard.manageBudget}</Link>
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {budgetDashboardState.categoryBudgets.length > 0 ? (
+              <div className="space-y-3">
+                <Label className="mb-1 block">{t.dashboard.categoryBudgetsLabel}</Label>
+                {budgetDashboardState.categoryBudgets.map((budget) => (
+                  <CraftedBudgetSummary
+                    key={budget.id}
+                    budget={budget}
+                    compact
+                    manageHref="/workspace/budgets"
+                    manageLabel={t.dashboard.manageBudget}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : (
+          <CraftedBudgetSummary
+            empty
+            title={t.dashboard.firstBudgetTitle}
+            description={t.dashboard.firstBudgetDesc}
+            actionLabel={t.dashboard.firstBudgetTitle}
+            actionHref="/workspace/budgets"
+          />
+        )}
+      </div>
+      <Rule />
 
       <div className="flex">
         <div className="flex-1 border-r border-line px-5 py-5">
@@ -524,7 +524,7 @@ export function CraftedDashboard({
         <Label>{t.dashboard.recentEntries}</Label>
         {entriesCountMonth > 0 ? (
           <Mono className="text-[11px] text-ink-3">
-            {entriesCountMonth} a {monthLabel.toLowerCase()}
+            {entriesCountMonth} {t.dashboard.inMonth} {monthLabel.toLowerCase()}
           </Mono>
         ) : null}
       </div>

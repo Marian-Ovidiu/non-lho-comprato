@@ -74,7 +74,7 @@ export function CraftedMore({
       <Rule />
 
       <CraftedMoreSection title={t.more.managementSection}>
-        <div className="divide-y divide-line-soft border-y border-line">
+        <div className="divide-y divide-line-soft">
           <CraftedMoreRow
             href="/goals"
             label={t.more.goalsLabel}
@@ -100,7 +100,7 @@ export function CraftedMore({
         <>
           <Rule />
           <CraftedMoreSection title={t.more.workspaceSection}>
-            <div className="divide-y divide-line-soft border-y border-line">
+            <div className="divide-y divide-line-soft">
               {workspaceSection}
               <CraftedMoreRow
                 href="/workspace/categories"
@@ -140,7 +140,7 @@ export function CraftedMore({
       <Rule />
 
       <CraftedMoreSection title={t.more.appSection}>
-        <div className="divide-y divide-line-soft border-y border-line">
+        <div className="divide-y divide-line-soft">
           {appSection}
         </div>
       </CraftedMoreSection>
@@ -149,7 +149,7 @@ export function CraftedMore({
         <>
           <Rule />
           <CraftedMoreSection title={t.more.accountSection}>
-            <div className="border-y border-line">
+            <div>
               <CraftedMoreRow
                 href="/account/delete"
                 label={t.more.deleteAccountLabel}

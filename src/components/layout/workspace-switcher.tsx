@@ -80,10 +80,6 @@ function WorkspaceTrigger({
     >
       <WorkspaceMark isShared={workspace.isShared} />
 
-      <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-text">
-        {getWorkspaceLabel(workspace, t)}
-      </span>
-
       {isSwitching ? (
         <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-premium-accent/20 bg-premium-accent/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-premium-accent">
           <Loader2
@@ -92,7 +88,11 @@ function WorkspaceTrigger({
           />
           {t.workspaceSwitcher.switching}
         </span>
-      ) : null}
+      ) : (
+        <span className="inline-flex shrink-0 items-center rounded-full border border-border/70 bg-surface px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-text">
+          {getWorkspaceLabel(workspace, t)}
+        </span>
+      )}
 
       {interactive ? (
         <ChevronDown className="size-3.5 shrink-0 text-muted-text" aria-hidden="true" />
