@@ -791,8 +791,6 @@ export async function getEntries(): Promise<SerializableEntry[]> {
 export async function getEntriesPage(
   options?: EntriesPageOptions,
 ): Promise<EntriesPageResult> {
-  await refreshSupabaseSessionForAction();
-
   const limit = options?.limit ?? 20;
   const cursor = options?.cursor?.trim() || undefined;
   const searchQuery = normalizeSearchQuery(options?.q);
