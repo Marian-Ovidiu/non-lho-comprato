@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { CraftedBudgetAlertList } from "@/src/components/budget/crafted-budget-alert-list";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
+import type { WorkspaceBalanceStatus } from "@/src/lib/workspace-balance";
 
 type CraftedCategoryRow = {
   name: string;
@@ -94,6 +95,7 @@ export type CraftedDashboardProps = {
   } | null;
   coupleBalance: {
     supported: boolean;
+    status: WorkspaceBalanceStatus;
     amount: number;
     counterpartLabel: string | null;
   };
@@ -323,7 +325,7 @@ export function CraftedDashboard({
             </Mono>
             {coupleBalance.counterpartLabel ? (
               <Serif className="mt-2 block text-sm text-ink-3">
-                {coupleBalance.amount > 0
+                {coupleBalance.status === "they-owe"
                   ? t.coupleBalance.theyOwe(coupleBalance.counterpartLabel)
                   : t.coupleBalance.youOwe(coupleBalance.counterpartLabel)}
               </Serif>

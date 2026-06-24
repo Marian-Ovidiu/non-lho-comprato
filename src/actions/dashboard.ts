@@ -179,7 +179,12 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
         ), 0)::text AS "paid",
         COALESCE(SUM(
           CASE
-            WHEN "beneficiaryCount" > 1 AND "currentIsBeneficiary"
+            WHEN "beneficiaryCount" > 1
+              AND "currentIsBeneficiary"
+              AND (
+                "paymentMode"::text = 'joint_account'
+                OR "paidByUserId" IN (${Prisma.join(memberIds)})
+              )
               THEN "realCost" / "beneficiaryCount"
             ELSE 0::numeric
           END

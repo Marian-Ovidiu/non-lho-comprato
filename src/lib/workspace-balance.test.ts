@@ -118,42 +118,57 @@ describe("computeCoupleWorkspaceBalance", () => {
   });
 
   describe("4. Entry with beneficiaries but missing paidByUserId (legacy bug)", () => {
-    // Reproduces the production balance asymmetry.
+    // Reproduces the legacy data shape that caused production balance asymmetry.
     // Entry A: Marian pays 20 shared (correct — payer credited)
     // Entry B: 10 realCost, 2 beneficiaries, paidByUserId=null (buggy)
     //
-    // For entry B:
-    //   owedTotals[marian] += 5, owedTotals[martina] += 5
-    //   paidTotals untouched (null payer not in memberIds)
-    //
-    // True balance from entry A alone: net(marian)=+10, net(martina)=-10
-    // With buggy entry B: net(marian)=+10-5=+5, net(martina)=-10-5=-15
-    //   → marian: they-owe 5; martina: you-owe 15 — AMOUNTS DIFFER → asymmetric
+    // Entry B cannot be settled because the payer is unknown, so it is ignored.
+    // True balance from entry A alone: net(marian)=+10, net(martina)=-10.
 
     const entries: WorkspaceBalanceEntry[] = [
       sharedEntry(20, MARIAN_ID),
       sharedEntry(10, null), // paidByUserId=null
     ];
 
-    it("Marian perspective (they-owe 5)", () => {
+    it("Marian perspective ignores the orphan entry", () => {
       const result = computeCoupleWorkspaceBalance(MEMBERS, MARIAN_ID, entries);
       assert.equal(result.status, "they-owe");
-      assert.equal(result.amount, 5);
+      assert.equal(result.amount, 10);
     });
 
-    it("Martina perspective (you-owe 15)", () => {
+    it("Martina perspective ignores the orphan entry", () => {
       const result = computeCoupleWorkspaceBalance(MEMBERS, MARTINA_ID, entries);
       assert.equal(result.status, "you-owe");
-      assert.equal(result.amount, 15);
+      assert.equal(result.amount, 10);
     });
 
-    it("balance is ASYMMETRIC: amounts differ by exactly the orphan entry's realCost", () => {
+    it("balance remains antisymmetric", () => {
       const marian = computeCoupleWorkspaceBalance(MEMBERS, MARIAN_ID, entries);
       const martina = computeCoupleWorkspaceBalance(MEMBERS, MARTINA_ID, entries);
-      // Amounts are NOT equal — this is the bug
-      assert.notEqual(marian.amount, martina.amount);
-      // The discrepancy equals the orphan entry's realCost (10)
-      assert.equal(Math.abs(martina.amount - marian.amount), 10);
+      assert.equal(marian.amount, martina.amount);
+      assert.notEqual(marian.status, martina.status);
+    });
+
+    it("also ignores shared entries paid by a non-member", () => {
+      const nonMemberEntries: WorkspaceBalanceEntry[] = [
+        sharedEntry(20, MARIAN_ID),
+        sharedEntry(10, "user-outside-workspace"),
+      ];
+      const marian = computeCoupleWorkspaceBalance(
+        MEMBERS,
+        MARIAN_ID,
+        nonMemberEntries,
+      );
+      const martina = computeCoupleWorkspaceBalance(
+        MEMBERS,
+        MARTINA_ID,
+        nonMemberEntries,
+      );
+
+      assert.equal(marian.status, "they-owe");
+      assert.equal(martina.status, "you-owe");
+      assert.equal(marian.amount, 10);
+      assert.equal(martina.amount, 10);
     });
 
     it("after backfill: assigning paidByUserId=MARIAN restores antisymmetry", () => {

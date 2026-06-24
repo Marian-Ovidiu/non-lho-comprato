@@ -104,6 +104,10 @@ export function computeCoupleWorkspaceBalance(
     const payerUserId = entry.paidByUserId?.trim() ?? "";
     const share = entry.realCost / beneficiaryUserIds.length;
 
+    if (entry.paymentMode !== "joint_account" && !memberIds.has(payerUserId)) {
+      continue;
+    }
+
     for (const beneficiaryUserId of beneficiaryUserIds) {
       owedTotals.set(
         beneficiaryUserId,
@@ -121,9 +125,7 @@ export function computeCoupleWorkspaceBalance(
       continue;
     }
 
-    if (memberIds.has(payerUserId)) {
-      paidTotals.set(payerUserId, (paidTotals.get(payerUserId) ?? 0) + entry.realCost);
-    }
+    paidTotals.set(payerUserId, (paidTotals.get(payerUserId) ?? 0) + entry.realCost);
   }
 
   const currentNet = round2(

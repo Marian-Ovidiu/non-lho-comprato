@@ -412,6 +412,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     emptyState: dashboardEmptyState,
     coupleBalance: {
       supported: workspaceBalance.supported,
+      status: workspaceBalance.status,
       amount: workspaceBalance.amount,
       counterpartLabel: workspaceBalance.counterpartLabel,
     },
