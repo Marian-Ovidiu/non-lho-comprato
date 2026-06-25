@@ -118,23 +118,18 @@ async function _cachedGlobalStreak(workspaceId: string, timeZone: string): Promi
       where: { workspaceId },
       select: {
         date: true,
-        realCost: true,
-        alternativeCost: true,
-        savedAmount: true,
-        mode: true,
-        savingContext: true,
       },
       orderBy: { date: "asc" },
     });
 
-    const dayTotals = new Map<string, number>();
+    const dateKeys = new Set<string>();
     for (const entry of entries) {
       const dateKey = getDateKey(entry.date, timeZone);
       if (!dateKey) continue;
-      dayTotals.set(dateKey, round2((dayTotals.get(dateKey) ?? 0) + calculateEntryMetrics(entry).netImpact));
+      dateKeys.add(dateKey);
     }
 
-    return buildStreakResultFromDates(dayTotals.keys());
+    return buildStreakResultFromDates(dateKeys);
   } catch (error) {
     console.error("Failed to load global streak:", error);
     return { currentStreak: 0, bestStreak: 0, streakDates: [] };

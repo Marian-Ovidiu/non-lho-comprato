@@ -4,6 +4,9 @@ import { getDayRangeForDate } from "@/src/lib/workspace-dates";
 type EntryDayCountClient = {
   entry: {
     count: (args: Prisma.EntryCountArgs) => Promise<number>;
+    findFirst: (
+      args: Prisma.EntryFindFirstArgs,
+    ) => Promise<{ id: string } | null>;
     findUnique: (
       args: Prisma.EntryFindUniqueArgs,
     ) => Promise<{ id: string } | null>;
@@ -54,8 +57,18 @@ export async function resolveIsFirstEntryOfDay(
   client: EntryDayCountClient,
   options?: { excludeEntryId?: string },
 ): Promise<boolean> {
-  const count = await countEntriesOnDay(date, timeZone, baseWhere, client, options);
-  return count === 0;
+  const where = buildEntryDateDayWhere(date, timeZone, baseWhere);
+  const existingEntry = await client.entry.findFirst({
+    where: options?.excludeEntryId
+      ? {
+          ...where,
+          id: { not: options.excludeEntryId },
+        }
+      : where,
+    select: { id: true },
+  });
+
+  return existingEntry === null;
 }
 
 export async function resolveIsFirstEntryOfDayForHabitOccurrence(

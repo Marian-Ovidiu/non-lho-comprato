@@ -140,9 +140,10 @@ export async function createEntryFromNormalizedInput(
   ) => unknown;
   const updateCacheTag = deps.updateTag ?? updateTag;
 
-  const currentWorkspaceWhere = (await getWorkspaceWhere()) as Prisma.EntryWhereInput & {
-    workspaceId: string;
-  };
+  const [currentWorkspaceWhere, timeZone] = await Promise.all([
+    getWorkspaceWhere() as Promise<Prisma.EntryWhereInput & { workspaceId: string }>,
+    getWorkspaceTimeZone(),
+  ]);
 
   if (currentWorkspaceWhere.workspaceId !== input.workspaceId) {
     return {
@@ -150,8 +151,6 @@ export async function createEntryFromNormalizedInput(
       message: "Workspace non valido",
     };
   }
-
-  const timeZone = await getWorkspaceTimeZone();
 
   const isFirstEntryOfDay = await resolveFirstEntryOfDay(
     input.date,

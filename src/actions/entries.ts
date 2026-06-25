@@ -1166,16 +1166,6 @@ export async function createEntry(
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
   const entryMoney = resolveEntryMoneyFromForm(formData);
-  let members: WorkspaceMemberOption[] = [];
-
-  try {
-    members = await getCurrentWorkspaceMembers();
-  } catch {
-    members = [];
-  }
-
-  const payment = resolveEntryPaymentAndOwnership(formData, members);
-  const ownership = validateEntryOwnership(payment.ownershipInput, members);
 
   if (!title) {
     errors.title = "Il titolo è obbligatorio";
@@ -1187,18 +1177,13 @@ export async function createEntry(
     errors.categoryId = "Seleziona una categoria";
   }
   Object.assign(errors, entryMoney.errors);
-  Object.assign(errors, payment.errors);
-
-  if (!ownership.ok) {
-    Object.assign(errors, ownership.errors);
-  }
 
   const date = new Date(dateValue);
   if (!dateValue || Number.isNaN(date.getTime())) {
     errors.date = "Inserisci una data valida";
   }
 
-  if (Object.keys(errors).length > 0 || !ownership.ok) {
+  if (Object.keys(errors).length > 0) {
     return {
       success: false,
       message: "Controlla i campi evidenziati",
@@ -1217,9 +1202,37 @@ export async function createEntry(
   const money = entryMoney.money;
 
   try {
-    const currentUser = await getCurrentUser();
-    const workspaceId = await getCurrentWorkspaceId();
-    const category = await resolveEntryCategory(categoryId, workspaceId);
+    const currentUserPromise = getCurrentUser();
+    const workspaceIdPromise = getCurrentWorkspaceId();
+    const membersPromise = getCurrentWorkspaceMembers().catch(
+      () => [] as WorkspaceMemberOption[],
+    );
+    const categoryPromise = workspaceIdPromise.then((workspaceId) =>
+      resolveEntryCategory(categoryId, workspaceId),
+    );
+    const [currentUser, workspaceId, members, category] = await Promise.all([
+      currentUserPromise,
+      workspaceIdPromise,
+      membersPromise,
+      categoryPromise,
+    ]);
+
+    const payment = resolveEntryPaymentAndOwnership(formData, members);
+    const ownership = validateEntryOwnership(payment.ownershipInput, members);
+
+    Object.assign(errors, payment.errors);
+
+    if (!ownership.ok) {
+      Object.assign(errors, ownership.errors);
+    }
+
+    if (Object.keys(errors).length > 0 || !ownership.ok) {
+      return {
+        success: false,
+        message: "Controlla i campi evidenziati",
+        errors,
+      };
+    }
 
     if (!category) {
       return {
