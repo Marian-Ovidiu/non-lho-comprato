@@ -99,6 +99,12 @@ export type CraftedEntryFormProps = {
 
 const initialState: FormState = { success: false, message: "", errors: {} };
 
+// How long the "Movimento salvato" confirmation stays visible before the form
+// fades out, and when the return navigation fires. Kept short on purpose: the
+// destination is prefetched during this window so the transition feels instant.
+const CONFIRMATION_VISIBLE_MS = 600;
+const REDIRECT_DELAY_MS = 800;
+
 function getTodayLocal() {
   return getBrowserTodayDateKey();
 }
@@ -234,6 +240,11 @@ export function CraftedEntryForm({
     }
     setSuccessStage("confirming");
 
+    // Warm the destination's router cache while the confirmation animation
+    // plays, so the return navigation is near-instant instead of a cold
+    // server round-trip after the action already revalidated those paths.
+    router.prefetch(returnTo);
+
     if (successTimerRef.current) {
       window.clearTimeout(successTimerRef.current);
     }
@@ -248,13 +259,13 @@ export function CraftedEntryForm({
 
     successTimerRef.current = window.setTimeout(
       () => setSuccessStage("closing"),
-      1400,
+      CONFIRMATION_VISIBLE_MS,
     );
 
     if (!showedCelebration) {
-      redirectTimerRef.current = window.setTimeout(redirect, 1800);
+      redirectTimerRef.current = window.setTimeout(redirect, REDIRECT_DELAY_MS);
     }
-  }, [redirect, state, tryTrigger]);
+  }, [redirect, returnTo, router, state, tryTrigger]);
 
   useEffect(() => {
     return () => {

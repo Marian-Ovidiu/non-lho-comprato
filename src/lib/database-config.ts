@@ -86,6 +86,36 @@ export function shouldUseDatabaseSsl(connectionString: string): boolean {
   return !isLocalDatabaseHost(parts.host);
 }
 
+// Default max connections per pg Pool instance. Production runs against the
+// Supabase Transaction pooler (pgbouncer), so a small per-instance pool lets
+// the many `Promise.all` queries (e.g. the stats page fires ~9 at once) run
+// concurrently instead of serializing on a single connection. Dev/test stay at
+// 1 to avoid leaking connections across hot-reloads.
+const DEFAULT_POOL_MAX_PRODUCTION = 5;
+const DEFAULT_POOL_MAX_DEVELOPMENT = 1;
+
+export function resolveDatabasePoolMax(): number {
+  const raw = process.env.DATABASE_POOL_MAX?.trim();
+
+  if (raw) {
+    if (/^\d+$/.test(raw)) {
+      const parsed = Number.parseInt(raw, 10);
+
+      if (parsed >= 1) {
+        return parsed;
+      }
+    }
+
+    console.warn(
+      `[database] Ignoring invalid DATABASE_POOL_MAX="${raw}" (expected a positive integer).`,
+    );
+  }
+
+  return process.env.NODE_ENV === "production"
+    ? DEFAULT_POOL_MAX_PRODUCTION
+    : DEFAULT_POOL_MAX_DEVELOPMENT;
+}
+
 export function getRuntimeDatabaseUrl(): string {
   const connectionString = process.env.DATABASE_URL?.trim();
 

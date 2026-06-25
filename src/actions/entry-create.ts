@@ -46,6 +46,10 @@ export type NormalizedEntryCreateInput = {
 export type EntryDayCountClientLike = {
   entry: {
     count(args: { where: Prisma.EntryWhereInput }): Promise<number>;
+    findFirst(args: {
+      where: Prisma.EntryWhereInput;
+      select?: Record<string, unknown>;
+    }): Promise<{ id: string } | null>;
     findUnique(args: {
       where: Record<string, unknown>;
       select?: Record<string, unknown>;
@@ -147,12 +151,7 @@ export async function createEntryFromNormalizedInput(
     };
   }
 
-  const [existingEntryCount, timeZone] = await Promise.all([
-    prismaClient.entry.count({
-      where: currentWorkspaceWhere,
-    }),
-    getWorkspaceTimeZone(),
-  ]);
+  const timeZone = await getWorkspaceTimeZone();
 
   const isFirstEntryOfDay = await resolveFirstEntryOfDay(
     input.date,
@@ -161,11 +160,27 @@ export async function createEntryFromNormalizedInput(
     prismaClient as EntryDayCountClientLike,
   );
 
+  // Only the first entry of a day can be the very first entry of the workspace
+  // (otherwise an entry already exists today). Use a cheap existence check
+  // (LIMIT 1) instead of counting every row, and read the streak once: the
+  // cached streak returns the same value before and after this insert, so the
+  // previous second read was pure overhead.
+  let isFirstEntryCreated = false;
   let streakFrom: number | undefined;
   let streakTo: number | undefined;
 
   if (isFirstEntryOfDay) {
-    streakFrom = (await loadGlobalStreak()).currentStreak;
+    const [existingEntry, streak] = await Promise.all([
+      prismaClient.entry.findFirst({
+        where: currentWorkspaceWhere,
+        select: { id: true },
+      }),
+      loadGlobalStreak(),
+    ]);
+
+    isFirstEntryCreated = existingEntry === null;
+    streakFrom = streak.currentStreak;
+    streakTo = streak.currentStreak;
   }
 
   const importedTransactionId = input.importedTransactionId?.trim() || null;
@@ -223,10 +238,6 @@ export async function createEntryFromNormalizedInput(
       return created;
     });
 
-    if (isFirstEntryOfDay) {
-      streakTo = (await loadGlobalStreak()).currentStreak;
-    }
-
     for (const path of DEFAULT_INVALIDATION_PATHS) {
       tryRevalidatePath(path, revalidate);
     }
@@ -238,7 +249,7 @@ export async function createEntryFromNormalizedInput(
       success: true,
       message: "Entrata salvata con successo",
       entryId: entry.id,
-      isFirstEntryCreated: existingEntryCount === 0,
+      isFirstEntryCreated,
       isFirstEntryOfDay,
       streakFrom,
       streakTo,

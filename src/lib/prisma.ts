@@ -3,6 +3,7 @@ import { PrismaClient } from "@/src/lib/generated/prisma/client";
 import {
   getRuntimeDatabaseUrl,
   logDatabaseConfigHints,
+  resolveDatabasePoolMax,
   shouldUseDatabaseSsl,
 } from "@/src/lib/database-config";
 import { Pool, type PoolConfig } from "pg";
@@ -16,7 +17,7 @@ const connectionString = getRuntimeDatabaseUrl();
 logDatabaseConfigHints();
 const poolConfig: PoolConfig = {
   connectionString,
-  max: 1,
+  max: resolveDatabasePoolMax(),
 };
 
 if (shouldUseDatabaseSsl(connectionString)) {

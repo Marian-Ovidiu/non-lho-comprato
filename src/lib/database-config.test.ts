@@ -4,24 +4,34 @@ import { afterEach, describe, it } from "node:test";
 import {
   getMigrationDatabaseUrl,
   normalizeRuntimeDatabaseUrl,
+  resolveDatabasePoolMax,
   shouldUseDatabaseSsl,
 } from "@/src/lib/database-config";
 
 const originalDatabaseUrl = process.env.DATABASE_URL;
 const originalDirectUrl = process.env.DIRECT_URL;
+const originalPoolMax = process.env.DATABASE_POOL_MAX;
+const originalNodeEnv = process.env.NODE_ENV;
+
+function restoreEnv(key: string, value: string | undefined) {
+  if (value === undefined) {
+    delete process.env[key];
+  } else {
+    process.env[key] = value;
+  }
+}
+
+// `process.env.NODE_ENV` is typed as a read-only literal union, so assign it
+// through the index signature to keep the test type-safe.
+function setNodeEnv(value: string) {
+  (process.env as Record<string, string | undefined>).NODE_ENV = value;
+}
 
 afterEach(() => {
-  if (originalDatabaseUrl === undefined) {
-    delete process.env.DATABASE_URL;
-  } else {
-    process.env.DATABASE_URL = originalDatabaseUrl;
-  }
-
-  if (originalDirectUrl === undefined) {
-    delete process.env.DIRECT_URL;
-  } else {
-    process.env.DIRECT_URL = originalDirectUrl;
-  }
+  restoreEnv("DATABASE_URL", originalDatabaseUrl);
+  restoreEnv("DIRECT_URL", originalDirectUrl);
+  restoreEnv("DATABASE_POOL_MAX", originalPoolMax);
+  restoreEnv("NODE_ENV", originalNodeEnv);
 });
 
 function searchParams(value: string): URLSearchParams {
@@ -94,5 +104,37 @@ describe("database URL normalization", () => {
       getMigrationDatabaseUrl(),
       "postgresql://postgres:postgres@localhost:54322/nlc_clone?sslmode=disable",
     );
+  });
+});
+
+describe("resolveDatabasePoolMax", () => {
+  it("uses an explicit positive DATABASE_POOL_MAX override", () => {
+    process.env.DATABASE_POOL_MAX = "8";
+    setNodeEnv("production");
+
+    assert.equal(resolveDatabasePoolMax(), 8);
+  });
+
+  it("defaults to a concurrent pool in production", () => {
+    delete process.env.DATABASE_POOL_MAX;
+    setNodeEnv("production");
+
+    assert.equal(resolveDatabasePoolMax(), 5);
+  });
+
+  it("defaults to a single connection outside production", () => {
+    delete process.env.DATABASE_POOL_MAX;
+    setNodeEnv("development");
+
+    assert.equal(resolveDatabasePoolMax(), 1);
+  });
+
+  it("ignores invalid overrides and falls back to the env default", () => {
+    setNodeEnv("production");
+
+    for (const invalid of ["0", "-3", "abc", "2.5"]) {
+      process.env.DATABASE_POOL_MAX = invalid;
+      assert.equal(resolveDatabasePoolMax(), 5);
+    }
   });
 });

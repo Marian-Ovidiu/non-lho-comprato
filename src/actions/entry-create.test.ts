@@ -13,13 +13,16 @@ import type {
 } from "@/src/actions/entry-create";
 import type { EntryMoneyResult } from "@/src/lib/entry-domain";
 
-async function createFakeEntryWorld() {
+async function createFakeEntryWorld(
+  options: { existingEntry?: { id: string } | null } = {},
+) {
   const { createEntryFromNormalizedInput } = await import(
     "@/src/actions/entry-create"
   );
 
   const calls = {
     entryCount: 0,
+    entryFindFirst: 0,
     entryCreateArgs: [] as Array<Record<string, unknown>>,
     importedFindUniqueArgs: [] as Array<Record<string, unknown>>,
     importedUpdateArgs: [] as Array<Record<string, unknown>>,
@@ -33,6 +36,10 @@ async function createFakeEntryWorld() {
       async count() {
         calls.entryCount += 1;
         return 0;
+      },
+      async findFirst() {
+        calls.entryFindFirst += 1;
+        return options.existingEntry ?? null;
       },
       async findUnique() {
         return null;
@@ -186,6 +193,7 @@ describe("createEntryFromNormalizedInput", () => {
 
     assert.equal(result.success, true);
     assert.equal(result.isFirstEntryOfDay, true);
+    assert.equal(result.isFirstEntryCreated, true);
     assert.equal(result.streakFrom, 7);
     assert.equal(result.streakTo, 7);
     assert.deepEqual(world.calls.revalidatedPaths, [
@@ -199,7 +207,54 @@ describe("createEntryFromNormalizedInput", () => {
       "entries:workspace-1",
       "goals:workspace-1",
     ]);
-    assert.equal(world.calls.streakCalls, 2);
+    // The streak is read once (not before and after the insert), and the
+    // first-ever-entry flag comes from a single LIMIT 1 existence check.
+    assert.equal(world.calls.streakCalls, 1);
+    assert.equal(world.calls.entryFindFirst, 1);
+    assert.equal(world.calls.entryCount, 0);
+  });
+
+  it("does not flag isFirstEntryCreated when an entry already exists", async () => {
+    const world = await createFakeEntryWorld({
+      existingEntry: { id: "existing-entry" },
+    });
+    world.deps.resolveIsFirstEntryOfDay = async () => true;
+
+    const result = await world.createEntryFromNormalizedInput(
+      {
+        ...world.baseInput,
+        source: "manual",
+      },
+      world.deps,
+    );
+
+    assert.equal(result.success, true);
+    assert.equal(result.isFirstEntryOfDay, true);
+    assert.equal(result.isFirstEntryCreated, false);
+    assert.equal(world.calls.entryFindFirst, 1);
+    assert.equal(world.calls.streakCalls, 1);
+  });
+
+  it("skips the existence check and streak read when it is not the first of the day", async () => {
+    const world = await createFakeEntryWorld();
+    // The default world already stubs resolveIsFirstEntryOfDay to false.
+
+    const result = await world.createEntryFromNormalizedInput(
+      {
+        ...world.baseInput,
+        source: "manual",
+      },
+      world.deps,
+    );
+
+    assert.equal(result.success, true);
+    assert.equal(result.isFirstEntryOfDay, false);
+    assert.equal(result.isFirstEntryCreated, false);
+    assert.equal(result.streakFrom, undefined);
+    assert.equal(result.streakTo, undefined);
+    assert.equal(world.calls.entryFindFirst, 0);
+    assert.equal(world.calls.streakCalls, 0);
+    assert.equal(world.calls.entryCount, 0);
   });
 
   it("rejects imported transactions from another workspace", async () => {
