@@ -1,9 +1,6 @@
-import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 
-import {
-  CraftedMore,
-  type CraftedMoreProps,
-} from "@/src/components/more/crafted-more";
+import { CraftedMore } from "@/src/components/more/crafted-more";
 import {
   CraftedMoreAppTools,
   CraftedMoreWorkspaceTools,
@@ -13,8 +10,6 @@ import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
 import { getTranslations } from "@/src/lib/i18n";
 import { getCurrentWorkspaceLanguage } from "@/src/lib/workspace-context";
-
-const DEVELOPER_EMAIL = "h.marian914@gmail.com";
 
 export default async function MorePage() {
   const language = await getCurrentWorkspaceLanguage();
@@ -27,9 +22,13 @@ export default async function MorePage() {
   try {
     [authUser, workspaceResult] = await Promise.all([
       getAuthenticatedUser(),
-      getCurrentWorkspace().catch(() => null),
+      getCurrentWorkspace().catch((error) => {
+        unstable_rethrow(error);
+        return null;
+      }),
     ]);
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load more page:", error);
   }
@@ -61,16 +60,6 @@ export default async function MorePage() {
         workspaceSection={<CraftedMoreWorkspaceTools />}
         appSection={<CraftedMoreAppTools />}
       />
-      {authUser?.email === DEVELOPER_EMAIL ? (
-        <div className="px-5 pb-4 pt-2">
-          <Link
-            href="/debug"
-            className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-          >
-            Debug app
-          </Link>
-        </div>
-      ) : null}
     </main>
   );
 }

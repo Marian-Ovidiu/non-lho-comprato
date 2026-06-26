@@ -3,7 +3,7 @@
 import Link from "next/link";
 
 import { signOutAction } from "@/src/actions/auth";
-import { Label, Rule, Serif } from "@/components/crafted";
+import { Rule, Serif } from "@/components/crafted";
 import { useTranslations } from "@/src/components/language/language-context";
 import { CraftedMoreRow, CraftedMoreSection } from "@/src/components/more/crafted-more-row";
 import { cn } from "@/lib/utils";

@@ -1,4 +1,6 @@
 
+import { unstable_rethrow } from "next/navigation";
+
 import { getCategories } from "@/src/actions/entries";
 import { getPresets } from "@/src/actions/presets";
 import { Label, Rule } from "@/components/crafted";
@@ -35,6 +37,7 @@ export default async function PresetsPage({ searchParams }: PresetsPageProps) {
   try {
     [categories, presets] = await Promise.all([getCategories(), getPresets()]);
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load presets page:", error);
   }

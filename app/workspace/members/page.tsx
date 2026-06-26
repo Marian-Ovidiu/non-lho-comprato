@@ -1,4 +1,5 @@
 import { Label, Mono, Rule } from "@/components/crafted";
+import { unstable_rethrow } from "next/navigation";
 import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button";
@@ -39,6 +40,7 @@ export default async function WorkspaceMembersPage() {
       getCurrentWorkspaceMemberDetails(),
     ]);
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load workspace members page:", error);
   }

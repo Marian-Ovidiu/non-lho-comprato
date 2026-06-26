@@ -21,24 +21,15 @@
     "test:e2e:ui": "playwright test --ui",
     "prisma:validate": "prisma validate",
     "check": "npm run prisma:validate && npm run lint && npm run typecheck && npm run test && npm run build",
-    "backfill:multi-account": "tsx prisma/backfill-multi-account.ts",
-    "verify:auth-provisioning": "tsx scripts/verify-auth-provisioning.ts",
-    "audit:legacy-data": "tsx scripts/audit-legacy-data.ts",
-    "repair:legacy-sharing": "tsx scripts/repair-legacy-sharing.ts",
-    "migrate:goal-preset-person": "tsx scripts/migrate-goal-preset-person.ts",
-    "release:archive": "sh -c 'mkdir -p release && out=release/non-lho-comprato-$(git rev-parse --short HEAD).zip && git archive --format=zip --output=\"$out\" --add-file=.env.example HEAD -- . \":(exclude).env\" \":(exclude).env.*\" \":(exclude).env-backup\" \":(exclude).env-backup/**\" \":(exclude)backups\" \":(exclude)backups/**\" \":(exclude)**/*.dump\" \":(exclude).git\" \":(exclude).idea\" \":(exclude).idea/**\" \":(exclude).claude\" \":(exclude).claude/**\" \":(exclude).agents\" \":(exclude).agents/**\" \":(exclude).next\" \":(exclude).next/**\" \":(exclude)node_modules\" \":(exclude)node_modules/**\" \":(exclude)__MACOSX\" \":(exclude)__MACOSX/**\" \":(exclude).DS_Store\" \":(exclude)**/.DS_Store\" \":(exclude)tsconfig.tsbuildinfo\" \":(exclude)**/*.tsbuildinfo\" \":(exclude)release\" \":(exclude)release/**\"'",
+    "release:archive": "sh -c 'mkdir -p release && out=release/non-lho-comprato-$(git rev-parse --short HEAD).zip && git archive --format=zip --output=\"$out\" --add-file=.env.example --add-file=.env.e2e.example HEAD -- . \":(exclude)AGENTS.md\" \":(exclude)CLAUDE.md\" \":(exclude).env\" \":(exclude).env.*\" \":(exclude).env-backup\" \":(exclude).env-backup/**\" \":(exclude)backups\" \":(exclude)backups/**\" \":(exclude)**/*.dump\" \":(exclude).git\" \":(exclude).idea\" \":(exclude).idea/**\" \":(exclude).claude\" \":(exclude).claude/**\" \":(exclude).agents\" \":(exclude).agents/**\" \":(exclude).next\" \":(exclude).next/**\" \":(exclude)node_modules\" \":(exclude)node_modules/**\" \":(exclude)__MACOSX\" \":(exclude)__MACOSX/**\" \":(exclude).DS_Store\" \":(exclude)**/.DS_Store\" \":(exclude)tsconfig.tsbuildinfo\" \":(exclude)**/*.tsbuildinfo\" \":(exclude)release\" \":(exclude)release/**\"'",
     "db:preflight:workspace": "psql \"$DATABASE_URL\" -f scripts/db/preflight-workspace.sql",
     "db:postflight:workspace": "psql \"$DATABASE_URL\" -f scripts/db/postflight-workspace.sql",
-    "db:user-relink:diagnostics": "psql \"$DATABASE_URL\" -f scripts/db/user-relink-diagnostics.sql",
-    "db:user-relink:new-supabase": "psql \"$DATABASE_URL\" -f scripts/db/user-relink-new-supabase.sql",
     "db:target": "node scripts/db/print-db-target.js DATABASE_URL",
     "db:target:prod": "node scripts/db/print-db-target.js PROD_DATABASE_URL",
     "db:target:local": "node scripts/db/print-db-target.js LOCAL_DATABASE_URL",
     "db:dump:prod": "scripts/db/dump-production-template.sh",
     "db:restore:local": "scripts/db/restore-local-template.sh",
-    "db:preflight:auth-cutover": "psql \"$DATABASE_URL\" -f scripts/db/preflight-auth-email-cutover.sql",
-    "db:repair:known-workspace-drift": "psql \"$DATABASE_URL\" -f scripts/db/repair-known-workspace-drift.sql",
-    "db:repair:known-test-users": "psql \"$DATABASE_URL\" -f scripts/db/repair-known-test-users.sql"
+    "db:preflight:auth-cutover": "psql \"$DATABASE_URL\" -f scripts/db/preflight-auth-email-cutover.sql"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -61,6 +52,7 @@
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "server-only": "^0.0.1",
     "shadcn": "^4.6.0",
     "tailwind-merge": "^3.5.0",
     "tw-animate-css": "^1.4.0"

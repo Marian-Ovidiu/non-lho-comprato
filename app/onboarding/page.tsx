@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { CraftedOnboardingScreen } from "@/src/components/onboarding/crafted-onboarding-screen";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
@@ -14,6 +14,7 @@ export default async function OnboardingPage() {
   try {
     await getCurrentWorkspace();
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to load workspace on onboarding:", error);
   }
 

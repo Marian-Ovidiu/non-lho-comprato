@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
 
-import { CraftedIcon, Label, Serif } from "@/components/crafted";
+import { CraftedIcon, Serif } from "@/components/crafted";
 import { useTranslations } from "@/src/components/language/language-context";
 
 export function CraftedGoalsEmptyState() {

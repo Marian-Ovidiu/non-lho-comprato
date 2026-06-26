@@ -49,7 +49,6 @@ export function getWorkspaceMemberFilter(
 /** Entry filter aligned with member spending stats (paidByUserId + beneficiaries). */
 export function buildWorkspaceMemberEntryWhere(
   memberUserId: string | undefined,
-  members: WorkspaceMemberOption[],
 ): Prisma.EntryWhereInput {
   if (!memberUserId) {
     return {};

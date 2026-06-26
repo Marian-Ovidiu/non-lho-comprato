@@ -1,3 +1,5 @@
+import { unstable_rethrow } from "next/navigation";
+
 import { getDashboardSummary, getEntriesPage } from "@/src/actions/entries";
 import { getMonthlyStats } from "@/src/actions/stats";
 import { CraftedEntryList } from "@/src/components/entries/crafted-entry-list";
@@ -35,6 +37,7 @@ export default async function EntriesPage() {
       getMonthlyStats(),
     ]);
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load entries:", error);
   }

@@ -349,7 +349,7 @@ export function CraftedEntryList({
     }
 
     void runSearch();
-  }, [debouncedSearchValue]);
+  }, [debouncedSearchValue, t.entries.searchError]);
 
   async function loadMore() {
     if (!hasMore || !nextCursor) {

@@ -1,4 +1,5 @@
 import { getCategories } from "@/src/actions/entries";
+import { unstable_rethrow } from "next/navigation";
 import { CraftedEntryForm } from "@/src/components/entries/crafted-entry-form";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
@@ -67,6 +68,7 @@ export default async function NewEntryPage({
     members = loadedMembers;
     currentUser = loadedUser;
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load new entry page:", error);
   }

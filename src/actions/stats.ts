@@ -13,7 +13,6 @@ import {
   getCurrentWorkspaceScopedWhere,
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
-import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import {
   buildDailySpendingComparisonFromRows,
   type DailySpendingComparison,
@@ -207,11 +206,9 @@ async function buildEntryWhere(
   memberUserId: string | undefined,
   where: Prisma.EntryWhereInput = {},
 ): Promise<Prisma.EntryWhereInput> {
-  const members = await getCurrentWorkspaceMembers();
-
   return {
     ...where,
-    ...buildWorkspaceMemberEntryWhere(memberUserId, members),
+    ...buildWorkspaceMemberEntryWhere(memberUserId),
     ...(await getCurrentWorkspaceScopedWhere()),
   };
 }
@@ -229,15 +226,13 @@ async function buildHabitOccurrenceWhere(
     };
   }
 
-  const members = await getCurrentWorkspaceMembers();
-
   return {
     habit: {
       is: workspaceWhere,
     },
     entry: {
       is: await getCurrentWorkspaceScopedWhere(
-        buildWorkspaceMemberEntryWhere(memberUserId, members),
+        buildWorkspaceMemberEntryWhere(memberUserId),
       ),
     },
   };
@@ -480,7 +475,6 @@ function buildSpendingTrendInsight(monthlyStats: MonthlyStatsItem[]): StatsInsig
 
 async function buildStatsHabitOccurrenceWhere(
   memberUserId: string | undefined,
-  members: WorkspaceMemberOption[],
 ): Promise<Prisma.HabitOccurrenceWhereInput> {
   const workspaceWhere = await getCurrentWorkspaceScopedWhere();
 
@@ -498,7 +492,7 @@ async function buildStatsHabitOccurrenceWhere(
     },
     entry: {
       is: await getCurrentWorkspaceScopedWhere(
-        buildWorkspaceMemberEntryWhere(memberUserId, members),
+        buildWorkspaceMemberEntryWhere(memberUserId),
       ),
     },
   };
@@ -796,11 +790,10 @@ async function getDailySpendingRowsForWorkspace(
 
 async function getHabitStatsFromMembers(
   memberUserId: string | undefined,
-  members: WorkspaceMemberOption[],
 ): Promise<HabitStatsItem[]> {
   try {
     const occurrences = await prisma.habitOccurrence.findMany({
-      where: await buildStatsHabitOccurrenceWhere(memberUserId, members),
+      where: await buildStatsHabitOccurrenceWhere(memberUserId),
       select: {
         status: true,
         habit: {
@@ -903,15 +896,13 @@ async function getHabitStatsFromMembers(
 
 export async function getStatsPageData(
   memberUserId?: string,
-  members?: WorkspaceMemberOption[],
   options: StatsPageDataOptions = {},
 ): Promise<StatsPageData> {
   const now = options.now ?? new Date();
   const selectedPeriod = options.period ?? "month";
-  const [timeZone, workspaceId, workspaceMembers] = await Promise.all([
+  const [timeZone, workspaceId] = await Promise.all([
     getCurrentWorkspaceTimezone(),
     getCurrentWorkspaceId(),
-    members ?? getCurrentWorkspaceMembers(),
   ]);
   const selectedMonthKey = normalizeStatsMonthKey(timeZone, options.selectedMonthKey, now);
   const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
@@ -950,7 +941,7 @@ export async function getStatsPageData(
       timeZone,
       selectedMonthKey,
     ),
-    getHabitStatsFromMembers(memberUserId, workspaceMembers),
+    getHabitStatsFromMembers(memberUserId),
   ]);
   const monthlyCategoryGrouped =
     buildMonthlyCategoryGroupedFromRows(monthlyCategoryRows);

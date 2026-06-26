@@ -3,6 +3,7 @@ import {
   getAvailableReportMonths,
   getMonthlyReport,
 } from "@/src/actions/reports";
+import { unstable_rethrow } from "next/navigation";
 import { getCategories } from "@/src/actions/entries";
 import { CraftedMonthlyReportDetail } from "@/src/components/reports/crafted-monthly-report-detail";
 import { CraftedMonthlyReportExtras } from "@/src/components/reports/crafted-monthly-report-extras";
@@ -40,6 +41,7 @@ export default async function MonthlyReportPage({
     selectedMonth = monthParam ?? months[0]?.value ?? "";
     ({ report } = await getMonthlyReport(selectedMonth, months));
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load monthly report page:", error);
   }

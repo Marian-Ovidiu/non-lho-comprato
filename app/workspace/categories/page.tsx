@@ -1,4 +1,5 @@
 import { Rule } from "@/components/crafted";
+import { unstable_rethrow } from "next/navigation";
 import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { CraftedCategoryManagement } from "@/src/components/workspace/crafted-category-management";
@@ -13,6 +14,7 @@ export default async function WorkspaceCategoriesPage() {
   try {
     categories = await getWorkspaceCategories();
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load workspace categories page:", error);
   }

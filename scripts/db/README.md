@@ -1,7 +1,8 @@
 # Database Safety Checks
 
-These SQL files support Phase 1 database migration rehearsals and cutover hardening.
-Most preflight/postflight scripts are read-only. The known repair scripts are intentionally mutative and must only be run on a restored local clone, staging, or new Supabase target after review.
+These SQL files support database migration rehearsals and cutover hardening.
+The committed SQL checks are read-only. Restore and repair work should happen in
+a disposable clone first, with project-specific repair SQL reviewed separately.
 
 ## Required Process
 
@@ -11,8 +12,8 @@ Most preflight/postflight scripts are read-only. The known repair scripts are in
 4. Run the preflight checks against the clone first.
 5. Review every non-zero `issue_count` and every detail row.
 6. Only after the clone is understood and backed up should migration work be planned.
-7. Run postflight checks after applying migrations and approved repairs to the clone.
-8. Do not run destructive migrations directly in old production.
+7. Run postflight checks after applying migrations to the clone.
+8. Do not run destructive migrations directly in production.
 
 ## Commands
 
@@ -20,8 +21,8 @@ Direct `psql` usage:
 
 ```bash
 psql "$DATABASE_URL" -f scripts/db/preflight-workspace.sql
-psql "$DATABASE_URL" -f scripts/db/preflight-auth-email-cutover.sql
 psql "$DATABASE_URL" -f scripts/db/postflight-workspace.sql
+psql "$DATABASE_URL" -f scripts/db/preflight-auth-email-cutover.sql
 ```
 
 Npm wrappers:
@@ -34,15 +35,6 @@ npm run db:preflight:workspace
 npm run db:preflight:auth-cutover
 npm run db:postflight:workspace
 ```
-
-Mutative wrapper for clone/staging/new Supabase only:
-
-```bash
-npm run db:repair:known-workspace-drift
-npm run db:repair:known-test-users
-```
-
-Do not run repair wrappers on old production.
 
 ## Expected Interpretation
 

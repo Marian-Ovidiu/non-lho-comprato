@@ -122,7 +122,14 @@ export function CraftedInviteCreationForm({
     return () => {
       cancelled = true;
     };
-  }, [showSuccess, inviteUrl]);
+  }, [
+    inviteUrl,
+    showSuccess,
+    t.invites.shareError,
+    t.invites.shareText,
+    t.invites.shareTitle,
+    t.invites.shareUnavailable,
+  ]);
 
   async function copyInviteLink() {
     if (!inviteUrl) {

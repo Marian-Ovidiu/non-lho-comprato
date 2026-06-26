@@ -1,3 +1,5 @@
+import { unstable_rethrow } from "next/navigation";
+
 import { getStatsPageData } from "@/src/actions/stats";
 import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
 import { CraftedPersonFilter } from "@/src/components/stats/crafted-person-filter";
@@ -50,6 +52,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   try {
     members = await getCurrentWorkspaceMembers();
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load stats workspace members:", error);
   }
@@ -94,7 +97,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   let hasAnyStatsData = false;
 
   try {
-    const stats = await getStatsPageData(memberUserId, members, {
+    const stats = await getStatsPageData(memberUserId, {
       period: selectedPeriod,
       selectedMonthKey,
     });
@@ -111,6 +114,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     monthOptions = stats.monthOptions;
     hasAnyStatsData = stats.hasAnyStatsData;
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load stats:", error);
   }

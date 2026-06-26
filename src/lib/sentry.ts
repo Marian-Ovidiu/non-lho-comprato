@@ -1,4 +1,4 @@
-import type { ErrorEvent } from "@sentry/core";
+import type { ErrorEvent } from "@sentry/nextjs";
 
 function hasSentryDsn() {
   return Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);

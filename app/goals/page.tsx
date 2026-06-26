@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import { getGoalsWithProgress } from "@/src/actions/goals";
@@ -24,6 +25,7 @@ export default async function GoalsPage() {
   try {
     goals = await getGoalsWithProgress();
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load goals page:", error);
   }
@@ -32,6 +34,7 @@ export default async function GoalsPage() {
     try {
       monthlyStats = await getMonthlyStats();
     } catch (error) {
+      unstable_rethrow(error);
       monthlyStatsError = formatEntryLoadError(error);
       console.error("Failed to load goals monthly stats:", error);
     }

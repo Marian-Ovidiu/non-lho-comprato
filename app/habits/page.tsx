@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { Plus } from "lucide-react";
 
 import {
@@ -35,6 +36,7 @@ export default async function HabitsPage() {
     void finalizeOldPendingOccurrences();
     await ensureTodayHabitOccurrences();
   } catch (error) {
+    unstable_rethrow(error);
     console.error("Failed to sync habit occurrences:", error);
   }
 
@@ -63,6 +65,7 @@ export default async function HabitsPage() {
       getCategories(),
     ]);
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load habits page:", error);
   }
@@ -71,6 +74,7 @@ export default async function HabitsPage() {
     try {
       habitStats = await getHabitStats();
     } catch (error) {
+      unstable_rethrow(error);
       habitStatsError = formatEntryLoadError(error);
       console.error("Failed to load habits stats:", error);
     }

@@ -36,15 +36,19 @@ export function CraftedHabitForm({
   const t = useTranslations();
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
-  const weekdayOptions = [
-    { value: 1, label: t.habitCard.weekdays[0] },
-    { value: 2, label: t.habitCard.weekdays[1] },
-    { value: 3, label: t.habitCard.weekdays[2] },
-    { value: 4, label: t.habitCard.weekdays[3] },
-    { value: 5, label: t.habitCard.weekdays[4] },
-    { value: 6, label: t.habitCard.weekdays[5] },
-    { value: 7, label: t.habitCard.weekdays[6] },
-  ] as const;
+  const weekdayOptions = useMemo(
+    () =>
+      [
+        { value: 1, label: t.habitCard.weekdays[0] },
+        { value: 2, label: t.habitCard.weekdays[1] },
+        { value: 3, label: t.habitCard.weekdays[2] },
+        { value: 4, label: t.habitCard.weekdays[3] },
+        { value: 5, label: t.habitCard.weekdays[4] },
+        { value: 6, label: t.habitCard.weekdays[5] },
+        { value: 7, label: t.habitCard.weekdays[6] },
+      ] as const,
+    [t.habitCard.weekdays],
+  );
   const formRef = useRef<HTMLFormElement>(null);
   const defaultCategoryId =
     categories.find((category) => category.slug === "altro")?.id ??

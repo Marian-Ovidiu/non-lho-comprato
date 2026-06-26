@@ -1,102 +1,77 @@
 # Non l'ho comprato
 
-Next.js App Router application for tracking avoided purchases, actual spending, habits, reports, statistics and shared workspaces.
+Next.js App Router application for tracking real spending, avoided purchases,
+recurring habits, goals, budgets, reports, CSV imports and shared workspaces.
+
+The project is built for a Supabase-backed production deployment with a clean
+source archive generated from Git.
+
+## Product Scope
+
+- Personal and shared workspaces.
+- Manual expense tracking with payer and beneficiary splits.
+- Goals, habits, presets, budgets and monthly reports.
+- CSV import workflow for bank statement review.
+- Supabase authentication, PostgreSQL data storage, PostHog analytics and
+  optional Sentry error reporting.
+- Italian and English UI copy.
+
+## Tech Stack
+
+- Next.js 16 App Router and React 19.
+- Prisma 7 with `@prisma/adapter-pg` and PostgreSQL.
+- Supabase Auth through the SSR cookie adapter.
+- Tailwind CSS 4, Radix UI and local crafted components.
+- Node test runner, Playwright E2E tests and ESLint.
 
 ## Local Setup
 
-1. Install dependencies:
-
 ```bash
 npm ci
-```
-
-2. Create a local env file from the template:
-
-```bash
 cp .env.example .env.local
-```
-
-3. Fill `.env.local` with local or managed secrets. Never commit real `.env*` files.
-
-4. Run the development server:
-
-```bash
 npm run dev
 ```
 
-## Verification Gate
+Fill `.env.local` with local or managed secrets before starting the app. Real
+`.env*` files are ignored and must never be committed.
 
-`npm run check` is the official pre-deploy verification gate. It runs:
+## Verification
 
-- `npm run prisma:validate`
-- `npm run lint`
-- `npm run typecheck`
-- `npm run test`
-- `npm run build`
-
-Run it before opening a production PR or building a release artifact:
+Run the full gate before deploys or source releases:
 
 ```bash
 npm run check
 ```
 
-## E2E Testing
+This runs Prisma validation, lint, typecheck, unit tests and a production build.
 
-The Playwright suite must run against a dedicated test database, never against local
-or production data. The e2e scripts refuse to run unless `.env.e2e` contains
-`E2E_DATABASE_GUARD=non-lho-comprato-e2e`.
+## Release Archive
 
-1. Create the e2e env file:
+Do not zip the working tree manually. It may contain local env files, IDE files,
+cache directories, database dumps or generated output.
 
-```bash
-cp .env.e2e.example .env.e2e
-```
-
-2. Point `DATABASE_URL` and `DIRECT_URL` in `.env.e2e` to a disposable e2e
-   database.
-
-3. Install the browser, sync the current schema and seed deterministic e2e data:
-
-```bash
-npm run test:e2e:install
-npm run test:e2e:db:push
-npm run test:e2e:seed
-```
-
-4. Run the browser tests:
-
-```bash
-npm run test:e2e
-```
-
-The e2e auth bridge is only enabled when `NODE_ENV !== "production"` and
-`E2E_TEST_AUTH_ENABLED=true`; in production the route returns 404 and the session
-bridge is inactive.
-
-## Safe Release Artifact
-
-Do not zip the working tree manually. The working tree may contain local env files, IDE files, caches or agent files.
-
-Create a clean source archive with:
+Create a source archive from the current commit:
 
 ```bash
 npm run release:archive
 ```
 
-The script uses `git archive` from `HEAD` and excludes local/security-sensitive paths such as `.env*`, `.git`, `.idea`, `.claude`, `.agents`, `.next`, `node_modules`, `__MACOSX` and `.DS_Store`.
+The archive is written to `release/non-lho-comprato-<commit>.zip` and excludes
+local secrets, build artifacts, dependency folders, database dumps and agent
+files.
 
-Verify an artifact with:
+## Documentation
 
-```bash
-unzip -l release/non-lho-comprato-$(git rev-parse --short HEAD).zip \
-  | grep -E '(^|/)\.env|node_modules|\.next|\.git|\.idea|\.agents|\.claude' || true
-```
+- [Setup](docs/SETUP.md)
+- [Deployment](docs/DEPLOYMENT.md)
+- [Operations](docs/OPERATIONS.md)
+- [Release Checklist](docs/RELEASE.md)
 
-Expected result: no matches. If grep prints paths, the artifact is not safe to ship.
+## Important Notes
 
-## Environment Hygiene
-
-- Commit `.env.example` and `.env.e2e.example` only (both are explicitly allowed in `.gitignore`).
-- Keep `.env`, `.env.local`, `.env.e2e`, `.env.merge-source` and all other real env files ignored.
-- Rotate secrets if a real env file was ever included in an artifact or shared outside the secret manager.
-- Keep legacy flags disabled in production.
+- Use `npm ci`, not ad-hoc dependency installs, when preparing a release.
+- Use `npx prisma migrate deploy` for deployed databases.
+- Keep `DATABASE_URL` pointed at the Supabase transaction pooler in serverless
+  runtime environments.
+- Keep `DIRECT_URL` for migrations and maintenance commands.
+- Keep test databases separate from local and production data.

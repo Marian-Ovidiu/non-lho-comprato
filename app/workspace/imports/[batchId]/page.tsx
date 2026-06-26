@@ -1,4 +1,4 @@
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 
 import { Rule } from "@/components/crafted";
 import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
@@ -76,6 +76,7 @@ export default async function WorkspaceImportBatchPage({
       }),
     ]);
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatDataLoadError(error);
     console.error("Failed to load workspace import batch page:", error);
   }

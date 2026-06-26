@@ -586,7 +586,19 @@ export function QuickAddSheet({
         router.refresh();
       }
     }, 240);
-  }, [activeMembers, currentUserId, pushToast, router, state, tryTrigger]);
+  }, [
+    activeMembers,
+    currentUserId,
+    pushToast,
+    router,
+    state,
+    t.quickAdd.successDesc,
+    t.quickAdd.successTitle,
+    t.quickAdd.undoButton,
+    t.quickAdd.undoFailed,
+    t.quickAdd.undoSuccess,
+    tryTrigger,
+  ]);
 
   useEffect(() => {
     return () => {

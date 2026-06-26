@@ -1,4 +1,6 @@
 
+import { unstable_rethrow } from "next/navigation";
+
 import { getCategories, getEntryById } from "@/src/actions/entries";
 import { CraftedEntryNotFound } from "@/src/components/entries/crafted-entry-not-found";
 import { EntryEditForm } from "@/src/components/entries/entry-edit-form";
@@ -28,6 +30,7 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
       getCurrentWorkspaceMembers(),
     ]);
   } catch (error) {
+    unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load entry edit page:", error);
   }
