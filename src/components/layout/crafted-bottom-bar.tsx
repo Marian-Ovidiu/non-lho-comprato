@@ -91,8 +91,8 @@ export function CraftedBottomBar({
   ];
 
   const rightNavItems = [
-    { href: "/habits", label: t.nav.habits },
-    { href: "/more", label: t.nav.more },
+    { href: "/stats", label: t.nav.stats },
+    { href: "/more", label: "Tu" },
   ];
 
   return (

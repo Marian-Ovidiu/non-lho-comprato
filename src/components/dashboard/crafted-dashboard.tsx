@@ -1,7 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { differenceInCalendarDays } from "date-fns";
+import {
+  BarChart3,
+  ChevronRight,
+  Layers3,
+  Plus,
+  PlusCircle,
+  TrendingDown,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react";
 
 import {
   CraftedIcon,
@@ -13,27 +22,17 @@ import {
   StatTrio,
   type CraftedIconName,
 } from "@/components/crafted";
-import { CraftedDashboardEmptyState } from "@/src/components/dashboard/crafted-dashboard-empty-state";
-import { DashboardQuickActions } from "@/src/components/dashboard/dashboard-quick-actions";
 import { Button } from "@/components/ui/button";
-import {
-  formatCraftedCompact,
-  formatCraftedEntryAmount,
-} from "@/src/lib/crafted-money";
-import { CraftedBudgetSummary } from "@/src/components/budget/crafted-budget-summary";
-import {
-  CraftedAmount,
-  CraftedOdometer,
-  Stagger,
-} from "@/components/crafted/motion";
-import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-import { formatDate } from "@/src/lib/formatters";
-import { useCurrencySymbol } from "@/src/components/currency/currency-context";
-import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
-import { languageToLocale } from "@/src/lib/i18n";
-import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
-import { CraftedBudgetAlertList } from "@/src/components/budget/crafted-budget-alert-list";
+import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
+import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import { getLocalizedCategoryName } from "@/src/lib/category-locale";
+import { languageToLocale } from "@/src/lib/i18n";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import {
+  useTranslations,
+  useWorkspaceLanguage,
+} from "@/src/components/language/language-context";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import type { WorkspaceBalanceStatus } from "@/src/lib/workspace-balance";
@@ -68,6 +67,21 @@ type CraftedRecentEntry = {
   savedAmount: unknown;
 };
 
+type EntryBadgeKind = "evitata" | "confronto";
+
+type DisplayEntry = {
+  id: string;
+  title: string;
+  cat: string;
+  amount: number;
+  when: string;
+  badge: EntryBadgeKind | null;
+  saved: number | null;
+  avoided: number | null;
+  icon: CraftedIconName;
+  href: string;
+};
+
 export type CraftedDashboardProps = {
   monthLabel: string;
   monthRealSpent: number;
@@ -75,6 +89,7 @@ export type CraftedDashboardProps = {
   monthDelta: number | null;
   monthTrend: number[];
   spentToday: number;
+  netImpactToday: number;
   entriesTodayCount: number;
   entriesCountMonth: number;
   categories: CraftedCategoryRow[];
@@ -102,110 +117,252 @@ export type CraftedDashboardProps = {
   budgetAlertSelection: BudgetAlertSelection;
 };
 
-const CATEGORY_TONE_CLASS: Record<CraftedCategoryRow["tone"], string> = {
-  accent: "bg-accent",
-  foreground: "bg-foreground",
-  green: "bg-green",
-  muted: "bg-ink-3",
+const CATEGORY_COLORS = [
+  "bg-accent",
+  "bg-destructive",
+  "bg-success",
+  "bg-foreground/60",
+  "bg-ink-3",
+] as const;
+
+const PREVIEW = {
+  month: {
+    spent: 842.4,
+    impact: 186.2,
+    deltaPct: -12.4,
+    spark: [520, 610, 480, 720, 905, 842],
+  },
+  today: { spent: 14.5, impact: 9, count: 3 },
+  couple: { partner: "Marta", you: 432.1, them: 410.3, balance: 21.8 },
+  categories: [
+    { key: "caffe", label: "Caffè", amount: 92.4, count: 18, pct: 11 },
+    { key: "delivery", label: "Delivery", amount: 214, count: 9, pct: 25 },
+    { key: "shopping", label: "Shopping", amount: 318.5, count: 6, pct: 38 },
+    { key: "trasporti", label: "Trasporti", amount: 87.2, count: 11, pct: 10 },
+    { key: "svago", label: "Svago", amount: 130.3, count: 4, pct: 16 },
+  ],
+  budget: { label: "Budget mensile", used: 842.4, total: 1100, daysLeft: 6 },
+  streak: { days: 12, subject: "sotto budget caffè" },
+  recurring: { doneToday: 2, totalToday: 4 },
+  goals: [{ title: "Volo Lisbona", current: 218, target: 380 }],
+  entries: [
+    { title: "Cappuccino al bar", cat: "Caffè", amount: 1.5, when: "Oggi · 08:14" },
+    {
+      title: "Sushi delivery",
+      cat: "Delivery",
+      amount: 28.5,
+      when: "Ieri · 20:42",
+      badge: "confronto",
+      saved: 6.5,
+    },
+    {
+      title: "Felpa vintage",
+      cat: "Shopping",
+      amount: 0,
+      when: "Ieri · 17:03",
+      badge: "evitata",
+      avoided: 65,
+    },
+    { title: "Spesa COOP", cat: "Shopping", amount: 42.18, when: "27 giu · 11:08" },
+  ],
 };
-
-function CraftedSparkline({ values, label }: { values: number[]; label: string }) {
-  if (values.length < 2) {
-    return null;
-  }
-
-  const max = Math.max(...values, 1);
-  const points = values
-    .map((value, index) => {
-      const x = (index / (values.length - 1)) * 100;
-      const y = 24 - (value / max) * 22;
-      return `${x},${y}`;
-    })
-    .join(" ");
-  const lastY = 24 - (values[values.length - 1]! / max) * 22;
-
-  return (
-    <div className="w-[78px] text-right">
-      <svg
-        width="78"
-        height="26"
-        viewBox="0 0 100 26"
-        preserveAspectRatio="none"
-        className="overflow-visible"
-        aria-hidden="true"
-      >
-        <polyline
-          points={points}
-          fill="none"
-          stroke="var(--ink-3)"
-          strokeWidth="1.4"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="100" cy={lastY} r="2.4" fill="var(--accent)" />
-      </svg>
-      <Label className="mt-1.5 block tracking-[0.14em]">{label}</Label>
-    </div>
-  );
-}
-
-function formatEntryMeta(date: Date, categoryName: string, locale: string, yesterdayLabel: string) {
-  const daysAgo = differenceInCalendarDays(new Date(), date);
-
-  if (daysAgo === 0) {
-    const time = new Intl.DateTimeFormat(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(date);
-    return `${categoryName} · ${time}`;
-  }
-
-  if (daysAgo === 1) {
-    return `${categoryName} · ${yesterdayLabel}`;
-  }
-
-  return `${categoryName} · ${formatDate(date)}`;
-}
 
 function toFiniteNumber(value: unknown) {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function getRecentEntryMeta(
-  entry: CraftedRecentEntry,
+function formatEUR(
+  value: number,
   currencySymbol: string,
-  t: ReturnType<typeof useTranslations>,
+  options: { sign?: "auto" | "never"; decimals?: boolean } = {},
 ) {
-  const realCost = toFiniteNumber(entry.realCost);
-  const alternativeCost = toFiniteNumber(entry.alternativeCost);
-  const savedAmount = toFiniteNumber(entry.savedAmount);
+  const sign = options.sign === "auto" ? (value > 0 ? "+" : value < 0 ? "−" : "") : "";
+  const formatted = new Intl.NumberFormat("it-IT", {
+    minimumFractionDigits: options.decimals === false ? 0 : 2,
+    maximumFractionDigits: options.decimals === false ? 0 : 2,
+  }).format(Math.abs(value));
 
-  if (realCost === 0 && alternativeCost > 0 && savedAmount > 0) {
-    return {
-      label: t.entries.avoidedBadge,
-      detail: t.entries.avoidedDesc,
-      tone: "accent" as const,
-    };
+  return `${sign}${currencySymbol}${formatted}`;
+}
+
+function SectionHeader({
+  eyebrow,
+  title,
+  action,
+  href,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: string;
+  href?: string;
+}) {
+  return (
+    <div className="mb-4 flex items-end justify-between gap-4">
+      <div className="min-w-0">
+        <Label className="mb-1.5 block">{eyebrow}</Label>
+        <h2 className="text-[16px] font-semibold leading-tight">{title}</h2>
+      </div>
+      {action && href ? (
+        <Link
+          href={href}
+          className="shrink-0 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          {action}
+        </Link>
+      ) : null}
+    </div>
+  );
+}
+
+function IconBubble({
+  icon: Icon,
+  children,
+}: {
+  icon?: LucideIcon;
+  children?: React.ReactNode;
+}) {
+  return (
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
+      {Icon ? <Icon className="size-4" aria-hidden="true" /> : children}
+    </span>
+  );
+}
+
+function Sparkline({ values }: { values: number[] }) {
+  if (values.length < 2) {
+    return null;
   }
 
-  if (savedAmount > 0) {
-    return {
-      label: t.entries.comparisonBadge,
-      detail: t.entries.comparisonSaved,
-      tone: "accent" as const,
-    };
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(max - min, 1);
+  const points = values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * 100;
+      const y = 36 - ((value - min) / range) * 32;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  return (
+    <svg
+      viewBox="0 0 100 40"
+      preserveAspectRatio="none"
+      className="mt-5 h-10 w-full overflow-visible"
+      aria-hidden="true"
+    >
+      <polyline
+        points={points}
+        fill="none"
+        stroke="var(--accent)"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth="2"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+function QuickActionRow({
+  href,
+  icon,
+  label,
+}: {
+  href: string;
+  icon: LucideIcon;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="nlc-press flex min-h-14 items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <IconBubble icon={icon} />
+      <span className="min-w-0 flex-1 text-[15px] font-medium">{label}</span>
+      <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
+    </Link>
+  );
+}
+
+function BudgetBlock({
+  budget,
+  currencySymbol,
+}: {
+  budget: BudgetDashboardSelection["mainBudget"];
+  currencySymbol: string;
+}) {
+  const used = budget?.spentAmount ?? PREVIEW.budget.used;
+  const total = budget?.budgetAmount ?? PREVIEW.budget.total;
+  const pct = total > 0 ? Math.round((used / total) * 100) : 0;
+  const remaining = budget?.remainingAmount ?? PREVIEW.budget.total - PREVIEW.budget.used;
+  const daysLeft = budget
+    ? Math.max(0, Math.ceil(((100 - budget.timeProgressPercentage) / 100) * 30))
+    : PREVIEW.budget.daysLeft;
+  const tone = pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-accent" : "bg-success";
+
+  return (
+    <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+      <SectionHeader eyebrow="Budget" title={budget?.title ?? PREVIEW.budget.label} action="Gestisci" href="/workspace/budgets" />
+      <div className="flex items-end gap-2">
+        <Mono className="text-[26px] font-semibold leading-none">
+          {formatEUR(used, currencySymbol, { decimals: false })}
+        </Mono>
+        <span className="pb-0.5 text-[13px] text-ink-3">
+          di <Mono>{formatEUR(total, currencySymbol, { decimals: false })}</Mono>
+        </span>
+      </div>
+      <ProgressLine value={pct} className="mt-4 bg-line-soft" indicatorClassName={tone} />
+      <div className="mt-3 flex items-center justify-between gap-3 text-xs">
+        <Serif className={cn("text-ink-3", remaining < 0 && "text-destructive")}>
+          Restano {formatEUR(remaining, currencySymbol, { sign: "auto", decimals: false })} · {daysLeft} giorni
+        </Serif>
+        <Mono className="text-muted-foreground">{pct}%</Mono>
+      </div>
+    </section>
+  );
+}
+
+function formatEntryWhen(date: Date, locale: string) {
+  const today = new Date();
+  const sameDay = date.toDateString() === today.toDateString();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  const time = new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+
+  if (sameDay) {
+    return `Oggi · ${time}`;
   }
 
-  if (savedAmount < 0) {
-    return {
-      label: t.entries.comparisonBadge,
-      detail: t.entries.comparisonSpentMore,
-      tone: "default" as const,
-    };
+  if (date.toDateString() === yesterday.toDateString()) {
+    return `Ieri · ${time}`;
   }
 
-  return null;
+  const day = new Intl.DateTimeFormat(locale, {
+    day: "2-digit",
+    month: "short",
+  }).format(date);
+  return `${day} · ${time}`;
+}
+
+function EntryBadge({ kind }: { kind: EntryBadgeKind }) {
+  const isAvoided = kind === "evitata";
+
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-[var(--r-chip)] border px-2 py-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em]",
+        isAvoided ? "border-success/45 text-success" : "border-accent/45 text-accent",
+      )}
+    >
+      {isAvoided ? "Evitata" : "Confronto"}
+    </span>
+  );
 }
 
 export function CraftedDashboard({
@@ -215,386 +372,373 @@ export function CraftedDashboard({
   monthDelta,
   monthTrend,
   spentToday,
+  netImpactToday,
   entriesTodayCount,
   entriesCountMonth,
   categories,
   currentStreak,
-  streakWeek,
   habitsTotal,
   habitsAvoided,
   habitsNote,
   goals,
   recentEntries,
   reflection,
-  emptyState,
   coupleBalance,
   budgetDashboardState,
-  budgetAlertSelection,
 }: CraftedDashboardProps) {
   const currencySymbol = useCurrencySymbol();
   const language = useWorkspaceLanguage();
   const locale = languageToLocale(language);
   const t = useTranslations();
+  const usePreview = entriesCountMonth === 0 && recentEntries.length === 0;
+
+  const displayMonthSpent = usePreview ? PREVIEW.month.spent : monthRealSpent;
+  const displayMonthImpact = usePreview ? PREVIEW.month.impact : monthSaved;
+  const displayDeltaPct =
+    monthDelta !== null && monthRealSpent > 0
+      ? Math.round((monthDelta / Math.max(monthRealSpent - monthDelta, 1)) * 1000) / 10
+      : PREVIEW.month.deltaPct;
+  const trendDown = displayDeltaPct <= 0;
+  const sparkValues = monthTrend.length >= 2 ? monthTrend : PREVIEW.month.spark;
+  const displaySpentToday = usePreview ? PREVIEW.today.spent : spentToday;
+  const displayImpactToday = usePreview ? PREVIEW.today.impact : netImpactToday;
+  const displayEntriesToday = usePreview ? PREVIEW.today.count : entriesTodayCount;
+  const displayCategories =
+    categories.length > 0
+      ? categories.map((category) => ({
+          key: category.slug,
+          label: getLocalizedCategoryName(category.slug, language) ?? category.name,
+          amount: category.spent,
+          count: category.count,
+          pct: category.pct,
+          icon: getCategoryCraftedIcon({ slug: category.slug, name: category.name }),
+        }))
+      : PREVIEW.categories.map((category) => ({
+          ...category,
+          icon: getCategoryCraftedIcon({ slug: category.key, name: category.label }),
+        }));
+  const displayGoals =
+    goals.length > 0
+      ? goals.map((goal) => ({
+          id: goal.id,
+          title: goal.title,
+          current: goal.progressAmount,
+          target: goal.targetAmount,
+          pct: goal.progressPercent,
+          icon: goal.icon,
+          note: goal.note,
+        }))
+      : PREVIEW.goals.map((goal, index) => ({
+          id: `preview-goal-${index}`,
+          title: goal.title,
+          current: goal.current,
+          target: goal.target,
+          pct: Math.round((goal.current / goal.target) * 100),
+          icon: "plane" as CraftedIconName,
+          note: "finanziato dagli evitati",
+        }));
+  const displayEntries: DisplayEntry[] =
+    recentEntries.length > 0
+      ? recentEntries.map((entry) => {
+          const realCost = toFiniteNumber(entry.realCost);
+          const alternativeCost = toFiniteNumber(entry.alternativeCost);
+          const savedAmount = toFiniteNumber(entry.savedAmount);
+          const isAvoided = realCost === 0 && alternativeCost > 0 && savedAmount > 0;
+          const isComparison = !isAvoided && savedAmount !== 0;
+
+          return {
+            id: entry.id,
+            title: entry.title,
+            cat:
+              getLocalizedCategoryName(entry.category.slug ?? "", language) ??
+              entry.category.name,
+            amount: realCost,
+            when: formatEntryWhen(entry.date, locale),
+            badge: isAvoided
+              ? ("evitata" as const)
+              : isComparison
+                ? ("confronto" as const)
+                : null,
+            saved: isComparison ? Math.abs(savedAmount) : null,
+            avoided: isAvoided ? Math.abs(savedAmount) : null,
+            icon: getCategoryCraftedIcon(entry.category),
+            href: `/entries/${entry.id}/edit`,
+          };
+        })
+      : PREVIEW.entries.map((entry, index) => ({
+          id: `preview-entry-${index}`,
+          title: entry.title,
+          cat: entry.cat,
+          amount: entry.amount,
+          when: entry.when,
+          badge:
+            entry.badge === "evitata" || entry.badge === "confronto"
+              ? entry.badge
+              : null,
+          saved: entry.saved ?? null,
+          avoided: entry.avoided ?? null,
+          icon: getCategoryCraftedIcon({ slug: entry.cat.toLowerCase(), name: entry.cat }),
+          href: "/entries/new",
+        }));
+  const partner = coupleBalance.counterpartLabel ?? PREVIEW.couple.partner;
+  const coupleAmount = coupleBalance.supported ? coupleBalance.amount : PREVIEW.couple.balance;
+  const coupleIsTheyOwe = coupleBalance.supported
+    ? coupleBalance.status !== "you-owe"
+    : true;
+  const coupleYou = coupleBalance.supported
+    ? Math.max(coupleAmount, 0)
+    : PREVIEW.couple.you;
+  const coupleThem = coupleBalance.supported ? 0 : PREVIEW.couple.them;
+  const recurringTotal = habitsTotal > 0 ? habitsTotal : PREVIEW.recurring.totalToday;
+  const recurringDone = habitsTotal > 0 ? habitsAvoided : PREVIEW.recurring.doneToday;
+
   return (
-    <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
+      <section className="px-[var(--sp-page-x)] pb-[var(--sp-section-y)] pt-4">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <Label className="mb-3 block">{t.dashboard.spentMonth}</Label>
-            <CraftedOdometer
-              value={monthRealSpent}
-              integerClassName="text-[clamp(3.5rem,18vw,5.25rem)] font-semibold leading-[0.84] tracking-[-0.055em]"
-              fractionWrapperClassName="mt-1 flex flex-col"
-              fractionClassName="text-[27px] font-medium leading-none text-muted-foreground"
-              suffixClassName="mt-1 text-lg text-accent"
-            />
-          </div>
-          <CraftedSparkline values={monthTrend} label={t.dashboard.sixMonthsLabel} />
+          <Label className="pt-1">{t.dashboard.spentMonth}</Label>
+          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] border border-line px-2.5 py-1.5 text-[11px] text-muted-foreground">
+            {trendDown ? (
+              <TrendingDown className="size-3.5 text-success" aria-hidden="true" />
+            ) : (
+              <TrendingUp className="size-3.5 text-destructive" aria-hidden="true" />
+            )}
+            <Mono>{displayDeltaPct > 0 ? "+" : "−"}{Math.abs(displayDeltaPct).toLocaleString("it-IT")}%</Mono>
+          </span>
         </div>
-
+        <Mono className="mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">
+          {formatEUR(displayMonthSpent, currencySymbol)}
+        </Mono>
         <div className="mt-3 flex items-end justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <Label className="mb-1.5 block">{monthLabel}</Label>
-            <Mono className="text-xl font-medium">
-              <CraftedAmount value={monthSaved} />
-              <span className="text-xs text-accent">{currencySymbol}</span>
-            </Mono>
-          </div>
-
-          {monthDelta !== null && monthDelta !== 0 ? (
-            <span className="shrink-0 rounded-full border border-line px-[9px] py-[3px] text-right text-[11.5px] text-muted-foreground">
-              <Mono>
-                <CraftedAmount value={Math.abs(monthDelta)} />
-              </Mono>
-              {currencySymbol} {monthDelta > 0 ? t.dashboard.moreThanLast : t.dashboard.lessThanLast} {t.dashboard.thanLastMonth}
-            </span>
-          ) : null}
+          <Serif className="text-[15px] text-muted-foreground">
+            {monthLabel.toLowerCase()} · {t.dashboard.netImpact}
+          </Serif>
+          <Mono
+            className={cn(
+              "shrink-0 text-[17px] font-medium",
+              displayMonthImpact >= 0 ? "text-success" : "text-destructive",
+            )}
+          >
+            {formatEUR(displayMonthImpact, currencySymbol, { sign: "auto" })}
+          </Mono>
         </div>
-
-        {reflection ? (
-          <div className="mt-5">
-            <Label className="mb-2 block">{reflection.label}</Label>
-            <Serif className="text-sm text-muted-foreground">{reflection.text}</Serif>
-          </div>
-        ) : null}
+        <Sparkline values={sparkValues} />
+        <Serif className="mt-3 block text-[13px] text-ink-3">
+          {reflection?.text ??
+            (trendDown
+              ? "Il ritmo del mese sta scendendo, senza confondere spese e impatto."
+              : "Questo mese sta accelerando: tieni d'occhio budget e categorie.")}
+        </Serif>
       </section>
+      <Rule soft />
 
       <StatTrio
+        className="border-y-0"
         items={[
+          { label: t.dashboard.spentToday, value: formatEUR(displaySpentToday, currencySymbol) },
           {
-            label: t.dashboard.spentToday,
-            value: <CraftedAmount value={spentToday} />,
-            suffix: currencySymbol,
+            label: "Impatto oggi",
+            value: formatEUR(displayImpactToday, currencySymbol, { sign: "auto" }),
           },
-          {
-            label: t.dashboard.entriesToday,
-            value: (
-              <CraftedAmount
-                value={entriesTodayCount}
-                maximumFractionDigits={0}
-              />
-            ),
-          },
+          { label: "Movimenti", value: displayEntriesToday },
         ]}
       />
+      <Rule soft />
 
-      <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <DashboardQuickActions />
-      </div>
-      <Rule />
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <QuickActionRow href="/entries/new" icon={PlusCircle} label="Registra spesa" />
+        <Rule soft />
+        <QuickActionRow href="/presets" icon={Layers3} label="Preset rapidi" />
+        <Rule soft />
+        <QuickActionRow href="/stats" icon={BarChart3} label="Statistiche" />
+      </section>
+      <Rule soft />
 
-      {coupleBalance.supported && coupleBalance.amount !== 0 ? (
-        <>
-          <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-            <Label className="mb-2 block">{t.dashboard.coupleBalance}</Label>
-            <Mono className="text-xl font-medium">
-              {formatCraftedCompact(Math.abs(coupleBalance.amount))}
-              <span className="text-xs text-accent">{currencySymbol}</span>
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <SectionHeader eyebrow="Bilancio coppia" title={`Con ${partner}`} />
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+          <div>
+            <p className="text-xs text-ink-3">Tu</p>
+            <Mono className="mt-1 block text-[18px] font-medium">
+              {formatEUR(coupleYou, currencySymbol)}
             </Mono>
-            {coupleBalance.counterpartLabel ? (
-              <Serif className="mt-2 block text-sm text-ink-3">
-                {coupleBalance.status === "they-owe"
-                  ? t.coupleBalance.theyOwe(coupleBalance.counterpartLabel)
-                  : t.coupleBalance.youOwe(coupleBalance.counterpartLabel)}
-              </Serif>
-            ) : null}
           </div>
-          <Rule />
-        </>
-      ) : null}
-
-      {categories.length > 0 ? (
-        <>
-          <div className="flex items-baseline justify-between px-5 pb-1.5 pt-6">
-            <Label>{t.dashboard.whereSpending}</Label>
-            <Mono className="text-[11px] text-ink-3">{categories.length} {t.dashboard.categoriesCount}</Mono>
-          </div>
-          <div className="px-5 pb-1">
-            <div className="nlc-grow-x mb-4 flex h-[9px] gap-0.5 overflow-hidden">
-              {categories.map((category) => (
-                <div
-                  key={category.slug}
-                  className={cn("rounded-[1px]", CATEGORY_TONE_CLASS[category.tone])}
-                  style={{ width: `${category.pct}%` }}
-                />
-              ))}
-            </div>
-            {categories.map((category, index) => (
-              <div key={category.slug}>
-                <div className="flex items-center gap-3 py-2.5">
-                  <span
-                    className={cn(
-                      "size-[7px] shrink-0 rounded-[2px]",
-                      CATEGORY_TONE_CLASS[category.tone],
-                    )}
-                  />
-                  <CraftedIcon
-                    name={getCategoryCraftedIcon(category)}
-                    size={18}
-                    className="text-muted-foreground"
-                  />
-                  <div className="flex-1">
-                    <span className="block text-sm font-[450]">{getLocalizedCategoryName(category.slug, language) ?? category.name}</span>
-                  </div>
-                  <Mono className="mr-3 whitespace-nowrap text-[11px] text-ink-3">
-                    {category.count} {t.dashboard.movAbbr}
-                  </Mono>
-                  <Mono className="whitespace-nowrap text-sm font-medium">
-                    {formatCraftedCompact(category.spent)}
-                    <span className="text-[11px] text-accent">{currencySymbol}</span>
-                  </Mono>
-                </div>
-                {index < categories.length - 1 ? <Rule soft /> : null}
-              </div>
-            ))}
-          </div>
-          <Rule />
-        </>
-      ) : null}
-
-      <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <Label className="mb-3 block">{t.dashboard.budgetSectionLabel}</Label>
-        <CraftedBudgetAlertList
-          alerts={budgetAlertSelection.primaryAlerts.filter(
-            (alert) => alert.level !== "danger",
-          )}
-          title={t.dashboard.budgetAlertTitle}
-          description={t.dashboard.budgetAlertDesc}
-          className="mb-4"
-        />
-        {budgetDashboardState.hasAnyBudget ? (
-          <div className="space-y-4">
-            {budgetDashboardState.mainBudget ? (
-              <CraftedBudgetSummary
-                budget={budgetDashboardState.mainBudget}
-                manageHref="/workspace/budgets"
-                manageLabel={t.dashboard.manageBudget}
-              />
-            ) : (
-              <div className="border border-line bg-surface-muted/35 rounded-[var(--r-card)] px-4 py-4">
-                <Serif className="text-sm text-muted-foreground">
-                  {t.dashboard.onlyCategoryBudgets}
-                </Serif>
-                <div className="mt-4">
-                  <Button asChild variant="outline" className="h-10 rounded-[var(--r-cta)] border-line px-4">
-                    <Link href="/workspace/budgets">{t.dashboard.manageBudget}</Link>
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {budgetDashboardState.categoryBudgets.length > 0 ? (
-              <div className="space-y-3">
-                <Label className="mb-1 block">{t.dashboard.categoryBudgetsLabel}</Label>
-                {budgetDashboardState.categoryBudgets.map((budget) => (
-                  <CraftedBudgetSummary
-                    key={budget.id}
-                    budget={budget}
-                    compact
-                    manageHref="/workspace/budgets"
-                    manageLabel={t.dashboard.manageBudget}
-                  />
-                ))}
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <CraftedBudgetSummary
-            empty
-            title={t.dashboard.firstBudgetTitle}
-            description={t.dashboard.firstBudgetDesc}
-            actionLabel={t.dashboard.firstBudgetTitle}
-            actionHref="/workspace/budgets"
-          />
-        )}
-      </div>
-      <Rule />
-
-      <div className="flex">
-        <div className="flex-1 border-r border-line px-5 py-5">
-          <Label className="mb-3 block">{t.dashboard.streakLabel}</Label>
-          <div className="flex items-center gap-2.5">
-            <CraftedIcon name="flame" size={26} strokeWidth={1.5} className="text-accent" />
-            <div className="flex items-baseline gap-1.5">
-              <Mono className="text-[32px] font-semibold leading-none">{currentStreak}</Mono>
-              <span className="text-xs text-muted-foreground">{t.dashboard.daysLabel}</span>
-            </div>
-          </div>
-          <div className="mt-3 flex gap-1">
-            {streakWeek.map((active, index) => (
-              <div
-                key={index}
-                className={cn(
-                  "h-[3px] flex-1 rounded-sm",
-                  active ? "bg-accent" : "bg-ink-3",
-                )}
-                style={active ? { opacity: 0.45 + index * 0.09 } : undefined}
-              />
-            ))}
+          <div className="h-8 w-px bg-line" aria-hidden="true" />
+          <div className="text-right">
+            <p className="text-xs text-ink-3">{partner}</p>
+            <Mono className="mt-1 block text-[18px] font-medium">
+              {formatEUR(coupleThem, currencySymbol)}
+            </Mono>
           </div>
         </div>
-        <div className="flex-1 px-5 py-5">
-          <Label className="mb-3 block">{t.dashboard.habitsToday}</Label>
-          {habitsTotal > 0 ? (
-            <>
-              <div className="flex items-baseline gap-1.5">
-                <Mono className="text-[32px] font-semibold leading-none">
-                  {habitsAvoided}
-                  <span className="text-ink-3">/{habitsTotal}</span>
-                </Mono>
-                <span className="text-xs text-muted-foreground">{t.dashboard.avoidedLabel}</span>
-              </div>
-              {habitsNote ? (
-                <Serif className="mt-2.5 block text-sm text-ink-3">{habitsNote}</Serif>
-              ) : null}
-            </>
-          ) : (
-            <Serif className="text-sm text-ink-3">{t.dashboard.noHabitsToday}</Serif>
-          )}
-        </div>
-      </div>
-      <Rule />
-
-      {goals.length > 0 ? (
-        <>
-          <div className="px-5 pb-1.5 pt-5">
-            <Label>{t.dashboard.goalsLabel}</Label>
-          </div>
-          <div className="px-5 pb-1.5">
-            {goals.map((goal, index) => (
-              <div
-                key={goal.id}
-                className={cn(
-                  "py-3",
-                  index < goals.length - 1 && "border-b border-line-soft",
-                )}
-              >
-                <div className="mb-2.5 flex items-center justify-between gap-3">
-                  <div className="flex min-w-0 items-center gap-2.5">
-                    <CraftedIcon
-                      name={goal.icon}
-                      size={17}
-                      className="shrink-0 text-muted-foreground"
-                    />
-                    <span className="truncate text-[15px] font-[450]">{goal.title}</span>
-                  </div>
-                  <Mono className="shrink-0 whitespace-nowrap text-xs text-muted-foreground">
-                    {formatCraftedCompact(goal.progressAmount)}{" "}
-                    <span className="text-ink-3">/ {formatCraftedCompact(goal.targetAmount)}</span>
-                  </Mono>
-                </div>
-                <ProgressLine value={goal.progressPercent} />
-                <Serif className="mt-2 block text-[13px] text-ink-3">{goal.note}</Serif>
-              </div>
-            ))}
-          </div>
-          <Rule />
-        </>
-      ) : null}
-
-      <div className="flex items-baseline justify-between px-5 pb-1 pt-5">
-        <Label>{t.dashboard.recentEntries}</Label>
-        {entriesCountMonth > 0 ? (
-          <Mono className="text-[11px] text-ink-3">
-            {entriesCountMonth} {t.dashboard.inMonth} {monthLabel.toLowerCase()}
+        <div className="mt-4 flex min-h-10 items-center justify-between gap-3 rounded-[var(--r-control)] bg-surface-muted px-3 py-2">
+          <span className="text-[13px] text-muted-foreground">
+            {coupleIsTheyOwe ? `${partner} ti deve` : `Devi a ${partner}`}
+          </span>
+          <Mono className={coupleIsTheyOwe ? "text-accent" : "text-destructive"}>
+            {formatEUR(coupleAmount, currencySymbol, { sign: "auto" })}
           </Mono>
-        ) : null}
-      </div>
+        </div>
+      </section>
+      <Rule soft />
 
-      {recentEntries.length > 0 ? (
-        <div className="px-[var(--sp-page-x)] pb-6">
-          {recentEntries.map((entry, index) => {
-            const meta = getRecentEntryMeta(entry, currencySymbol, t);
-
-            return (
-              <div key={entry.id}>
-                <Link
-                  href={`/entries/${entry.id}/edit`}
-                  className="flex min-h-12 items-center gap-4 py-[var(--sp-row-y)] transition-opacity hover:opacity-80"
-                >
-                  <CraftedIcon
-                    name={getCategoryCraftedIcon(entry.category)}
-                    size={20}
-                    className="shrink-0 text-muted-foreground"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-[450]">{entry.title}</p>
-                    <Mono className="mt-0.5 block text-[11px] leading-4 tracking-[0.02em] text-ink-3">
-                      {formatEntryMeta(entry.date, getLocalizedCategoryName(entry.category.slug, language) ?? entry.category.name, locale, t.common.yesterday)}
-                    </Mono>
-                    {meta ? (
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span
-                          className={cn(
-                            "rounded-full border px-[9px] py-[3px] text-[10px] font-medium uppercase leading-none tracking-[0.12em]",
-                            meta.tone === "accent"
-                              ? "border-accent/30 text-accent"
-                              : "border-border text-foreground",
-                          )}
-                        >
-                          {meta.label}
-                        </span>
-                        <Mono
-                          className={cn(
-                            "basis-full text-[11px] leading-4 sm:basis-auto",
-                            meta.tone === "accent" ? "text-accent" : "text-ink-3",
-                          )}
-                        >
-                          {meta.detail}
-                        </Mono>
-                      </div>
-                    ) : null}
-                  </div>
-                  <Mono className="shrink-0 text-[15px] font-medium">
-                    {formatCraftedEntryAmount(entry.realCost)}
-                    <span className="align-baseline text-[11px] text-accent">{currencySymbol}</span>
-                  </Mono>
-                </Link>
-                {index < recentEntries.length - 1 ? <Rule soft /> : null}
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <SectionHeader eyebrow="Categorie" title="Dove stai spendendo" />
+        <div className="mb-4 flex h-1.5 overflow-hidden rounded-full bg-line-soft">
+          {displayCategories.map((category, index) => (
+            <span
+              key={category.key}
+              className={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+              style={{ width: `${category.pct}%` }}
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+        {displayCategories.map((category, index) => (
+          <div key={category.key}>
+            <div className="flex min-h-14 items-center gap-3 py-2.5">
+              <IconBubble>
+                <CraftedIcon name={category.icon} size={17} />
+              </IconBubble>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-medium">{category.label}</p>
+                <p className="mt-0.5 text-xs text-ink-3">
+                  {category.count} movimenti · {category.pct}%
+                </p>
               </div>
-            );
-          })}
-          <div className="pt-4">
-            <Button asChild variant="outline" className="h-10 rounded-[var(--r-cta)] border-line px-4">
-              <Link href="/entries">{t.dashboard.viewAllEntries}</Link>
-            </Button>
+              <Mono className="shrink-0 text-[14px] font-medium">
+                {formatEUR(category.amount, currencySymbol)}
+              </Mono>
+            </div>
+            {index < displayCategories.length - 1 ? <Rule soft /> : null}
           </div>
-        </div>
-      ) : emptyState ? (
-        <CraftedDashboardEmptyState
-          title={emptyState.title}
-          description={emptyState.description}
-          actionLabel={emptyState.actionLabel}
-        />
-      ) : null}
+        ))}
+      </section>
+      <Rule soft />
 
-      {recentEntries.length > 0 ? (
-        <div className="border-t border-line px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-          <Button asChild className="h-11 w-full rounded-[var(--r-cta)]">
-            <Link href="/entries/new">{t.dashboard.addEntry}</Link>
-          </Button>
+      <BudgetBlock
+        budget={budgetDashboardState.mainBudget}
+        currencySymbol={currencySymbol}
+      />
+      <Rule soft />
+
+      <section className="grid grid-cols-2 gap-3 px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <div className="rounded-[var(--r-card)] border border-line p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <Label>Streak</Label>
+            <CraftedIcon name="flame" size={17} className="text-accent" />
+          </div>
+          <div className="flex items-baseline gap-1.5">
+            <Mono className="text-[28px] font-semibold leading-none">
+              {currentStreak > 0 ? currentStreak : PREVIEW.streak.days}
+            </Mono>
+            <span className="text-xs text-muted-foreground">giorni</span>
+          </div>
+          <Serif className="mt-2 block text-xs text-ink-3">
+            {habitsNote ?? PREVIEW.streak.subject}
+          </Serif>
         </div>
-      ) : null}
-    </Stagger>
+        <div className="rounded-[var(--r-card)] border border-line p-4">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <Label>Ricorrenti oggi</Label>
+            <Mono className="text-[12px] text-muted-foreground">
+              {recurringDone}/{recurringTotal}
+            </Mono>
+          </div>
+          <Mono className="block text-[28px] font-semibold leading-none">
+            {Math.max(recurringTotal - recurringDone, 0)}
+          </Mono>
+          <ProgressLine
+            value={recurringTotal > 0 ? (recurringDone / recurringTotal) * 100 : 0}
+            className="mt-4 bg-line-soft"
+          />
+        </div>
+      </section>
+      <Rule soft />
+
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <SectionHeader eyebrow="Obiettivi" title="Mete attive" />
+        {displayGoals.map((goal, index) => (
+          <div key={goal.id}>
+            <div className="flex items-center gap-3 py-2.5">
+              <IconBubble>
+                <CraftedIcon name={goal.icon} size={17} />
+              </IconBubble>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-medium">{goal.title}</p>
+                <Serif className="mt-0.5 block text-xs text-ink-3">
+                  {goal.note}
+                </Serif>
+              </div>
+              <Mono className="shrink-0 text-right text-xs text-muted-foreground">
+                {formatCraftedCompact(goal.current)}
+                <span className="text-ink-3"> / {formatCraftedCompact(goal.target)}</span>
+              </Mono>
+            </div>
+            <ProgressLine value={goal.pct} className="mb-3 bg-line-soft" />
+            {index < displayGoals.length - 1 ? <Rule soft /> : null}
+          </div>
+        ))}
+      </section>
+      <Rule soft />
+
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <SectionHeader eyebrow="Ultimi movimenti" title="Movimenti" action="Tutti →" href="/entries" />
+        {displayEntries.map((entry, index) => (
+          <div key={entry.id}>
+            <Link
+              href={entry.href}
+              className="nlc-press flex min-h-16 items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <IconBubble>
+                <CraftedIcon name={entry.icon} size={17} />
+              </IconBubble>
+              <div className="min-w-0 flex-1">
+                <div className="flex min-w-0 items-center gap-2">
+                  <p className="min-w-0 truncate text-[15px] font-medium">{entry.title}</p>
+                  {entry.badge ? <EntryBadge kind={entry.badge} /> : null}
+                </div>
+                <p className="mt-1 truncate text-xs text-ink-3">
+                  {entry.cat} · <Mono>{entry.when}</Mono>
+                  {entry.saved ? (
+                    <> · risparmiati <Mono>{formatEUR(entry.saved, currencySymbol)}</Mono></>
+                  ) : null}
+                  {entry.avoided ? (
+                    <> · evitati <Mono>{formatEUR(entry.avoided, currencySymbol)}</Mono></>
+                  ) : null}
+                </p>
+              </div>
+              <Mono className="shrink-0 text-[15px] font-medium">
+                {entry.amount === 0 ? (
+                  <span className="text-ink-3">—</span>
+                ) : (
+                  formatEUR(entry.amount, currencySymbol)
+                )}
+              </Mono>
+            </Link>
+            {index < displayEntries.length - 1 ? <Rule soft /> : null}
+          </div>
+        ))}
+      </section>
+      <Rule soft />
+
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <Button
+          asChild
+          className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground hover:bg-accent-hover"
+        >
+          <Link href="/entries/new">
+            <Plus className="size-4" aria-hidden="true" />
+            {t.dashboard.addEntry}
+          </Link>
+        </Button>
+      </section>
+      <Rule soft />
+      <footer className="px-[var(--sp-page-x)] py-5 text-center">
+        <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-3">
+          Non l&apos;ho comprato · v1
+        </p>
+      </footer>
+    </div>
   );
 }

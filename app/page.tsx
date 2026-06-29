@@ -396,6 +396,7 @@ export default async function Home({ searchParams }: HomePageProps) {
     monthRealSpent,
     monthSaved,
     spentToday: todaySummary.totalRealSpentToday,
+    netImpactToday: todaySummary.netImpactToday,
     entriesCountMonth,
     entriesTodayCount: todaySummary.entriesTodayCount,
     monthlyStats,

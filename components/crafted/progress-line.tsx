@@ -21,7 +21,7 @@ export function ProgressLine({
     <div
       className={cn(
         "relative w-full overflow-hidden bg-line",
-        thick ? "h-1" : "h-0.5",
+        thick ? "h-1" : "h-[3px]",
         className,
       )}
       role="progressbar"

@@ -136,6 +136,7 @@ export function buildCraftedDashboardProps(input: {
   monthRealSpent: number;
   monthSaved: number;
   spentToday: number;
+  netImpactToday: number;
   entriesTodayCount: number;
   entriesCountMonth: number;
   monthlyStats: MonthlyStatsItem[];
@@ -171,6 +172,7 @@ export function buildCraftedDashboardProps(input: {
     monthDelta,
     monthTrend,
     spentToday: input.spentToday,
+    netImpactToday: input.netImpactToday,
     entriesTodayCount: input.entriesTodayCount,
     entriesCountMonth: input.entriesCountMonth,
     categories: buildCraftedCategories(input.categoryStats),

@@ -69,22 +69,22 @@
 
 :root {
   /* Crafted dark-first — warm black, crema, oro, verde */
-  --background: #0a0a09;
-  --foreground: #f4f1ea;
-  --surface: #0f0e0d;
-  --surface-muted: #0f0e0d;
+  --background: #0e0d0b;
+  --foreground: #f2ede4;
+  --surface: #141210;
+  --surface-muted: #1b1815;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--muted-text);
-  --line: rgba(244, 241, 234, 0.10);
-  --line-soft: rgba(244, 241, 234, 0.06);
+  --line: #26221e;
+  --line-soft: #1e1b18;
   --border: var(--line);
   --border-strong: var(--line);
-  --accent: #d9a651;
-  --accent-hover: #c99545;
+  --accent: #d8a85b;
+  --accent-hover: #c79a4f;
   --accent-dark: #1a1206;
   --premium-accent: #d9a651;
   --premium-accent-muted: #94918a;
@@ -94,13 +94,13 @@
   --primary-foreground: #1a1206;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --green: #4a9060;
+  --green: #7fb069;
   --success: var(--green);
   --success-bg: rgba(74, 144, 96, 0.12);
-  --destructive: #d96a4a;
-  --destructive-foreground: #f4f1ea;
-  --muted-text: #94918a;
-  --ink-3: #7e7c77;
+  --destructive: #c75a4a;
+  --destructive-foreground: #f2ede4;
+  --muted-text: #b8b0a2;
+  --ink-3: #7a7368;
   --text-3: var(--ink-3);
   --warm: #d9a651;
   --info: #94918a;
@@ -128,10 +128,10 @@
   --sp-stack: 12px;
   --sp-stack-sm: 8px;
   --sp-inline: 10px;
-  --r-chip: 12px;
-  --r-control: 14px;
-  --r-cta: 16px;
-  --r-card: 18px;
+  --r-chip: 8px;
+  --r-control: 12px;
+  --r-cta: 14px;
+  --r-card: 16px;
   --r-sheet: 28px;
   --shadow-none: none;
   --shadow-sheet: 0 -24px 70px rgba(0, 0, 0, 0.42);
@@ -141,23 +141,23 @@
 }
 
 .dark {
-  --background: #0a0a09;
-  --foreground: #f4f1ea;
-  --surface: #0f0e0d;
-  --surface-muted: #0f0e0d;
+  --background: #0e0d0b;
+  --foreground: #f2ede4;
+  --surface: #141210;
+  --surface-muted: #1b1815;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--muted-text);
-  --line: rgba(244, 241, 234, 0.10);
-  --line-soft: rgba(244, 241, 234, 0.06);
+  --line: #26221e;
+  --line-soft: #1e1b18;
   --border: var(--line);
   --border-strong: var(--line);
-  --input: #0f0e0d;
-  --accent: #d9a651;
-  --accent-hover: #c99545;
+  --input: #141210;
+  --accent: #d8a85b;
+  --accent-hover: #c79a4f;
   --accent-dark: #1a1206;
   --premium-accent: #d9a651;
   --premium-accent-muted: #94918a;
@@ -167,13 +167,13 @@
   --primary-foreground: #1a1206;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --green: #4a9060;
+  --green: #7fb069;
   --success: var(--green);
   --success-bg: rgba(74, 144, 96, 0.12);
-  --destructive: #d96a4a;
-  --destructive-foreground: #f4f1ea;
-  --muted-text: #94918a;
-  --ink-3: #7e7c77;
+  --destructive: #c75a4a;
+  --destructive-foreground: #f2ede4;
+  --muted-text: #b8b0a2;
+  --ink-3: #7a7368;
   --text-3: var(--ink-3);
   --warm: #d9a651;
   --info: #94918a;
@@ -196,22 +196,22 @@
 
 /* Light — solo se l'utente sceglie esplicitamente tema chiaro */
 :root:not(.dark) {
-  --background: #f6f5f1;
-  --foreground: #0a0a0b;
-  --surface: #ffffff;
-  --surface-muted: #f0eee8;
+  --background: #f7f3ec;
+  --foreground: #141210;
+  --surface: #fffaf2;
+  --surface-muted: #ede5d8;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--muted-text);
-  --line: rgba(0, 0, 0, 0.06);
-  --line-soft: rgba(0, 0, 0, 0.04);
+  --line: #d9d0c2;
+  --line-soft: #e7dfd3;
   --border: var(--line);
   --border-strong: rgba(0, 0, 0, 0.12);
-  --accent: #1a1206;
-  --accent-hover: #2a2010;
+  --accent: #b98232;
+  --accent-hover: #9f6f28;
   --accent-dark: #1a1206;
   --premium-accent: #d9a651;
   --premium-accent-muted: #8f7a59;
@@ -226,8 +226,8 @@
   --success-bg: #dff7e9;
   --destructive: #d96a4a;
   --destructive-foreground: #f4f1ea;
-  --muted-text: #6b6b70;
-  --ink-3: #6e6c6a;
+  --muted-text: #5e574e;
+  --ink-3: #756d62;
   --text-3: var(--ink-3);
   --warm: #d9a651;
   --info: #6b6b70;
