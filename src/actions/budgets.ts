@@ -428,7 +428,7 @@ async function updateBudgetRecord(
     }
 
     await deps.prisma.budget.update({
-      where: { id: budgetId },
+      where: { id: budgetId, workspaceId: workspace.id },
       data: {
         scope: normalized.scope,
         scopeKey,
@@ -489,7 +489,7 @@ async function deleteBudgetRecord(
     }
 
     await deps.prisma.budget.delete({
-      where: { id: budgetId },
+      where: { id: budgetId, workspaceId: workspace.id },
     });
 
     revalidateBudgetPaths(deps);

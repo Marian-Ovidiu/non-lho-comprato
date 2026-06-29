@@ -65,6 +65,8 @@ files.
 - [Setup](docs/SETUP.md)
 - [Deployment](docs/DEPLOYMENT.md)
 - [Operations](docs/OPERATIONS.md)
+- [Security Operations](docs/SECURITY_OPERATIONS.md)
+- [Privacy by Design](docs/PRIVACY_BY_DESIGN.md)
 - [Release Checklist](docs/RELEASE.md)
 
 ## Important Notes

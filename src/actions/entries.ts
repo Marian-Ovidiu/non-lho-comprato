@@ -13,6 +13,11 @@ import {
 } from "@/src/lib/entry-domain";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import {
+  decryptOptionalText,
+  encryptOptionalText,
+  shouldQueryEncryptedTextFields,
+} from "@/src/lib/field-encryption";
+import {
   entryMetricAggregateSelectSql,
   normalizeEntryMetricAggregate,
   type EntryMetricAggregateRow,
@@ -499,7 +504,9 @@ async function findExpenseSuggestionCandidates(
     });
 
     return entries
-      .filter((entry) => !isLikelyImportedNoise(entry.title, entry.note))
+      .filter((entry) =>
+        !isLikelyImportedNoise(entry.title, decryptOptionalText(entry.note)),
+      )
       .map((entry) => ({
         title: entry.title,
         realCost: toNumber(entry.realCost),
@@ -535,7 +542,9 @@ async function findExpenseSuggestionCandidates(
     });
 
     return entries
-      .filter((entry) => !isLikelyImportedNoise(entry.title, entry.note))
+      .filter((entry) =>
+        !isLikelyImportedNoise(entry.title, decryptOptionalText(entry.note)),
+      )
       .map((entry) => ({
         title: entry.title,
         realCost: toNumber(entry.realCost),
@@ -621,12 +630,6 @@ function buildEntriesSearchWhere(
       },
     },
     {
-      note: {
-        contains: normalizedQuery,
-        mode: "insensitive",
-      },
-    },
-    {
       category: {
         is: {
           OR: [
@@ -647,6 +650,15 @@ function buildEntriesSearchWhere(
       },
     },
   ];
+
+  if (shouldQueryEncryptedTextFields()) {
+    textWhere.push({
+      note: {
+        contains: normalizedQuery,
+        mode: "insensitive",
+      },
+    });
+  }
 
   if (amount) {
     textWhere.push({
@@ -705,7 +717,7 @@ function serializeEntry(
     comparisonAmount: money.comparisonAmount,
     savingImpact: money.savingImpact,
     date: entry.date.toISOString(),
-    note: entry.note,
+    note: decryptOptionalText(entry.note),
     source: entry.source,
     paidByUserId: people.paidByUserId,
     beneficiaryUserIds: people.beneficiaryUserIds,
@@ -910,7 +922,7 @@ export async function getEntryById(
       comparisonAmount: money.comparisonAmount,
       savingImpact: money.savingImpact,
       date: entry.date.toISOString(),
-      note: entry.note,
+      note: decryptOptionalText(entry.note),
       source: entry.source,
       paidByUserId: people.paidByUserId,
       beneficiaryUserIds: people.beneficiaryUserIds,
@@ -1050,6 +1062,7 @@ async function _cachedDashboardEntrySnapshot(workspaceId: string): Promise<Dashb
       firstEntryDate: firstEntry?.date ?? null,
       recentEntries: recentEntries.map((entry) => ({
         ...entry,
+        note: decryptOptionalText(entry.note),
         realCost: toFiniteNumber(entry.realCost),
         savedAmount: toFiniteNumber(entry.savedAmount),
         alternativeCost: toFiniteNumber(entry.alternativeCost),
@@ -1377,11 +1390,16 @@ export async function updateEntry(
 
     await prisma.$transaction(async (tx) => {
       await tx.entryBeneficiary.deleteMany({
-        where: { entryId: id },
+        where: {
+          entryId: id,
+          entry: {
+            is: { workspaceId },
+          },
+        },
       });
 
       await tx.entry.update({
-        where: { id },
+        where: { id, workspaceId },
         data: {
           workspaceId,
           title,
@@ -1393,7 +1411,7 @@ export async function updateEntry(
           savingContext: money.savingContext,
           paymentMode: payment.paymentMode,
           date,
-          note: note || null,
+          note: encryptOptionalText(note),
           paidByUserId: ownership.paidByUserId,
           beneficiaries: {
             create: ownership.beneficiaryUserIds.map((userId) => ({ userId })),
@@ -1466,8 +1484,11 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
     }
 
     if (entry.habitOccurrenceId) {
-      const habitOccurrence = await prisma.habitOccurrence.findUnique({
-        where: { id: entry.habitOccurrenceId },
+      const habitOccurrence = await prisma.habitOccurrence.findFirst({
+        where: {
+          id: entry.habitOccurrenceId,
+          habit: { workspaceId },
+        },
         include: {
           habit: {
             select: {
@@ -1481,10 +1502,13 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
 
       await prisma.$transaction([
         prisma.entry.delete({
-          where: { id },
+          where: { id, workspaceId },
         }),
-        prisma.habitOccurrence.update({
-          where: { id: entry.habitOccurrenceId },
+        prisma.habitOccurrence.updateMany({
+          where: {
+            id: entry.habitOccurrenceId,
+            habit: { workspaceId },
+          },
           data: {
             status: "skipped",
           },
@@ -1492,7 +1516,7 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
       ]);
     } else {
       await prisma.entry.delete({
-        where: { id },
+        where: { id, workspaceId },
       });
     }
 

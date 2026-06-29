@@ -4,6 +4,7 @@ import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { formatMoney } from "@/src/lib/formatters";
 import { getEntryExpenseKind } from "@/src/lib/entry-ownership";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
+import { decryptOptionalText } from "@/src/lib/field-encryption";
 import { prisma } from "@/src/lib/prisma";
 import {
   buildStreakResult,
@@ -282,7 +283,7 @@ function serializeMonthlyReportEntry(entry: {
     savedAmount: toNumber(entry.savedAmount),
     mode: entry.mode,
     savingContext: entry.savingContext,
-    note: entry.note,
+    note: decryptOptionalText(entry.note),
     source: entry.source,
     paidByUserId: entry.paidByUserId,
     beneficiaries: entry.beneficiaries.map((beneficiary) => ({
@@ -705,7 +706,7 @@ export async function getMonthlyReport(
           alternativeCost: entryMetrics.wouldHaveSpent,
           savedAmount: entryMetrics.netImpact,
           ownershipLabel: getEntryOwnershipLabelFromMembers(entry, members),
-          note: entry.note,
+          note: decryptOptionalText(entry.note),
         };
       }
     }

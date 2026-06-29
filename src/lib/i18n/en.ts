@@ -75,6 +75,8 @@ export const en: Translations = {
     monthlyReportLabel: "Monthly report",
     monthlyReportDetail: "Monthly summary as PDF",
     appSection: "App",
+    privacyLabel: "Privacy",
+    privacyDetail: "Data, exports, deletion and subprocessors",
     accountSection: "Account",
     deleteAccountLabel: "Delete account",
     deleteAccountDetail: "Delete your account and all associated data",

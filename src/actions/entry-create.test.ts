@@ -169,9 +169,13 @@ describe("createEntryFromNormalizedInput", () => {
     );
 
     assert.equal(withImport.success, true);
+    assert.deepEqual(worldWithImport.calls.importedFindUniqueArgs[0], {
+      where: { id: "imported-ok", workspaceId: "workspace-1" },
+      select: { workspaceId: true },
+    });
     assert.equal(worldWithImport.calls.importedUpdateArgs.length, 1);
     assert.deepEqual(worldWithImport.calls.importedUpdateArgs[0], {
-      where: { id: "imported-ok" },
+      where: { id: "imported-ok", workspaceId: "workspace-1" },
       data: {
         entryId: "entry-1",
         status: "confirmed",

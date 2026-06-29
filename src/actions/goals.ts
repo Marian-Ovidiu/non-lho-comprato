@@ -295,7 +295,7 @@ export async function deleteGoal(goalId: string): Promise<GoalActionResult> {
     }
 
     await prisma.goal.delete({
-      where: { id },
+      where: { id, workspaceId },
     });
 
     revalidateGoalPaths();
@@ -344,7 +344,7 @@ export async function toggleGoalActive(
     }
 
     await prisma.goal.update({
-      where: { id },
+      where: { id, workspaceId },
       data: {
         isActive: !goal.isActive,
       },

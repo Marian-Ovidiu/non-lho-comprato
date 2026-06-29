@@ -14,6 +14,7 @@ import {
   checkRateLimit,
   getClientIpFromRequestHeaders,
 } from "@/src/lib/rate-limit";
+import { encryptFieldText } from "@/src/lib/field-encryption";
 
 export type FeedbackActionState = {
   success: boolean;
@@ -94,7 +95,7 @@ export async function submitFeedback(
         userId,
         workspaceId,
         type: result.data.type,
-        message: result.data.message,
+        message: encryptFieldText(result.data.message),
         route: result.data.route,
         userAgent: result.data.userAgent,
         viewport: result.data.viewport,

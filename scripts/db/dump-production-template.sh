@@ -13,6 +13,18 @@ fi
 
 OUTPUT_FILE="$1"
 OUTPUT_DIR="$(dirname "$OUTPUT_FILE")"
+DB_USER="$(
+  node -e 'const u = new URL(process.env.PROD_DATABASE_URL); console.log(decodeURIComponent(u.username || ""))' \
+    2>/dev/null || true
+)"
+
+case "$DB_USER" in
+  postgres|postgres.*|supabase_admin|service_role)
+    echo "PROD_DATABASE_URL uses an admin-like database user: $DB_USER" >&2
+    echo "Refusing dump. Create and use a dedicated read-only production dump role." >&2
+    exit 1
+    ;;
+esac
 
 mkdir -p "$OUTPUT_DIR"
 

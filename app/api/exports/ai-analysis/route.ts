@@ -11,6 +11,7 @@ import {
   type AiExpenseExportRange,
 } from "@/src/lib/ai-export";
 import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
+import { decryptOptionalText } from "@/src/lib/field-encryption";
 import {
   checkRateLimit,
   createRateLimitResponse,
@@ -125,7 +126,7 @@ async function fetchEntriesBatch(
     updatedAt: entry.updatedAt,
     date: entry.date,
     title: entry.title,
-    note: entry.note,
+    note: decryptOptionalText(entry.note),
     source: entry.source,
     realCost: entry.realCost,
     alternativeCost: entry.alternativeCost,

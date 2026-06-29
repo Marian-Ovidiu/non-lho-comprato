@@ -73,6 +73,8 @@ export type Translations = {
     monthlyReportLabel: string;
     monthlyReportDetail: string;
     appSection: string;
+    privacyLabel: string;
+    privacyDetail: string;
     accountSection: string;
     deleteAccountLabel: string;
     deleteAccountDetail: string;

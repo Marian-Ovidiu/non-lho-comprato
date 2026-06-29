@@ -1,15 +1,22 @@
+import "server-only";
+
 import { createClient } from "@supabase/supabase-js";
 
 import { getSupabaseEnvironment } from "@/src/lib/supabase/config";
 
+function getSupabaseServiceRoleKey() {
+  return process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || null;
+}
+
 export function createSupabaseAdminClient() {
   const environment = getSupabaseEnvironment();
+  const serviceRoleKey = getSupabaseServiceRoleKey();
 
-  if (!environment?.serviceRoleKey) {
+  if (!environment || !serviceRoleKey) {
     return null;
   }
 
-  return createClient(environment.url, environment.serviceRoleKey, {
+  return createClient(environment.url, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,

@@ -31,6 +31,12 @@ import {
   detectDelimiter,
   parseCsvText,
 } from "@/src/lib/imports/import-parser";
+import {
+  decryptJsonValue,
+  decryptOptionalText,
+  encryptJsonValue,
+  encryptOptionalText,
+} from "@/src/lib/field-encryption";
 
 type ImportBatchStatus =
   | "parsing"
@@ -298,6 +304,23 @@ function countTransactionStatuses(transactions: ImportedTransactionRecord[]) {
   );
 }
 
+function decryptImportedTransactionRecord(
+  transaction: ImportedTransactionRecord,
+): ImportedTransactionRecord {
+  return {
+    ...transaction,
+    description: decryptOptionalText(transaction.description) ?? "",
+    merchantName: decryptOptionalText(transaction.merchantName),
+    rawJson: decryptJsonValue<Prisma.JsonValue>(transaction.rawJson),
+  };
+}
+
+function decryptImportedTransactionRecords(
+  transactions: ImportedTransactionRecord[],
+): ImportedTransactionRecord[] {
+  return transactions.map(decryptImportedTransactionRecord);
+}
+
 function buildRawTransactionPayload(
   batchId: string,
   workspaceId: string,
@@ -321,7 +344,7 @@ function buildRawTransactionPayload(
     categoryIdConfirmed: null,
     entryId: null,
     duplicateOfId: null,
-    rawJson,
+    rawJson: encryptJsonValue(rawJson),
     errorMessage: null,
   };
 }
@@ -361,8 +384,8 @@ function mapTransactionUpdatePayload(
 ): Record<string, unknown> {
   return {
     date: draft.date,
-    description: draft.description,
-    merchantName: draft.merchantName,
+    description: encryptOptionalText(draft.description) ?? "",
+    merchantName: encryptOptionalText(draft.merchantName),
     amount: draft.amount === null ? null : toDecimalString(draft.amount),
     currency: draft.currency,
     categoryIdSuggested,
@@ -375,7 +398,7 @@ function mapTransactionUpdatePayload(
     fingerprint,
     duplicateOfId,
     errorMessage: draft.errorMessage ?? null,
-    rawJson: draft.raw,
+    rawJson: encryptJsonValue(draft.raw),
   };
 }
 
@@ -427,9 +450,10 @@ async function ensureCategoryBelongsToWorkspace(
 async function syncImportBatchCounters(
   deps: ImportActionsDeps,
   batchId: string,
+  workspaceId: string,
 ): Promise<ImportBatchRecord> {
   const transactions = await deps.prisma.importedTransaction.findMany({
-    where: { importBatchId: batchId },
+    where: { importBatchId: batchId, workspaceId },
     orderBy: [{ sourceRowIndex: "asc" }],
   });
   const counts = countTransactionStatuses(transactions);
@@ -441,7 +465,7 @@ async function syncImportBatchCounters(
       : "ready";
 
   return deps.prisma.importBatch.update({
-    where: { id: batchId },
+    where: { id: batchId, workspaceId },
     data: {
       rowCount: counts.rowCount,
       parsedCount: counts.parsedCount,
@@ -552,7 +576,7 @@ async function updateTransactionsFromMapping(params: {
     }
 
     await deps.prisma.importedTransaction.update({
-      where: { id: transaction.id },
+      where: { id: transaction.id, workspaceId: batch.workspaceId },
       data: payload,
     });
 
@@ -570,10 +594,12 @@ async function confirmImportedTransactions(
   selectedIds: string[],
   defaultCategoryId: string,
 ): Promise<ImportBatchActionResult> {
-  const transactions = await deps.prisma.importedTransaction.findMany({
-    where: { importBatchId: batch.id },
-    orderBy: [{ sourceRowIndex: "asc" }],
-  });
+  const transactions = decryptImportedTransactionRecords(
+    await deps.prisma.importedTransaction.findMany({
+      where: { importBatchId: batch.id, workspaceId: workspace.id },
+      orderBy: [{ sourceRowIndex: "asc" }],
+    }),
+  );
   const transactionsById = new Map(
     transactions.map((transaction) => [transaction.id, transaction]),
   );
@@ -697,7 +723,7 @@ async function confirmImportedTransactions(
     createdEntryIds.push(createResult.entryId);
 
     await deps.prisma.importedTransaction.update({
-      where: { id: transaction.id },
+      where: { id: transaction.id, workspaceId: workspace.id },
       data: {
         status: "confirmed",
         entryId: createResult.entryId,
@@ -706,7 +732,7 @@ async function confirmImportedTransactions(
     });
   }
 
-  const updatedBatch = await syncImportBatchCounters(deps, batch.id);
+  const updatedBatch = await syncImportBatchCounters(deps, batch.id, workspace.id);
   invalidateEntryPaths(workspace.id, deps.revalidatePath, deps.updateTag);
 
   return {
@@ -802,7 +828,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         );
 
         const updatedBatch = await deps.prisma.importBatch.update({
-          where: { id: batch.id },
+          where: { id: batch.id, workspaceId: workspace.id },
           data: {
             delimiter,
             headerRowJson: parsed.headers,
@@ -822,7 +848,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         };
       } catch (error) {
         await deps.prisma.importBatch.update({
-          where: { id: batch.id },
+          where: { id: batch.id, workspaceId: workspace.id },
           data: {
             status: "failed",
             errorMessage: error instanceof Error ? error.message : String(error),
@@ -866,7 +892,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
       if (!mappingValidation.ok) {
         await deps.prisma.importBatch.update({
-          where: { id: batch.id },
+          where: { id: batch.id, workspaceId: workspace.id },
           data: {
             status: "failed",
             errorMessage: Object.values(mappingValidation.errors).join(" "),
@@ -880,10 +906,12 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         };
       }
 
-      const transactions = await deps.prisma.importedTransaction.findMany({
-        where: { importBatchId: batch.id },
-        orderBy: [{ sourceRowIndex: "asc" }],
-      });
+      const transactions = decryptImportedTransactionRecords(
+        await deps.prisma.importedTransaction.findMany({
+          where: { importBatchId: batch.id, workspaceId: workspace.id },
+          orderBy: [{ sourceRowIndex: "asc" }],
+        }),
+      );
 
       const workspaceCategories = await deps.prisma.category.findMany({
         where: {
@@ -906,7 +934,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
       if (transactions.length === 0) {
         await deps.prisma.importBatch.update({
-          where: { id: batch.id },
+          where: { id: batch.id, workspaceId: workspace.id },
           data: {
             status: "failed",
             errorMessage: "Nessuna riga importata.",
@@ -920,7 +948,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       }
 
       await deps.prisma.importBatch.update({
-        where: { id: batch.id },
+        where: { id: batch.id, workspaceId: workspace.id },
         data: {
           columnMappingJson: mapping,
         },
@@ -936,7 +964,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         categories: workspaceCategories,
       });
 
-      const updatedBatch = await syncImportBatchCounters(deps, batch.id);
+      const updatedBatch = await syncImportBatchCounters(deps, batch.id, workspace.id);
       invalidateImportPaths(deps.revalidatePath);
 
       return {
@@ -963,10 +991,12 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         return null;
       }
 
-      const transactions = await deps.prisma.importedTransaction.findMany({
-        where: { importBatchId: batch.id },
-        orderBy: [{ sourceRowIndex: "asc" }],
-      });
+      const transactions = decryptImportedTransactionRecords(
+        await deps.prisma.importedTransaction.findMany({
+          where: { importBatchId: batch.id, workspaceId: workspace.id },
+          orderBy: [{ sourceRowIndex: "asc" }],
+        }),
+      );
 
       return {
         batch: {
@@ -1067,7 +1097,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       }
 
       const transactions = await deps.prisma.importedTransaction.findMany({
-        where: { importBatchId: batch.id },
+        where: { importBatchId: batch.id, workspaceId: workspace.id },
         orderBy: [{ sourceRowIndex: "asc" }],
       });
       const transactionsById = new Map(
@@ -1108,13 +1138,13 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       await Promise.all(
         idsToIgnore.map((id) =>
           deps.prisma.importedTransaction.update({
-            where: { id },
+            where: { id, workspaceId: workspace.id },
             data: { status: "ignored" },
           }),
         ),
       );
 
-      const updatedBatch = await syncImportBatchCounters(deps, batch.id);
+      const updatedBatch = await syncImportBatchCounters(deps, batch.id, workspace.id);
       invalidateImportPaths(deps.revalidatePath);
 
       return {
@@ -1150,7 +1180,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       }
 
       const transactions = await deps.prisma.importedTransaction.findMany({
-        where: { importBatchId: batch.id },
+        where: { importBatchId: batch.id, workspaceId: workspace.id },
       });
       const counts = countTransactionStatuses(transactions);
 
@@ -1162,7 +1192,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       }
 
       await deps.prisma.importBatch.delete({
-        where: { id: batch.id },
+        where: { id: batch.id, workspaceId: workspace.id },
       });
 
       invalidateImportPaths(deps.revalidatePath);

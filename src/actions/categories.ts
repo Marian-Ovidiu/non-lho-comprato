@@ -177,7 +177,7 @@ export async function updateCategory(
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
   try {
-    await requireOwner();
+    const { workspaceId } = await requireOwner();
 
     const name = String(formData.get("name") ?? "").trim();
     const icon = String(formData.get("icon") ?? "").trim() || null;
@@ -193,7 +193,7 @@ export async function updateCategory(
     if (!category) return { success: false, message: "Categoria non trovata." };
 
     await prisma.category.update({
-      where: { id: categoryId },
+      where: { id: categoryId, workspaceId },
       data: { name, icon, color },
     });
 
@@ -225,7 +225,7 @@ export async function archiveCategory(
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
   try {
-    await requireOwner();
+    const { workspaceId } = await requireOwner();
 
     const category = await prisma.category.findFirst({
       where: await getCurrentWorkspaceScopedWhere({ id: categoryId }),
@@ -238,7 +238,7 @@ export async function archiveCategory(
     }
 
     await prisma.category.update({
-      where: { id: categoryId },
+      where: { id: categoryId, workspaceId },
       data: { archivedAt: new Date() },
     });
 
@@ -290,7 +290,7 @@ export async function restoreCategory(
     }
 
     await prisma.category.update({
-      where: { id: categoryId },
+      where: { id: categoryId, workspaceId },
       data: { archivedAt: null },
     });
 
@@ -316,7 +316,7 @@ export async function deleteCategory(
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
   try {
-    await requireOwner();
+    const { workspaceId } = await requireOwner();
 
     const category = await prisma.category.findFirst({
       where: await getCurrentWorkspaceScopedWhere({ id: categoryId }),
@@ -346,7 +346,7 @@ export async function deleteCategory(
       };
     }
 
-    await prisma.category.delete({ where: { id: categoryId } });
+    await prisma.category.delete({ where: { id: categoryId, workspaceId } });
 
     revalidateCategoryPaths();
     return { success: true, message: "Categoria eliminata." };
@@ -415,7 +415,7 @@ export async function resetDefaultCategories(): Promise<CategoryActionResult> {
         });
         if (!nameConflict) {
           await prisma.category.update({
-            where: { id: archived.id },
+            where: { id: archived.id, workspaceId },
             data: { archivedAt: null },
           });
         }

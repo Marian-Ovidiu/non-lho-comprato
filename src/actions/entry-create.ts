@@ -9,6 +9,7 @@ import type { EntryMoneyResult } from "@/src/lib/entry-domain";
 import type { EntryPaymentModeValue } from "@/src/lib/entry-payment-mode";
 import { prisma } from "@/src/lib/prisma";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
+import { encryptOptionalText } from "@/src/lib/field-encryption";
 import {
   getCurrentWorkspaceScopedWhere,
   getCurrentWorkspaceTimezone,
@@ -66,11 +67,11 @@ export type EntryCreatePrismaLike = EntryDayCountClientLike & {
   };
   importedTransaction: {
     findUnique(args: {
-      where: { id: string };
+      where: { id: string; workspaceId?: string };
       select: { workspaceId: true } | { workspaceId: true; id?: true };
     }): Promise<{ workspaceId: string } | null>;
     update(args: {
-      where: { id: string };
+      where: { id: string; workspaceId?: string };
       data: Record<string, unknown>;
     }): Promise<unknown>;
   };
@@ -186,7 +187,7 @@ export async function createEntryFromNormalizedInput(
 
   if (importedTransactionId) {
     const importedTransaction = await prismaClient.importedTransaction.findUnique({
-      where: { id: importedTransactionId },
+      where: { id: importedTransactionId, workspaceId: input.workspaceId },
       select: { workspaceId: true },
     });
 
@@ -213,7 +214,7 @@ export async function createEntryFromNormalizedInput(
           paymentMode: input.paymentMode,
           date: input.date,
           isFirstEntryOfDay,
-          note: input.note || null,
+          note: encryptOptionalText(input.note),
           source: input.source,
           paidByUserId: input.paidByUserId,
           beneficiaries: {
@@ -226,7 +227,10 @@ export async function createEntryFromNormalizedInput(
 
       if (importedTransactionId) {
         await tx.importedTransaction.update({
-          where: { id: importedTransactionId },
+          where: {
+            id: importedTransactionId,
+            workspaceId: input.workspaceId,
+          },
           data: {
             entryId: created.id,
             status: "confirmed",

@@ -13,6 +13,7 @@ import {
   type EntrySavingContext,
 } from "@/src/lib/entry-domain";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
+import { decryptOptionalText, encryptOptionalText } from "@/src/lib/field-encryption";
 import { prisma } from "@/src/lib/prisma";
 import {
   getDefaultBeneficiaryUserIds,
@@ -461,7 +462,7 @@ export async function createPreset(
         categoryId: category.id,
         realCost: money.money.realCost.toFixed(2),
         alternativeCost: money.money.alternativeCost.toFixed(2),
-        note: note || null,
+        note: encryptOptionalText(note),
       },
     });
 
@@ -548,13 +549,13 @@ export async function updatePreset(
     }
 
     await prisma.quickPreset.update({
-      where: { id: presetId },
+      where: { id: presetId, workspaceId },
       data: {
         title,
         categoryId: category.id,
         realCost: money.money.realCost.toFixed(2),
         alternativeCost: money.money.alternativeCost.toFixed(2),
-        note: note || null,
+        note: encryptOptionalText(note),
       },
     });
 
@@ -619,7 +620,7 @@ function serializePreset(
     amountSpent: money.amountSpent.toFixed(2),
     comparisonAmount: money.comparisonAmount.toFixed(2),
     savingImpact: money.savingImpact.toFixed(2),
-    note: preset.note,
+    note: decryptOptionalText(preset.note),
     targetUserId: preset.targetUserId,
     targetScope: preset.targetScope,
     targetUserLabel: resolveTargetUserLabel(preset.targetUserId, preset.targetScope, members),
@@ -727,7 +728,7 @@ export async function createEntryFromPreset(
         alternativeCost: toNumber(preset.alternativeCost),
         savedAmount: toNumber(preset.alternativeCost) - toNumber(preset.realCost),
       }),
-      note: preset.note,
+      note: decryptOptionalText(preset.note),
       paidByUserId: ownership.paidByUserId,
       beneficiaryUserIds: ownership.beneficiaryUserIds,
       timeZone,
@@ -788,7 +789,7 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
     }
 
     await prisma.quickPreset.delete({
-      where: { id: presetId },
+      where: { id: presetId, workspaceId },
     });
 
     revalidatePresetPaths();

@@ -20,7 +20,10 @@
     "test:e2e:migrate": "tsx scripts/e2e/migrate.ts",
     "test:e2e:ui": "playwright test --ui",
     "prisma:validate": "prisma validate",
-    "check": "npm run prisma:validate && npm run lint && npm run typecheck && npm run test && npm run build",
+    "security:check": "node scripts/security/check-server-secrets.mjs",
+    "security:field-key": "node scripts/security/generate-field-encryption-key.mjs",
+    "security:encrypt-fields": "tsx scripts/security/encrypt-existing-fields.ts",
+    "check": "npm run prisma:validate && npm run security:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "release:archive": "sh -c 'mkdir -p release && out=release/non-lho-comprato-$(git rev-parse --short HEAD).zip && git archive --format=zip --output=\"$out\" --add-file=.env.example --add-file=.env.e2e.example HEAD -- . \":(exclude)AGENTS.md\" \":(exclude)CLAUDE.md\" \":(exclude).env\" \":(exclude).env.*\" \":(exclude).env-backup\" \":(exclude).env-backup/**\" \":(exclude)backups\" \":(exclude)backups/**\" \":(exclude)**/*.dump\" \":(exclude).git\" \":(exclude).idea\" \":(exclude).idea/**\" \":(exclude).claude\" \":(exclude).claude/**\" \":(exclude).agents\" \":(exclude).agents/**\" \":(exclude).next\" \":(exclude).next/**\" \":(exclude)node_modules\" \":(exclude)node_modules/**\" \":(exclude)__MACOSX\" \":(exclude)__MACOSX/**\" \":(exclude).DS_Store\" \":(exclude)**/.DS_Store\" \":(exclude)tsconfig.tsbuildinfo\" \":(exclude)**/*.tsbuildinfo\" \":(exclude)release\" \":(exclude)release/**\"'",
     "db:preflight:workspace": "psql \"$DATABASE_URL\" -f scripts/db/preflight-workspace.sql",
     "db:postflight:workspace": "psql \"$DATABASE_URL\" -f scripts/db/postflight-workspace.sql",
@@ -35,19 +38,19 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@next/env": "16.2.4",
+    "@next/env": "16.2.9",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "@sentry/nextjs": "^10.58.0",
+    "@sentry/nextjs": "^10.61.0",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^1.14.0",
-    "next": "16.2.4",
+    "next": "16.2.9",
     "pg": "^8.20.0",
-    "posthog-js": "^1.373.4",
+    "posthog-js": "^1.393.5",
     "prisma": "^7.8.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.4",
@@ -64,9 +67,13 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.4",
+    "eslint-config-next": "^16.2.9",
     "tailwindcss": "^4",
-    "tsx": "^4.21.0",
+    "tsx": "^4.22.4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "postcss": "8.5.15",
+    "@hono/node-server": "1.19.14"
   }
 }

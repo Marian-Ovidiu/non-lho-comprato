@@ -1,6 +1,13 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import {
+  useActionState,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -167,7 +174,21 @@ function getSummaryAmount(amountSpentInput: string) {
   return formatMoneyPreview(amountSpentInput);
 }
 
-export function CraftedEntryForm({
+export function CraftedEntryForm(props: CraftedEntryFormProps) {
+  const [formInstance, setFormInstance] = useState(0);
+
+  useLayoutEffect(() => {
+    return () => {
+      // Next 16 preserves route state while hiding pages; remount the form so
+      // useActionState and the closing confirmation do not leak into the next visit.
+      setFormInstance((current) => current + 1);
+    };
+  }, []);
+
+  return <CraftedEntryFormFields key={formInstance} {...props} />;
+}
+
+function CraftedEntryFormFields({
   categories,
   members,
   initialPaidByUserId,

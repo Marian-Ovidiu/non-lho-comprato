@@ -583,8 +583,12 @@ async function syncOccurrenceStatus(
   }
 
   try {
-    const occurrence = await prisma.habitOccurrence.findUnique({
-      where: { id },
+    const workspaceId = await getCurrentWorkspaceId();
+    const occurrence = await prisma.habitOccurrence.findFirst({
+      where: {
+        id,
+        habit: { workspaceId },
+      },
       include: {
         habit: true,
       },
@@ -601,9 +605,8 @@ async function syncOccurrenceStatus(
     await requireWorkspaceAccessForRecord(occurrence, "Occorrenza ricorrente");
     logStep("access-check");
 
-    const [currentUser, workspaceId, members, workspaceWhere, timeZone] = await Promise.all([
+    const [currentUser, members, workspaceWhere, timeZone] = await Promise.all([
       getCurrentUser(),
-      getCurrentWorkspaceId(),
       getCurrentWorkspaceMembers(),
       getCurrentWorkspaceScopedWhere(),
       getCurrentWorkspaceTimezone(),
@@ -611,13 +614,21 @@ async function syncOccurrenceStatus(
     logStep("workspace-context");
 
     await prisma.$transaction(async (tx) => {
-      await tx.habitOccurrence.update({
-        where: { id },
+      await tx.habitOccurrence.updateMany({
+        where: {
+          id,
+          habit: { workspaceId },
+        },
         data: { status },
       });
 
       if (status === "skipped") {
-        await tx.entry.deleteMany({ where: { habitOccurrenceId: id } });
+        await tx.entry.deleteMany({
+          where: {
+            workspaceId,
+            habitOccurrenceId: id,
+          },
+        });
         return;
       }
 
@@ -809,8 +820,12 @@ function isHabitDeleteMode(value: string): value is HabitDeleteMode {
   return value === "habit_only" || value === "habit_and_entries";
 }
 
-function getHabitLinkedEntriesWhere(habitId: string): Prisma.EntryWhereInput {
+function getHabitLinkedEntriesWhere(
+  habitId: string,
+  workspaceId: string,
+): Prisma.EntryWhereInput {
   return {
+    workspaceId,
     habitOccurrence: {
       habitId,
     },
@@ -820,9 +835,10 @@ function getHabitLinkedEntriesWhere(habitId: string): Prisma.EntryWhereInput {
 async function applyHabitDeletionToLinkedEntries(
   tx: Prisma.TransactionClient,
   habitId: string,
+  workspaceId: string,
   mode: HabitDeleteMode,
 ): Promise<void> {
-  const linkedEntriesWhere = getHabitLinkedEntriesWhere(habitId);
+  const linkedEntriesWhere = getHabitLinkedEntriesWhere(habitId, workspaceId);
 
   if (mode === "habit_and_entries") {
     await tx.entry.deleteMany({
@@ -876,10 +892,10 @@ export async function deleteHabit(
     }
 
     await prisma.$transaction(async (tx) => {
-      await applyHabitDeletionToLinkedEntries(tx, id, mode);
+      await applyHabitDeletionToLinkedEntries(tx, id, workspaceId, mode);
 
       await tx.habit.delete({
-        where: { id },
+        where: { id, workspaceId },
       });
     });
 
@@ -1039,7 +1055,7 @@ export async function updateHabit(
     }
 
     await prisma.habit.update({
-      where: { id },
+      where: { id, workspaceId },
       data: {
         name,
         categoryId: category.id,
@@ -1341,8 +1357,11 @@ export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {
           isFirstEntryOfDay,
         };
 
-        await tx.habitOccurrence.update({
-          where: { id: occurrence.id },
+        await tx.habitOccurrence.updateMany({
+          where: {
+            id: occurrence.id,
+            habit: { workspaceId },
+          },
           data: { status: "spent" },
         });
 
