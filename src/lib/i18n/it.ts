@@ -226,12 +226,9 @@ export const it: Translations = {
   dashboard: {
     spentMonth: "Speso questo mese",
     netImpact: "impatto netto",
-    largeComparisons: "Grandi confronti:",
     moreThanLast: "in più",
     lessThanLast: "in meno",
     thanLastMonth: "del mese scorso",
-    realSpendingFirst: "la spesa reale",
-    comesFirst: "viene prima.",
     spentToday: "Speso oggi",
     entriesToday: "Movimenti oggi",
     coupleBalance: "Bilancio coppia",
@@ -295,13 +292,9 @@ export const it: Translations = {
 
   dashboardQuickActions: {
     title: "Azioni rapide",
-    desc: "Parti da una spesa normale, poi aggiungi il confronto solo quando serve.",
     registerExpense: "Registra una spesa",
-    registerExpenseDesc: "Aggiungi movimento o confronto",
     quickPresets: "Preset rapidi",
-    quickPresetsDesc: "Riusa spese e scorciatoie",
     statistics: "Statistiche",
-    statisticsDesc: "Guarda spesa e impatto netto",
   },
 
   monthlyReportPreview: {

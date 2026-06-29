@@ -72,7 +72,6 @@ export type CraftedDashboardProps = {
   monthLabel: string;
   monthRealSpent: number;
   monthSaved: number;
-  monthLargeComparisonImpact: number;
   monthDelta: number | null;
   monthTrend: number[];
   spentToday: number;
@@ -213,7 +212,6 @@ export function CraftedDashboard({
   monthLabel,
   monthRealSpent,
   monthSaved,
-  monthLargeComparisonImpact,
   monthDelta,
   monthTrend,
   spentToday,
@@ -256,16 +254,11 @@ export function CraftedDashboard({
 
         <div className="mt-3 flex items-end justify-between gap-3">
           <div className="min-w-0 flex-1">
-            <Label className="mb-1.5 block">{monthLabel} — {t.dashboard.netImpact}</Label>
+            <Label className="mb-1.5 block">{monthLabel}</Label>
             <Mono className="text-xl font-medium">
               <CraftedAmount value={monthSaved} />
               <span className="text-xs text-accent">{currencySymbol}</span>
             </Mono>
-            {monthLargeComparisonImpact > 0 ? (
-            <Mono className="mt-1 block text-[11px] text-ink-3">
-                {t.dashboard.largeComparisons}: {formatCraftedCompact(monthLargeComparisonImpact)}{currencySymbol}
-              </Mono>
-            ) : null}
           </div>
 
           {monthDelta !== null && monthDelta !== 0 ? (
@@ -277,11 +270,6 @@ export function CraftedDashboard({
             </span>
           ) : null}
         </div>
-
-        <p className="mt-[var(--sp-stack)] text-[22px] leading-[1.15]">
-          <Serif className="text-muted-foreground">{t.dashboard.realSpendingFirst} </Serif>
-          <Serif>{t.dashboard.comesFirst}</Serif>
-        </p>
 
         {reflection ? (
           <div className="mt-5">
@@ -387,7 +375,9 @@ export function CraftedDashboard({
       <div className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <Label className="mb-3 block">{t.dashboard.budgetSectionLabel}</Label>
         <CraftedBudgetAlertList
-          alerts={budgetAlertSelection.primaryAlerts}
+          alerts={budgetAlertSelection.primaryAlerts.filter(
+            (alert) => alert.level !== "danger",
+          )}
           title={t.dashboard.budgetAlertTitle}
           description={t.dashboard.budgetAlertDesc}
           className="mb-4"

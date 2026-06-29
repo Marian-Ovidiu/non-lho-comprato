@@ -135,7 +135,6 @@ export function buildCraftedCategories(
 export function buildCraftedDashboardProps(input: {
   monthRealSpent: number;
   monthSaved: number;
-  monthLargeComparisonImpact: number;
   spentToday: number;
   entriesTodayCount: number;
   entriesCountMonth: number;
@@ -169,7 +168,6 @@ export function buildCraftedDashboardProps(input: {
     monthLabel,
     monthRealSpent: input.monthRealSpent,
     monthSaved: input.monthSaved,
-    monthLargeComparisonImpact: input.monthLargeComparisonImpact,
     monthDelta,
     monthTrend,
     spentToday: input.spentToday,

@@ -223,12 +223,9 @@ export const en: Translations = {
   dashboard: {
     spentMonth: "Spent this month",
     netImpact: "net impact",
-    largeComparisons: "Large comparisons:",
     moreThanLast: "more",
     lessThanLast: "less",
     thanLastMonth: "than last month",
-    realSpendingFirst: "real spending",
-    comesFirst: "comes first.",
     spentToday: "Spent today",
     entriesToday: "Entries today",
     coupleBalance: "Couple balance",
@@ -292,13 +289,9 @@ export const en: Translations = {
 
   dashboardQuickActions: {
     title: "Quick actions",
-    desc: "Start with a regular expense, then add a comparison only if it makes sense.",
     registerExpense: "Log an expense",
-    registerExpenseDesc: "Add entry or comparison",
     quickPresets: "Quick presets",
-    quickPresetsDesc: "Reuse expenses and shortcuts",
     statistics: "Statistics",
-    statisticsDesc: "Check spending and net impact",
   },
 
   monthlyReportPreview: {

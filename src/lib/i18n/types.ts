@@ -217,12 +217,9 @@ export type Translations = {
   dashboard: {
     spentMonth: string;
     netImpact: string;
-    largeComparisons: string;
     moreThanLast: string;
     lessThanLast: string;
     thanLastMonth: string;
-    realSpendingFirst: string;
-    comesFirst: string;
     spentToday: string;
     entriesToday: string;
     coupleBalance: string;
@@ -283,13 +280,9 @@ export type Translations = {
 
   dashboardQuickActions: {
     title: string;
-    desc: string;
     registerExpense: string;
-    registerExpenseDesc: string;
     quickPresets: string;
-    quickPresetsDesc: string;
     statistics: string;
-    statisticsDesc: string;
   };
 
   monthlyReportPreview: {
