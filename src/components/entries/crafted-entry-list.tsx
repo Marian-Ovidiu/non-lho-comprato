@@ -1,23 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2, X } from "lucide-react";
+import { Loader2, Receipt, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
+import { Label, Mono, Rule, Serif } from "@/components/crafted";
 import { getEntriesPage } from "@/src/actions/entries";
-import { CraftedEntryRow } from "@/src/components/entries/crafted-entry-row";
-import { Button } from "@/components/ui/button";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import {
-  getDateKey,
-  shiftDateKey,
-} from "@/src/lib/workspace-dates";
+  CraftedEntryRow,
+  type CraftedEntryRowItem,
+  type EntryKind,
+} from "@/src/components/entries/crafted-entry-row";
+import { Button } from "@/components/ui/button";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
+import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
+import { getDateKey, shiftDateKey } from "@/src/lib/workspace-dates";
 import { cn } from "@/lib/utils";
-import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
 import { languageToLocale } from "@/src/lib/i18n";
+import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 
 type EntryItem = {
   id: string;
@@ -38,14 +39,14 @@ type EntryItem = {
   note: string | null;
   source: string;
   paidByUserId: string;
+  paidByLabel?: string | null;
   beneficiaryUserIds: string[];
   createdAt?: string;
 };
 
-type CategoryFilter = {
-  id: string;
+type KindFilter = {
+  id: EntryKind | "all";
   label: string;
-  matches?: string[];
 };
 
 type CraftedEntryListProps = {
@@ -53,6 +54,7 @@ type CraftedEntryListProps = {
   initialNextCursor: string | null;
   initialHasMore: boolean;
   newEntryHref: string;
+  monthLabel: string;
   previousMonthSummary?: {
     label: string;
     totalRealSpent: number;
@@ -61,128 +63,146 @@ type CraftedEntryListProps = {
   } | null;
 };
 
-type DayGroup = {
+type DayGroupData = {
   dateKey: string;
   label: string;
-  entries: EntryItem[];
-  totalRealSpent: number;
-  totalSaved: number;
+  relative: string | null;
+  count: number;
+  dayTotal: number;
+  entries: CraftedEntryRowItem[];
 };
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 250;
 const RECENT_ENTRY_HIGHLIGHT_MS = 2_000;
 
-function normalizeFilterKey(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase();
+function formatEUR(value: number) {
+  const formatted = new Intl.NumberFormat("it-IT", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(value));
+
+  return `€${formatted}`;
 }
 
-function matchesCategoryFilter(entry: EntryItem, filter: CategoryFilter) {
-  if (filter.id === "all" || !filter.matches) {
-    return true;
+function formatTime(date: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(date));
+}
+
+function getEntryKind(entry: EntryItem): EntryKind {
+  const metrics = calculateEntryMetrics(entry);
+
+  if (metrics.mode === "avoided") {
+    return "evitata";
   }
 
-  const slug = normalizeFilterKey(entry.category.slug ?? "");
-  const name = normalizeFilterKey(entry.category.name ?? "");
+  if (metrics.isComparisonEntry) {
+    return "confronto";
+  }
 
-  return filter.matches.some(
-    (match) => slug.includes(match) || name.includes(match),
-  );
+  return "spesa";
 }
 
-function getShortRomeDateLabel(dateKey: string, locale: string) {
+function toRowEntry(entry: EntryItem, locale: string, language: string): CraftedEntryRowItem {
+  const metrics = calculateEntryMetrics(entry);
+  const kind = getEntryKind(entry);
+  const categoryName =
+    getLocalizedCategoryName(entry.category.slug, language) ?? entry.category.name;
+
+  return {
+    id: entry.id,
+    title: entry.title,
+    note: entry.note,
+    cat: categoryName,
+    icon: getCategoryCraftedIcon(entry.category),
+    amount: kind === "evitata" ? metrics.avoidedAmount : metrics.spentReal,
+    kind,
+    time: formatTime(entry.date, locale),
+    who: entry.paidByLabel,
+    saved: metrics.comparisonSaved,
+    original: metrics.wouldHaveSpent,
+  };
+}
+
+function parseDateKey(dateKey: string) {
   const [yearPart, monthPart, dayPart] = dateKey.split("-");
-  const year = Number(yearPart);
-  const month = Number(monthPart);
-  const day = Number(dayPart);
+  return {
+    year: Number(yearPart),
+    month: Number(monthPart),
+    day: Number(dayPart),
+  };
+}
+
+function getDayLabel(dateKey: string, locale: string) {
+  const { year, month, day } = parseDateKey(dateKey);
 
   if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
     return dateKey;
   }
 
-  return new Intl.DateTimeFormat(locale, {
+  const formatted = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
     timeZone: "UTC",
-  })
-    .format(new Date(Date.UTC(year, month - 1, day)))
-    .replace(".", "");
+  }).format(new Date(Date.UTC(year, month - 1, day)));
+
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-function getCraftedDayGroupLabel(
-  dateKey: string,
-  locale: string,
-  todayLabel: string,
-  yesterdayLabel: string,
-) {
+function getRelativeLabel(dateKey: string) {
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const todayKey = getDateKey(new Date(), browserTz);
   const yesterdayKey = shiftDateKey(todayKey, -1);
-  const shortDate = getShortRomeDateLabel(dateKey, locale);
 
   if (dateKey === todayKey) {
-    return `${todayLabel} · ${shortDate}`;
+    return "oggi";
   }
 
   if (dateKey === yesterdayKey) {
-    return `${yesterdayLabel} · ${shortDate}`;
+    return "ieri";
   }
 
-  const [yearPart, monthPart, dayPart] = dateKey.split("-");
-  const weekday = new Intl.DateTimeFormat(locale, {
-    weekday: "short",
-    timeZone: "UTC",
-  })
-    .format(
-      new Date(
-        Date.UTC(Number(yearPart), Number(monthPart) - 1, Number(dayPart)),
-      ),
-    )
-    .replace(".", "");
-
-  return `${weekday} · ${shortDate}`;
+  return null;
 }
 
-function groupEntries(
+function groupByDay(
   entries: EntryItem[],
   locale: string,
-  todayLabel: string,
-  yesterdayLabel: string,
-): DayGroup[] {
-  const groups: DayGroup[] = [];
+  language: string,
+): DayGroupData[] {
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const groups = new Map<string, DayGroupData>();
 
   for (const entry of entries) {
     const dateKey = getDateKey(new Date(entry.date), browserTz);
-    const currentGroup = groups.at(-1);
+    const rowEntry = toRowEntry(entry, locale, language);
+    const existing = groups.get(dateKey);
+    const dayTotal = rowEntry.kind === "spesa" ? rowEntry.amount : 0;
 
-    if (!dateKey) {
+    if (existing) {
+      existing.entries.push(rowEntry);
+      existing.count += 1;
+      existing.dayTotal += dayTotal;
       continue;
     }
 
-    const realSpent = Number(entry.realCost) || 0;
-    const saved = calculateEntryMetrics(entry).netImpact;
-
-    if (currentGroup && currentGroup.dateKey === dateKey) {
-      currentGroup.entries.push(entry);
-      currentGroup.totalRealSpent += realSpent;
-      currentGroup.totalSaved += saved;
-      continue;
-    }
-
-    groups.push({
+    groups.set(dateKey, {
       dateKey,
-      label: getCraftedDayGroupLabel(dateKey, locale, todayLabel, yesterdayLabel),
-      entries: [entry],
-      totalRealSpent: realSpent,
-      totalSaved: saved,
+      label: getDayLabel(dateKey, locale),
+      relative: getRelativeLabel(dateKey),
+      count: 1,
+      dayTotal,
+      entries: [rowEntry],
     });
   }
 
-  return groups;
+  return [...groups.values()].sort((left, right) =>
+    right.dateKey.localeCompare(left.dateKey),
+  );
 }
 
 function getRecentEntryHighlight(
@@ -215,24 +235,55 @@ function getRecentEntryHighlight(
   };
 }
 
+function EmptyState({
+  hasSearchTerm,
+  newEntryHref,
+}: {
+  hasSearchTerm: boolean;
+  newEntryHref: string;
+}) {
+  const t = useTranslations();
+
+  return (
+    <div className="px-[var(--sp-page-x)] py-8">
+      <div className="rounded-[var(--r-card)] border border-dashed border-line px-5 py-8 text-center">
+        <div className="mx-auto mb-4 flex size-10 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
+          <Receipt className="size-5" aria-hidden="true" />
+        </div>
+        <p className="text-[16px] font-semibold">
+          {hasSearchTerm ? t.entries.noResultsTitle : t.entries.emptyTitle}
+        </p>
+        <Serif className="mt-2 block text-sm text-ink-3">
+          {hasSearchTerm ? t.entries.noResultsDesc : t.entries.emptyDesc}
+        </Serif>
+        {!hasSearchTerm ? (
+          <div className="mt-5">
+            <Button asChild className="h-11 rounded-[var(--r-cta)] px-5">
+              <Link href={newEntryHref}>{t.entries.addFirst}</Link>
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 export function CraftedEntryList({
   initialEntries,
   initialNextCursor,
   initialHasMore,
   newEntryHref,
-  previousMonthSummary,
+  monthLabel,
 }: CraftedEntryListProps) {
-  const currencySymbol = useCurrencySymbol();
   const t = useTranslations();
   const language = useWorkspaceLanguage();
   const locale = languageToLocale(language);
 
-  const CATEGORY_FILTERS: CategoryFilter[] = [
-    { id: "all", label: t.entries.filterAll },
-    { id: "caffe", label: t.entries.filterCoffee, matches: ["caffe", "caffè", "coffee"] },
-    { id: "delivery", label: t.entries.filterDelivery, matches: ["delivery", "cibo", "spesa"] },
-    { id: "shopping", label: t.entries.filterShopping, matches: ["shopping"] },
-    { id: "svago", label: t.entries.filterFun, matches: ["svago"] },
+  const KIND_FILTERS: KindFilter[] = [
+    { id: "all", label: "Tutti" },
+    { id: "spesa", label: "Spese" },
+    { id: "evitata", label: "Evitate" },
+    { id: "confronto", label: "Confronti" },
   ];
 
   const [entries, setEntries] = useState(initialEntries);
@@ -240,32 +291,33 @@ export function CraftedEntryList({
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
-  const [activeFilterId, setActiveFilterId] = useState("all");
+  const [activeFilterId, setActiveFilterId] = useState<KindFilter["id"]>("all");
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [highlightedRecentEntryIds, setHighlightedRecentEntryIds] = useState<
-    string[]
-  >([]);
+  const [highlightedRecentEntryIds, setHighlightedRecentEntryIds] = useState<string[]>([]);
   const initialSearchHandledRef = useRef(false);
   const requestIdRef = useRef(0);
   const initialEntriesRef = useRef(initialEntries);
   const initialNextCursorRef = useRef(initialNextCursor);
   const initialHasMoreRef = useRef(initialHasMore);
 
-  const activeFilter =
-    CATEGORY_FILTERS.find((filter) => filter.id === activeFilterId) ??
-    CATEGORY_FILTERS[0]!;
-
   const filteredEntries = useMemo(
-    () => entries.filter((entry) => matchesCategoryFilter(entry, activeFilter)),
-    [entries, activeFilter],
+    () =>
+      entries.filter((entry) => {
+        if (activeFilterId === "all") {
+          return true;
+        }
+
+        return getEntryKind(entry) === activeFilterId;
+      }),
+    [entries, activeFilterId],
   );
 
   const groups = useMemo(
-    () => groupEntries(filteredEntries, locale, t.entries.todayLabel, t.entries.yesterdayLabel),
-    [filteredEntries, locale, t.entries.todayLabel, t.entries.yesterdayLabel],
+    () => groupByDay(filteredEntries, locale, language),
+    [filteredEntries, locale, language],
   );
   const hasSearchTerm = searchValue.trim().length > 0;
 
@@ -405,115 +457,90 @@ export function CraftedEntryList({
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <div className="flex gap-4 overflow-x-auto px-5 pb-3.5">
-        {CATEGORY_FILTERS.map((filter) => {
-          const active = filter.id === activeFilterId;
+      <div className="sticky top-14 z-30 border-b border-line bg-background/95 px-[var(--sp-page-x)] py-3 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <div className="flex min-h-11 flex-1 items-center gap-2.5 rounded-[var(--r-control)] border border-line bg-background px-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-offset-2">
+            <Search className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
+            <input
+              value={searchValue}
+              onChange={(event) => handleSearchChange(event.target.value)}
+              placeholder={t.entries.searchPlaceholder}
+              aria-label={t.entries.searchPlaceholder}
+              className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-ink-3"
+            />
+            {isSearching ? (
+              <Loader2 className="size-4 shrink-0 animate-spin text-ink-3" aria-hidden="true" />
+            ) : null}
+            {searchValue ? (
+              <button
+                type="button"
+                onClick={() => handleSearchChange("")}
+                className="nlc-press rounded-full p-1 text-ink-3 transition-colors hover:text-foreground"
+                aria-label={t.entries.clearSearch}
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+            ) : null}
+          </div>
+          <button
+            type="button"
+            className="nlc-press flex size-11 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-line text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label="Filtri"
+          >
+            <SlidersHorizontal className="size-4" aria-hidden="true" />
+          </button>
+        </div>
 
-          return (
-            <button
-              key={filter.id}
-              type="button"
-              onClick={() => setActiveFilterId(filter.id)}
-              className={cn(
-                "shrink-0 border-b-[1.5px] pb-2 text-[13px] whitespace-nowrap transition-colors",
-                active
-                  ? "border-accent font-semibold text-foreground"
-                  : "border-transparent font-[450] text-ink-3",
-              )}
-            >
-              {filter.label}
-            </button>
-          );
-        })}
-      </div>
+        <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-0.5">
+          {KIND_FILTERS.map((filter) => {
+            const active = filter.id === activeFilterId;
 
-      <div className="px-5">
-        <div className="flex items-center gap-2.5 border-b border-line py-2.5 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring/45 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:rounded-[var(--r-control)]">
-          <CraftedIcon name="search" size={17} className="shrink-0 text-ink-3" />
-          <input
-            value={searchValue}
-            onChange={(event) => handleSearchChange(event.target.value)}
-            placeholder={t.entries.searchPlaceholder}
-            aria-label={t.entries.searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-ink-3"
-          />
-          {isSearching ? (
-            <Loader2 className="size-4 shrink-0 animate-spin text-ink-3" aria-hidden="true" />
-          ) : null}
-          {searchValue ? (
-            <button
-              type="button"
-              onClick={() => handleSearchChange("")}
-              className="rounded-full p-1 text-ink-3 transition-colors hover:text-foreground"
-              aria-label={t.entries.clearSearch}
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
-          ) : null}
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setActiveFilterId(filter.id)}
+                className={cn(
+                  "nlc-press min-h-9 shrink-0 rounded-[var(--r-chip)] border px-3 text-[13px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  active
+                    ? "border-accent/40 bg-accent/10 text-foreground"
+                    : "border-line bg-transparent text-ink-3 hover:text-foreground",
+                )}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {searchError ? (
-        <p className="px-5 pt-3 text-sm text-destructive">{searchError}</p>
+        <p className="px-[var(--sp-page-x)] pt-3 text-sm text-destructive">
+          {searchError}
+        </p>
       ) : null}
 
       {filteredEntries.length === 0 ? (
-        <div className="space-y-4 px-5 py-8">
-          <div className="space-y-2 text-center">
-            <p className="text-lg font-semibold tracking-[-0.02em]">
-              {hasSearchTerm
-                ? t.entries.noResultsTitle
-                : t.entries.emptyTitle}
-            </p>
-            <Serif className="block text-sm text-ink-3">
-              {hasSearchTerm
-                ? t.entries.noResultsDesc
-                : t.entries.emptyDesc}
-            </Serif>
-          </div>
-          {!hasSearchTerm ? (
-            <div className="flex justify-center">
-              <Button asChild className="h-11 rounded-[var(--r-cta)] px-5">
-                <Link href={newEntryHref}>{t.entries.addFirst}</Link>
-              </Button>
-            </div>
-          ) : null}
-        </div>
+        <EmptyState hasSearchTerm={hasSearchTerm} newEntryHref={newEntryHref} />
       ) : (
         groups.map((group) => (
-          <div key={group.dateKey}>
-            <div className="flex items-baseline justify-between gap-4 px-5 pb-1 pt-5">
+          <section key={group.dateKey}>
+            <div className="flex items-baseline justify-between gap-4 px-[var(--sp-page-x)] pb-1 pt-5">
               <div className="min-w-0">
-                <Label>{group.label}</Label>
-                <Mono className="mt-1 block text-[10px] text-ink-3">
-                  {group.entries.length}{" "}
-                  {group.entries.length === 1 ? t.entries.entrySingular : t.entries.entryPlural}
-                </Mono>
+                <h2 className="truncate text-[13px] font-semibold text-muted-foreground">
+                  {group.label}
+                </h2>
+                {group.relative ? (
+                  <Serif className="mt-1 block text-[13px] text-ink-3">
+                    {group.relative}
+                  </Serif>
+                ) : null}
               </div>
-              <div className="shrink-0 text-right">
-                <Mono className="block text-sm font-medium">
-                  {formatCraftedCompact(group.totalRealSpent)}{currencySymbol}
-                  <span className="font-normal text-ink-3"> {t.entries.spentLabel}</span>
-                </Mono>
-                <Mono
-                  className={cn(
-                    "mt-0.5 block text-xs",
-                    group.totalSaved > 0
-                      ? "text-accent"
-                      : group.totalSaved < 0
-                        ? "text-foreground"
-                        : "text-ink-3",
-                  )}
-                >
-                  {group.totalSaved > 0 ? "+" : ""}
-                  {formatCraftedCompact(group.totalSaved)}{currencySymbol}
-                  <span className="ml-1 font-normal text-ink-3">
-                    {t.entries.netImpactLabel}
-                  </span>
-                </Mono>
-              </div>
+              <Mono className="shrink-0 text-right text-[11px] text-ink-3">
+                {group.count} mov · {formatEUR(group.dayTotal)}
+              </Mono>
             </div>
-            <div className="px-5">
+            <div className="px-[var(--sp-page-x)]">
               {group.entries.map((entry, index) => (
                 <CraftedEntryRow
                   key={entry.id}
@@ -527,24 +554,16 @@ export function CraftedEntryList({
               ))}
             </div>
             <Rule />
-          </div>
+          </section>
         ))
       )}
 
-      {previousMonthSummary ? (
-        <div className="px-5 py-5 text-center">
-          <Serif className="text-sm text-ink-3">
-            {previousMonthSummary.label.toLowerCase()} —{" "}
-            {formatCraftedCompact(previousMonthSummary.totalRealSpent)}{currencySymbol} {t.entries.spentLabel}
-            {previousMonthSummary.totalSaved > 0
-              ? ` · ${formatCraftedCompact(previousMonthSummary.totalSaved)}${currencySymbol} ${t.entries.netImpactLabel}`
-              : ""}{" "}
-            in {previousMonthSummary.entriesCount} {previousMonthSummary.entriesCount === 1 ? t.entries.entrySingular : t.entries.entryPlural}
-          </Serif>
-        </div>
-      ) : null}
+      <div className="px-[var(--sp-page-x)] py-5 text-center">
+        <Rule soft />
+        <Label className="mt-5 block">Fine {monthLabel.toLowerCase()}</Label>
+      </div>
 
-      <div className="space-y-2 px-5 pb-6">
+      <div className="space-y-2 px-[var(--sp-page-x)] pb-6">
         {loadError ? (
           <p className="text-sm text-destructive">{loadError}</p>
         ) : null}

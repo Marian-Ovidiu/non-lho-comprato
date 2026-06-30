@@ -1,123 +1,61 @@
 "use client";
 
 import Link from "next/link";
-import { differenceInCalendarDays } from "date-fns";
 
-import { CraftedIcon, Mono, Rule } from "@/components/crafted";
-import { formatCraftedEntryAmount } from "@/src/lib/crafted-money";
-import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
-import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-import { formatDate } from "@/src/lib/formatters";
-import { useCurrencySymbol } from "@/src/components/currency/currency-context";
-import {
-  useLocalizedCategoryName,
-  useTranslations,
-  useWorkspaceLanguage,
-} from "@/src/components/language/language-context";
-import { languageToLocale } from "@/src/lib/i18n";
+import { CraftedIcon, Mono, Rule, Serif, type CraftedIconName } from "@/components/crafted";
 import { cn } from "@/lib/utils";
 
+export type EntryKind = "spesa" | "evitata" | "confronto";
+
+export type CraftedEntryRowItem = {
+  id: string;
+  title: string;
+  note: string | null;
+  cat: string;
+  icon: CraftedIconName;
+  amount: number;
+  kind: EntryKind;
+  time: string;
+  who?: string | null;
+  saved?: number;
+  original?: number;
+};
+
 type CraftedEntryRowProps = {
-  entry: {
-    id: string;
-    title: string;
-    category: {
-      name: string;
-      slug?: string | null;
-    };
-    date: string | Date;
-    mode?: "spent" | "avoided";
-    savingContext?: "none" | "comparison";
-    realCost: unknown;
-    alternativeCost?: unknown;
-    savedAmount: unknown;
-  };
+  entry: CraftedEntryRowItem;
   className?: string;
   showDivider?: boolean;
 };
 
-function formatEntryMeta(
-  date: string | Date,
-  categoryName: string,
-  locale: string,
-  yesterdayLabel: string,
-) {
-  const parsedDate = new Date(date);
-  const daysAgo = differenceInCalendarDays(new Date(), parsedDate);
+function formatEUR(value: number, options: { sign?: "plus" | "minus" | "none" } = {}) {
+  const formatted = new Intl.NumberFormat("it-IT", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(Math.abs(value));
+  const sign = options.sign === "plus" ? "+" : options.sign === "minus" ? "−" : "";
 
-  if (daysAgo === 0) {
-    const time = new Intl.DateTimeFormat(locale, {
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(parsedDate);
-    return `${categoryName} · ${time}`;
-  }
-
-  if (daysAgo === 1) {
-    return `${categoryName} · ${yesterdayLabel.toLowerCase()}`;
-  }
-
-  return `${categoryName} · ${formatDate(parsedDate)}`;
+  return `${sign}€${formatted}`;
 }
 
-function toFiniteNumber(value: unknown): number {
-  const amount = Number(value);
-  return Number.isFinite(amount) ? amount : 0;
-}
-
-type SecondaryMetaTranslations = {
-  avoidedBadge: string;
-  avoidedDesc: string;
-  comparisonBadge: string;
-  comparisonSaved: string;
-  comparisonSpentMore: string;
-  comparisonInline: string;
-};
-
-function getSecondaryMeta(
-  entry: CraftedEntryRowProps["entry"],
-  currencySymbol: string,
-  labels: SecondaryMetaTranslations,
-) {
-  const mode = entry.mode === "avoided" ? "avoided" : "spent";
-  const savingContext =
-    entry.savingContext === "comparison" ? "comparison" : "none";
-  const savedAmount = calculateEntryMetrics(entry).netImpact;
-  const alternativeCost = toFiniteNumber(entry.alternativeCost);
-
-  if (mode === "avoided") {
-    return {
-      badge: labels.avoidedBadge,
-      detail: `${formatCraftedEntryAmount(alternativeCost)}${currencySymbol} ${labels.avoidedDesc}`,
-      tone: "accent" as const,
-    };
-  }
-
-  if (savingContext === "comparison") {
-    if (savedAmount > 0) {
-      return {
-        badge: labels.comparisonBadge,
-        detail: `${formatCraftedEntryAmount(savedAmount)}${currencySymbol} ${labels.comparisonSaved}`,
-        tone: "accent" as const,
-      };
-    }
-
-    if (savedAmount < 0) {
-      return {
-        badge: labels.comparisonBadge,
-        detail: `${formatCraftedEntryAmount(Math.abs(savedAmount))}${currencySymbol} ${labels.comparisonSpentMore}`,
-        tone: "default" as const,
-      };
-    }
-
-    return {
-      badge: labels.comparisonBadge,
-      detail: labels.comparisonInline,
-      tone: "muted" as const,
-    };
-  }
-
-  return null;
+function KindBadge({
+  tone,
+  children,
+}: {
+  tone: "success" | "accent";
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={cn(
+        "shrink-0 rounded-[var(--r-chip)] border px-2 py-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em]",
+        tone === "success"
+          ? "border-success/45 text-success"
+          : "border-accent/45 text-accent",
+      )}
+    >
+      {children}
+    </span>
+  );
 }
 
 export function CraftedEntryRow({
@@ -125,65 +63,66 @@ export function CraftedEntryRow({
   className,
   showDivider = true,
 }: CraftedEntryRowProps) {
-  const currencySymbol = useCurrencySymbol();
-  const t = useTranslations();
-  const language = useWorkspaceLanguage();
-  const locale = languageToLocale(language);
-  const categoryName = useLocalizedCategoryName(entry.category.slug, entry.category.name);
-  const meta = getSecondaryMeta(entry, currencySymbol, {
-    avoidedBadge: t.entries.avoidedBadge,
-    avoidedDesc: t.entries.avoidedDesc,
-    comparisonBadge: t.entries.comparisonBadge,
-    comparisonSaved: t.entries.comparisonSaved,
-    comparisonSpentMore: t.entries.comparisonSpentMore,
-    comparisonInline: t.entries.comparisonInline,
-  });
+  const isAvoided = entry.kind === "evitata";
+  const isComparison = entry.kind === "confronto";
 
   return (
     <div className={className}>
       <Link
         href={`/entries/${entry.id}/edit`}
-        className="nlc-press flex min-h-12 items-center gap-4 py-[var(--sp-row-y)] outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring/50"
+        className="nlc-press grid min-h-16 grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-3 outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <CraftedIcon
-          name={getCategoryCraftedIcon(entry.category)}
-          size={20}
-          className="shrink-0 text-muted-foreground"
-        />
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-[15px] font-[450]">{entry.title}</p>
-          <Mono className="mt-0.5 block text-[11px] leading-4 tracking-[0.02em] text-ink-3">
-            {formatEntryMeta(entry.date, categoryName, locale, t.common.yesterday)}
-          </Mono>
-          {meta ? (
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span
-                className={cn(
-                  "rounded-full border px-[9px] py-[3px] text-[10px] font-medium uppercase leading-none tracking-[0.12em]",
-                  meta.tone === "accent"
-                    ? "border-accent/30 text-accent"
-                    : meta.tone === "muted"
-                      ? "border-line text-ink-3"
-                      : "border-border text-foreground",
-                )}
-              >
-                {meta.badge}
-              </span>
-              <Mono
-                className={cn(
-                  "basis-full text-[11px] leading-4 sm:basis-auto",
-                  meta.tone === "accent" ? "text-accent" : "text-ink-3",
-                )}
-              >
-                {meta.detail}
-              </Mono>
-            </div>
+        <span
+          className={cn(
+            "flex size-10 items-center justify-center rounded-[var(--r-control)]",
+            entry.kind === "spesa" && "bg-surface-muted text-muted-foreground",
+            isAvoided && "bg-success/10 text-success",
+            isComparison && "bg-accent/10 text-accent",
+          )}
+        >
+          <CraftedIcon name={entry.icon} size={18} />
+        </span>
+
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="min-w-0 truncate text-[14.5px] font-medium tracking-[-0.01em]">
+              {entry.title}
+            </p>
+            {isAvoided ? <KindBadge tone="success">Evitata</KindBadge> : null}
+            {isComparison ? <KindBadge tone="accent">Confronto</KindBadge> : null}
+          </div>
+          <p className="mt-1 truncate text-[11px] leading-4 text-ink-3">
+            {entry.cat} · <Mono>{entry.time}</Mono>
+            {entry.who ? <> · {entry.who}</> : null}
+          </p>
+          {entry.note ? (
+            <Serif className="mt-0.5 block truncate text-[13px] leading-4 text-muted-foreground">
+              &quot;{entry.note}&quot;
+            </Serif>
           ) : null}
         </div>
-        <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
-          {formatCraftedEntryAmount(entry.realCost)}
-          <span className="align-baseline text-[11px] text-accent">{currencySymbol}</span>
-        </Mono>
+
+        <div className="shrink-0 text-right">
+          {isComparison ? (
+            <>
+              <Mono className="block text-[14px] font-semibold leading-none text-accent">
+                {formatEUR(entry.saved ?? 0, { sign: "plus" })}
+              </Mono>
+              <Mono className="mt-1 block text-[10px] leading-none text-ink-3">
+                vs {formatEUR(entry.original ?? entry.amount)}
+              </Mono>
+            </>
+          ) : (
+            <Mono
+              className={cn(
+                "block text-[15px] font-semibold leading-none",
+                isAvoided && "text-success",
+              )}
+            >
+              {formatEUR(entry.amount, { sign: isAvoided ? "plus" : "minus" })}
+            </Mono>
+          )}
+        </div>
       </Link>
       {showDivider ? <Rule soft /> : null}
     </div>

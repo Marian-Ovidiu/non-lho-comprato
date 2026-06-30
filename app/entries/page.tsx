@@ -21,6 +21,21 @@ function getMonthLabel(date: Date, language: string) {
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+function getYearLabel(date: Date, language: string) {
+  return new Intl.DateTimeFormat(languageToLocale(language), {
+    year: "numeric",
+    timeZone: "Europe/Rome",
+  }).format(date);
+}
+
+function getMonthCode(date: Date) {
+  return new Intl.DateTimeFormat("it-IT", {
+    month: "2-digit",
+    year: "2-digit",
+    timeZone: "Europe/Rome",
+  }).format(date);
+}
+
 export default async function EntriesPage() {
   const language = await getCurrentWorkspaceLanguage();
   const t = getTranslations(language);
@@ -42,16 +57,21 @@ export default async function EntriesPage() {
     console.error("Failed to load entries:", error);
   }
 
-  const monthLabel = getMonthLabel(new Date(), language);
+  const now = new Date();
+  const monthLabel = getMonthLabel(now, language);
+  const yearLabel = getYearLabel(now, language);
   const previousMonth = monthlyStats.at(-2);
 
   return (
     <>
       <CraftedEntriesHeader
         monthLabel={monthLabel}
+        yearLabel={yearLabel}
+        monthCode={getMonthCode(now)}
         entriesCount={monthSummary?.entriesCount ?? 0}
-        totalRealSpent={monthSummary?.totalRealSpent ?? 0}
-        totalSaved={monthSummary?.totalSaved ?? 0}
+        totalRealSpent={monthSummary?.ordinarySpent ?? monthSummary?.totalRealSpent ?? 0}
+        totalAvoided={monthSummary?.avoidedAmount ?? 0}
+        totalSaved={monthSummary?.comparisonSaved ?? 0}
         newEntryHref={newEntryHref}
       />
 
@@ -69,6 +89,7 @@ export default async function EntriesPage() {
         initialNextCursor={entriesPage?.nextCursor ?? null}
         initialHasMore={entriesPage?.hasMore ?? false}
         newEntryHref={newEntryHref}
+        monthLabel={monthLabel}
         previousMonthSummary={
           previousMonth
             ? {

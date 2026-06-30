@@ -638,7 +638,10 @@ export function CraftedDashboard({
             {habitsNote ?? PREVIEW.streak.subject}
           </Serif>
         </div>
-        <div className="rounded-[var(--r-card)] border border-line p-4">
+        <Link
+          href="/habits"
+          className="nlc-press rounded-[var(--r-card)] border border-line p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
           <div className="mb-3 flex items-center justify-between gap-2">
             <Label>Ricorrenti oggi</Label>
             <Mono className="text-[12px] text-muted-foreground">
@@ -652,7 +655,7 @@ export function CraftedDashboard({
             value={recurringTotal > 0 ? (recurringDone / recurringTotal) * 100 : 0}
             className="mt-4 bg-line-soft"
           />
-        </div>
+        </Link>
       </section>
       <Rule soft />
 

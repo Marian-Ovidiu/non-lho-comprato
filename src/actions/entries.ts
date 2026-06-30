@@ -43,6 +43,7 @@ import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
 import {
   getDefaultPaidByUserId,
+  getMemberLabel,
   resolveEntryPeopleFromRecord,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
@@ -123,6 +124,7 @@ type SerializableEntry = {
   note: string | null;
   source: string;
   paidByUserId: string;
+  paidByLabel: string | null;
   beneficiaryUserIds: string[];
   habitOccurrenceId: string | null;
   createdAt: string;
@@ -181,6 +183,7 @@ type MonthlySummary = {
   totalSaved: number;   // = netImpact (was: raw sum of savedAmount)
   entriesCount: number;
   // Unified metric breakdown
+  ordinarySpent: number;
   avoidedAmount: number;
   comparisonSaved: number;
   comparisonOverspent: number;
@@ -720,6 +723,7 @@ function serializeEntry(
     note: decryptOptionalText(entry.note),
     source: entry.source,
     paidByUserId: people.paidByUserId,
+    paidByLabel: getMemberLabel(members, people.paidByUserId),
     beneficiaryUserIds: people.beneficiaryUserIds,
     habitOccurrenceId: entry.habitOccurrenceId,
     createdAt: entry.createdAt.toISOString(),
@@ -813,19 +817,35 @@ export async function getEntriesPage(
     const membersPromise = options?.members
       ? Promise.resolve(options.members)
       : getCurrentWorkspaceMembers();
-    const [workspaceWhere, members] = await Promise.all([
+    const [workspaceWhere, members, timeZone] = await Promise.all([
       getCurrentWorkspaceScopedWhere(),
       membersPromise,
+      getCurrentWorkspaceTimezone(),
     ]);
 
     workspaceId = workspaceWhere.workspaceId;
+    const { start, end } = getMonthRangeForMonthKey(
+      getMonthKey(new Date(), timeZone),
+      timeZone,
+    );
+    const monthWhere: Prisma.EntryWhereInput = {
+      AND: [
+        workspaceWhere,
+        {
+          date: {
+            gte: start,
+            lt: end,
+          },
+        },
+      ],
+    };
     const searchWhere = buildEntriesSearchWhere(searchQuery, members);
     const combinedWhere =
       Object.keys(searchWhere).length > 0
         ? {
-            AND: [workspaceWhere, searchWhere],
+            AND: [monthWhere, searchWhere],
           }
-        : workspaceWhere;
+        : monthWhere;
 
     const entries = await findEntriesPage(combinedWhere, {
       cursor,
@@ -957,6 +977,16 @@ async function _cachedDashboardSummary(workspaceId: string, timeZone: string): P
       AND e."date" < ${end}
   `);
   const agg = normalizeEntryMetricAggregate(rows[0]);
+  const ordinarySpentRows = await prisma.$queryRaw<Array<{ total: unknown }>>(Prisma.sql`
+    SELECT COALESCE(SUM(e."realCost"), 0)::text AS "total"
+    FROM "Entry" e
+    WHERE e."workspaceId" = ${workspaceId}
+      AND e."date" >= ${start}
+      AND e."date" < ${end}
+      AND e."mode"::text <> 'avoided'
+      AND e."savingContext"::text <> 'comparison'
+  `);
+  const ordinarySpent = Number(ordinarySpentRows[0]?.total ?? 0);
 
   if (isWorkspaceDebugEnabled()) {
     const allTimeCount = await prisma.entry.count({ where: { workspaceId } });
@@ -974,6 +1004,7 @@ async function _cachedDashboardSummary(workspaceId: string, timeZone: string): P
     totalAlternativeCost: agg.totalWouldHaveSpent,
     totalSaved: agg.totalNetImpact,
     entriesCount: agg.entriesCount,
+    ordinarySpent: Number.isFinite(ordinarySpent) ? ordinarySpent : 0,
     avoidedAmount: agg.totalAvoidedAmount,
     comparisonSaved: agg.totalComparisonSaved,
     comparisonOverspent: agg.totalComparisonOverspent,
