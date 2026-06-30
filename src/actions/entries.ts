@@ -22,7 +22,7 @@ import {
   normalizeEntryMetricAggregate,
   type EntryMetricAggregateRow,
 } from "@/src/lib/entry-metrics-query";
-import { getMonthKey, getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
+import { getMonthRangeForMonthKey, normalizeMonthKey } from "@/src/lib/workspace-dates";
 import {
   parseBeneficiaryUserIdsFromForm,
   parsePaidByUserIdFromForm,
@@ -236,6 +236,8 @@ type EntriesPageOptions = {
   cursor?: string;
   limit?: number;
   members?: WorkspaceMemberOption[] | Promise<WorkspaceMemberOption[]>;
+  monthKey?: string;
+  kind?: "all" | "spesa" | "evitata" | "confronto";
 };
 
 function toDecimalString(value: number): string {
@@ -699,6 +701,24 @@ function buildEntriesSearchWhere(
   };
 }
 
+function buildEntriesKindWhere(
+  kind?: EntriesPageOptions["kind"],
+): Prisma.EntryWhereInput {
+  if (!kind || kind === "all") {
+    return {};
+  }
+
+  if (kind === "evitata") {
+    return { mode: "avoided" };
+  }
+
+  if (kind === "confronto") {
+    return { mode: "spent", savingContext: "comparison" };
+  }
+
+  return { mode: "spent", savingContext: "none" };
+}
+
 function serializeEntry(
   entry: EntryWithCategory,
   members: WorkspaceMemberOption[],
@@ -824,10 +844,8 @@ export async function getEntriesPage(
     ]);
 
     workspaceId = workspaceWhere.workspaceId;
-    const { start, end } = getMonthRangeForMonthKey(
-      getMonthKey(new Date(), timeZone),
-      timeZone,
-    );
+    const monthKey = normalizeMonthKey(timeZone, options?.monthKey);
+    const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
     const monthWhere: Prisma.EntryWhereInput = {
       AND: [
         workspaceWhere,
@@ -840,10 +858,11 @@ export async function getEntriesPage(
       ],
     };
     const searchWhere = buildEntriesSearchWhere(searchQuery, members);
+    const kindWhere = buildEntriesKindWhere(options?.kind);
     const combinedWhere =
-      Object.keys(searchWhere).length > 0
+      Object.keys(searchWhere).length > 0 || Object.keys(kindWhere).length > 0
         ? {
-            AND: [monthWhere, searchWhere],
+            AND: [monthWhere, searchWhere, kindWhere],
           }
         : monthWhere;
 
@@ -953,21 +972,25 @@ export async function getEntryById(
   }
 }
 
-export async function getDashboardSummary(): Promise<MonthlySummary> {
+export async function getDashboardSummary(monthKeyInput?: string): Promise<MonthlySummary> {
   const [workspaceId, timeZone] = await Promise.all([
     getCurrentWorkspaceId(),
     getCurrentWorkspaceTimezone(),
   ]);
-  return _cachedDashboardSummary(workspaceId, timeZone);
+  const monthKey = normalizeMonthKey(timeZone, monthKeyInput);
+  return _cachedDashboardSummary(workspaceId, timeZone, monthKey);
 }
 
-async function _cachedDashboardSummary(workspaceId: string, timeZone: string): Promise<MonthlySummary> {
+async function _cachedDashboardSummary(
+  workspaceId: string,
+  timeZone: string,
+  monthKey: string,
+): Promise<MonthlySummary> {
   "use cache";
   cacheTag(`entries:${workspaceId}`);
   cacheLife("hours");
 
-  const now = new Date();
-  const { start, end } = getMonthRangeForMonthKey(getMonthKey(now, timeZone), timeZone);
+  const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
 
   const rows = await prisma.$queryRaw<EntryMetricAggregateRow[]>(Prisma.sql`
     SELECT ${entryMetricAggregateSelectSql}

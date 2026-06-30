@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ChevronDown, Plus } from "lucide-react";
 
 import { Label, Mono, Serif } from "@/components/crafted";
@@ -12,6 +13,12 @@ type CraftedEntriesHeaderProps = {
   monthLabel: string;
   yearLabel: string;
   monthCode: string;
+  selectedMonthKey: string;
+  monthOptions: Array<{
+    month: string;
+    label: string;
+    entriesCount: number;
+  }>;
   entriesCount: number;
   totalRealSpent: number;
   totalAvoided: number;
@@ -57,6 +64,8 @@ export function CraftedEntriesHeader({
   monthLabel,
   yearLabel,
   monthCode,
+  selectedMonthKey,
+  monthOptions,
   entriesCount,
   totalRealSpent,
   totalAvoided,
@@ -64,6 +73,7 @@ export function CraftedEntriesHeader({
   newEntryHref,
 }: CraftedEntriesHeaderProps) {
   const t = useTranslations();
+  const router = useRouter();
 
   return (
     <section className="-mx-4 px-[var(--sp-page-x)] pb-5 pt-5 sm:-mx-6 lg:-mx-8">
@@ -82,14 +92,30 @@ export function CraftedEntriesHeader({
         </div>
 
         <div className="flex shrink-0 items-center gap-2">
-          <button
-            type="button"
-            className="nlc-press inline-flex h-9 items-center gap-1.5 rounded-[var(--r-control)] border border-line px-3 text-[12px] text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            aria-label="Seleziona mese"
-          >
-            <Mono>{monthCode}</Mono>
-            <ChevronDown className="size-3.5" aria-hidden="true" />
-          </button>
+          <label className="relative inline-flex h-9 shrink-0 items-center rounded-[var(--r-control)] border border-line text-[12px] text-muted-foreground">
+            <span className="sr-only">Seleziona mese</span>
+            <Mono className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2">
+              {monthCode}
+            </Mono>
+            <select
+              value={selectedMonthKey}
+              onChange={(event) => {
+                router.push(`/entries?month=${event.target.value}`);
+              }}
+              className="h-full appearance-none rounded-[var(--r-control)] bg-transparent pl-3 pr-8 text-transparent outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="Seleziona mese"
+            >
+              {monthOptions.map((option) => (
+                <option key={option.month} value={option.month}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              className="pointer-events-none absolute right-2 top-1/2 size-3.5 -translate-y-1/2"
+              aria-hidden="true"
+            />
+          </label>
           <Link
             href={newEntryHref}
             className="nlc-press inline-flex size-9 items-center justify-center rounded-[var(--r-control)] bg-accent text-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"

@@ -55,6 +55,7 @@ type CraftedEntryListProps = {
   initialHasMore: boolean;
   newEntryHref: string;
   monthLabel: string;
+  monthKey: string;
   previousMonthSummary?: {
     label: string;
     totalRealSpent: number;
@@ -274,6 +275,7 @@ export function CraftedEntryList({
   initialHasMore,
   newEntryHref,
   monthLabel,
+  monthKey,
 }: CraftedEntryListProps) {
   const t = useTranslations();
   const language = useWorkspaceLanguage();
@@ -299,25 +301,10 @@ export function CraftedEntryList({
   const [highlightedRecentEntryIds, setHighlightedRecentEntryIds] = useState<string[]>([]);
   const initialSearchHandledRef = useRef(false);
   const requestIdRef = useRef(0);
-  const initialEntriesRef = useRef(initialEntries);
-  const initialNextCursorRef = useRef(initialNextCursor);
-  const initialHasMoreRef = useRef(initialHasMore);
-
-  const filteredEntries = useMemo(
-    () =>
-      entries.filter((entry) => {
-        if (activeFilterId === "all") {
-          return true;
-        }
-
-        return getEntryKind(entry) === activeFilterId;
-      }),
-    [entries, activeFilterId],
-  );
 
   const groups = useMemo(
-    () => groupByDay(filteredEntries, locale, language),
-    [filteredEntries, locale, language],
+    () => groupByDay(entries, locale, language),
+    [entries, locale, language],
   );
   const hasSearchTerm = searchValue.trim().length > 0;
 
@@ -359,10 +346,6 @@ export function CraftedEntryList({
       return;
     }
 
-    if (debouncedSearchValue === "") {
-      return;
-    }
-
     const currentRequestId = ++requestIdRef.current;
 
     async function runSearch() {
@@ -374,6 +357,8 @@ export function CraftedEntryList({
         const result = await getEntriesPage({
           q: debouncedSearchValue,
           limit: PAGE_SIZE,
+          monthKey,
+          kind: activeFilterId,
         });
 
         if (requestIdRef.current !== currentRequestId) {
@@ -401,7 +386,7 @@ export function CraftedEntryList({
     }
 
     void runSearch();
-  }, [debouncedSearchValue, t.entries.searchError]);
+  }, [activeFilterId, debouncedSearchValue, monthKey, t.entries.searchError]);
 
   async function loadMore() {
     if (!hasMore || !nextCursor) {
@@ -417,6 +402,8 @@ export function CraftedEntryList({
         cursor: nextCursor,
         limit: PAGE_SIZE,
         q: debouncedSearchValue,
+        monthKey,
+        kind: activeFilterId,
       });
 
       if (requestIdRef.current !== currentRequestId) {
@@ -444,13 +431,6 @@ export function CraftedEntryList({
     setSearchValue(value);
 
     if (value.trim() === "") {
-      requestIdRef.current += 1;
-      setLoadError(null);
-      setSearchError(null);
-      setIsSearching(false);
-      setEntries(initialEntriesRef.current);
-      setNextCursor(initialNextCursorRef.current);
-      setHasMore(initialHasMoreRef.current);
       setDebouncedSearchValue("");
     }
   }
@@ -520,7 +500,7 @@ export function CraftedEntryList({
         </p>
       ) : null}
 
-      {filteredEntries.length === 0 ? (
+      {entries.length === 0 ? (
         <EmptyState hasSearchTerm={hasSearchTerm} newEntryHref={newEntryHref} />
       ) : (
         groups.map((group) => (
@@ -585,6 +565,14 @@ export function CraftedEntryList({
               t.entries.loadMore
             )}
           </Button>
+        ) : entries.length > 0 ? (
+          <div className="rounded-[var(--r-control)] border border-line-soft px-4 py-3 text-center">
+            <Serif className="text-sm text-ink-3">
+              {activeFilterId === "all"
+                ? "Tutti i movimenti sono stati caricati."
+                : `Tutte le ${KIND_FILTERS.find((filter) => filter.id === activeFilterId)?.label.toLowerCase() ?? "spese"} sono state caricate.`}
+            </Serif>
+          </div>
         ) : null}
       </div>
     </div>

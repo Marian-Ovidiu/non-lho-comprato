@@ -6,11 +6,29 @@ import { CraftedEntryList } from "@/src/components/entries/crafted-entry-list";
 import { CraftedEntriesHeader } from "@/src/components/entries/crafted-entries-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
-import { getCurrentWorkspaceLanguage, getCurrentWorkspaceMembers } from "@/src/lib/workspace-context";
+import { getCurrentWorkspaceLanguage, getCurrentWorkspaceMembers, getCurrentWorkspaceTimezone } from "@/src/lib/workspace-context";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
+import { formatMonthLabel, normalizeMonthKey } from "@/src/lib/workspace-dates";
 
 
-const newEntryHref = "/entries/new?returnTo=%2Fentries";
+type EntriesPageProps = {
+  searchParams: Promise<{
+    month?: string | string[];
+  }>;
+};
+
+function getFirstSearchParamValue(value?: string | string[]) {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+function getNewEntryHref(monthKey: string) {
+  return `/entries/new?returnTo=${encodeURIComponent(`/entries?month=${monthKey}`)}`;
+}
+
+function getDateFromMonthKey(monthKey: string) {
+  const [yearPart, monthPart] = monthKey.split("-");
+  return new Date(Date.UTC(Number(yearPart), Number(monthPart) - 1, 1));
+}
 
 function getMonthLabel(date: Date, language: string) {
   const label = new Intl.DateTimeFormat(languageToLocale(language), {
@@ -36,9 +54,19 @@ function getMonthCode(date: Date) {
   }).format(date);
 }
 
-export default async function EntriesPage() {
-  const language = await getCurrentWorkspaceLanguage();
+export default async function EntriesPage({ searchParams }: EntriesPageProps) {
+  const [language, timeZone, resolvedSearchParams] = await Promise.all([
+    getCurrentWorkspaceLanguage(),
+    getCurrentWorkspaceTimezone(),
+    searchParams,
+  ]);
   const t = getTranslations(language);
+  const selectedMonthKey = normalizeMonthKey(
+    timeZone,
+    getFirstSearchParamValue(resolvedSearchParams.month),
+  );
+  const selectedMonthDate = getDateFromMonthKey(selectedMonthKey);
+  const newEntryHref = getNewEntryHref(selectedMonthKey);
   const membersPromise = getCurrentWorkspaceMembers();
   let entriesPage: Awaited<ReturnType<typeof getEntriesPage>> | null = null;
   let monthSummary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
@@ -47,8 +75,8 @@ export default async function EntriesPage() {
 
   try {
     [entriesPage, monthSummary, monthlyStats] = await Promise.all([
-      getEntriesPage({ limit: 20, members: membersPromise }),
-      getDashboardSummary(),
+      getEntriesPage({ limit: 20, members: membersPromise, monthKey: selectedMonthKey }),
+      getDashboardSummary(selectedMonthKey),
       getMonthlyStats(),
     ]);
   } catch (error) {
@@ -57,9 +85,24 @@ export default async function EntriesPage() {
     console.error("Failed to load entries:", error);
   }
 
-  const now = new Date();
-  const monthLabel = getMonthLabel(now, language);
-  const yearLabel = getYearLabel(now, language);
+  const monthLabel = getMonthLabel(selectedMonthDate, language);
+  const yearLabel = getYearLabel(selectedMonthDate, language);
+  const monthOptions = [
+    ...monthlyStats.map((item) => ({
+      month: item.month,
+      label: item.label,
+      entriesCount: item.entriesCount,
+    })),
+    ...(monthlyStats.some((item) => item.month === selectedMonthKey)
+      ? []
+      : [
+          {
+            month: selectedMonthKey,
+            label: formatMonthLabel(selectedMonthKey),
+            entriesCount: monthSummary?.entriesCount ?? 0,
+          },
+        ]),
+  ].sort((left, right) => right.month.localeCompare(left.month));
   const previousMonth = monthlyStats.at(-2);
 
   return (
@@ -67,7 +110,9 @@ export default async function EntriesPage() {
       <CraftedEntriesHeader
         monthLabel={monthLabel}
         yearLabel={yearLabel}
-        monthCode={getMonthCode(now)}
+        monthCode={getMonthCode(selectedMonthDate)}
+        selectedMonthKey={selectedMonthKey}
+        monthOptions={monthOptions}
         entriesCount={monthSummary?.entriesCount ?? 0}
         totalRealSpent={monthSummary?.ordinarySpent ?? monthSummary?.totalRealSpent ?? 0}
         totalAvoided={monthSummary?.avoidedAmount ?? 0}
@@ -85,11 +130,13 @@ export default async function EntriesPage() {
       ) : null}
 
       <CraftedEntryList
+        key={selectedMonthKey}
         initialEntries={entriesPage?.entries ?? []}
         initialNextCursor={entriesPage?.nextCursor ?? null}
         initialHasMore={entriesPage?.hasMore ?? false}
         newEntryHref={newEntryHref}
         monthLabel={monthLabel}
+        monthKey={selectedMonthKey}
         previousMonthSummary={
           previousMonth
             ? {
