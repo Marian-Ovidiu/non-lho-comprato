@@ -1,41 +1,68 @@
 import type { CraftedIconName } from "@/components/crafted";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
+import {
+  getHabitTargetDisplayLabel,
+  type WorkspaceMemberOption,
+} from "@/src/lib/workspace-members";
 
-export type CraftedTodayHabit = {
+export type HabitCadence = "mensile" | "annuale" | "settimanale" | "giornaliera";
+export type HabitGroup = "abbonamenti" | "utenze" | "quotidiane";
+export type HabitStatus = "attiva" | "pausa" | "da-rivedere";
+
+export type CraftedHabitView = {
   id: string;
-  habitId: string;
   name: string;
-  sub: string;
+  provider?: string;
   icon: CraftedIconName;
-  status: "pending" | "spent" | "avoided" | "skipped";
+  amount: number;
+  cadence: HabitCadence;
+  group: HabitGroup;
+  status: HabitStatus;
+  nextDate?: string;
+  startedOn: string;
+  usageNote?: string;
+  who?: string;
+  monthlyAmount: number;
+  sharePercent: number;
+  frequencyLabel: string;
 };
 
-export type CraftedAllHabit = {
-  id: string;
-  name: string;
-  freq: string;
-  icon: CraftedIconName;
-  completionLabel: string;
-  progressPercent: number;
-  monthImpact: number;
+export type CraftedUpcomingHabit = CraftedHabitView & {
+  relativeLabel: string;
+  shortDate: string;
+};
+
+export type CraftedHabitGroupSummary = {
+  group: HabitGroup;
+  label: string;
+  hint: string;
+  total: number;
+  share: number;
 };
 
 export type CraftedHabitsProps = {
-  today: CraftedTodayHabit[];
-  all: CraftedAllHabit[];
-  avoidedToday: number;
-  pendingToday: number;
-  totalToday: number;
-  habitsNote: string | null;
+  habits: CraftedHabitView[];
+  upcoming: CraftedUpcomingHabit[];
+  groups: CraftedHabitGroupSummary[];
+  reviewHabits: CraftedHabitView[];
+  perMonth: number;
+  perYear: number;
   activeCount: number;
-  monthSaved: number;
-  monthLabel: string;
+  pausedCount: number;
+  potentialYearlySavings: number;
+  currencySymbol: string;
 };
+
+function round2(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
 
 function getActiveDayIndices(activeDays: unknown): number[] {
   if (!Array.isArray(activeDays)) return [];
-  return activeDays.map((value) => Number(value)).filter((n) => n >= 1 && n <= 7);
+  return activeDays
+    .map((value) => Number(value))
+    .filter((n) => Number.isInteger(n) && n >= 1 && n <= 7);
 }
 
 export function formatHabitFrequency(activeDays: unknown, language = "it") {
@@ -46,7 +73,6 @@ export function formatHabitFrequency(activeDays: unknown, language = "it") {
     return t.habits.freqDaily;
   }
 
-  // Mon–Fri only (indices 1–5, no 6=Sat, no 7=Sun)
   if (indices.length === 5 && !indices.includes(6) && !indices.includes(7)) {
     return t.habits.freqWeekdays;
   }
@@ -74,67 +100,217 @@ export function formatHabitSub(
   return `${amountLabel}${currencySymbol} · ${formatHabitFrequency(activeDays, language).toLowerCase()}`;
 }
 
-export function buildHabitsNote(
-  occurrences: Array<{ status: string; habit: { name: string } }>,
-  language = "it",
-) {
-  const t = getTranslations(language);
-  const avoided = occurrences
-    .filter((occurrence) => occurrence.status === "avoided")
-    .map((occurrence) => occurrence.habit.name.toLowerCase());
-
-  if (avoided.length === 0) {
-    return null;
-  }
-
-  if (avoided.length === 1) {
-    return t.habits.avoidedNoteOne(avoided[0]!);
-  }
-
-  if (avoided.length === 2) {
-    return t.habits.avoidedNoteTwo(avoided[0]!, avoided[1]!);
-  }
-
-  return t.habits.avoidedNoteMany(avoided.slice(0, -1).join(", "), avoided.at(-1)!);
+function normalize(value: string) {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase();
 }
 
-function getMonthLabel(language: string) {
-  const label = new Intl.DateTimeFormat(languageToLocale(language), {
-    month: "long",
-    timeZone: "Europe/Rome",
-  }).format(new Date());
+function getHabitGroup(habit: {
+  name: string;
+  category: { name: string; slug: string };
+}): HabitGroup {
+  const text = normalize(`${habit.name} ${habit.category.name} ${habit.category.slug}`);
 
-  return label.toLowerCase();
+  if (
+    /abbon|stream|spotify|netflix|prime|icloud|cloud|claude|chatgpt|post|palestra|gym|virgin|serviz/.test(
+      text,
+    )
+  ) {
+    return "abbonamenti";
+  }
+
+  if (/uten|casa|affitto|bollett|luce|gas|internet|fibra|wifi|telefono|condomin/.test(text)) {
+    return "utenze";
+  }
+
+  return "quotidiane";
+}
+
+function getCadence(input: {
+  amount: number;
+  activeDays: unknown;
+  group: HabitGroup;
+  name: string;
+}): HabitCadence {
+  const text = normalize(input.name);
+
+  if (/annuale|year|anno/.test(text)) {
+    return "annuale";
+  }
+
+  if ((input.group === "abbonamenti" || input.group === "utenze") && input.amount >= 8) {
+    return "mensile";
+  }
+
+  const activeDays = getActiveDayIndices(input.activeDays);
+  if (activeDays.length === 0 || activeDays.length === 7) {
+    return "giornaliera";
+  }
+
+  return "settimanale";
+}
+
+function getMonthlyAmount(input: {
+  amount: number;
+  cadence: HabitCadence;
+  status: HabitStatus;
+  activeDays?: unknown;
+}) {
+  if (input.status === "pausa") {
+    return 0;
+  }
+
+  if (input.cadence === "mensile") {
+    return input.amount;
+  }
+
+  if (input.cadence === "annuale") {
+    return input.amount / 12;
+  }
+
+  if (input.cadence === "settimanale") {
+    const activeDays = getActiveDayIndices(input.activeDays);
+    const weeklyOccurrences = Math.max(1, activeDays.length);
+    return (input.amount * weeklyOccurrences * 52) / 12;
+  }
+
+  return (input.amount * 365) / 12;
+}
+
+function getCadenceShort(cadence: HabitCadence) {
+  if (cadence === "mensile") return "/mese";
+  if (cadence === "annuale") return "/anno";
+  if (cadence === "settimanale") return "/sett";
+  return "/giorno";
+}
+
+function isoWeekday(date: Date) {
+  const day = date.getUTCDay();
+  return day === 0 ? 7 : day;
+}
+
+const DEMO_TODAY = new Date(Date.UTC(2026, 5, 30));
+
+function getNextDate(activeDays: unknown, isActive: boolean) {
+  if (!isActive) {
+    return undefined;
+  }
+
+  const activeSet = new Set(getActiveDayIndices(activeDays));
+  const allDays = activeSet.size === 0 || activeSet.size === 7;
+
+  for (let offset = 0; offset <= 7; offset += 1) {
+    const candidate = new Date(DEMO_TODAY);
+    candidate.setUTCDate(candidate.getUTCDate() + offset);
+
+    if (allDays || activeSet.has(isoWeekday(candidate))) {
+      return candidate.toISOString().slice(0, 10);
+    }
+  }
+
+  return undefined;
+}
+
+function getRelativeLabel(dateKey: string) {
+  const date = new Date(`${dateKey}T00:00:00.000Z`);
+  const diffDays = Math.round((date.getTime() - DEMO_TODAY.getTime()) / 86_400_000);
+
+  if (diffDays === 0) return "oggi";
+  if (diffDays === 1) return "domani";
+  return `fra ${diffDays}g`;
+}
+
+function getShortDate(dateKey: string, language: string) {
+  return new Intl.DateTimeFormat(languageToLocale(language), {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })
+    .format(new Date(`${dateKey}T00:00:00.000Z`))
+    .replace(".", "");
+}
+
+function buildUsageNote(stats?: {
+  spentCount: number;
+  avoidedCount: number;
+  skippedCount: number;
+  pendingCount: number;
+  totalOccurrences: number;
+}) {
+  if (!stats || stats.totalOccurrences === 0) {
+    return undefined;
+  }
+
+  if (stats.skippedCount > stats.spentCount) {
+    return `saltata ${stats.skippedCount} volte`;
+  }
+
+  if (stats.avoidedCount > 0) {
+    return `${stats.avoidedCount} volte evitata`;
+  }
+
+  return undefined;
+}
+
+function getStatus(input: {
+  isActive: boolean;
+  group: HabitGroup;
+  monthlyAmount: number;
+  stats?: {
+    spentCount: number;
+    avoidedCount: number;
+    skippedCount: number;
+    disciplineRatePercent: number;
+    totalOccurrences: number;
+  };
+}): HabitStatus {
+  if (!input.isActive) {
+    return "pausa";
+  }
+
+  const stats = input.stats;
+  const reviewCandidate =
+    input.group === "abbonamenti" &&
+    input.monthlyAmount >= 8 &&
+    stats &&
+    stats.totalOccurrences > 0 &&
+    stats.disciplineRatePercent < 10;
+
+  return reviewCandidate ? "da-rivedere" : "attiva";
+}
+
+function groupLabel(group: HabitGroup) {
+  if (group === "abbonamenti") return "Abbonamenti";
+  if (group === "utenze") return "Utenze & casa";
+  return "Quotidiane";
+}
+
+function groupHint(group: HabitGroup) {
+  if (group === "abbonamenti") return "servizi che si rinnovano";
+  if (group === "utenze") return "casa e bollette";
+  return "piccole ripetizioni";
 }
 
 export function buildCraftedHabitsProps({
-  todayOccurrences,
   habits,
   habitStats,
   currencySymbol = "€",
   language = "it",
+  members = [],
+  currentUserId = null,
 }: {
-  todayOccurrences: Array<{
-    id: string;
-    habitId: string;
-    status: "pending" | "spent" | "avoided" | "skipped";
-    habit: {
-      name: string;
-      amount: number;
-      activeDays: unknown;
-      isActive: boolean;
-      category: {
-        name: string;
-        slug: string;
-      };
-    };
-  }>;
+  todayOccurrences?: unknown[];
   habits: Array<{
     id: string;
     name: string;
     amount: number;
     activeDays: unknown;
     isActive: boolean;
+    targetScope?: string | null;
+    targetUserId?: string | null;
+    createdAt: string;
     category: {
       name: string;
       slug: string;
@@ -144,55 +320,129 @@ export function buildCraftedHabitsProps({
     habitId: string;
     avoidedCount: number;
     spentCount: number;
+    skippedCount: number;
+    pendingCount: number;
+    totalOccurrences: number;
     disciplineRatePercent: number;
     totalSaved: number;
   }>;
   currencySymbol?: string;
   language?: string;
+  members?: WorkspaceMemberOption[];
+  currentUserId?: string | null;
 }): CraftedHabitsProps {
-  const t = getTranslations(language);
   const statsByHabitId = new Map(habitStats.map((item) => [item.habitId, item]));
-  const avoidedToday = todayOccurrences.filter(
-    (occurrence) => occurrence.status === "avoided",
-  ).length;
-  const pendingToday = todayOccurrences.filter(
-    (occurrence) => occurrence.status === "pending",
-  ).length;
+
+  const firstPass = habits.map((habit) => {
+    const group = getHabitGroup(habit);
+    const stats = statsByHabitId.get(habit.id);
+    const pausedStatus: HabitStatus = habit.isActive ? "attiva" : "pausa";
+    const cadence = getCadence({
+      amount: habit.amount,
+      activeDays: habit.activeDays,
+      group,
+      name: habit.name,
+    });
+    const monthlyBeforeReview = round2(
+      getMonthlyAmount({
+        amount: habit.amount,
+        cadence,
+        status: pausedStatus,
+        activeDays: habit.activeDays,
+      }),
+    );
+    const status = getStatus({
+      isActive: habit.isActive,
+      group,
+      monthlyAmount: monthlyBeforeReview,
+      stats,
+    });
+    const monthlyAmount = round2(
+      getMonthlyAmount({
+        amount: habit.amount,
+        cadence,
+        status,
+        activeDays: habit.activeDays,
+      }),
+    );
+
+    return {
+      id: habit.id,
+      name: habit.name,
+      icon: getCategoryCraftedIcon(habit.category),
+      amount: habit.amount,
+      cadence,
+      cadenceShort: getCadenceShort(cadence),
+      group,
+      status,
+      nextDate: getNextDate(habit.activeDays, habit.isActive),
+      startedOn: habit.createdAt,
+      usageNote: status === "da-rivedere" ? buildUsageNote(stats) ?? "poco segnale utile" : buildUsageNote(stats),
+      who: getHabitTargetDisplayLabel({
+        targetScope: habit.targetScope,
+        targetUserId: habit.targetUserId,
+        currentUserId,
+        members,
+      }).toLowerCase(),
+      monthlyAmount,
+      sharePercent: 0,
+      frequencyLabel: formatHabitFrequency(habit.activeDays, language),
+    } satisfies CraftedHabitView & { cadenceShort: string };
+  });
+
+  const perMonth = round2(firstPass.reduce((sum, habit) => sum + habit.monthlyAmount, 0));
+  const perYear = round2(perMonth * 12);
+  const views: CraftedHabitView[] = firstPass.map((habit) => ({
+    ...habit,
+    sharePercent: perMonth > 0 ? round2((habit.monthlyAmount / perMonth) * 100) : 0,
+  }));
+
+  const groups = (["abbonamenti", "utenze", "quotidiane"] as const).map((group) => {
+    const total = round2(
+      views
+        .filter((habit) => habit.group === group)
+        .reduce((sum, habit) => sum + habit.monthlyAmount, 0),
+    );
+
+    return {
+      group,
+      label: groupLabel(group),
+      hint: groupHint(group),
+      total,
+      share: perMonth > 0 ? round2((total / perMonth) * 100) : 0,
+    };
+  });
+
+  const upcoming = views
+    .filter((habit) => habit.status !== "pausa" && habit.nextDate)
+    .map((habit) => ({
+      ...habit,
+      relativeLabel: getRelativeLabel(habit.nextDate!),
+      shortDate: getShortDate(habit.nextDate!, language),
+    }))
+    .filter((habit) => !habit.relativeLabel.startsWith("fra 8"))
+    .sort((left, right) => left.nextDate!.localeCompare(right.nextDate!))
+    .slice(0, 12);
+
+  const reviewHabits = views.filter((habit) => habit.status === "da-rivedere");
 
   return {
-    today: todayOccurrences.map((occurrence) => ({
-      id: occurrence.id,
-      habitId: occurrence.habitId,
-      name: occurrence.habit.name,
-      sub: formatHabitSub(occurrence.habit.amount, occurrence.habit.activeDays, currencySymbol, language),
-      icon: getCategoryCraftedIcon(occurrence.habit.category),
-      status: occurrence.status,
-    })),
-    all: habits
-      .filter((habit) => habit.isActive)
-      .map((habit) => {
-        const stats = statsByHabitId.get(habit.id);
-        const considered = (stats?.avoidedCount ?? 0) + (stats?.spentCount ?? 0);
-
-        return {
-          id: habit.id,
-          name: habit.name,
-          freq: formatHabitFrequency(habit.activeDays, language),
-          icon: getCategoryCraftedIcon(habit.category),
-          completionLabel:
-            considered > 0
-              ? t.habits.completionStats(considered, stats?.avoidedCount ?? 0)
-              : t.habits.completionNone,
-          progressPercent: stats?.disciplineRatePercent ?? 0,
-          monthImpact: stats?.totalSaved ?? 0,
-        };
-      }),
-    avoidedToday,
-    pendingToday,
-    totalToday: todayOccurrences.length,
-    habitsNote: buildHabitsNote(todayOccurrences, language),
-    activeCount: habits.filter((habit) => habit.isActive).length,
-    monthSaved: habitStats.reduce((sum, item) => sum + item.totalSaved, 0),
-    monthLabel: getMonthLabel(language),
+    habits: views.sort(
+      (left, right) =>
+        left.group.localeCompare(right.group) ||
+        (right.monthlyAmount - left.monthlyAmount) ||
+        left.name.localeCompare(right.name, "it"),
+    ),
+    upcoming,
+    groups,
+    reviewHabits,
+    perMonth,
+    perYear,
+    activeCount: views.filter((habit) => habit.status !== "pausa").length,
+    pausedCount: views.filter((habit) => habit.status === "pausa").length,
+    potentialYearlySavings: round2(
+      reviewHabits.reduce((sum, habit) => sum + habit.monthlyAmount * 12, 0),
+    ),
+    currencySymbol,
   };
 }

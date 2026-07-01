@@ -1,6 +1,4 @@
-import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
-import { Plus } from "lucide-react";
 
 import {
   ensureTodayHabitOccurrences,
@@ -14,8 +12,6 @@ import { Label, Rule } from "@/components/crafted";
 import { CraftedHabits } from "@/src/components/habits/crafted-habits";
 import { CraftedHabitsEmptyState } from "@/src/components/habits/crafted-habits-empty-state";
 import { CraftedHabitForm } from "@/src/components/habits/crafted-habit-form";
-import { HabitList } from "@/src/components/habits/habit-list";
-import { HabitReminderBanner } from "@/src/components/notifications/habit-reminder-banner";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { buildCraftedHabitsProps } from "@/src/lib/crafted-habits-build";
 import { DEFAULT_CATEGORIES, toCategoryOption } from "@/src/lib/categories";
@@ -111,29 +107,14 @@ export default async function HabitsPage() {
     habitStats,
     currencySymbol: getCurrencySymbol(currency),
     language,
+    members,
+    currentUserId: currentUser.id,
   });
 
   const isEmpty = habits.length === 0 && todayOccurrences.length === 0;
 
   return (
     <main className="pb-6">
-      <section className="-mx-4 px-5 pb-5 pt-7 sm:-mx-6 lg:-mx-8">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="text-[clamp(1.75rem,8vw,2.25rem)] font-semibold tracking-[-0.03em]">
-            {t.nav.habits}
-          </h1>
-          <Link
-            href="#nuova-abitudine"
-            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 rounded-2xl bg-accent px-3 text-[13px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
-          >
-            <Plus className="size-3.5" aria-hidden="true" />
-            {t.habitForm.createTitle}
-          </Link>
-        </div>
-      </section>
-
-      <HabitReminderBanner occurrences={todayOccurrences} />
-
       {habitStatsError ? (
         <div className="px-5 pb-4">
           <DataLoadErrorBanner
@@ -148,20 +129,6 @@ export default async function HabitsPage() {
       ) : (
         <CraftedHabits {...craftedProps} />
       )}
-
-      {!isEmpty && habits.length > 0 ? (
-        <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
-          <Rule className="mb-6" />
-          <Label className="mb-4 block">{t.habitCard.manageSectionLabel}</Label>
-          <HabitList
-            habits={habits}
-            categories={categoryOptions}
-            members={members}
-            currentUserId={currentUser.id}
-            workspaceKind={workspace.kind}
-          />
-        </section>
-      ) : null}
 
       <section id="nuova-abitudine" className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
         {!isEmpty ? <Rule className="mb-6" /> : null}
