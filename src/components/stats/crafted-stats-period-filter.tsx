@@ -7,8 +7,12 @@ import { Label, Mono } from "@/components/crafted";
 import { cn } from "@/lib/utils";
 import { useTranslations } from "@/src/components/language/language-context";
 import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
+import { getWorkspaceMemberFilterOptions } from "@/src/lib/workspace-member-filter";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type CraftedStatsPeriodFilterProps = {
+  members: WorkspaceMemberOption[];
+  selectedMemberUserId?: string;
   selectedPeriod: StatsPeriod;
   selectedMonthKey: string;
   selectedMonthLabel: string;
@@ -17,6 +21,8 @@ type CraftedStatsPeriodFilterProps = {
 };
 
 export function CraftedStatsPeriodFilter({
+  members,
+  selectedMemberUserId,
   selectedPeriod,
   selectedMonthKey,
   selectedMonthLabel,
@@ -33,17 +39,27 @@ export function CraftedStatsPeriodFilter({
       ? monthOptions
       : [{ month: selectedMonthKey, label: selectedMonthLabel, entriesCount: 0 }];
 
-  const periodTabs: Array<{ id: StatsPeriod; label: string; detail: string }> = [
-    { id: "month", label: t.stats.periodMonth, detail: t.stats.periodMonthDetail },
-    { id: "year", label: t.stats.periodYear, detail: t.stats.periodYearDetail },
-    { id: "all", label: t.stats.periodAll, detail: t.stats.periodAllDetail },
+  const personOptions = getWorkspaceMemberFilterOptions(members);
+  const periodTabs: Array<{ id: StatsPeriod; label: string }> = [
+    { id: "month", label: t.stats.periodMonth },
+    { id: "year", label: t.stats.periodYear },
+    { id: "all", label: t.stats.periodAll },
   ];
 
   function replaceStatsParams(updates: {
+    person?: string;
     period?: StatsPeriod;
     month?: string;
   }) {
     const params = new URLSearchParams(searchParams.toString());
+
+    if (updates.person !== undefined) {
+      if (updates.person) {
+        params.set("person", updates.person);
+      } else {
+        params.delete("person");
+      }
+    }
 
     if (updates.period) {
       params.set("period", updates.period);
@@ -62,10 +78,10 @@ export function CraftedStatsPeriodFilter({
   }
 
   return (
-    <section aria-labelledby="stats-period-filter" className="px-5 pt-5 pb-0">
-      <div className="mb-3 flex items-end justify-between gap-3">
+    <section aria-labelledby="stats-period-filter" className="px-5 pb-2 pt-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
         <Label>
-          <span id="stats-period-filter">{t.stats.periodLabel}</span>
+          <span id="stats-period-filter">Filtri</span>
         </Label>
         {isPending ? (
           <Mono className="text-[10px] uppercase tracking-[0.18em] text-ink-3">
@@ -74,70 +90,80 @@ export function CraftedStatsPeriodFilter({
         ) : null}
       </div>
 
-      <div
-        className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1"
-        role="group"
-        aria-label={t.stats.periodFilterAriaLabel}
-      >
-        {periodTabs.map((tab) => {
-          const selected = selectedPeriod === tab.id;
-
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              aria-pressed={selected}
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-2">
+        {personOptions.length > 1 ? (
+          <label className="min-w-0 rounded-[var(--r-control)] border border-line bg-surface px-2 py-1.5">
+            <span className="block text-[8.5px] font-medium uppercase tracking-[0.14em] text-ink-3">
+              Persona
+            </span>
+            <select
+              value={selectedMemberUserId ?? ""}
               disabled={isPending}
-              onClick={() => replaceStatsParams({ period: tab.id })}
-              className={cn(
-                "min-h-11 shrink-0 rounded-2xl border px-4 py-2.5 text-left transition-[border-color,background-color,color,opacity,transform] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60",
-                selected
-                  ? "border-foreground/20 bg-foreground text-background"
-                  : "border-line bg-surface text-foreground hover:border-foreground/20",
-              )}
+              onChange={(event) =>
+                replaceStatsParams({ person: event.currentTarget.value })
+              }
+              className="h-6 w-full bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60"
             >
-              <span className="block text-[13px] font-semibold leading-none">
-                {tab.label}
-              </span>
-              <span
-                className={cn(
-                  "mt-1 block text-[10.5px]",
-                  selected ? "text-background/70" : "text-ink-3",
-                )}
-              >
-                {tab.id === "year" ? selectedYear : tab.detail}
-              </span>
-            </button>
-          );
-        })}
-      </div>
+              {personOptions.map((option) => (
+                <option key={option.value || "all"} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : (
+          <div className="hidden" />
+        )}
 
-      <div className="mt-3 inline-flex max-w-full items-center gap-2 rounded-xl border border-line bg-surface px-2.5 py-1.5">
-        <label
-          htmlFor="stats-month"
-          className="shrink-0 text-[9px] font-medium uppercase tracking-[0.16em] text-ink-3"
-        >
-          {t.stats.monthSelectLabel}
+        <label className="min-w-[94px] rounded-[var(--r-control)] border border-line bg-surface px-2 py-1.5">
+          <span className="block text-[8.5px] font-medium uppercase tracking-[0.14em] text-ink-3">
+            Periodo
+          </span>
+          <select
+            value={selectedPeriod}
+            disabled={isPending}
+            onChange={(event) =>
+              replaceStatsParams({ period: event.currentTarget.value as StatsPeriod })
+            }
+            className={cn(
+              "h-6 w-full bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60",
+              selectedPeriod === "year" && "text-accent",
+            )}
+            aria-label={t.stats.periodFilterAriaLabel}
+          >
+            {periodTabs.map((tab) => (
+              <option key={tab.id} value={tab.id}>
+                {tab.label}
+                {tab.id === "year" ? ` ${selectedYear}` : ""}
+              </option>
+            ))}
+          </select>
         </label>
-        <select
-          id="stats-month"
-          value={selectedMonthKey}
-          disabled={isPending}
-          onChange={(event) =>
-            replaceStatsParams({
-              period: "month",
-              month: event.currentTarget.value,
-            })
-          }
-          className="h-7 max-w-[12.5rem] bg-transparent pr-1 text-[13px] font-semibold text-foreground outline-none disabled:opacity-60"
-        >
-          {safeMonthOptions.map((option) => (
-            <option key={option.month} value={option.month}>
-              {option.label}
-              {option.entriesCount > 0 ? ` · ${option.entriesCount}` : ""}
-            </option>
-          ))}
-        </select>
+
+        <label className="min-w-0 rounded-[var(--r-control)] border border-line bg-surface px-2 py-1.5">
+          <span className="block text-[8.5px] font-medium uppercase tracking-[0.14em] text-ink-3">
+            {t.stats.monthSelectLabel}
+          </span>
+          <select
+            id="stats-month"
+            value={selectedMonthKey}
+            disabled={isPending}
+            onChange={(event) =>
+              replaceStatsParams({
+                period: "month",
+                month: event.currentTarget.value,
+              })
+            }
+            className="h-6 w-full bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60"
+          >
+            {safeMonthOptions.map((option) => (
+              <option key={option.month} value={option.month}>
+                {option.label}
+                {option.entriesCount > 0 ? ` · ${option.entriesCount}` : ""}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
     </section>
   );

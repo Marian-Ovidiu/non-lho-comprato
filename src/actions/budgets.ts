@@ -126,6 +126,14 @@ function getFormText(formData: FormData, key: string): string | null {
   return trimmed ? trimmed : null;
 }
 
+function getFormTexts(formData: FormData, key: string): string[] {
+  return formData
+    .getAll(key)
+    .filter((value): value is string => typeof value === "string")
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
 function mapKnownBudgetError(error: unknown): string | null {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
     return "Esiste già un budget con questa combinazione di periodo e scope.";
@@ -254,11 +262,14 @@ async function createBudgetRecord(
     const workspace = await deps.getCurrentWorkspace();
     await deps.assertWorkspaceMember(currentUser.id, workspace.id);
 
+    const requestedScope = getFormText(formData, "scope");
+    const categoryIds = getFormTexts(formData, "categoryId");
+    const primaryCategoryId = categoryIds[0] ?? null;
     const rawInput = {
-      scope: getFormText(formData, "scope"),
+      scope: requestedScope,
       period: getFormText(formData, "period"),
       amount: getFormText(formData, "amount"),
-      categoryId: getFormText(formData, "categoryId"),
+      categoryId: requestedScope === "category" ? primaryCategoryId : null,
       scopeKey: getFormText(formData, "scopeKey"),
       currency: getFormText(formData, "currency"),
     };
@@ -272,25 +283,35 @@ async function createBudgetRecord(
     }
 
     const normalized = validation.value;
-    const categoryId =
-      normalized.scope === "category" ? normalized.categoryId : null;
+    const targetCategoryIds =
+      normalized.scope === "category" ? categoryIds : [];
 
     if (normalized.scope === "category") {
-      const category = await deps.prisma.category.findFirst({
-        where: {
-          id: categoryId,
-          workspaceId: workspace.id,
-        },
-        select: { id: true },
-      });
-
-      if (!category) {
+      const uniqueCategoryIds = Array.from(new Set(targetCategoryIds));
+      if (uniqueCategoryIds.length === 0) {
         return toActionResult("Controlla i campi evidenziati", {
-          categoryId: "La categoria selezionata non appartiene a questo workspace.",
+          categoryId: "Seleziona almeno una categoria.",
         });
+      }
+
+      for (const categoryId of uniqueCategoryIds) {
+        const category = await deps.prisma.category.findFirst({
+          where: {
+            id: categoryId,
+            workspaceId: workspace.id,
+          },
+          select: { id: true },
+        });
+
+        if (!category) {
+          return toActionResult("Controlla i campi evidenziati", {
+            categoryId: "Una delle categorie selezionate non appartiene a questo workspace.",
+          });
+        }
       }
     }
 
+    const categoryId = normalized.scope === "category" ? primaryCategoryId : null;
     const scopeKey = buildBudgetScopeKey(normalized.scope, categoryId);
     const duplicate = await deps.prisma.budget.findFirst({
       where: {
@@ -303,27 +324,73 @@ async function createBudgetRecord(
     });
 
     if (duplicate) {
-      return toActionResult("Esiste già un budget con questa combinazione di periodo e scope.");
+      if (normalized.scope === "workspace" || targetCategoryIds.length <= 1) {
+        return toActionResult("Esiste già un budget con questa combinazione di periodo e scope.");
+      }
     }
 
-    const created = await deps.prisma.budget.create({
-      data: {
-        workspaceId: workspace.id,
-        scope: normalized.scope,
-        scopeKey,
-        categoryId,
-        period: normalized.period,
-        amount: normalized.amount.toFixed(2),
-        currency: normalized.currency ?? workspace.currency ?? "EUR",
-      },
-      select: { id: true },
-    });
+    let created: { id: string } | null = null;
+    let skippedCount = 0;
+
+    if (normalized.scope === "workspace") {
+      created = await deps.prisma.budget.create({
+        data: {
+          workspaceId: workspace.id,
+          scope: normalized.scope,
+          scopeKey,
+          categoryId,
+          period: normalized.period,
+          amount: normalized.amount.toFixed(2),
+          currency: normalized.currency ?? workspace.currency ?? "EUR",
+        },
+        select: { id: true },
+      });
+    } else {
+      for (const targetCategoryId of Array.from(new Set(targetCategoryIds))) {
+        const targetScopeKey = buildBudgetScopeKey("category", targetCategoryId);
+        const existing = await deps.prisma.budget.findFirst({
+          where: {
+            workspaceId: workspace.id,
+            period: normalized.period,
+            scope: "category",
+            scopeKey: targetScopeKey,
+          },
+          select: { id: true },
+        });
+
+        if (existing) {
+          skippedCount += 1;
+          continue;
+        }
+
+        const nextCreated = await deps.prisma.budget.create({
+          data: {
+            workspaceId: workspace.id,
+            scope: "category",
+            scopeKey: targetScopeKey,
+            categoryId: targetCategoryId,
+            period: normalized.period,
+            amount: normalized.amount.toFixed(2),
+            currency: normalized.currency ?? workspace.currency ?? "EUR",
+          },
+          select: { id: true },
+        });
+        created ??= nextCreated;
+      }
+    }
+
+    if (!created) {
+      return toActionResult("Esiste già un budget per le categorie selezionate.");
+    }
 
     revalidateBudgetPaths(deps);
 
     return {
       success: true,
-      message: "Budget creato.",
+      message:
+        skippedCount > 0
+          ? `Budget creato. ${skippedCount} già presente.`
+          : "Budget creato.",
       budgetId: created.id,
     };
   } catch (error) {

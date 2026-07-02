@@ -2,7 +2,6 @@ import { unstable_rethrow } from "next/navigation";
 
 import { getStatsPageData } from "@/src/actions/stats";
 import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
-import { CraftedPersonFilter } from "@/src/components/stats/crafted-person-filter";
 import { CraftedStats } from "@/src/components/stats/crafted-stats";
 import type { CraftedTopSavingsItem } from "@/src/components/stats/crafted-top-savings-list";
 import { CraftedStatsEmptyState } from "@/src/components/stats/crafted-stats-empty-state";
@@ -136,16 +135,6 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     <main className="pb-6">
       <PostHogEventOnMount eventName="stats_viewed" />
 
-      <CraftedPersonFilter
-        members={members}
-        selectedMemberUserId={memberUserId}
-        basePath="/stats"
-        extraParams={{
-          period: selectedPeriod,
-          month: selectedMonthKey,
-        }}
-      />
-
       {loadError ? (
         <div className="px-5 pb-4">
           <DataLoadErrorBanner
@@ -160,6 +149,8 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
       ) : loadError ? null : (
         <CraftedStats
           {...craftedProps}
+          members={members}
+          selectedMemberUserId={memberUserId}
           selectedPeriod={selectedPeriod}
           selectedMonthKey={selectedMonthKey}
           selectedMonthLabel={selectedMonthLabel}

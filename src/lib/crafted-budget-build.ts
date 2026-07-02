@@ -21,6 +21,7 @@ export type CraftedBudgetTone = "success" | "accent" | "destructive";
 
 export type CraftedBudgetCategory = {
   id: string;
+  budgetId: string;
   name: string;
   slug: string;
   icon: string | null;
@@ -232,15 +233,15 @@ export async function buildCraftedBudgetProps(
   );
 
   const categoryMap = new Map<string, CraftedBudgetCategory>();
-  const ensureCategory = (
-    category: {
-      id: string;
-      name: string;
-      slug: string;
-      icon: string | null;
-    },
+  const ensureBudgetCategory = (
+    budget: BudgetSummaryView,
     index = categoryMap.size,
   ) => {
+    const category = budget.category;
+    if (!budget.categoryId || !category) {
+      return null;
+    }
+
     const existing = categoryMap.get(category.id);
     if (existing) {
       return existing;
@@ -248,10 +249,11 @@ export async function buildCraftedBudgetProps(
 
     const created: CraftedBudgetCategory = {
       id: category.id,
+      budgetId: budget.id,
       name: category.name,
       slug: category.slug,
       icon: category.icon,
-      budget: 0,
+      budget: round2(toNumber(budget.budgetAmount)),
       spent: 0,
       avoided: 0,
       rollover: getRollover(category.id, index),
@@ -262,16 +264,8 @@ export async function buildCraftedBudgetProps(
     return created;
   };
 
-  budgetData.categories
-    .filter((category) => !category.archivedAt)
-    .forEach((category, index) => ensureCategory(category, index));
-
-  categoryBudgets.forEach((budget) => {
-    if (!budget.category) {
-      return;
-    }
-
-    ensureCategory(budget.category).budget = round2(toNumber(budget.budgetAmount));
+  categoryBudgets.forEach((budget, index) => {
+    ensureBudgetCategory(budget, index);
   });
 
   const categoryLookup = new Map(
@@ -284,7 +278,10 @@ export async function buildCraftedBudgetProps(
       continue;
     }
 
-    const row = ensureCategory(category);
+    const row = categoryMap.get(category.id);
+    if (!row) {
+      continue;
+    }
     const money = toEntryMoneyView(entry);
 
     row.txCount += 1;
@@ -298,11 +295,7 @@ export async function buildCraftedBudgetProps(
 
   const categories = sortCategories(
     [...categoryMap.values()].filter(
-      (category) =>
-        category.budget > 0 ||
-        category.spent > 0 ||
-        category.avoided > 0 ||
-        category.txCount > 0,
+      (category) => category.budget > 0,
     ),
   );
   const categoryBudgetTotal = categories.reduce(

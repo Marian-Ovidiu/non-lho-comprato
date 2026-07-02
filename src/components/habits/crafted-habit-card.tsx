@@ -82,6 +82,21 @@ function getActiveDayLabels(activeDays: unknown, labels: readonly [string, strin
     .map((v) => labels[v - 1]);
 }
 
+function getMonthlyDay(activeDays: unknown): number | null {
+  if (!activeDays || typeof activeDays !== "object" || Array.isArray(activeDays)) {
+    return null;
+  }
+
+  const schedule = activeDays as { cadence?: unknown; day?: unknown };
+  const day = Number(schedule.day);
+
+  if (schedule.cadence !== "monthly" || !Number.isInteger(day)) {
+    return null;
+  }
+
+  return Math.min(Math.max(day, 1), 31);
+}
+
 function getInitialActiveDays(activeDays: unknown): number[] {
   if (!Array.isArray(activeDays)) return [];
   return activeDays
@@ -106,8 +121,14 @@ export function CraftedHabitCard({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [isRemoved, setIsRemoved] = useState(false);
   const [categoryId, setCategoryId] = useState(habit.categoryId);
+  const [recurrenceType, setRecurrenceType] = useState<"weekly" | "monthly">(() =>
+    getMonthlyDay(habit.activeDays) ? "monthly" : "weekly",
+  );
   const [selectedDays, setSelectedDays] = useState<number[]>(() =>
     getInitialActiveDays(habit.activeDays),
+  );
+  const [activeDayOfMonth, setActiveDayOfMonth] = useState(() =>
+    String(getMonthlyDay(habit.activeDays) ?? 1),
   );
   const [editErrors, setEditErrors] = useState<Record<string, string>>({});
   const [editMessage, setEditMessage] = useState("");
@@ -121,6 +142,7 @@ export function CraftedHabitCard({
   const successTimerRef = useRef<number | null>(null);
 
   const activeDayLabels = getActiveDayLabels(habit.activeDays, t.habitCard.weekdays);
+  const monthlyDay = getMonthlyDay(habit.activeDays);
   const selectedLabels = useMemo(
     () =>
       weekdayValues
@@ -131,7 +153,9 @@ export function CraftedHabitCard({
 
   const icon = getCategoryCraftedIcon(habit.category);
   const freqLabel =
-    activeDayLabels.length > 0 ? activeDayLabels.join(", ") : t.habitCard.weekdays.join(", ");
+    monthlyDay !== null
+      ? `Ogni mese · giorno ${monthlyDay}`
+      : activeDayLabels.length > 0 ? activeDayLabels.join(", ") : t.habitCard.weekdays.join(", ");
   const targetLabel = getHabitTargetDisplayLabel({
     targetScope: habit.targetScope,
     targetUserId: habit.targetUserId,
@@ -266,7 +290,9 @@ export function CraftedHabitCard({
                   className="flex h-9 w-full items-center gap-2 px-3 text-sm transition-opacity hover:opacity-80"
                   onClick={() => {
                     setCategoryId(habit.categoryId);
+                    setRecurrenceType(getMonthlyDay(habit.activeDays) ? "monthly" : "weekly");
                     setSelectedDays(getInitialActiveDays(habit.activeDays));
+                    setActiveDayOfMonth(String(getMonthlyDay(habit.activeDays) ?? 1));
                     setEditErrors({});
                     setEditMessage("");
                     setScopeFieldsKey((current) => current + 1);
@@ -420,38 +446,79 @@ export function CraftedHabitCard({
             />
 
             <div>
-              <CraftedLabel className="mb-3 block">{t.habitCard.daysLabel}</CraftedLabel>
-              <div className="flex flex-wrap gap-3">
-                {weekdayValues.map((value) => {
-                  const checked = selectedDays.includes(value);
-                  const label = t.habitCard.weekdays[value - 1];
-                  return (
-                    <label
-                      key={value}
-                      className={cn(
-                        "cursor-pointer border-b-[1.5px] pb-1.5 text-[13px]",
-                        checked
-                          ? "border-accent font-semibold text-foreground"
-                          : "border-transparent font-[450] text-ink-3",
-                      )}
-                    >
-                      <input
-                        type="checkbox"
-                        name="activeDays"
-                        value={value}
-                        checked={checked}
-                        onChange={() => toggleDay(value)}
-                        className="sr-only"
-                        disabled={isEditing}
-                      />
-                      {label}
-                    </label>
-                  );
-                })}
+              <CraftedLabel className="mb-3 block">Ricorrenza</CraftedLabel>
+              <input type="hidden" name="recurrenceType" value={recurrenceType} />
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                {(["weekly", "monthly"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    disabled={isEditing}
+                    onClick={() => setRecurrenceType(type)}
+                    className={cn(
+                      "h-10 rounded-[var(--r-control)] border text-sm font-medium disabled:opacity-60",
+                      recurrenceType === type
+                        ? "border-accent/50 bg-accent/10 text-foreground"
+                        : "border-line text-ink-3",
+                    )}
+                  >
+                    {type === "weekly" ? "Settimanale" : "Mensile"}
+                  </button>
+                ))}
               </div>
-              {selectedLabels.length > 0 ? (
-                <p className="mt-2 text-xs text-ink-3">{selectedLabels.join(", ")}</p>
-              ) : null}
+
+              {recurrenceType === "weekly" ? (
+                <>
+                  <div className="flex flex-wrap gap-3">
+                    {weekdayValues.map((value) => {
+                      const checked = selectedDays.includes(value);
+                      const label = t.habitCard.weekdays[value - 1];
+                      return (
+                        <label
+                          key={value}
+                          className={cn(
+                            "cursor-pointer border-b-[1.5px] pb-1.5 text-[13px]",
+                            checked
+                              ? "border-accent font-semibold text-foreground"
+                              : "border-transparent font-[450] text-ink-3",
+                          )}
+                        >
+                          <input
+                            type="checkbox"
+                            name="activeDays"
+                            value={value}
+                            checked={checked}
+                            onChange={() => toggleDay(value)}
+                            className="sr-only"
+                            disabled={isEditing}
+                          />
+                          {label}
+                        </label>
+                      );
+                    })}
+                  </div>
+                  {selectedLabels.length > 0 ? (
+                    <p className="mt-2 text-xs text-ink-3">{selectedLabels.join(", ")}</p>
+                  ) : null}
+                </>
+              ) : (
+                <label className="flex items-center justify-between gap-4 border-y border-line py-3">
+                  <select
+                    name="activeDayOfMonth"
+                    value={activeDayOfMonth}
+                    onChange={(event) => setActiveDayOfMonth(event.target.value)}
+                    className="min-w-0 flex-1 bg-transparent font-num text-[15px] outline-none"
+                    disabled={isEditing}
+                  >
+                    {Array.from({ length: 31 }, (_, index) => String(index + 1)).map((day) => (
+                      <option key={day} value={day}>
+                        Giorno {day}
+                      </option>
+                    ))}
+                  </select>
+                  <CraftedLabel>Del mese</CraftedLabel>
+                </label>
+              )}
               <FormFieldError message={editErrors.activeDays} />
             </div>
 

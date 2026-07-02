@@ -41,8 +41,11 @@ import { useTranslations, useWorkspaceLanguage } from "@/src/components/language
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { cn } from "@/lib/utils";
 import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 type CraftedStatsComponentProps = CraftedStatsProps & {
+  members: WorkspaceMemberOption[];
+  selectedMemberUserId?: string;
   selectedPeriod: StatsPeriod;
   selectedMonthKey: string;
   selectedMonthLabel: string;
@@ -113,6 +116,8 @@ function CraftedCategoryBars({
 }
 
 export function CraftedStats({
+  members,
+  selectedMemberUserId,
   monthlyStats,
   overview,
   dailySpendingComparison,
@@ -174,6 +179,8 @@ export function CraftedStats({
   return (
     <Stagger className="-mx-4 sm:-mx-6 lg:-mx-8">
       <CraftedStatsPeriodFilter
+        members={members}
+        selectedMemberUserId={selectedMemberUserId}
         selectedPeriod={selectedPeriod}
         selectedMonthKey={selectedMonthKey}
         selectedMonthLabel={selectedMonthLabel}

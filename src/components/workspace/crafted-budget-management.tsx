@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import { Label, Rule, Serif } from "@/components/crafted";
@@ -35,6 +35,7 @@ export function CraftedBudgetManagement({
   const [resetToken, setResetToken] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const formWrapRef = useRef<HTMLDivElement | null>(null);
 
   const sortedBudgets = useMemo(
     () => sortBudgetSummariesForManagement(initialBudgets),
@@ -60,6 +61,12 @@ export function CraftedBudgetManagement({
   const handleEdit = (budget: BudgetSummaryView) => {
     setEditingBudgetId(budget.id);
     setNotice(null);
+    window.setTimeout(() => {
+      formWrapRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 40);
   };
 
   const handleDelete = async (budgetId: string) => {
@@ -101,15 +108,17 @@ export function CraftedBudgetManagement({
         className="mt-6"
       />
 
-      <CraftedBudgetForm
-        key={editingBudget ? editingBudget.id : `create-${resetToken}`}
-        mode={editingBudget ? "edit" : "create"}
-        currency={currency}
-        categories={categories}
-        initialBudget={editingBudget}
-        onSaved={handleSaved}
-        onCancel={editingBudget ? handleCancel : undefined}
-      />
+      <div ref={formWrapRef} className="scroll-mt-20">
+        <CraftedBudgetForm
+          key={editingBudget ? editingBudget.id : `create-${resetToken}`}
+          mode={editingBudget ? "edit" : "create"}
+          currency={currency}
+          categories={categories}
+          initialBudget={editingBudget}
+          onSaved={handleSaved}
+          onCancel={editingBudget ? handleCancel : undefined}
+        />
+      </div>
 
       {notice ? (
         <p className="mt-3 text-sm text-muted-foreground" aria-live="polite">

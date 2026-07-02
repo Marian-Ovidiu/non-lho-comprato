@@ -334,6 +334,24 @@ function buildFormData(fields: Record<string, string>): FormData {
   return formData;
 }
 
+function buildMultiCategoryBudgetFormData(fields: {
+  period: string;
+  amount: string;
+  categoryIds: string[];
+  currency: string;
+}): FormData {
+  const formData = new FormData();
+  formData.set("scope", "category");
+  formData.set("period", fields.period);
+  formData.set("amount", fields.amount);
+  formData.set("scopeKey", fields.categoryIds[0] ?? "");
+  formData.set("currency", fields.currency);
+  for (const categoryId of fields.categoryIds) {
+    formData.append("categoryId", categoryId);
+  }
+  return formData;
+}
+
 describe("budget actions", () => {
   it("creates a valid workspace budget", async () => {
     const world = await createFakeBudgetWorld();
@@ -374,6 +392,30 @@ describe("budget actions", () => {
     assert.equal(world.budgets[0]?.scopeKey, "category-1");
   });
 
+  it("creates one category budget for each selected category", async () => {
+    const world = await createFakeBudgetWorld();
+
+    const result = await world.actions.createBudgetAction(
+      buildMultiCategoryBudgetFormData({
+        period: "monthly",
+        amount: "80",
+        categoryIds: ["category-1", "category-2"],
+        currency: "EUR",
+      }),
+    );
+
+    assert.equal(result.success, true);
+    assert.equal(world.budgets.length, 2);
+    assert.deepEqual(
+      world.budgets.map((budget) => budget.categoryId).sort(),
+      ["category-1", "category-2"],
+    );
+    assert.deepEqual(
+      world.budgets.map((budget) => budget.scopeKey).sort(),
+      ["category-1", "category-2"],
+    );
+  });
+
   it("blocks amount <= 0", async () => {
     const world = await createFakeBudgetWorld();
 
@@ -409,7 +451,7 @@ describe("budget actions", () => {
     assert.match(result.message, /Controlla/);
     assert.equal(
       result.errors?.categoryId,
-      "La categoria selezionata non appartiene a questo workspace.",
+      "Una delle categorie selezionate non appartiene a questo workspace.",
     );
   });
 

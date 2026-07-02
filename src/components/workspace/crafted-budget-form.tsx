@@ -47,6 +47,14 @@ function getInitialCategoryId(
   return categories[0]?.id ?? "";
 }
 
+function getInitialCategoryIds(
+  categories: BudgetCategoryOption[],
+  initialBudget?: BudgetSummaryView | null,
+): string[] {
+  const initial = getInitialCategoryId(categories, initialBudget);
+  return initial ? [initial] : [];
+}
+
 export function CraftedBudgetForm({
   mode,
   currency,
@@ -60,17 +68,39 @@ export function CraftedBudgetForm({
   const [period, setPeriod] = useState<BudgetPeriod>(getInitialPeriod(initialBudget));
   const [amount, setAmount] = useState(initialBudget ? initialBudget.budgetAmount.toFixed(2) : "");
   const [categoryId, setCategoryId] = useState(getInitialCategoryId(categories, initialBudget));
+  const [categoryIds, setCategoryIds] = useState<string[]>(() =>
+    getInitialCategoryIds(categories, initialBudget),
+  );
   const [budgetErrors, setBudgetErrors] = useState<BudgetFormErrors>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const canUseCategory = categories.length > 0;
+  const effectiveCategoryIds = useMemo(
+    () => (mode === "edit" ? (categoryId ? [categoryId] : []) : categoryIds),
+    [categoryId, categoryIds, mode],
+  );
   const scopeKey =
-    scope === "workspace" ? "workspace" : categoryId || categories[0]?.id || "";
+    scope === "workspace" ? "workspace" : effectiveCategoryIds[0] || "";
   const selectedCategory = useMemo(
     () => categories.find((category) => category.id === categoryId) ?? null,
     [categories, categoryId],
   );
+  const selectedCategoryNames = useMemo(
+    () =>
+      categories
+        .filter((category) => effectiveCategoryIds.includes(category.id))
+        .map((category) => category.name),
+    [categories, effectiveCategoryIds],
+  );
+
+  function toggleCategory(nextCategoryId: string) {
+    setCategoryIds((current) =>
+      current.includes(nextCategoryId)
+        ? current.filter((value) => value !== nextCategoryId)
+        : [...current, nextCategoryId],
+    );
+  }
 
   async function submitBudget(
     action: (formData: FormData) => Promise<{ success: boolean; message: string; errors?: BudgetFormErrors }>,
@@ -82,7 +112,9 @@ export function CraftedBudgetForm({
     formData.set("scopeKey", scopeKey);
     formData.set("currency", currency);
     if (scope === "category") {
-      formData.set("categoryId", categoryId);
+      for (const selectedCategoryId of effectiveCategoryIds) {
+        formData.append("categoryId", selectedCategoryId);
+      }
     }
     if (mode === "edit" && initialBudget) {
       formData.set("budgetId", initialBudget.id);
@@ -172,6 +204,7 @@ export function CraftedBudgetForm({
 
               if (nextScope === "category" && !categoryId && categories[0]) {
                 setCategoryId(categories[0].id);
+                setCategoryIds([categories[0].id]);
               }
             }}
           >
@@ -188,29 +221,65 @@ export function CraftedBudgetForm({
           <FormFieldError message={budgetErrors?.scope} />
         </div>
 
-        <div className="space-y-2">
-          <label htmlFor="budget-category" className="text-sm font-medium leading-none">
-            Categoria
-          </label>
-          <Select
-            value={categoryId}
-            onValueChange={(value) => setCategoryId(value)}
-            disabled={scope !== "category" || !canUseCategory}
-          >
-            <SelectTrigger id="budget-category" className="w-full">
-              <SelectValue placeholder={canUseCategory ? "Seleziona categoria" : "Nessuna categoria disponibile"} />
-            </SelectTrigger>
-            <SelectContent>
-              {categories.map((category) => (
-                <SelectItem key={category.id} value={category.id}>
-                  {category.name}
-                  {category.archivedAt ? " (archiviata)" : ""}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <FormFieldError message={budgetErrors?.categoryId} />
-        </div>
+        {mode === "edit" ? (
+          <div className="space-y-2">
+            <label htmlFor="budget-category" className="text-sm font-medium leading-none">
+              Categoria
+            </label>
+            <Select
+              value={categoryId}
+              onValueChange={(value) => {
+                setCategoryId(value);
+                setCategoryIds([value]);
+              }}
+              disabled={scope !== "category" || !canUseCategory}
+            >
+              <SelectTrigger id="budget-category" className="w-full">
+                <SelectValue placeholder={canUseCategory ? "Seleziona categoria" : "Nessuna categoria disponibile"} />
+              </SelectTrigger>
+              <SelectContent>
+                {categories.map((category) => (
+                  <SelectItem key={category.id} value={category.id}>
+                    {category.name}
+                    {category.archivedAt ? " (archiviata)" : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <FormFieldError message={budgetErrors?.categoryId} />
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <span className="text-sm font-medium leading-none">Categorie</span>
+            <div
+              className="max-h-40 overflow-y-auto rounded-[var(--r-control)] border border-line p-2"
+              aria-label="Categorie budget"
+            >
+              {categories.map((category) => {
+                const checked = categoryIds.includes(category.id);
+                return (
+                  <label
+                    key={category.id}
+                    className="flex min-h-10 cursor-pointer items-center gap-2 rounded-[var(--r-chip)] px-2 text-sm hover:bg-surface-muted"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={scope !== "category" || !canUseCategory}
+                      onChange={() => toggleCategory(category.id)}
+                      className="size-4 accent-[var(--accent)]"
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      {category.name}
+                      {category.archivedAt ? " (archiviata)" : ""}
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+            <FormFieldError message={budgetErrors?.categoryId} />
+          </div>
+        )}
       </div>
 
       <input type="hidden" name="scopeKey" value={scopeKey} />
@@ -219,7 +288,11 @@ export function CraftedBudgetForm({
         <input type="hidden" name="budgetId" value={initialBudget.id} />
       ) : null}
 
-      {selectedCategory && scope === "category" ? (
+      {scope === "category" && mode === "create" && selectedCategoryNames.length > 0 ? (
+        <Serif className="block text-xs text-muted-foreground">
+          Categorie selezionate: {selectedCategoryNames.join(", ")}
+        </Serif>
+      ) : selectedCategory && scope === "category" ? (
         <Serif className="block text-xs text-muted-foreground">
           Categoria selezionata: {selectedCategory.name}
         </Serif>

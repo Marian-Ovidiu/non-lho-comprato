@@ -65,8 +65,28 @@ function getActiveDayIndices(activeDays: unknown): number[] {
     .filter((n) => Number.isInteger(n) && n >= 1 && n <= 7);
 }
 
+function getMonthlyScheduleDay(activeDays: unknown): number | null {
+  if (!activeDays || typeof activeDays !== "object" || Array.isArray(activeDays)) {
+    return null;
+  }
+
+  const schedule = activeDays as { cadence?: unknown; day?: unknown };
+  const day = Number(schedule.day);
+
+  if (schedule.cadence !== "monthly" || !Number.isInteger(day)) {
+    return null;
+  }
+
+  return Math.min(Math.max(day, 1), 31);
+}
+
 export function formatHabitFrequency(activeDays: unknown, language = "it") {
   const t = getTranslations(language);
+  const monthlyDay = getMonthlyScheduleDay(activeDays);
+  if (monthlyDay !== null) {
+    return `Ogni mese · giorno ${monthlyDay}`;
+  }
+
   const indices = getActiveDayIndices(activeDays);
 
   if (indices.length === 0 || indices.length === 7) {
@@ -135,6 +155,9 @@ function getCadence(input: {
   name: string;
 }): HabitCadence {
   const text = normalize(input.name);
+  if (getMonthlyScheduleDay(input.activeDays) !== null) {
+    return "mensile";
+  }
 
   if (/annuale|year|anno/.test(text)) {
     return "annuale";
@@ -193,9 +216,31 @@ function isoWeekday(date: Date) {
 
 const DEMO_TODAY = new Date(Date.UTC(2026, 5, 30));
 
+function getDaysInMonth(year: number, monthIndex: number) {
+  return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+}
+
 function getNextDate(activeDays: unknown, isActive: boolean) {
   if (!isActive) {
     return undefined;
+  }
+
+  const monthlyDay = getMonthlyScheduleDay(activeDays);
+  if (monthlyDay !== null) {
+    for (let monthOffset = 0; monthOffset <= 1; monthOffset += 1) {
+      const candidate = new Date(
+        Date.UTC(DEMO_TODAY.getUTCFullYear(), DEMO_TODAY.getUTCMonth() + monthOffset, 1),
+      );
+      const targetDay = Math.min(
+        monthlyDay,
+        getDaysInMonth(candidate.getUTCFullYear(), candidate.getUTCMonth()),
+      );
+      candidate.setUTCDate(targetDay);
+
+      if (candidate >= DEMO_TODAY) {
+        return candidate.toISOString().slice(0, 10);
+      }
+    }
   }
 
   const activeSet = new Set(getActiveDayIndices(activeDays));

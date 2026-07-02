@@ -11,6 +11,7 @@ import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
 import {
+  getDateParts,
   getDayRangeForDateKey,
   getIsoWeekday,
   getTodayDateKey,
@@ -44,6 +45,12 @@ type SyncResult = {
 };
 
 type HabitStatus = "pending" | "spent" | "avoided" | "skipped";
+type HabitSchedule =
+  | number[]
+  | {
+      cadence: "monthly";
+      day: number;
+    };
 
 const habitCategorySelect = {
   id: true,
@@ -307,20 +314,75 @@ function getTodayDayRange(timeZone: string): { start: Date; end: Date } {
   return getDayRangeForDateKey(getTodayDateKey(timeZone), timeZone);
 }
 
-function getTodayIsoWeekday(timeZone: string): number {
-  return getIsoWeekday(new Date(), timeZone);
-}
-
 function normalizeActiveDays(values: number[]): number[] {
   return Array.from(new Set(values))
     .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7)
     .sort((a, b) => a - b);
 }
 
+function getDaysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+function isMonthlyHabitSchedule(value: unknown): value is { cadence: "monthly"; day: number } {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return false;
+  }
+
+  const schedule = value as { cadence?: unknown; day?: unknown };
+  return schedule.cadence === "monthly" && Number.isInteger(Number(schedule.day));
+}
+
+function isHabitScheduledForDate(
+  schedule: unknown,
+  date: Date,
+  timeZone: string,
+): boolean {
+  if (isMonthlyHabitSchedule(schedule)) {
+    const parts = getDateParts(date, timeZone);
+    const targetDay = Math.min(
+      Math.max(1, Number(schedule.day)),
+      getDaysInMonth(parts.year, parts.month),
+    );
+
+    return parts.day === targetDay;
+  }
+
+  if (!Array.isArray(schedule)) {
+    return false;
+  }
+
+  const activeDays = normalizeActiveDays(
+    schedule.map((value) => Number(value)).filter(Number.isFinite),
+  );
+
+  return activeDays.includes(getIsoWeekday(date, timeZone));
+}
+
 function parseActiveDays(formData: FormData): {
-  value: number[];
+  value: HabitSchedule;
   error?: string;
 } {
+  const recurrenceType = getText(formData, "recurrenceType") || "weekly";
+
+  if (recurrenceType === "monthly") {
+    const day = Number(getText(formData, "activeDayOfMonth"));
+
+    if (!Number.isInteger(day) || day < 1 || day > 31) {
+      return {
+        value: [],
+        error: "Seleziona un giorno del mese valido",
+      };
+    }
+
+    return {
+      value: {
+        cadence: "monthly",
+        day,
+      },
+    };
+  }
+
   const rawValues = formData.getAll("activeDays");
   const collected: number[] = [];
 
@@ -1157,17 +1219,8 @@ export async function ensureTodayHabitOccurrences(): Promise<SyncResult> {
       },
     });
 
-    const todayWeekday = getTodayIsoWeekday(timeZone);
     const rows = habits.filter((habit) => {
-      if (!Array.isArray(habit.activeDays)) {
-        return false;
-      }
-
-      const activeDays = normalizeActiveDays(
-        habit.activeDays.map((value) => Number(value)).filter(Number.isFinite),
-      );
-
-      return activeDays.includes(todayWeekday);
+      return isHabitScheduledForDate(habit.activeDays, todayStart, timeZone);
     });
 
     if (!rows.length) {
