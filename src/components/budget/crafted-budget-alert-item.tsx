@@ -51,7 +51,7 @@ export function CraftedBudgetAlertItem({
 
   return (
     <Link
-      href={alert.ctaHref ?? "/workspace/budgets"}
+      href={alert.ctaHref ?? "/budget#gestione-budget"}
       aria-label={`${kind.title}: ${alert.message}`}
       className={cn(
         "group block rounded-[var(--r-card)] border px-4 py-4 shadow-none transition-colors",

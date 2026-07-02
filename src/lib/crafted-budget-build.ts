@@ -1,5 +1,10 @@
 import { getDashboardSummary } from "@/src/actions/entries";
 import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
+import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
+import type {
+  BudgetCategoryOption,
+  BudgetSummaryView,
+} from "@/src/lib/budget-summary";
 import { toEntryMoneyView } from "@/src/lib/entry-domain";
 import { prisma } from "@/src/lib/prisma";
 import {
@@ -37,13 +42,23 @@ export type CraftedBudgetProps = {
   yearLabel: string;
   monthCode: string;
   monthOptions: CraftedBudgetMonthOption[];
-  income: number;
   totalBudget: number;
   spent: number;
   avoided: number;
   daysInMonth: number;
   dayOfMonth: number;
   categories: CraftedBudgetCategory[];
+};
+
+export type CraftedBudgetManagementProps = {
+  budgets: BudgetSummaryView[];
+  categories: BudgetCategoryOption[];
+  currency: string;
+  alertSelection: BudgetAlertSelection;
+};
+
+export type CraftedBudgetPageData = CraftedBudgetProps & {
+  management: CraftedBudgetManagementProps;
 };
 
 type EntryForBudget = {
@@ -54,8 +69,6 @@ type EntryForBudget = {
   mode: unknown;
   savingContext: unknown;
 };
-
-const MONTH_INCOME = 2400;
 
 function round2(value: number): number {
   return Math.round((value + Number.EPSILON) * 100) / 100;
@@ -178,7 +191,7 @@ function sortCategories(
 
 export async function buildCraftedBudgetProps(
   monthKeyInput?: string,
-): Promise<CraftedBudgetProps> {
+): Promise<CraftedBudgetPageData> {
   const [workspaceId, timeZone] = await Promise.all([
     getCurrentWorkspaceId(),
     getCurrentWorkspaceTimezone(),
@@ -307,12 +320,17 @@ export async function buildCraftedBudgetProps(
     yearLabel: formatYearLabel(monthDate, timeZone),
     monthCode: formatMonthCode(monthDate, timeZone),
     monthOptions: buildMonthOptions(monthKey),
-    income: MONTH_INCOME,
     totalBudget,
     spent: round2(monthSummary.ordinarySpent ?? monthSummary.totalRealSpent),
     avoided: round2(monthSummary.avoidedAmount),
     daysInMonth: getDaysInMonth(monthKey),
     dayOfMonth: getDayOfMonth(monthKey, timeZone),
     categories,
+    management: {
+      budgets: budgetData.budgets,
+      categories: budgetData.categories,
+      currency: budgetData.workspace.currency,
+      alertSelection: budgetData.alertSelection,
+    },
   };
 }

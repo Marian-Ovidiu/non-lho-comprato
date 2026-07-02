@@ -40,7 +40,7 @@ export type BudgetAlertSelectionOptions = {
 
 const DEFAULT_MAX_PRIMARY_ALERTS = 2;
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
-const ALERT_CTA_HREF = "/workspace/budgets";
+const ALERT_CTA_HREF = "/budget#gestione-budget";
 
 const KIND_ORDER: Record<BudgetAlertKind, number> = {
   over_budget: 0,

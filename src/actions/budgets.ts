@@ -85,7 +85,7 @@ type BudgetActionDeps = {
   now: () => Date;
 };
 
-const BUDGET_REVALIDATE_PATHS = ["/workspace/budgets", "/", "/more"] as const;
+const BUDGET_REVALIDATE_PATHS = ["/budget", "/workspace/budgets", "/", "/more"] as const;
 
 function makeDefaultDeps(): BudgetActionDeps {
   return {

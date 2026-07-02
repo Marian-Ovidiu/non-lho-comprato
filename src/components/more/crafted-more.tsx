@@ -93,12 +93,6 @@ export function CraftedMore({
             detail={t.more.monthlyReportDetail}
             icon="arrowUp"
           />
-          <CraftedMoreRow
-            href="/budget"
-            label="Budget mese"
-            detail="Rimanente, ritmo e categorie sforate."
-            icon="target"
-          />
         </div>
       </CraftedMoreSection>
 
@@ -115,9 +109,9 @@ export function CraftedMore({
                 icon="receipt"
               />
               <CraftedMoreRow
-                href="/workspace/budgets"
+                href="/budget"
                 label="Budget"
-                detail="Controlla la spesa reale del workspace e delle categorie."
+                detail="Rimanente, ritmo, categorie sforate e gestione."
                 icon="target"
               />
               <CraftedMoreRow

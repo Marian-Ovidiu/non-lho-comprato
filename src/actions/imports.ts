@@ -174,6 +174,7 @@ const ENTRY_INVALIDATION_PATHS = [
   "/",
   "/entries",
   "/stats",
+  "/budget",
   "/workspace/budgets",
   "/more",
   "/workspace/imports",

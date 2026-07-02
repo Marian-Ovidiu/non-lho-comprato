@@ -1265,6 +1265,7 @@ export async function updateEntry(
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
+    tryRevalidatePath("/budget");
     tryRevalidatePath("/workspace/budgets");
     tryRevalidatePath("/more");
     updateTag(`entries:${workspaceId}`);
@@ -1361,6 +1362,7 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
+    tryRevalidatePath("/budget");
     tryRevalidatePath("/workspace/budgets");
     tryRevalidatePath("/more");
     updateTag(`entries:${workspaceId}`);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -10,7 +10,6 @@ import {
   ChevronRight,
   Coffee,
   Home,
-  Info,
   Plus,
   ShoppingBag,
   Sparkles,
@@ -36,7 +35,10 @@ type CategoryRowProps = {
   cat: CraftedBudgetCategory;
   totalBudget: number;
   last: boolean;
-  showAvoided: boolean;
+};
+
+type CraftedBudgetPageProps = CraftedBudgetProps & {
+  managementSection?: ReactNode;
 };
 
 const MINUS = "\u2212";
@@ -153,33 +155,7 @@ function MiniStat({ label, value, tone = "default" }: MiniStatProps) {
   );
 }
 
-function Toggle({
-  checked,
-  onChange,
-}: {
-  checked: boolean;
-  onChange: (checked: boolean) => void;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      onClick={() => onChange(!checked)}
-      className="nlc-press inline-flex h-6 w-11 shrink-0 items-center rounded-full border border-line bg-surface-muted p-0.5 outline-none transition-colors data-[checked=true]:border-accent/40 data-[checked=true]:bg-accent/15 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-      data-checked={checked}
-    >
-      <span
-        className={cn(
-          "block size-5 rounded-full bg-background transition-transform duration-190",
-          checked && "translate-x-[20px] bg-accent",
-        )}
-      />
-    </button>
-  );
-}
-
-function CategoryRow({ cat, totalBudget, last, showAvoided }: CategoryRowProps) {
+function CategoryRow({ cat, totalBudget, last }: CategoryRowProps) {
   const iconName = getCategoryIconName(cat);
   const tone = getCategoryTone(cat);
   const pct = cat.budget > 0 ? (cat.spent / cat.budget) * 100 : 100;
@@ -228,7 +204,7 @@ function CategoryRow({ cat, totalBudget, last, showAvoided }: CategoryRowProps) 
           <span>
             <Mono>{cat.txCount}</Mono> mov
           </span>
-          {showAvoided && cat.avoided > 0 ? (
+          {cat.avoided > 0 ? (
             <span className="text-success">
               <Mono>{MINUS}{formatEUR(cat.avoided)}</Mono> evitati
             </span>
@@ -266,15 +242,14 @@ function CategoryRow({ cat, totalBudget, last, showAvoided }: CategoryRowProps) 
   );
 }
 
-export function CraftedBudgetPage(props: CraftedBudgetProps) {
+export function CraftedBudgetPage(props: CraftedBudgetPageProps) {
   const router = useRouter();
-  const [showAvoided, setShowAvoided] = useState(true);
   const remaining = props.totalBudget - props.spent;
   const spentPct = props.totalBudget > 0 ? (props.spent / props.totalBudget) * 100 : 0;
   const trajectory = (props.dayOfMonth / props.daysInMonth) * props.totalBudget;
   const aboveTrajectory = props.spent > trajectory;
   const paceDelta = Math.abs(props.spent - trajectory);
-  const netImpact = props.spent - (showAvoided ? props.avoided : 0);
+  const netImpact = props.spent - props.avoided;
   const overCategories = useMemo(
     () => props.categories.filter((cat) => cat.spent > cat.budget),
     [props.categories],
@@ -366,28 +341,18 @@ export function CraftedBudgetPage(props: CraftedBudgetProps) {
       <Rule soft />
 
       <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <Label>Spese evitate</Label>
-              <Info className="size-3.5 text-ink-3" aria-label="Modifica solo la mini-stat Impatto" />
-            </div>
-            <Serif className="mt-1 block text-[13px] text-muted-foreground">
-              Incidono solo sull’impatto netto.
-            </Serif>
-          </div>
-          <Toggle checked={showAvoided} onChange={setShowAvoided} />
-        </div>
-
-        <div className="mt-4 grid grid-cols-3 gap-3">
-          <MiniStat label="Reddito" value={props.income} />
+        <div className="grid grid-cols-3 gap-3">
+          <MiniStat label="Budget" value={props.totalBudget} />
           <MiniStat label="Speso" value={props.spent} />
           <MiniStat
             label="Impatto"
             value={netImpact}
-            tone={netImpact > props.spent ? "destructive" : showAvoided ? "success" : "accent"}
+            tone={props.avoided > 0 ? "success" : "accent"}
           />
         </div>
+        <Serif className="mt-3 block text-[13px] text-muted-foreground">
+          Impatto netto = speso reale meno acquisti evitati. Le categorie restano sulla spesa reale.
+        </Serif>
       </section>
 
       {overCategories.length > 0 ? (
@@ -443,7 +408,7 @@ export function CraftedBudgetPage(props: CraftedBudgetProps) {
             <h2 className="text-[16px] font-semibold">Dove stai sforando</h2>
           </div>
           <Link
-            href="/workspace/budgets"
+            href="#gestione-budget"
             className="nlc-press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] bg-accent px-3 text-[13px] font-bold text-accent-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             <Plus className="size-3.5" aria-hidden="true" />
@@ -459,7 +424,6 @@ export function CraftedBudgetPage(props: CraftedBudgetProps) {
                 cat={cat}
                 totalBudget={props.totalBudget}
                 last={index === props.categories.length - 1}
-                showAvoided={showAvoided}
               />
             ))
           ) : (
@@ -472,6 +436,13 @@ export function CraftedBudgetPage(props: CraftedBudgetProps) {
           )}
         </div>
       </section>
+
+      {props.managementSection ? (
+        <>
+          <Rule soft />
+          {props.managementSection}
+        </>
+      ) : null}
 
       <footer className="px-[var(--sp-page-x)] py-5 text-center">
         <Rule soft className="mb-4" />

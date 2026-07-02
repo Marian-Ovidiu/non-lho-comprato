@@ -20,6 +20,7 @@ type CraftedBudgetManagementProps = {
   categories: BudgetCategoryOption[];
   currency: string;
   alertSelection: BudgetAlertSelection;
+  embedded?: boolean;
 };
 
 export function CraftedBudgetManagement({
@@ -27,6 +28,7 @@ export function CraftedBudgetManagement({
   categories,
   currency,
   alertSelection,
+  embedded = false,
 }: CraftedBudgetManagementProps) {
   const router = useRouter();
   const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
@@ -78,13 +80,18 @@ export function CraftedBudgetManagement({
   };
 
   return (
-    <section className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
-      <Label className="mb-2 block">Budget</Label>
-      <h2 className="text-[clamp(1.5rem,6vw,2rem)] font-semibold tracking-[-0.03em]">
-        Imposta e controlla i tuoi budget
+    <section
+      id="gestione-budget"
+      className={embedded ? "px-[var(--sp-page-x)] py-[var(--sp-section-y)]" : "-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8"}
+    >
+      <Label className="mb-2 block">
+        {embedded ? "Gestione budget" : "Budget"}
+      </Label>
+      <h2 className={embedded ? "text-[16px] font-semibold" : "text-[clamp(1.5rem,6vw,2rem)] font-semibold tracking-[-0.03em]"}>
+        {embedded ? "Limiti e categorie" : "Imposta e controlla i tuoi budget"}
       </h2>
       <Serif className="mt-3 block max-w-2xl text-sm leading-6 text-muted-foreground">
-        I budget usano solo la spesa reale dei movimenti. Risparmi, confronto e scelte buone restano disponibili come metrica separata.
+        I budget usano solo la spesa reale. Evitate e confronti restano separati nell’impatto netto.
       </Serif>
 
       <CraftedBudgetAlertList

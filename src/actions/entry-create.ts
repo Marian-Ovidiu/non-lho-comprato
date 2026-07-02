@@ -98,6 +98,7 @@ const DEFAULT_INVALIDATION_PATHS = [
   "/",
   "/entries",
   "/stats",
+  "/budget",
   "/workspace/budgets",
   "/more",
 ];

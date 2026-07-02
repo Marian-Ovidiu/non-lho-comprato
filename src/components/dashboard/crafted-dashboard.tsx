@@ -304,7 +304,7 @@ function BudgetBlock({
 
   return (
     <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-      <SectionHeader eyebrow="Budget" title={budget?.title ?? PREVIEW.budget.label} action="Gestisci" href="/workspace/budgets" />
+      <SectionHeader eyebrow="Budget" title={budget?.title ?? PREVIEW.budget.label} action="Gestisci" href="/budget#gestione-budget" />
       <div className="flex items-end gap-2">
         <Mono className="text-[26px] font-semibold leading-none">
           {formatEUR(used, currencySymbol, { decimals: false })}
