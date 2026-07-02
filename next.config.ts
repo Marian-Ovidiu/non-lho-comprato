@@ -42,24 +42,50 @@ function getWebsocketOrigin(origin: string | null) {
   return null;
 }
 
+// posthog-js fetches its remote config and lazy-loaded features (session
+// replay, surveys) from the region assets host, e.g. eu.i.posthog.com →
+// eu-assets.i.posthog.com. Without it in script-src/connect-src the browser
+// blocks the loads and analytics degrade silently.
+function getPosthogAssetsOrigin(origin: string | null) {
+  if (!origin) {
+    return null;
+  }
+
+  const match = origin.match(/^https:\/\/(eu|us)\.i\.posthog\.com$/);
+
+  if (!match) {
+    return null;
+  }
+
+  return `https://${match[1]}-assets.i.posthog.com`;
+}
+
 function buildContentSecurityPolicy() {
   const supabaseOrigin = getOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const supabaseRealtimeOrigin = getWebsocketOrigin(supabaseOrigin);
   const posthogOrigin = getOrigin(process.env.NEXT_PUBLIC_POSTHOG_HOST);
+  const posthogAssetsOrigin = getPosthogAssetsOrigin(posthogOrigin);
   const sentryOrigin = getOrigin(process.env.NEXT_PUBLIC_SENTRY_DSN);
   const connectSrc = unique([
     "'self'",
     supabaseOrigin,
     supabaseRealtimeOrigin,
     posthogOrigin,
+    posthogAssetsOrigin,
     sentryOrigin,
     isProduction ? null : "ws:",
     isProduction ? null : "http://localhost:*",
     isProduction ? null : "http://127.0.0.1:*",
   ]);
+  // 'unsafe-inline' stays until Next supports per-request nonces together
+  // with cacheComponents/PPR: the prerendered shells embed build-time inline
+  // framework scripts that cannot carry a nonce, so a nonce-based policy
+  // breaks hydration in production (verified 2026-07: $RC undefined, React
+  // #419). Revisit when the framework closes that gap.
   const scriptSrc = unique([
     "'self'",
     "'unsafe-inline'",
+    posthogAssetsOrigin,
     isProduction ? null : "'unsafe-eval'",
   ]);
 
