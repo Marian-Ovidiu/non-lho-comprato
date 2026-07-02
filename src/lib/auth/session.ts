@@ -2,8 +2,6 @@ import { prisma } from "@/src/lib/prisma";
 import {
   ensureAppUserForAuthUser,
   getAccessibleWorkspacesForUserId,
-  getLegacyPrimaryUserId,
-  getLegacyWorkspaceId,
   resolveWorkspaceForAuthenticatedUser,
 } from "@/src/lib/auth/provisioning";
 import { createSupabaseServerClient } from "@/src/lib/supabase/server";
@@ -106,13 +104,6 @@ const getSupabaseUser = cache(async () => {
   } satisfies AuthenticatedUser;
 });
 
-export function isLegacyFallbackEnabled() {
-  return (
-    process.env.NODE_ENV !== "production" &&
-    process.env.ENABLE_LEGACY_FALLBACK?.trim().toLowerCase() === "true"
-  );
-}
-
 const ensureAuthenticatedUser = cache(async (authenticatedUser: AuthenticatedUser) => {
   return ensureAppUserForAuthUser(authenticatedUser);
 });
@@ -146,20 +137,7 @@ export const getCurrentUser = cache(async () => {
     return user;
   }
 
-  if (!isLegacyFallbackEnabled()) {
-    redirect("/login");
-  }
-
-  const legacyUser = await prisma.user.findUnique({
-    where: { id: getLegacyPrimaryUserId() },
-  });
-
-  if (!legacyUser) {
-    throw new Error("Current user not found");
-  }
-
-  logPerformance("auth/current-user-legacy", startedAt);
-  return legacyUser;
+  redirect("/login");
 });
 
 export const getCurrentWorkspace = cache(async () => {
@@ -211,32 +189,7 @@ export const getCurrentWorkspace = cache(async () => {
     return workspace;
   }
 
-  if (!isLegacyFallbackEnabled()) {
-    redirect("/login");
-  }
-
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: getLegacyWorkspaceId() },
-  });
-
-  if (!workspace) {
-    throw new Error("Current workspace not found");
-  }
-
-  const user = await getCurrentUser();
-  const membership = await prisma.workspaceMember.findFirst({
-    where: {
-      userId: user.id,
-      workspaceId: workspace.id,
-    },
-  });
-
-  if (!membership) {
-    throw new Error("Current user is not a member of the active workspace");
-  }
-
-  logPerformance("auth/current-workspace-legacy", startedAt);
-  return workspace;
+  redirect("/login");
 });
 
 export const requireWorkspace = cache(async () => {

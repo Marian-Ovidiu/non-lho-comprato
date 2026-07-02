@@ -4,12 +4,10 @@ import {
   type WorkspaceScopedRecord,
 } from "@/src/lib/workspace-isolation";
 import {
-  dedupeWorkspaceMemberOptions,
   getWorkspaceMemberLabel,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 import { cache } from "react";
-import { getLegacyWorkspaceId } from "@/src/lib/auth/provisioning";
 import {
   getCurrentUser as getAuthCurrentUser,
   getCurrentWorkspace as getAuthCurrentWorkspace,
@@ -129,18 +127,16 @@ export const getCurrentWorkspaceMembers = cache(
       },
     });
 
-    return dedupeWorkspaceMemberOptions(
-      memberships.map((membership) => ({
+    return memberships.map((membership) => ({
+      userId: membership.userId,
+      name: membership.user.name,
+      email: membership.user.email,
+      label: getWorkspaceMemberLabel({
         userId: membership.userId,
         name: membership.user.name,
         email: membership.user.email,
-        label: getWorkspaceMemberLabel({
-          userId: membership.userId,
-          name: membership.user.name,
-          email: membership.user.email,
-        }),
-      })),
-    );
+      }),
+    }));
   },
 );
 
@@ -218,21 +214,12 @@ export async function getWorkspaceShellContext(): Promise<WorkspaceShellContext>
     getWorkspaceShellOptions(),
   ]);
 
-  const productionWorkspaceId = getLegacyWorkspaceId();
   const sortedWorkspaces = [...availableWorkspaces].sort((a, b) => {
     if (a.id === currentWorkspace.id) {
       return -1;
     }
 
     if (b.id === currentWorkspace.id) {
-      return 1;
-    }
-
-    if (a.id === productionWorkspaceId) {
-      return -1;
-    }
-
-    if (b.id === productionWorkspaceId) {
       return 1;
     }
 
@@ -247,15 +234,6 @@ export async function getWorkspaceShellContext(): Promise<WorkspaceShellContext>
     currentWorkspace,
     availableWorkspaces: sortedWorkspaces,
     hasMultipleWorkspaces: sortedWorkspaces.length > 1,
-  };
-}
-
-export function getWorkspaceScopedWhere<T extends Record<string, unknown>>(
-  extraWhere: T = {} as T,
-): T & { workspaceId: string } {
-  return {
-    ...extraWhere,
-    workspaceId: getLegacyWorkspaceId(),
   };
 }
 

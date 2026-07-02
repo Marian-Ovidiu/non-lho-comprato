@@ -1,24 +1,11 @@
 import { prisma } from "@/src/lib/prisma";
-import {
-  getLegacyAuthMapping,
-  getLegacyPrimaryUserId,
-  getLegacySecondaryUserId,
-  getLegacyWorkspaceId,
-  getProductionWorkspaceDisplayName,
-  normalizeEmail,
-} from "@/src/lib/auth/legacy-auth";
 import { logWorkspaceResolutionSnapshot } from "@/src/lib/workspace-debug";
 
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
 
-export {
-  getLegacyAuthMapping,
-  getLegacyPrimaryUserId,
-  getLegacySecondaryUserId,
-  getLegacyWorkspaceId,
-  getProductionWorkspaceDisplayName,
-  isLegacyAuthBridgeEnabled,
-} from "@/src/lib/auth/legacy-auth";
+function normalizeEmail(email: string | null | undefined) {
+  return email?.trim().toLowerCase() ?? null;
+}
 
 function logPerformance(label: string, startedAt: number) {
   if (!shouldLogPerformance) {
@@ -83,173 +70,8 @@ function toWorkspaceRecord(workspace: {
   };
 }
 
-export async function countWorkspaceEntries(workspaceId: string) {
-  return prisma.entry.count({
-    where: {
-      workspaceId,
-    },
-  });
-}
-
-export async function adoptProductionWorkspaceForUser(
-  userId: string,
-): Promise<WorkspaceRecord | null> {
-  const workspaceId = getLegacyWorkspaceId();
-  const legacyPrimaryUserId = getLegacyPrimaryUserId();
-  const workspace = await prisma.workspace.findUnique({
-    where: {
-      id: workspaceId,
-    },
-    include: {
-      _count: {
-        select: {
-          entries: true,
-        },
-      },
-    },
-  });
-
-  if (!workspace || workspace._count.entries === 0) {
-    return null;
-  }
-
-  const displayName = getProductionWorkspaceDisplayName();
-
-  if (workspace.name !== displayName || workspace.kind !== "shared") {
-    await prisma.workspace.update({
-      where: {
-        id: workspaceId,
-      },
-      data: {
-        name: displayName,
-        kind: "shared",
-      },
-    });
-  }
-
-  if (userId !== legacyPrimaryUserId) {
-    await ensureWorkspaceMember(
-      workspaceId,
-      userId,
-      userId === legacyPrimaryUserId ? "owner" : "member",
-    );
-  }
-
-  return {
-    id: workspace.id,
-    name: displayName,
-    kind: "shared",
-    timezone: workspace.timezone,
-    currency: workspace.currency,
-    language: workspace.language,
-    ownerUserId: workspace.ownerUserId,
-    lastSelectedAt: null,
-  };
-}
-
-async function resolveCanonicalPrimaryUserId(): Promise<string | null> {
-  const workspaceId = getLegacyWorkspaceId();
-  const legacyPrimaryUserId = getLegacyPrimaryUserId();
-  const legacySecondaryUserId = getLegacySecondaryUserId();
-  const workspace = await prisma.workspace.findUnique({
-    where: { id: workspaceId },
-    select: { ownerUserId: true },
-  });
-
-  if (
-    workspace?.ownerUserId &&
-    workspace.ownerUserId !== legacySecondaryUserId &&
-    workspace.ownerUserId !== legacyPrimaryUserId
-  ) {
-    return workspace.ownerUserId;
-  }
-
-  const member = await prisma.workspaceMember.findFirst({
-    where: {
-      workspaceId,
-      userId: {
-        notIn: [legacySecondaryUserId, legacyPrimaryUserId],
-      },
-    },
-    select: { userId: true },
-    orderBy: { createdAt: "asc" },
-  });
-
-  return member?.userId ?? null;
-}
-
-async function ensureWorkspaceMember(
-  workspaceId: string,
-  userId: string,
-  role: "owner" | "member" = "member",
-) {
-  return prisma.workspaceMember.upsert({
-    where: {
-      workspaceId_userId: {
-        workspaceId,
-        userId,
-      },
-    },
-    update: {
-      role,
-    },
-    create: {
-      workspaceId,
-      userId,
-      role,
-    },
-  });
-}
-
 export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
   const startedAt = performance.now();
-  const legacyMapping = getLegacyAuthMapping(authUser.email);
-
-  if (legacyMapping) {
-    const email = normalizeEmail(authUser.email);
-    const existingByEmail = email
-      ? await prisma.user.findUnique({
-          where: { email },
-        })
-      : null;
-    const canonicalPrimaryUserId = await resolveCanonicalPrimaryUserId();
-    const legacyPrimaryUserId = getLegacyPrimaryUserId();
-
-    let targetUserId =
-      existingByEmail?.id ??
-      (legacyMapping.userId === legacyPrimaryUserId
-        ? (canonicalPrimaryUserId ?? authUser.id)
-        : legacyMapping.userId);
-
-    if (
-      legacyMapping.userId === legacyPrimaryUserId &&
-      targetUserId === legacyPrimaryUserId &&
-      canonicalPrimaryUserId
-    ) {
-      targetUserId = canonicalPrimaryUserId;
-    }
-
-    const user = await prisma.user.upsert({
-      where: {
-        id: targetUserId,
-      },
-      update: {
-        email: authUser.email ?? existingByEmail?.email,
-        name: authUser.name ?? existingByEmail?.name,
-        image: authUser.image ?? existingByEmail?.image,
-      },
-      create: {
-        id: targetUserId,
-        email: authUser.email,
-        name: authUser.name,
-        image: authUser.image,
-      },
-    });
-
-    logPerformance("auth/ensure-app-user-legacy", startedAt);
-    return user;
-  }
-
   const existingById = await prisma.user.findUnique({
     where: {
       id: authUser.id,
@@ -401,32 +223,6 @@ export async function ensureDefaultWorkspaceForUser(user: AppUserLike) {
       return existingWorkspace;
     }
   });
-}
-
-export async function ensureLegacyWorkspaceForUser(userId: string) {
-  const startedAt = performance.now();
-  const adoptedWorkspace = await adoptProductionWorkspaceForUser(userId);
-
-  if (adoptedWorkspace) {
-    logPerformance("auth/ensure-legacy-workspace-adopted", startedAt);
-    return toWorkspaceRecord(adoptedWorkspace);
-  }
-
-  const workspaceId = getLegacyWorkspaceId();
-  const workspace = await prisma.workspace.findUnique({
-    where: {
-      id: workspaceId,
-    },
-  });
-
-  if (!workspace) {
-    throw new Error(`Legacy workspace not found: ${workspaceId}`);
-  }
-
-  await ensureWorkspaceMember(workspaceId, userId, "member");
-
-  logPerformance("auth/ensure-legacy-workspace", startedAt);
-  return toWorkspaceRecord(workspace);
 }
 
 export async function getAccessibleWorkspacesForUserId(userId: string) {
@@ -606,30 +402,6 @@ export async function resolveActiveWorkspaceForUser({
     }
 
     ignoredSelectedWorkspace = true;
-  }
-
-  const legacyMapping = getLegacyAuthMapping(email);
-
-  if (legacyMapping) {
-    const legacyWorkspace = accessibleWorkspaces.find(
-      (workspace) => workspace.id === legacyMapping.workspaceId,
-    );
-
-    if (legacyWorkspace) {
-      return {
-        workspace: legacyWorkspace,
-        resolutionPath: ignoredSelectedWorkspace
-          ? "cookie:ignored-not-member:legacy-email:accessible"
-          : "legacy-email:accessible",
-      };
-    }
-
-    return {
-      workspace: await ensureLegacyWorkspaceForUser(userId),
-      resolutionPath: ignoredSelectedWorkspace
-        ? "cookie:ignored-not-member:legacy-email:ensure"
-        : "legacy-email:ensure",
-    };
   }
 
   return resolveDefaultWorkspaceForUser(

@@ -22,7 +22,6 @@ import {
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import {
-  dedupeWorkspaceMemberOptions,
   getMemberLabel,
   resolveEntryPeopleFromRecord,
   sortWorkspaceMembers,
@@ -376,7 +375,7 @@ function buildMemberSplit(
   totalSaved: number,
   entriesCount: number,
 ): MonthlyReportMemberSplit {
-  const sortedMembers = sortWorkspaceMembers(dedupeWorkspaceMemberOptions(members));
+  const sortedMembers = sortWorkspaceMembers(members);
   const primaryUserId = sortedMembers[0]?.userId ?? null;
   const secondaryUserId = sortedMembers[1]?.userId ?? null;
   const primaryLabel = getMemberLabel(members, primaryUserId) ?? "Membro";

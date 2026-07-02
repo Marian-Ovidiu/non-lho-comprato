@@ -1,12 +1,6 @@
 import { getDatabaseConnectionSnapshot } from "@/src/lib/database-config";
 import { prisma } from "@/src/lib/prisma";
 
-const DEFAULT_LEGACY_WORKSPACE_ID = "legacy-workspace";
-
-function getLegacyWorkspaceIdForDebug() {
-  return process.env.LEGACY_WORKSPACE_ID?.trim() || DEFAULT_LEGACY_WORKSPACE_ID;
-}
-
 export function isWorkspaceDebugEnabled() {
   return process.env.DEBUG_WORKSPACE?.trim().toLowerCase() === "true";
 }
@@ -29,14 +23,6 @@ export function getWorkspaceEnvSnapshot() {
     nodeEnv: process.env.NODE_ENV ?? "unknown",
     vercelEnv: process.env.VERCEL_ENV ?? "none",
     vercelUrl: process.env.VERCEL_URL ?? "none",
-    legacyWorkspaceIdEnv: process.env.LEGACY_WORKSPACE_ID?.trim() || "(default)",
-    legacyWorkspaceIdResolved: getLegacyWorkspaceIdForDebug(),
-    productionWorkspaceNameEnv:
-      process.env.PRODUCTION_WORKSPACE_NAME?.trim() || "(default)",
-    legacyPrimaryEmailConfigured: Boolean(process.env.LEGACY_PRIMARY_EMAIL?.trim()),
-    legacySecondaryEmailConfigured: Boolean(
-      process.env.LEGACY_SECONDARY_EMAIL?.trim(),
-    ),
     databaseHost: database.databaseHost,
     databasePort: database.databasePort,
     directDatabaseHost: database.directDatabaseHost,
@@ -87,10 +73,8 @@ export async function logWorkspaceResolutionSnapshot(input: {
     return;
   }
 
-  const productionWorkspaceId = getLegacyWorkspaceIdForDebug();
-  const [resolvedCounts, productionCounts, totalEntries] = await Promise.all([
+  const [resolvedCounts, totalEntries] = await Promise.all([
     getWorkspaceEntryCounts(input.resolvedWorkspace.id),
-    getWorkspaceEntryCounts(productionWorkspaceId),
     prisma.entry.count(),
   ]);
 
@@ -103,7 +87,6 @@ export async function logWorkspaceResolutionSnapshot(input: {
     resolvedWorkspaceId: input.resolvedWorkspace.id,
     resolvedWorkspaceName: input.resolvedWorkspace.name,
     resolvedWorkspaceKind: input.resolvedWorkspace.kind,
-    productionWorkspaceId,
     resolutionPath: input.resolutionPath,
     accessibleWorkspaces: input.accessibleWorkspaces.map((workspace) => ({
       id: workspace.id,
@@ -111,7 +94,6 @@ export async function logWorkspaceResolutionSnapshot(input: {
       kind: workspace.kind,
     })),
     entryCountResolvedWorkspace: resolvedCounts.entryCount,
-    entryCountLegacyWorkspace: productionCounts.entryCount,
     entryCountNullWorkspaceId: resolvedCounts.nullWorkspaceIdEntryCount,
     entryCountTotalDatabase: totalEntries,
   });

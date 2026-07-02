@@ -68,6 +68,4 @@ free-text values are stored as plaintext for compatibility.
 - Keep admin/service-role keys only in server-side environment variables.
 - Review `docs/SECURITY_OPERATIONS.md` before handover or production launch.
 - Never run test or E2E scripts against production.
-- Keep `ENABLE_LEGACY_FALLBACK=false`.
-- Keep `ENABLE_LEGACY_AUTH_BRIDGE=false`.
 - Configure Supabase redirect URLs for the deployed domain.

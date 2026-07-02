@@ -1,5 +1,4 @@
 import {
-  dedupeWorkspaceMemberOptions,
   sortWorkspaceMembers,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
@@ -45,7 +44,7 @@ export function computeCoupleWorkspaceBalance(
   currentUserId: string,
   entries: readonly WorkspaceBalanceEntry[],
 ): WorkspaceBalanceCardState {
-  const normalizedMembers = sortWorkspaceMembers(dedupeWorkspaceMemberOptions(members));
+  const normalizedMembers = sortWorkspaceMembers(members);
 
   if (normalizedMembers.length !== 2) {
     return {

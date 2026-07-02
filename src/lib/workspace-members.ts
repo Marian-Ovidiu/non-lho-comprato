@@ -7,25 +7,6 @@ export type WorkspaceMemberOption = {
 
 export type HabitTargetScope = "self" | "shared";
 
-const LEGACY_PRIMARY_USER_ID = "legacy-user-1";
-const LEGACY_SECONDARY_USER_ID = "legacy-user-2";
-
-export function dedupeWorkspaceMemberOptions(
-  members: WorkspaceMemberOption[],
-): WorkspaceMemberOption[] {
-  const hasCanonicalMember = members.some(
-    (member) =>
-      member.userId !== LEGACY_PRIMARY_USER_ID &&
-      member.userId !== LEGACY_SECONDARY_USER_ID,
-  );
-
-  if (!hasCanonicalMember) {
-    return members;
-  }
-
-  return members.filter((member) => member.userId !== LEGACY_PRIMARY_USER_ID);
-}
-
 export function getWorkspaceMemberLabel(
   member: Pick<WorkspaceMemberOption, "name" | "email" | "userId">,
 ): string {

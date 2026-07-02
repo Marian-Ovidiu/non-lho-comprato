@@ -3,8 +3,6 @@ import { after, before, beforeEach, describe, it } from "node:test";
 
 process.env.DATABASE_URL ??= "postgresql://user:pass@localhost:5432/non_lho_comprato_test";
 
-const originalLegacyBridge = process.env.ENABLE_LEGACY_AUTH_BRIDGE;
-
 type TestUser = {
   id: string;
   email: string | null;
@@ -186,8 +184,6 @@ function resetState(overrides: Partial<TestState> = {}) {
 }
 
 before(async () => {
-  delete process.env.ENABLE_LEGACY_AUTH_BRIDGE;
-
   const prismaModule = await import("@/src/lib/prisma");
   prisma = prismaModule.prisma as unknown as PatchablePrisma;
   ({ ensureAppUserForAuthUser, getAccessibleWorkspacesForUserId } = await import(
@@ -201,7 +197,6 @@ before(async () => {
 });
 
 beforeEach(() => {
-  delete process.env.ENABLE_LEGACY_AUTH_BRIDGE;
   resetState();
 });
 
@@ -210,12 +205,6 @@ after(async () => {
   prisma.workspace = originalWorkspaceDelegate;
   prisma.entry = originalEntryDelegate;
   prisma.entryBeneficiary = originalEntryBeneficiaryDelegate;
-
-  if (originalLegacyBridge === undefined) {
-    delete process.env.ENABLE_LEGACY_AUTH_BRIDGE;
-  } else {
-    process.env.ENABLE_LEGACY_AUTH_BRIDGE = originalLegacyBridge;
-  }
 
   await prisma.$disconnect();
 });

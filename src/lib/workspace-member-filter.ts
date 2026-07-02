@@ -1,6 +1,5 @@
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import {
-  dedupeWorkspaceMemberOptions,
   sortWorkspaceMembers,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
@@ -13,7 +12,7 @@ export type WorkspaceMemberFilterOption = {
 export function getWorkspaceMemberFilterOptions(
   members: WorkspaceMemberOption[],
 ): WorkspaceMemberFilterOption[] {
-  const sorted = sortWorkspaceMembers(dedupeWorkspaceMemberOptions(members));
+  const sorted = sortWorkspaceMembers(members);
 
   return [
     { value: "", label: "Tutti i movimenti" },

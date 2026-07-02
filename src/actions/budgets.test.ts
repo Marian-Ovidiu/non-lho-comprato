@@ -81,6 +81,7 @@ async function createFakeBudgetWorld() {
     language: "it",
     setupCompleted: true,
     ownerUserId: currentUser.id,
+    lastSelectedAt: null,
   };
   const categories: SeedCategory[] = [
     {
