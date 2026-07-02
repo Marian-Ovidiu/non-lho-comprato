@@ -1,5 +1,7 @@
 "use client";
 
+import { getDaysInMonth } from "@/src/lib/workspace-dates";
+import { round2 } from "@/src/lib/money-number";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
@@ -62,10 +64,6 @@ const INTENSITY_CLASS = [
   "border-accent/35 bg-accent/60 text-foreground",
 ] as const;
 
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
 function formatSignedMoney(value: number, currencyCode: string): string {
   const normalized = formatMoney(Math.abs(value), currencyCode);
 
@@ -119,10 +117,6 @@ function getPreviousMonthParts(parts: MonthParts): MonthParts {
   }
 
   return { year: parts.year, month: parts.month - 1 };
-}
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 function buildDateKey(parts: MonthParts, day: number): string {

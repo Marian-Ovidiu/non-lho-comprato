@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import { toEntryMoneyView } from "@/src/lib/entry-domain";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 
@@ -152,12 +153,6 @@ export type AiExpenseExportSummary = {
 };
 
 export type AiExpenseExportRange = "current-month" | "all";
-
-function round2(value: number): number {
-  const rounded = Math.round((value + Number.EPSILON) * 100) / 100;
-
-  return Object.is(rounded, -0) ? 0 : rounded;
-}
 
 function formatMoneyValue(value: number): string {
   return round2(value).toFixed(2);

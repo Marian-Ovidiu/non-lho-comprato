@@ -1,5 +1,6 @@
 "use server";
 
+import { round2 } from "@/src/lib/money-number";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
 import { prisma } from "@/src/lib/prisma";
 import { buildStreakResult as buildStreakResultFromDates, getDateKey } from "@/src/lib/workspace-dates";
@@ -21,10 +22,6 @@ type TodaySavingStatus = {
 type StreakScope = {
   categoryId?: string;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 async function buildEntryWhere(scope: StreakScope = {}): Promise<Prisma.EntryWhereInput> {
   const where: Prisma.EntryWhereInput = {};

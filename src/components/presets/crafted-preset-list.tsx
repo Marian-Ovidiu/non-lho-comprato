@@ -1,5 +1,6 @@
 "use client";
 
+import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
@@ -18,11 +19,6 @@ import { triggerHaptic } from "@/src/lib/haptics";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useLocalizedCategoryName, useTranslations } from "@/src/components/language/language-context";
 import type { Translations } from "@/src/lib/i18n/types";
-
-function toNumber(value: string): number {
-  const parsed = Number(value.replace(",", "."));
-  return Number.isFinite(parsed) ? parsed : 0;
-}
 
 function getPresetMoneySummary(
   preset: SerializablePreset,

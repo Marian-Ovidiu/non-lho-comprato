@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 export const BUDGET_PERIODS = ["weekly", "monthly"] as const;
 export const BUDGET_SCOPES = ["workspace", "category"] as const;
 
@@ -44,10 +45,6 @@ export type BudgetValidationResult =
       ok: false;
       errors: BudgetValidationErrors;
     };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function normalizeText(value: unknown): string | null {
   if (typeof value !== "string") {

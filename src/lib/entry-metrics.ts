@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import {
   toEntryMoneyView,
   type EntryMoneyLike,
@@ -41,10 +42,6 @@ export type EntryMetricsAggregate = {
   ordinaryImpact: number;
   entriesCount: number;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function normalizeBeneficiaryUserIds(
   beneficiaries: ReadonlyArray<{ userId: string }> | undefined,

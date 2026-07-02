@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import { getBudgetElapsedFraction } from "@/src/lib/budget-period";
 
 export type BudgetSpendEntry = {
@@ -36,10 +37,6 @@ export type BudgetProgress = {
   status: BudgetStatus;
   message: string;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function toFiniteNumber(value: unknown): number {
   if (typeof value === "number") {

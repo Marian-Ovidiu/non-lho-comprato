@@ -1,10 +1,9 @@
+import { round2, toMoneyNumber as toMetricNumber } from "@/src/lib/money-number";
+
+export { toMetricNumber };
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import type { EntryMetricsAggregate } from "@/src/lib/entry-metrics";
 import { LARGE_COMPARISON_THRESHOLD } from "@/src/lib/entry-metrics";
-
-type DecimalLike = {
-  toString?: () => string;
-};
 
 export type EntryMetricAggregateRow = {
   totalSpentReal: unknown;
@@ -23,35 +22,6 @@ export type EntryMetricDateRange = {
   start?: Date;
   end?: Date;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-export function toMetricNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "bigint") {
-    return Number(value);
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as DecimalLike;
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
 
 export const entryNetImpactSql = Prisma.sql`
   (

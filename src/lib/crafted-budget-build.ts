@@ -1,3 +1,5 @@
+import { getDaysInMonth } from "@/src/lib/workspace-dates";
+import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { getDashboardSummary } from "@/src/actions/entries";
 import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
@@ -70,44 +72,19 @@ type EntryForBudget = {
   savingContext: unknown;
 };
 
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as { toString?: () => string };
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
-
 function getMonthDate(monthKey: string) {
   const [yearPart, monthPart] = monthKey.split("-");
   return new Date(Date.UTC(Number(yearPart), Number(monthPart) - 1, 1));
 }
 
-function getDaysInMonth(monthKey: string) {
+function getDaysInMonthFromKey(monthKey: string) {
   const [yearPart, monthPart] = monthKey.split("-");
-  return new Date(Date.UTC(Number(yearPart), Number(monthPart), 0)).getUTCDate();
+  return getDaysInMonth(Number(yearPart), Number(monthPart));
 }
 
 function getDayOfMonth(monthKey: string, timeZone: string) {
   const monthDate = getMonthDate(monthKey);
-  const daysInMonth = getDaysInMonth(monthKey);
+  const daysInMonth = getDaysInMonthFromKey(monthKey);
   const nowParts = getDateParts(new Date(), timeZone);
   const selectedYear = monthDate.getUTCFullYear();
   const selectedMonth = monthDate.getUTCMonth() + 1;
@@ -302,7 +279,7 @@ export async function buildCraftedBudgetProps(
     totalBudget,
     spent: round2(monthSummary.ordinarySpent ?? monthSummary.totalRealSpent),
     avoided: round2(monthSummary.avoidedAmount),
-    daysInMonth: getDaysInMonth(monthKey),
+    daysInMonth: getDaysInMonthFromKey(monthKey),
     dayOfMonth: getDayOfMonth(monthKey, timeZone),
     categories,
     management: {

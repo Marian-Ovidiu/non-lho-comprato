@@ -1,8 +1,6 @@
+import { getDaysInMonth } from "@/src/lib/workspace-dates";
+import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { getDateKey, getDateParts } from "@/src/lib/workspace-dates";
-
-type DecimalLike = {
-  toString?: () => string;
-};
 
 export type DailySpendingEntry = {
   date: Date;
@@ -38,31 +36,6 @@ export type DailySpendingComparison = {
   monthToDateDelta: number | null;
 };
 
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as DecimalLike;
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
-
 function formatMonthLabel(year: number, monthIndex: number): string {
   const raw = new Intl.DateTimeFormat("it-IT", {
     month: "short",
@@ -71,10 +44,6 @@ function formatMonthLabel(year: number, monthIndex: number): string {
 
   const normalized = raw.replace(/\./g, "").trim();
   return normalized.charAt(0).toUpperCase() + normalized.slice(1);
-}
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 function getPreviousMonth(year: number, month: number): { year: number; month: number } {

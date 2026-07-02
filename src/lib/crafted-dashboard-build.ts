@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import { subDays } from "date-fns";
 
 import type { CraftedDashboardProps } from "@/src/components/dashboard/crafted-dashboard";
@@ -63,10 +64,6 @@ function getMonthLabel(date: Date, timeZone: string, language: string) {
   }).format(date);
 
   return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-function round2(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function toFiniteNumber(value: unknown) {

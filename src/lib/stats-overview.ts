@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import type { EntryMetricsAggregate } from "@/src/lib/entry-metrics";
 
 export type StatsOverview = {
@@ -15,10 +16,6 @@ export type StatsOverview = {
   averageSavedPerEntry: number;
   savingRatePercent: number;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 export function overviewFromAggregate(agg: EntryMetricsAggregate): StatsOverview {
   return {

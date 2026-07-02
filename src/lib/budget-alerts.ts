@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import type { BudgetPeriod } from "@/src/lib/budget-model";
 import type { BudgetSummaryView } from "@/src/lib/budget-summary";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
@@ -61,10 +62,6 @@ const SCOPE_ORDER: Record<BudgetAlert["scope"], number> = {
 type IndexedBudgetAlert = BudgetAlert & {
   sourceIndex: number;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function toFiniteNumber(value: unknown): number {
   const amount = Number(value);

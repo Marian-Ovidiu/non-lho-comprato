@@ -1,5 +1,7 @@
 "use server";
 
+import { getDaysInMonth, parseDateKey } from "@/src/lib/workspace-dates";
+import { round2 } from "@/src/lib/money-number";
 import { cacheLife, cacheTag } from "next/cache";
 
 import { getDashboardSummary } from "@/src/actions/entries";
@@ -71,33 +73,8 @@ export type DashboardDailyPaceComparison = {
   previousMonthDateKey: string | null;
 };
 
-function round2(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function parseDateKeyParts(dateKey: string) {
-  const [yearPart, monthPart, dayPart] = dateKey.split("-");
-  const year = Number(yearPart);
-  const month = Number(monthPart);
-  const day = Number(dayPart);
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day)
-  ) {
-    return null;
-  }
-
-  return { year, month, day };
-}
-
-function getDaysInMonth(year: number, month: number) {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
-}
-
 function getPreviousMonthSameDayKey(todayKey: string) {
-  const parts = parseDateKeyParts(todayKey);
+  const parts = parseDateKey(todayKey);
   if (!parts) {
     return null;
   }
@@ -282,7 +259,7 @@ async function _cachedDailyPaceComparison(
   cacheTag(`entries:${workspaceId}`);
   cacheLife("hours");
 
-  const todayParts = parseDateKeyParts(todayKey);
+  const todayParts = parseDateKey(todayKey);
 
   if (!todayParts) {
     return {

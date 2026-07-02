@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import { aggregateBudgetSpend, calculateBudgetProgress } from "@/src/lib/budget-domain";
 import { getBudgetPeriodRange } from "@/src/lib/budget-period";
 import type { BudgetPeriod, BudgetScope } from "@/src/lib/budget-model";
@@ -59,10 +60,6 @@ export type BudgetDashboardSelection = {
   categoryBudgets: BudgetSummaryView[];
   hasAnyBudget: boolean;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function isInRange(date: Date, start: Date, end: Date): boolean {
   return date.getTime() >= start.getTime() && date.getTime() < end.getTime();

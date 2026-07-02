@@ -20,7 +20,11 @@ function formatMonthKey(parts: Pick<DateParts, "year" | "month">): string {
   )}`;
 }
 
-function parseDateKey(dateKey: string): DateParts | null {
+export function getDaysInMonth(year: number, month: number): number {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+export function parseDateKey(dateKey: string): DateParts | null {
   const match = dateKey.match(/^(\d{4})-(\d{2})-(\d{2})$/);
 
   if (!match) {

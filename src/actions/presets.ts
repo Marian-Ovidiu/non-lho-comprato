@@ -1,5 +1,6 @@
 "use server";
 
+import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { revalidatePath } from "next/cache";
 
 import { createEntry } from "@/src/actions/entries";
@@ -57,10 +58,6 @@ export type SerializablePreset = {
     name: string;
     slug: string;
   };
-};
-
-type DecimalLike = {
-  toString?: () => string;
 };
 
 type ParsedMoneyField = {
@@ -805,27 +802,6 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
       message: "Si è verificato un errore durante l'eliminazione",
     };
   }
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as DecimalLike;
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
 }
 
 function getDateInputValue(date: Date, timeZone: string): string {

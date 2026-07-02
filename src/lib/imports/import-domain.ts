@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 export type CsvImportDateFormat = "DD/MM/YYYY" | "YYYY-MM-DD" | "MM/DD/YYYY";
 
 export type CsvImportAmountConvention =
@@ -37,10 +38,6 @@ export type ImportedTransactionDraft = {
   status: ImportedTransactionDraftStatus;
   errorMessage?: string;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 export function normalizeHeader(header: string): string {
   return header

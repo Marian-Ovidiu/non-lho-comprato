@@ -1,4 +1,7 @@
-﻿"use server";
+"use server";
+
+import { getDaysInMonth } from "@/src/lib/workspace-dates";
+import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
 
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
@@ -137,28 +140,6 @@ type TodayHabitOccurrence = {
     source: string;
   } | null;
 };
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as { toString?: () => string };
-
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
 
 function serializeHabitListItem(
   habit: Omit<HabitListItem, "amount" | "createdAt" | "updatedAt"> & {
@@ -318,10 +299,6 @@ function normalizeActiveDays(values: number[]): number[] {
   return Array.from(new Set(values))
     .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7)
     .sort((a, b) => a - b);
-}
-
-function getDaysInMonth(year: number, month: number): number {
-  return new Date(Date.UTC(year, month, 0)).getUTCDate();
 }
 
 function isMonthlyHabitSchedule(value: unknown): value is { cadence: "monthly"; day: number } {

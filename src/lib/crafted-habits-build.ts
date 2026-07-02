@@ -1,3 +1,5 @@
+import { getDaysInMonth } from "@/src/lib/workspace-dates";
+import { round2 } from "@/src/lib/money-number";
 import type { CraftedIconName } from "@/components/crafted";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
@@ -60,10 +62,6 @@ export type CraftedHabitsProps = {
   potentialYearlySavings: number;
   currencySymbol: string;
 };
-
-function round2(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function getActiveDayIndices(activeDays: unknown): number[] {
   if (!Array.isArray(activeDays)) return [];
@@ -242,10 +240,6 @@ function getUtcTodayKey() {
   return new Date().toISOString().slice(0, 10);
 }
 
-function getDaysInMonth(year: number, monthIndex: number) {
-  return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
-}
-
 export function getHabitNextDate(
   activeDays: unknown,
   isActive: boolean,
@@ -264,7 +258,7 @@ export function getHabitNextDate(
       );
       const targetDay = Math.min(
         monthlyDay,
-        getDaysInMonth(candidate.getUTCFullYear(), candidate.getUTCMonth()),
+        getDaysInMonth(candidate.getUTCFullYear(), candidate.getUTCMonth() + 1),
       );
       candidate.setUTCDate(targetDay);
 

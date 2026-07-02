@@ -1,5 +1,6 @@
 "use server";
 
+import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
 import { Prisma } from "@/src/lib/generated/prisma/client";
@@ -31,38 +32,9 @@ type GoalWithProgress = {
   isCompleted: boolean;
 };
 
-type DecimalLike = {
-  toString?: () => string;
-};
-
 function getText(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim() : "";
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as DecimalLike;
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function toDecimalString(value: number): string {

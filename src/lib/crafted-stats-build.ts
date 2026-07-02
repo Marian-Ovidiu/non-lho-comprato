@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 import type { StatsInsight } from "@/src/actions/stats";
 import type { StatsOverview } from "@/src/lib/stats-overview";
 import type { DailySpendingComparison } from "@/src/lib/daily-spending-comparison";
@@ -80,10 +81,6 @@ const CATEGORY_TONE_CLASS: Record<CraftedCategoryRow["tone"], string> = {
 };
 
 export { CATEGORY_TONE_CLASS };
-
-function round2(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function getCurrentYearKey() {
   return String(new Date().getFullYear());

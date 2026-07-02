@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 export type ExpenseSuggestionInput = {
   title: string;
   categoryId: string;
@@ -93,10 +94,6 @@ const MAX_CLUSTER_UPLIFT_RATIO = 1.15;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
-}
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
 function normalizeText(value: string): string {

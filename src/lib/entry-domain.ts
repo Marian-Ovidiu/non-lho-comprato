@@ -1,3 +1,4 @@
+import { round2 } from "@/src/lib/money-number";
 export type EntryMode = "spent" | "avoided";
 export type EntrySavingContext = "none" | "comparison";
 
@@ -38,10 +39,6 @@ export type EntryMoneyResult = {
 };
 
 export type EntryMoneyView = EntryMoneyResult;
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function toFiniteNumber(value: unknown): number {
   if (typeof value === "number") {

@@ -1,3 +1,4 @@
+import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { getMemberLabel, type WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import {
   aggregateEntryMetrics,
@@ -116,32 +117,6 @@ export type MonthlyReportAnalyticsSnapshot = {
   totalPaidByWorkspace: number;
   workspaceAverageTotal: number;
 };
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
-
-function toNumber(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : 0;
-  }
-
-  if (value && typeof value === "object") {
-    const decimal = value as { toString?: () => string };
-
-    if (typeof decimal.toString === "function") {
-      const parsed = Number(decimal.toString().replace(",", "."));
-      return Number.isFinite(parsed) ? parsed : 0;
-    }
-  }
-
-  return 0;
-}
 
 function normalizeCategoryName(value?: string | null): string {
   const trimmed = value?.trim();

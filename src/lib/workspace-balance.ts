@@ -1,11 +1,8 @@
+import { round2 } from "@/src/lib/money-number";
 import {
   sortWorkspaceMembers,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
-
-function round2(value: number): number {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 export type WorkspaceBalanceEntry = {
   realCost: number;
