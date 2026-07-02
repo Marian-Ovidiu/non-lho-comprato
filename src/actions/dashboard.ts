@@ -63,15 +63,10 @@ export async function getTodayDashboardSummary(): Promise<TodayDashboardSummary>
     };
   } catch (error) {
     unstable_rethrow(error);
+    // Rethrow instead of returning zeros: a fake "€0 today" reads as real
+    // data, while the caller already renders an explicit error state.
     console.error("Failed to load today dashboard summary:", error);
-    return {
-      totalRealSpentToday: 0,
-      totalSavedToday: 0,
-      entriesTodayCount: 0,
-      avoidedAmountToday: 0,
-      comparisonSavedToday: 0,
-      netImpactToday: 0,
-    };
+    throw error;
   }
 }
 
@@ -216,13 +211,9 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
     };
   } catch (error) {
     unstable_rethrow(error);
+    // Rethrow instead of degrading to "unsupported": that state hides a
+    // failed balance behind a silently missing card.
     console.error("Failed to load workspace balance:", error);
-    return {
-      supported: false,
-      status: "unsupported",
-      amount: 0,
-      counterpartUserId: null,
-      counterpartLabel: null,
-    };
+    throw error;
   }
 }

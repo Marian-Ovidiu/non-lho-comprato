@@ -668,11 +668,10 @@ export async function getEntriesPage(
       cursor: cursor ?? null,
       limit,
     });
-    return {
-      entries: [],
-      nextCursor: null,
-      hasMore: false,
-    };
+    // Rethrow instead of returning an empty page: the entries route shows a
+    // load-error banner and the client list has loadError/searchError states,
+    // while an empty result reads as "no movements this month".
+    throw error;
   }
 }
 
