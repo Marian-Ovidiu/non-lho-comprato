@@ -22,9 +22,11 @@ import {
   getCurrentWorkspaceCurrency,
   getCurrentWorkspaceLanguage,
   getCurrentWorkspaceMembers,
+  getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 import { getTranslations } from "@/src/lib/i18n";
+import { getTodayDateKey } from "@/src/lib/workspace-dates";
 
 
 export default async function HabitsPage() {
@@ -100,7 +102,10 @@ export default async function HabitsPage() {
           icon: category.icon,
         }));
 
-  const currency = await getCurrentWorkspaceCurrency();
+  const [currency, timeZone] = await Promise.all([
+    getCurrentWorkspaceCurrency(),
+    getCurrentWorkspaceTimezone(),
+  ]);
   const craftedProps = buildCraftedHabitsProps({
     todayOccurrences,
     habits,
@@ -109,6 +114,7 @@ export default async function HabitsPage() {
     language,
     members,
     currentUserId: currentUser.id,
+    todayDateKey: getTodayDateKey(timeZone),
   });
 
   const isEmpty = habits.length === 0 && todayOccurrences.length === 0;

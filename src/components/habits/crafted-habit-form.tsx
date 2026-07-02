@@ -64,7 +64,7 @@ export function CraftedHabitForm({
     members[0]?.userId ??
     currentUserId;
   const [scopeFieldsKey, setScopeFieldsKey] = useState(0);
-  const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">("idle");
+  const [successStage, setSuccessStage] = useState<"idle" | "confirming">("idle");
 
   const [state, formAction, pending] = useActionState(
     async (_previousState: { success: boolean; message: string; errors?: Record<string, string> }, formData: FormData) => {
@@ -78,8 +78,10 @@ export function CraftedHabitForm({
         setActiveDayOfMonth("1");
         setScopeFieldsKey((current) => current + 1);
         setSuccessStage("confirming");
-        window.setTimeout(() => setSuccessStage("closing"), 120);
-        window.setTimeout(() => router.refresh(), 240);
+        window.setTimeout(() => {
+          router.refresh();
+          setSuccessStage("idle");
+        }, 240);
       }
       return result;
     },
@@ -107,8 +109,8 @@ export function CraftedHabitForm({
       ref={formRef}
       action={formAction}
       className={cn(
-        "space-y-4 transition-[opacity,transform,filter] duration-200",
-        successStage === "closing" && "translate-y-1 opacity-0 blur-[1px]",
+        "space-y-4 transition-opacity duration-200",
+        successStage === "confirming" && "opacity-95",
       )}
     >
       {state.message ? (

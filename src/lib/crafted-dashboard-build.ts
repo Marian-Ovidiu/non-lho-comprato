@@ -46,6 +46,9 @@ type HabitOccurrence = {
   };
 };
 
+type UpcomingHabitPayment = CraftedDashboardProps["nextHabitPayment"];
+type DailyPaceComparison = CraftedDashboardProps["dailyPaceComparison"];
+
 const CATEGORY_TONES: CraftedDashboardProps["categories"][number]["tone"][] = [
   "accent",
   "foreground",
@@ -144,6 +147,8 @@ export function buildCraftedDashboardProps(input: {
   currentStreak: number;
   streakDates: string[];
   todayHabits: HabitOccurrence[];
+  nextHabitPayment: UpcomingHabitPayment;
+  dailyPaceComparison: DailyPaceComparison;
   goals: GoalRow[];
   recentEntries: CraftedDashboardProps["recentEntries"];
   reflection: CraftedDashboardProps["reflection"];
@@ -183,6 +188,8 @@ export function buildCraftedDashboardProps(input: {
       (occurrence) => occurrence.status === "avoided",
     ).length,
     habitsNote: buildHabitsNote(input.todayHabits, input.language),
+    nextHabitPayment: input.nextHabitPayment,
+    dailyPaceComparison: input.dailyPaceComparison,
     goals: input.goals.slice(0, 2).map((goal, index) => ({
       id: goal.id,
       title: goal.title,

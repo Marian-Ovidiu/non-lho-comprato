@@ -294,6 +294,15 @@ export default async function Home({ searchParams }: HomePageProps) {
   }> = [];
   let activeGoals: HomeDashboardMetrics["goals"] = [];
   let todayHabits: HomeDashboardMetrics["todayHabits"] = [];
+  let nextHabitPayment: HomeDashboardMetrics["nextHabitPayment"] = null;
+  let dailyPaceComparison: HomeDashboardMetrics["dailyPaceComparison"] = {
+    dayOfMonth: 0,
+    todaySpent: 0,
+    averageSameDay: null,
+    averageSampleSize: 0,
+    previousMonthSpent: null,
+    previousMonthDateKey: null,
+  };
   let pendingHabitsCount = 0;
   let currentStreak = 0;
   let streakDates: string[] = [];
@@ -366,6 +375,8 @@ export default async function Home({ searchParams }: HomePageProps) {
     budgetAlertSelection = metrics.budgetAlertSelection;
     activeGoals = metrics.goals;
     todayHabits = metrics.todayHabits;
+    nextHabitPayment = metrics.nextHabitPayment;
+    dailyPaceComparison = metrics.dailyPaceComparison;
     pendingHabitsCount = metrics.pendingHabitsCount;
   }
 
@@ -404,6 +415,8 @@ export default async function Home({ searchParams }: HomePageProps) {
     currentStreak,
     streakDates,
     todayHabits,
+    nextHabitPayment,
+    dailyPaceComparison,
     goals: activeGoals,
     recentEntries,
     reflection: homeReflection,

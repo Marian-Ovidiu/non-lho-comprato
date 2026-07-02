@@ -4,7 +4,9 @@ import Link from "next/link";
 import {
   BarChart3,
   ChevronRight,
+  CalendarDays,
   Layers3,
+  Minus,
   Plus,
   PlusCircle,
   TrendingDown,
@@ -98,6 +100,24 @@ export type CraftedDashboardProps = {
   habitsTotal: number;
   habitsAvoided: number;
   habitsNote: string | null;
+  nextHabitPayment: {
+    id: string;
+    name: string;
+    amount: number;
+    nextDate: string;
+    relativeLabel: string;
+    shortDate: string;
+    frequencyLabel: string;
+    icon: CraftedIconName;
+  } | null;
+  dailyPaceComparison: {
+    dayOfMonth: number;
+    todaySpent: number;
+    averageSameDay: number | null;
+    averageSampleSize: number;
+    previousMonthSpent: number | null;
+    previousMonthDateKey: string | null;
+  };
   goals: CraftedGoalRow[];
   recentEntries: CraftedRecentEntry[];
   reflection: { label: string; text: string } | null;
@@ -286,6 +306,123 @@ function QuickActionRow({
   );
 }
 
+function compareSpending(todaySpent: number, reference: number | null) {
+  if (reference === null) {
+    return "muted" as const;
+  }
+
+  const diff = todaySpent - reference;
+  if (Math.abs(diff) < 0.01) {
+    return "accent" as const;
+  }
+
+  return diff < 0 ? ("success" as const) : ("destructive" as const);
+}
+
+function ComparisonIcon({ tone }: { tone: ReturnType<typeof compareSpending> }) {
+  if (tone === "muted" || tone === "accent") {
+    return <Minus className="size-3.5" aria-hidden="true" />;
+  }
+
+  return tone === "success" ? (
+    <TrendingDown className="size-3.5" aria-hidden="true" />
+  ) : (
+    <TrendingUp className="size-3.5" aria-hidden="true" />
+  );
+}
+
+function DailyComparisonCard({
+  label,
+  todaySpent,
+  reference,
+  referenceLabel,
+  emptyLabel,
+  currencySymbol,
+}: {
+  label: string;
+  todaySpent: number;
+  reference: number | null;
+  referenceLabel: string;
+  emptyLabel: string;
+  currencySymbol: string;
+}) {
+  const tone = compareSpending(todaySpent, reference);
+
+  return (
+    <div
+      className={cn(
+        "min-h-[118px] rounded-[var(--r-card)] border p-3.5",
+        tone === "success" && "border-success/30 bg-success/10",
+        tone === "accent" && "border-accent/35 bg-accent/10",
+        tone === "destructive" && "border-destructive/30 bg-destructive/10",
+        tone === "muted" && "border-line bg-surface-muted",
+      )}
+    >
+      <div
+        className={cn(
+          "mb-3 flex items-center justify-between gap-2",
+          tone === "success" && "text-success",
+          tone === "accent" && "text-accent",
+          tone === "destructive" && "text-destructive",
+          tone === "muted" && "text-ink-3",
+        )}
+      >
+        <Label>{label}</Label>
+        <ComparisonIcon tone={tone} />
+      </div>
+      {reference === null ? (
+        <Serif className="block text-[13px] leading-4 text-ink-3">{emptyLabel}</Serif>
+      ) : (
+        <p className="text-[13px] leading-5 text-muted-foreground">
+          <Mono className="text-foreground">
+            {formatEUR(todaySpent, currencySymbol, { decimals: false })}
+          </Mono>{" "}
+          spesi su{" "}
+          <Mono className="text-foreground">
+            {formatEUR(reference, currencySymbol, { decimals: false })}
+          </Mono>{" "}
+          {referenceLabel}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function NextHabitPaymentCard({
+  habit,
+  currencySymbol,
+}: {
+  habit: NonNullable<CraftedDashboardProps["nextHabitPayment"]>;
+  currencySymbol: string;
+}) {
+  return (
+    <Link
+      href="/habits"
+      className="nlc-press flex min-h-[88px] items-center gap-3 rounded-[var(--r-card)] border border-line bg-surface-muted p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+    >
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-background text-muted-foreground">
+        <CraftedIcon name={habit.icon} size={18} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="mb-1 flex items-center gap-2">
+          <Label>{habit.relativeLabel}</Label>
+          <span className="text-[11px] text-ink-3">{habit.shortDate}</span>
+        </div>
+        <p className="truncate text-[15px] font-medium">{habit.name}</p>
+        <Serif className="mt-0.5 block truncate text-[12px] text-ink-3">
+          {habit.frequencyLabel.toLowerCase()}
+        </Serif>
+      </div>
+      <div className="shrink-0 text-right">
+        <Mono className="block text-[16px] font-semibold">
+          {formatEUR(habit.amount, currencySymbol)}
+        </Mono>
+        <CalendarDays className="ml-auto mt-1 size-3.5 text-ink-3" aria-hidden="true" />
+      </div>
+    </Link>
+  );
+}
+
 function BudgetBlock({
   budget,
   currencySymbol,
@@ -380,6 +517,8 @@ export function CraftedDashboard({
   habitsTotal,
   habitsAvoided,
   habitsNote,
+  nextHabitPayment,
+  dailyPaceComparison,
   goals,
   recentEntries,
   reflection,
@@ -543,6 +682,46 @@ export function CraftedDashboard({
           { label: "Movimenti", value: displayEntriesToday },
         ]}
       />
+      <Rule soft />
+
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <SectionHeader eyebrow="In coda" title="Prossimo pagamento" action="Abitudini →" href="/habits" />
+        {nextHabitPayment ? (
+          <NextHabitPaymentCard
+            habit={nextHabitPayment}
+            currencySymbol={currencySymbol}
+          />
+        ) : (
+          <div className="rounded-[var(--r-card)] border border-line bg-surface-muted p-4">
+            <Serif className="block text-sm text-ink-3">
+              Nessuna ricorrente attiva con un pagamento previsto.
+            </Serif>
+          </div>
+        )}
+      </section>
+      <Rule soft />
+
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <SectionHeader eyebrow="Ritmo oggi" title="Confronto di giornata" />
+        <div className="grid grid-cols-2 gap-3">
+          <DailyComparisonCard
+            label={`Giorno ${dailyPaceComparison.dayOfMonth || "—"}`}
+            todaySpent={dailyPaceComparison.todaySpent}
+            reference={dailyPaceComparison.averageSameDay}
+            referenceLabel="medi"
+            emptyLabel="Serve almeno un mese precedente con questo giorno."
+            currencySymbol={currencySymbol}
+          />
+          <DailyComparisonCard
+            label="Mese scorso"
+            todaySpent={dailyPaceComparison.todaySpent}
+            reference={dailyPaceComparison.previousMonthSpent}
+            referenceLabel="il mese scorso"
+            emptyLabel="Nessun movimento nello stesso giorno del mese scorso."
+            currencySymbol={currencySymbol}
+          />
+        </div>
+      </section>
       <Rule soft />
 
       <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">

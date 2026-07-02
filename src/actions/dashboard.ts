@@ -18,13 +18,25 @@ import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
-import { getDayRangeForDate } from "@/src/lib/workspace-dates";
+import {
+  getDayRangeForDate,
+  getDayRangeForDateKey,
+  getTodayDateKey,
+} from "@/src/lib/workspace-dates";
 import {
   entryMetricAggregateSelectSql,
+  entryLocalTimestampSql,
   normalizeEntryMetricAggregate,
   toMetricNumber,
   type EntryMetricAggregateRow,
 } from "@/src/lib/entry-metrics-query";
+import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
+import {
+  formatHabitFrequency,
+  getHabitNextDate,
+  getHabitRelativeLabel,
+  getHabitShortDate,
+} from "@/src/lib/crafted-habits-build";
 
 type TodayDashboardSummary = {
   totalSavedToday: number;
@@ -34,6 +46,65 @@ type TodayDashboardSummary = {
   comparisonSavedToday: number;
   netImpactToday: number;
 };
+
+export type DashboardUpcomingHabitPayment = {
+  id: string;
+  name: string;
+  amount: number;
+  nextDate: string;
+  relativeLabel: string;
+  shortDate: string;
+  frequencyLabel: string;
+  icon: ReturnType<typeof getCategoryCraftedIcon>;
+} | null;
+
+export type DashboardDailyPaceComparison = {
+  dayOfMonth: number;
+  todaySpent: number;
+  averageSameDay: number | null;
+  averageSampleSize: number;
+  previousMonthSpent: number | null;
+  previousMonthDateKey: string | null;
+};
+
+function round2(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function parseDateKeyParts(dateKey: string) {
+  const [yearPart, monthPart, dayPart] = dateKey.split("-");
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+  const day = Number(dayPart);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
+    return null;
+  }
+
+  return { year, month, day };
+}
+
+function getDaysInMonth(year: number, month: number) {
+  return new Date(Date.UTC(year, month, 0)).getUTCDate();
+}
+
+function getPreviousMonthSameDayKey(todayKey: string) {
+  const parts = parseDateKeyParts(todayKey);
+  if (!parts) {
+    return null;
+  }
+
+  const previousMonthDate = new Date(Date.UTC(parts.year, parts.month - 2, 1));
+  const year = previousMonthDate.getUTCFullYear();
+  const month = previousMonthDate.getUTCMonth() + 1;
+  const day = Math.min(parts.day, getDaysInMonth(year, month));
+
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
 
 export async function getTodayDashboardSummary(): Promise<TodayDashboardSummary> {
   await refreshSupabaseSessionForAction();
@@ -82,6 +153,8 @@ export async function getHomeDashboardMetrics() {
     loadedMonthlyStats,
     loadedCategoryStats,
     loadedBudgetData,
+    loadedNextHabitPayment,
+    loadedDailyPaceComparison,
   ] = await Promise.all([
     getDashboardSummary(),
     getTodayDashboardSummary(),
@@ -92,6 +165,8 @@ export async function getHomeDashboardMetrics() {
     getMonthlyStats(),
     getCategoryStats(),
     getWorkspaceBudgetsAction(),
+    getNextHabitPayment(),
+    getDailyPaceComparison(),
   ]);
 
   return {
@@ -109,8 +184,139 @@ export async function getHomeDashboardMetrics() {
     categoryStats: loadedCategoryStats,
     budgetAlertSelection: loadedBudgetData.alertSelection,
     budgetData: loadedBudgetData,
+    nextHabitPayment: loadedNextHabitPayment,
+    dailyPaceComparison: loadedDailyPaceComparison,
   };
   }, { label: "home-dashboard-metrics" });
+}
+
+export async function getNextHabitPayment(): Promise<DashboardUpcomingHabitPayment> {
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+  const todayKey = getTodayDateKey(timeZone);
+  const habits = await prisma.habit.findMany({
+    where: {
+      workspaceId,
+      isActive: true,
+    },
+    select: {
+      id: true,
+      name: true,
+      amount: true,
+      activeDays: true,
+      isActive: true,
+      category: {
+        select: {
+          name: true,
+          slug: true,
+        },
+      },
+    },
+  });
+
+  const next = habits
+    .map((habit) => {
+      const nextDate = getHabitNextDate(habit.activeDays, habit.isActive, todayKey);
+      if (!nextDate) {
+        return null;
+      }
+
+      return {
+        id: habit.id,
+        name: habit.name,
+        amount: toMetricNumber(habit.amount),
+        nextDate,
+        relativeLabel: getHabitRelativeLabel(nextDate, todayKey),
+        shortDate: getHabitShortDate(nextDate, "it"),
+        frequencyLabel: formatHabitFrequency(habit.activeDays, "it"),
+        icon: getCategoryCraftedIcon(habit.category),
+      };
+    })
+    .filter((habit): habit is NonNullable<typeof habit> => habit !== null)
+    .sort(
+      (left, right) =>
+        left.nextDate.localeCompare(right.nextDate) ||
+        right.amount - left.amount ||
+        left.name.localeCompare(right.name, "it"),
+    )[0];
+
+  return next ?? null;
+}
+
+export async function getDailyPaceComparison(): Promise<DashboardDailyPaceComparison> {
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+  const todayKey = getTodayDateKey(timeZone);
+  const todayParts = parseDateKeyParts(todayKey);
+
+  if (!todayParts) {
+    return {
+      dayOfMonth: 0,
+      todaySpent: 0,
+      averageSameDay: null,
+      averageSampleSize: 0,
+      previousMonthSpent: null,
+      previousMonthDateKey: null,
+    };
+  }
+
+  const todayRange = getDayRangeForDate(new Date(), timeZone);
+  const todayRows = await prisma.$queryRaw<Array<{ spent: unknown }>>(Prisma.sql`
+    SELECT COALESCE(SUM(e."realCost"), 0)::text AS "spent"
+    FROM "Entry" e
+    WHERE e."workspaceId" = ${workspaceId}
+      AND e."date" >= ${todayRange.start}
+      AND e."date" < ${todayRange.end}
+  `);
+  const todaySpent = round2(toMetricNumber(todayRows[0]?.spent));
+
+  const averageRows = await prisma.$queryRaw<Array<{ averageSpent: unknown; sampleSize: unknown }>>(Prisma.sql`
+    WITH same_day_totals AS (
+      SELECT
+        to_char(${entryLocalTimestampSql(timeZone)}, 'YYYY-MM-DD') AS "dayKey",
+        SUM(e."realCost") AS "daySpent"
+      FROM "Entry" e
+      WHERE e."workspaceId" = ${workspaceId}
+        AND e."date" < ${todayRange.start}
+        AND EXTRACT(DAY FROM ${entryLocalTimestampSql(timeZone)}) = ${todayParts.day}
+      GROUP BY "dayKey"
+    )
+    SELECT
+      AVG("daySpent")::text AS "averageSpent",
+      COUNT(*)::int AS "sampleSize"
+    FROM same_day_totals
+  `);
+
+  const previousMonthDateKey = getPreviousMonthSameDayKey(todayKey);
+  let previousMonthSpent: number | null = null;
+  if (previousMonthDateKey) {
+    const previousRange = getDayRangeForDateKey(previousMonthDateKey, timeZone);
+    const previousRows = await prisma.$queryRaw<Array<{ spent: unknown }>>(Prisma.sql`
+      SELECT COALESCE(SUM(e."realCost"), 0)::text AS "spent"
+      FROM "Entry" e
+      WHERE e."workspaceId" = ${workspaceId}
+        AND e."date" >= ${previousRange.start}
+        AND e."date" < ${previousRange.end}
+    `);
+    previousMonthSpent = round2(toMetricNumber(previousRows[0]?.spent));
+  }
+
+  const averageSampleSize = Number(averageRows[0]?.sampleSize) || 0;
+  const averageSameDay =
+    averageSampleSize > 0 ? round2(toMetricNumber(averageRows[0]?.averageSpent)) : null;
+
+  return {
+    dayOfMonth: todayParts.day,
+    todaySpent,
+    averageSameDay,
+    averageSampleSize,
+    previousMonthSpent,
+    previousMonthDateKey,
+  };
 }
 
 export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> {

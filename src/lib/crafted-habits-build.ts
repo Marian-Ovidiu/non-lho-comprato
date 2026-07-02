@@ -214,22 +214,46 @@ function isoWeekday(date: Date) {
   return day === 0 ? 7 : day;
 }
 
-const DEMO_TODAY = new Date(Date.UTC(2026, 5, 30));
+function getUtcDateFromKey(dateKey: string) {
+  const [yearPart, monthPart, dayPart] = dateKey.split("-");
+  const year = Number(yearPart);
+  const month = Number(monthPart);
+  const day = Number(dayPart);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
+    return new Date();
+  }
+
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function getUtcTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
 
 function getDaysInMonth(year: number, monthIndex: number) {
   return new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
 }
 
-function getNextDate(activeDays: unknown, isActive: boolean) {
+export function getHabitNextDate(
+  activeDays: unknown,
+  isActive: boolean,
+  fromDateKey = getUtcTodayKey(),
+) {
   if (!isActive) {
     return undefined;
   }
 
+  const today = getUtcDateFromKey(fromDateKey);
   const monthlyDay = getMonthlyScheduleDay(activeDays);
   if (monthlyDay !== null) {
     for (let monthOffset = 0; monthOffset <= 1; monthOffset += 1) {
       const candidate = new Date(
-        Date.UTC(DEMO_TODAY.getUTCFullYear(), DEMO_TODAY.getUTCMonth() + monthOffset, 1),
+        Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + monthOffset, 1),
       );
       const targetDay = Math.min(
         monthlyDay,
@@ -237,7 +261,7 @@ function getNextDate(activeDays: unknown, isActive: boolean) {
       );
       candidate.setUTCDate(targetDay);
 
-      if (candidate >= DEMO_TODAY) {
+      if (candidate >= today) {
         return candidate.toISOString().slice(0, 10);
       }
     }
@@ -247,7 +271,7 @@ function getNextDate(activeDays: unknown, isActive: boolean) {
   const allDays = activeSet.size === 0 || activeSet.size === 7;
 
   for (let offset = 0; offset <= 7; offset += 1) {
-    const candidate = new Date(DEMO_TODAY);
+    const candidate = new Date(today);
     candidate.setUTCDate(candidate.getUTCDate() + offset);
 
     if (allDays || activeSet.has(isoWeekday(candidate))) {
@@ -258,16 +282,17 @@ function getNextDate(activeDays: unknown, isActive: boolean) {
   return undefined;
 }
 
-function getRelativeLabel(dateKey: string) {
+export function getHabitRelativeLabel(dateKey: string, fromDateKey = getUtcTodayKey()) {
   const date = new Date(`${dateKey}T00:00:00.000Z`);
-  const diffDays = Math.round((date.getTime() - DEMO_TODAY.getTime()) / 86_400_000);
+  const today = getUtcDateFromKey(fromDateKey);
+  const diffDays = Math.round((date.getTime() - today.getTime()) / 86_400_000);
 
   if (diffDays === 0) return "oggi";
   if (diffDays === 1) return "domani";
   return `fra ${diffDays}g`;
 }
 
-function getShortDate(dateKey: string, language: string) {
+export function getHabitShortDate(dateKey: string, language: string) {
   return new Intl.DateTimeFormat(languageToLocale(language), {
     day: "numeric",
     month: "short",
@@ -345,6 +370,7 @@ export function buildCraftedHabitsProps({
   language = "it",
   members = [],
   currentUserId = null,
+  todayDateKey,
 }: {
   todayOccurrences?: unknown[];
   habits: Array<{
@@ -375,8 +401,10 @@ export function buildCraftedHabitsProps({
   language?: string;
   members?: WorkspaceMemberOption[];
   currentUserId?: string | null;
+  todayDateKey?: string;
 }): CraftedHabitsProps {
   const statsByHabitId = new Map(habitStats.map((item) => [item.habitId, item]));
+  const currentDateKey = todayDateKey ?? getUtcTodayKey();
 
   const firstPass = habits.map((habit) => {
     const group = getHabitGroup(habit);
@@ -420,7 +448,7 @@ export function buildCraftedHabitsProps({
       cadenceShort: getCadenceShort(cadence),
       group,
       status,
-      nextDate: getNextDate(habit.activeDays, habit.isActive),
+      nextDate: getHabitNextDate(habit.activeDays, habit.isActive, currentDateKey),
       startedOn: habit.createdAt,
       usageNote: status === "da-rivedere" ? buildUsageNote(stats) ?? "poco segnale utile" : buildUsageNote(stats),
       who: getHabitTargetDisplayLabel({
@@ -462,8 +490,8 @@ export function buildCraftedHabitsProps({
     .filter((habit) => habit.status !== "pausa" && habit.nextDate)
     .map((habit) => ({
       ...habit,
-      relativeLabel: getRelativeLabel(habit.nextDate!),
-      shortDate: getShortDate(habit.nextDate!, language),
+      relativeLabel: getHabitRelativeLabel(habit.nextDate!, currentDateKey),
+      shortDate: getHabitShortDate(habit.nextDate!, language),
     }))
     .filter((habit) => !habit.relativeLabel.startsWith("fra 8"))
     .sort((left, right) => left.nextDate!.localeCompare(right.nextDate!))
