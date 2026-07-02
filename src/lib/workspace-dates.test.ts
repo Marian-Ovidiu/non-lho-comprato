@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  countDayOfMonthOccurrences,
   getDateKey,
   isDateKey,
   parseWorkspaceDateKey,
@@ -89,5 +90,35 @@ describe("parseWorkspaceDateKey", () => {
       parseWorkspaceDateKey("2026-06-15T10:00", "Europe/Rome"),
       null,
     );
+  });
+});
+
+describe("countDayOfMonthOccurrences", () => {
+  it("counts one occurrence per month in a full window", () => {
+    assert.equal(countDayOfMonthOccurrences("2025-07-01", "2026-07-02", 2), 12);
+  });
+
+  it("excludes the end date and includes the start date", () => {
+    assert.equal(countDayOfMonthOccurrences("2026-06-15", "2026-07-15", 15), 1);
+    assert.equal(countDayOfMonthOccurrences("2026-07-15", "2026-07-15", 15), 0);
+  });
+
+  it("skips months that do not contain the day", () => {
+    // Only January, March, May, July, August, October, December have day 31.
+    assert.equal(countDayOfMonthOccurrences("2026-01-01", "2027-01-01", 31), 7);
+    assert.equal(countDayOfMonthOccurrences("2026-02-01", "2026-03-01", 30), 0);
+  });
+
+  it("counts leap-day occurrences only in leap years", () => {
+    // 2027: 11 months with a day 29 (February has 28); 2028: all 12 (leap).
+    assert.equal(countDayOfMonthOccurrences("2027-01-01", "2029-01-01", 29), 23);
+    assert.equal(countDayOfMonthOccurrences("2028-02-01", "2028-03-01", 29), 1);
+    assert.equal(countDayOfMonthOccurrences("2027-02-01", "2027-03-01", 29), 0);
+  });
+
+  it("returns zero for invalid input", () => {
+    assert.equal(countDayOfMonthOccurrences("banana", "2026-07-01", 5), 0);
+    assert.equal(countDayOfMonthOccurrences("2026-01-01", "2026-07-01", 0), 0);
+    assert.equal(countDayOfMonthOccurrences("2026-01-01", "2026-07-01", 32), 0);
   });
 });

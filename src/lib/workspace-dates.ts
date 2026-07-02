@@ -275,6 +275,46 @@ export function getMonthRangeForMonthKey(
   };
 }
 
+/**
+ * Counts how many times a given day-of-month occurs in [fromDateKey,
+ * toDateKeyExclusive). Months too short for the day (e.g. the 31st in
+ * February) contribute no occurrence.
+ */
+export function countDayOfMonthOccurrences(
+  fromDateKey: string,
+  toDateKeyExclusive: string,
+  dayOfMonth: number,
+): number {
+  const from = parseDateKey(fromDateKey);
+  const to = parseDateKey(toDateKeyExclusive);
+
+  if (!from || !to || !Number.isInteger(dayOfMonth) || dayOfMonth < 1 || dayOfMonth > 31) {
+    return 0;
+  }
+
+  let count = 0;
+  const cursor = new Date(Date.UTC(from.year, from.month - 1, 1));
+  const end = Date.UTC(to.year, to.month - 1, 1);
+
+  while (cursor.getTime() <= end) {
+    const year = cursor.getUTCFullYear();
+    const month = cursor.getUTCMonth() + 1;
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+
+    if (dayOfMonth <= daysInMonth) {
+      const candidate = formatDateKey({ year, month, day: dayOfMonth });
+
+      if (candidate >= fromDateKey && candidate < toDateKeyExclusive) {
+        count += 1;
+      }
+    }
+
+    cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+  }
+
+  return count;
+}
+
 export function getIsoWeekday(date: Date, timeZone: string): number {
   const parts = getDateParts(date, timeZone);
   const utcWeekday = new Date(

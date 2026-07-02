@@ -1,5 +1,7 @@
 "use server";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { getDashboardSummary } from "@/src/actions/entries";
 import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
 import { getGoalsWithProgress } from "@/src/actions/goals";
@@ -19,6 +21,8 @@ import {
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import {
+  countDayOfMonthOccurrences,
+  getDateKey,
   getDayRangeForDate,
   getDayRangeForDateKey,
   getTodayDateKey,
@@ -245,12 +249,39 @@ export async function getNextHabitPayment(): Promise<DashboardUpcomingHabitPayme
   return next ?? null;
 }
 
+const DAILY_PACE_WINDOW_MONTHS = 12;
+
 export async function getDailyPaceComparison(): Promise<DashboardDailyPaceComparison> {
   const [workspaceId, timeZone] = await Promise.all([
     getCurrentWorkspaceId(),
     getCurrentWorkspaceTimezone(),
   ]);
   const todayKey = getTodayDateKey(timeZone);
+  return _cachedDailyPaceComparison(workspaceId, timeZone, todayKey);
+}
+
+function getDailyPaceWindowStartKey(todayParts: {
+  year: number;
+  month: number;
+}): string {
+  const start = new Date(
+    Date.UTC(todayParts.year, todayParts.month - 1 - DAILY_PACE_WINDOW_MONTHS, 1),
+  );
+
+  return `${String(start.getUTCFullYear()).padStart(4, "0")}-${String(
+    start.getUTCMonth() + 1,
+  ).padStart(2, "0")}-01`;
+}
+
+async function _cachedDailyPaceComparison(
+  workspaceId: string,
+  timeZone: string,
+  todayKey: string,
+): Promise<DashboardDailyPaceComparison> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
   const todayParts = parseDateKeyParts(todayKey);
 
   if (!todayParts) {
@@ -264,7 +295,7 @@ export async function getDailyPaceComparison(): Promise<DashboardDailyPaceCompar
     };
   }
 
-  const todayRange = getDayRangeForDate(new Date(), timeZone);
+  const todayRange = getDayRangeForDateKey(todayKey, timeZone);
   const todayRows = await prisma.$queryRaw<Array<{ spent: unknown }>>(Prisma.sql`
     SELECT COALESCE(SUM(e."realCost"), 0)::text AS "spent"
     FROM "Entry" e
@@ -274,22 +305,49 @@ export async function getDailyPaceComparison(): Promise<DashboardDailyPaceCompar
   `);
   const todaySpent = round2(toMetricNumber(todayRows[0]?.spent));
 
-  const averageRows = await prisma.$queryRaw<Array<{ averageSpent: unknown; sampleSize: unknown }>>(Prisma.sql`
-    WITH same_day_totals AS (
-      SELECT
-        to_char(${entryLocalTimestampSql(timeZone)}, 'YYYY-MM-DD') AS "dayKey",
-        SUM(e."realCost") AS "daySpent"
-      FROM "Entry" e
-      WHERE e."workspaceId" = ${workspaceId}
-        AND e."date" < ${todayRange.start}
-        AND EXTRACT(DAY FROM ${entryLocalTimestampSql(timeZone)}) = ${todayParts.day}
-      GROUP BY "dayKey"
-    )
-    SELECT
-      AVG("daySpent")::text AS "averageSpent",
-      COUNT(*)::int AS "sampleSize"
-    FROM same_day_totals
-  `);
+  // The average counts every past occurrence of this day-of-month in the
+  // window, including days with no spending: skipping the zero days would
+  // inflate the reference the user compares today against. The window is
+  // capped at 12 months (keeps the scan range-bound on the workspaceId+date
+  // index) and clamped to the first recorded entry so early adopters are not
+  // diluted by months before they used the app.
+  const firstEntry = await prisma.entry.findFirst({
+    where: { workspaceId },
+    orderBy: { date: "asc" },
+    select: { date: true },
+  });
+
+  let averageSameDay: number | null = null;
+  let averageSampleSize = 0;
+
+  if (firstEntry) {
+    const windowStartKey = getDailyPaceWindowStartKey(todayParts);
+    const firstEntryKey = getDateKey(firstEntry.date, timeZone);
+    const effectiveStartKey =
+      firstEntryKey > windowStartKey ? firstEntryKey : windowStartKey;
+    const effectiveStart = getDayRangeForDateKey(effectiveStartKey, timeZone).start;
+
+    averageSampleSize = countDayOfMonthOccurrences(
+      effectiveStartKey,
+      todayKey,
+      todayParts.day,
+    );
+
+    if (averageSampleSize > 0) {
+      const totalRows = await prisma.$queryRaw<Array<{ total: unknown }>>(Prisma.sql`
+        SELECT COALESCE(SUM(e."realCost"), 0)::text AS "total"
+        FROM "Entry" e
+        WHERE e."workspaceId" = ${workspaceId}
+          AND e."date" >= ${effectiveStart}
+          AND e."date" < ${todayRange.start}
+          AND EXTRACT(DAY FROM ${entryLocalTimestampSql(timeZone)}) = ${todayParts.day}
+      `);
+
+      averageSameDay = round2(
+        toMetricNumber(totalRows[0]?.total) / averageSampleSize,
+      );
+    }
+  }
 
   const previousMonthDateKey = getPreviousMonthSameDayKey(todayKey);
   let previousMonthSpent: number | null = null;
@@ -304,10 +362,6 @@ export async function getDailyPaceComparison(): Promise<DashboardDailyPaceCompar
     `);
     previousMonthSpent = round2(toMetricNumber(previousRows[0]?.spent));
   }
-
-  const averageSampleSize = Number(averageRows[0]?.sampleSize) || 0;
-  const averageSameDay =
-    averageSampleSize > 0 ? round2(toMetricNumber(averageRows[0]?.averageSpent)) : null;
 
   return {
     dayOfMonth: todayParts.day,
