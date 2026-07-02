@@ -115,6 +115,7 @@ async function createFakeBudgetWorld() {
   const budgets: SeedBudget[] = [];
   const entries: SeedEntry[] = [];
   const queryCounts = {
+    transaction: 0,
     budgetFindMany: 0,
     budgetFindFirst: 0,
     budgetCreate: 0,
@@ -175,8 +176,9 @@ async function createFakeBudgetWorld() {
     return true;
   }
 
-  const prisma = {
-    budget: {
+  let failBudgetCreateAtCall: number | null = null;
+
+  const budgetDelegate = {
       async findMany({ where }: { where?: BudgetWhere }) {
         queryCounts.budgetFindMany += 1;
         return budgets
@@ -192,6 +194,12 @@ async function createFakeBudgetWorld() {
       },
       async create(args: Record<string, unknown>) {
         queryCounts.budgetCreate += 1;
+        if (
+          failBudgetCreateAtCall !== null &&
+          queryCounts.budgetCreate === failBudgetCreateAtCall
+        ) {
+          throw new Error("Injected budget create failure");
+        }
         const data = args.data as Record<string, unknown>;
         const id = `budget-${++budgetCounter}`;
         const budget: SeedBudget = {
@@ -240,6 +248,23 @@ async function createFakeBudgetWorld() {
         const [removed] = budgets.splice(index, 1);
         return { id: removed.id };
       },
+  };
+
+  const prisma = {
+    budget: budgetDelegate,
+    async $transaction<T>(
+      fn: (tx: { budget: typeof budgetDelegate }) => Promise<T>,
+    ): Promise<T> {
+      queryCounts.transaction += 1;
+      // Restore-on-throw mirrors the rollback semantics of a real transaction.
+      const snapshot = budgets.map((budget) => ({ ...budget }));
+      try {
+        return await fn({ budget: budgetDelegate });
+      } catch (error) {
+        budgets.length = 0;
+        budgets.push(...snapshot);
+        throw error;
+      }
     },
     category: {
       async findMany({ where }: { where?: CategoryWhere }) {
@@ -323,6 +348,9 @@ async function createFakeBudgetWorld() {
     queryCounts,
     addEntry(entry: SeedEntry) {
       entries.push(entry);
+    },
+    setFailBudgetCreateAtCall(callNumber: number) {
+      failBudgetCreateAtCall = callNumber;
     },
   };
 }
@@ -415,6 +443,24 @@ describe("budget actions", () => {
       world.budgets.map((budget) => budget.scopeKey).sort(),
       ["category-1", "category-2"],
     );
+  });
+
+  it("rolls back every category budget when one create fails", async () => {
+    const world = await createFakeBudgetWorld();
+    world.setFailBudgetCreateAtCall(2);
+
+    const result = await world.actions.createBudgetAction(
+      buildMultiCategoryBudgetFormData({
+        period: "monthly",
+        amount: "80",
+        categoryIds: ["category-1", "category-2"],
+        currency: "EUR",
+      }),
+    );
+
+    assert.equal(result.success, false);
+    assert.equal(world.queryCounts.transaction, 1);
+    assert.equal(world.budgets.length, 0);
   });
 
   it("blocks amount <= 0", async () => {

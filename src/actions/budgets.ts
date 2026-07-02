@@ -57,14 +57,19 @@ export type WorkspaceBudgetPageData = {
   alertSelection: BudgetAlertSelection;
 };
 
-type BudgetPrismaLike = {
-  budget: {
-    findMany: (args: Record<string, unknown>) => Promise<BudgetSummarySource[]>;
-    findFirst: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
-    create: (args: Record<string, unknown>) => Promise<{ id: string }>;
-    update: (args: Record<string, unknown>) => Promise<{ id: string }>;
-    delete: (args: Record<string, unknown>) => Promise<{ id: string }>;
-  };
+type BudgetDelegateLike = {
+  findMany: (args: Record<string, unknown>) => Promise<BudgetSummarySource[]>;
+  findFirst: (args: Record<string, unknown>) => Promise<Record<string, unknown> | null>;
+  create: (args: Record<string, unknown>) => Promise<{ id: string }>;
+  update: (args: Record<string, unknown>) => Promise<{ id: string }>;
+  delete: (args: Record<string, unknown>) => Promise<{ id: string }>;
+};
+
+type BudgetTransactionClientLike = {
+  budget: BudgetDelegateLike;
+};
+
+type BudgetPrismaLike = BudgetTransactionClientLike & {
   category: {
     findMany: (args: Record<string, unknown>) => Promise<BudgetCategoryOption[]>;
     findFirst: (args: Record<string, unknown>) => Promise<BudgetCategoryOption | null>;
@@ -72,6 +77,9 @@ type BudgetPrismaLike = {
   entry: {
     findMany: (args: Record<string, unknown>) => Promise<BudgetSummaryEntry[]>;
   };
+  $transaction<T>(
+    fn: (tx: BudgetTransactionClientLike) => Promise<T>,
+  ): Promise<T>;
 };
 
 type BudgetActionDeps = {
@@ -285,9 +293,9 @@ async function createBudgetRecord(
     const normalized = validation.value;
     const targetCategoryIds =
       normalized.scope === "category" ? categoryIds : [];
+    const uniqueCategoryIds = Array.from(new Set(targetCategoryIds));
 
     if (normalized.scope === "category") {
-      const uniqueCategoryIds = Array.from(new Set(targetCategoryIds));
       if (uniqueCategoryIds.length === 0) {
         return toActionResult("Controlla i campi evidenziati", {
           categoryId: "Seleziona almeno una categoria.",
@@ -346,37 +354,50 @@ async function createBudgetRecord(
         select: { id: true },
       });
     } else {
-      for (const targetCategoryId of Array.from(new Set(targetCategoryIds))) {
-        const targetScopeKey = buildBudgetScopeKey("category", targetCategoryId);
-        const existing = await deps.prisma.budget.findFirst({
-          where: {
-            workspaceId: workspace.id,
-            period: normalized.period,
-            scope: "category",
-            scopeKey: targetScopeKey,
-          },
-          select: { id: true },
-        });
+      // Create-or-skip across several categories must be atomic: without a
+      // transaction a mid-loop failure persists some budgets while the user
+      // is told the creation failed.
+      const result = await deps.prisma.$transaction(async (tx) => {
+        let txCreated: { id: string } | null = null;
+        let txSkippedCount = 0;
 
-        if (existing) {
-          skippedCount += 1;
-          continue;
+        for (const targetCategoryId of uniqueCategoryIds) {
+          const targetScopeKey = buildBudgetScopeKey("category", targetCategoryId);
+          const existing = await tx.budget.findFirst({
+            where: {
+              workspaceId: workspace.id,
+              period: normalized.period,
+              scope: "category",
+              scopeKey: targetScopeKey,
+            },
+            select: { id: true },
+          });
+
+          if (existing) {
+            txSkippedCount += 1;
+            continue;
+          }
+
+          const nextCreated = await tx.budget.create({
+            data: {
+              workspaceId: workspace.id,
+              scope: "category",
+              scopeKey: targetScopeKey,
+              categoryId: targetCategoryId,
+              period: normalized.period,
+              amount: normalized.amount.toFixed(2),
+              currency: normalized.currency ?? workspace.currency ?? "EUR",
+            },
+            select: { id: true },
+          });
+          txCreated ??= nextCreated;
         }
 
-        const nextCreated = await deps.prisma.budget.create({
-          data: {
-            workspaceId: workspace.id,
-            scope: "category",
-            scopeKey: targetScopeKey,
-            categoryId: targetCategoryId,
-            period: normalized.period,
-            amount: normalized.amount.toFixed(2),
-            currency: normalized.currency ?? workspace.currency ?? "EUR",
-          },
-          select: { id: true },
-        });
-        created ??= nextCreated;
-      }
+        return { created: txCreated, skippedCount: txSkippedCount };
+      });
+
+      created = result.created;
+      skippedCount = result.skippedCount;
     }
 
     if (!created) {
