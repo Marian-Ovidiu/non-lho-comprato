@@ -172,6 +172,38 @@ describe("createBudgetAlertFromSummary", () => {
     );
   });
 
+  it("does not flag an untouched small budget as low_runway", () => {
+    const alert = createBudgetAlertFromSummary(
+      makeWorkspaceSummary({
+        spentAmount: 0,
+        remainingAmount: 100,
+        spentPercentage: 0,
+        timeProgressPercentage: 5.25,
+        dailyRemainingAmount: 3.4,
+        projectedSpendAtPeriodEnd: 0,
+        status: "ok",
+      }),
+    );
+
+    assert.equal(alert, null);
+  });
+
+  it("does not flag low_runway when spending is behind the time pace", () => {
+    const alert = createBudgetAlertFromSummary(
+      makeWorkspaceSummary({
+        spentAmount: 10,
+        remainingAmount: 90,
+        spentPercentage: 10,
+        timeProgressPercentage: 50,
+        dailyRemainingAmount: 4.5,
+        projectedSpendAtPeriodEnd: 20,
+        status: "ok",
+      }),
+    );
+
+    assert.equal(alert, null);
+  });
+
   it("uses category scope and categoryName for category alerts", () => {
     const alert = createBudgetAlertFromSummary(
       makeCategorySummary({

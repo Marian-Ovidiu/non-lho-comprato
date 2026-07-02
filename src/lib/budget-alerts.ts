@@ -167,9 +167,15 @@ function getAlertKind(summary: BudgetSummaryView): BudgetAlertKind | null {
     return "pace_risk";
   }
 
+  // A small budget has <=5€/day available from day one, so the absolute
+  // threshold alone would flag it as "low runway" even when untouched: the
+  // alert must fire only when spending, at or ahead of the time pace, has
+  // eaten the margin.
   const daysRemaining = getDaysRemaining(summary);
   if (
     summary.remainingAmount > 0 &&
+    summary.spentAmount > 0 &&
+    summary.spentPercentage >= summary.timeProgressPercentage &&
     summary.dailyRemainingAmount <= 5 &&
     daysRemaining >= 3
   ) {
