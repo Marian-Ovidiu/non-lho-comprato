@@ -1,6 +1,10 @@
 "use server";
 
-import { getDaysInMonth } from "@/src/lib/workspace-dates";
+import {
+  isHabitScheduledForDate,
+  parseActiveDays,
+} from "@/src/features/habits/schedule";
+
 import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
 
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
@@ -14,9 +18,7 @@ import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
 import {
-  getDateParts,
   getDayRangeForDateKey,
-  getIsoWeekday,
   getTodayDateKey,
 } from "@/src/lib/workspace-dates";
 import {
@@ -48,13 +50,6 @@ type SyncResult = {
 };
 
 type HabitStatus = "pending" | "spent" | "avoided" | "skipped";
-type HabitSchedule =
-  | number[]
-  | {
-      cadence: "monthly";
-      day: number;
-    };
-
 const habitCategorySelect = {
   id: true,
   name: true,
@@ -293,128 +288,6 @@ function toDecimalString(value: number): string {
 
 function getTodayDayRange(timeZone: string): { start: Date; end: Date } {
   return getDayRangeForDateKey(getTodayDateKey(timeZone), timeZone);
-}
-
-function normalizeActiveDays(values: number[]): number[] {
-  return Array.from(new Set(values))
-    .filter((value) => Number.isInteger(value) && value >= 1 && value <= 7)
-    .sort((a, b) => a - b);
-}
-
-function isMonthlyHabitSchedule(value: unknown): value is { cadence: "monthly"; day: number } {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-
-  const schedule = value as { cadence?: unknown; day?: unknown };
-  return schedule.cadence === "monthly" && Number.isInteger(Number(schedule.day));
-}
-
-function isHabitScheduledForDate(
-  schedule: unknown,
-  date: Date,
-  timeZone: string,
-): boolean {
-  if (isMonthlyHabitSchedule(schedule)) {
-    const parts = getDateParts(date, timeZone);
-    const targetDay = Math.min(
-      Math.max(1, Number(schedule.day)),
-      getDaysInMonth(parts.year, parts.month),
-    );
-
-    return parts.day === targetDay;
-  }
-
-  if (!Array.isArray(schedule)) {
-    return false;
-  }
-
-  const activeDays = normalizeActiveDays(
-    schedule.map((value) => Number(value)).filter(Number.isFinite),
-  );
-
-  return activeDays.includes(getIsoWeekday(date, timeZone));
-}
-
-function parseActiveDays(formData: FormData): {
-  value: HabitSchedule;
-  error?: string;
-} {
-  const recurrenceType = getText(formData, "recurrenceType") || "weekly";
-
-  if (recurrenceType === "monthly") {
-    const day = Number(getText(formData, "activeDayOfMonth"));
-
-    if (!Number.isInteger(day) || day < 1 || day > 31) {
-      return {
-        value: [],
-        error: "Seleziona un giorno del mese valido",
-      };
-    }
-
-    return {
-      value: {
-        cadence: "monthly",
-        day,
-      },
-    };
-  }
-
-  const rawValues = formData.getAll("activeDays");
-  const collected: number[] = [];
-
-  for (const rawValue of rawValues) {
-    if (typeof rawValue !== "string") {
-      continue;
-    }
-
-    const trimmed = rawValue.trim();
-    if (!trimmed) {
-      continue;
-    }
-
-    if (trimmed.startsWith("[")) {
-      try {
-        const parsed = JSON.parse(trimmed) as unknown;
-        if (Array.isArray(parsed)) {
-          collected.push(
-            ...parsed.map((item) => Number(item)).filter(Number.isFinite),
-          );
-          continue;
-        }
-      } catch {
-        // Fall back to the generic split logic below.
-      }
-    }
-
-    const tokens = trimmed.split(/[\s,]+/);
-    for (const token of tokens) {
-      if (!token) {
-        continue;
-      }
-
-      const day = Number(token);
-      if (!Number.isFinite(day)) {
-        return {
-          value: [],
-          error: "I giorni attivi non sono validi",
-        };
-      }
-
-      collected.push(day);
-    }
-  }
-
-  const activeDays = normalizeActiveDays(collected);
-
-  if (!activeDays.length) {
-    return {
-      value: [],
-      error: "Seleziona almeno un giorno attivo",
-    };
-  }
-
-  return { value: activeDays };
 }
 
 function parseBoolean(value: string): boolean {
