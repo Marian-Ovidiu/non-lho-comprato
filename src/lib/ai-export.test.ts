@@ -252,6 +252,67 @@ describe("serializeAiExpenseExportEntries", () => {
     assert.doesNotMatch(csv, /\n,/);
   });
 
+  it("neutralizes formula triggers in user-controlled text cells", () => {
+    const csv = serializeAiExpenseExportEntries(
+      [
+        createEntry({
+          title: "=1+2",
+          note: "@cmd",
+          category: { name: "+SUM(A1:A9)" },
+          paidByUserId: "user-1",
+          paidByUserName: "-2+3+cmd|' /C calc'!A0",
+          beneficiaries: [
+            { userId: "user-1", userName: "-2+3+cmd|' /C calc'!A0" },
+          ],
+        }),
+      ],
+      "=cmd-workspace",
+      "Europe/Rome",
+    );
+
+    assert.match(csv, /,'=1\+2,/);
+    assert.match(csv, /,'@cmd,/);
+    assert.match(csv, /,'\+SUM\(A1:A9\),/);
+    assert.match(csv, /,'-2\+3\+cmd/);
+    assert.match(csv, /,'=cmd-workspace,/);
+    assert.doesNotMatch(csv, /,=1\+2,/);
+    assert.doesNotMatch(csv, /,@cmd,/);
+  });
+
+  it("quotes neutralized cells that also contain CSV metacharacters", () => {
+    const csv = serializeAiExpenseExportEntries(
+      [
+        createEntry({
+          title: '=HYPERLINK("http://evil.example","click")',
+        }),
+      ],
+      "Workspace",
+      "Europe/Rome",
+    );
+
+    assert.match(
+      csv,
+      /,"'=HYPERLINK\(""http:\/\/evil\.example"",""click""\)",/,
+    );
+  });
+
+  it("keeps negative money cells intact", () => {
+    const csv = serializeAiExpenseExportEntries(
+      [
+        createEntry({
+          realCost: 50,
+          alternativeCost: 40,
+          savedAmount: -10,
+        }),
+      ],
+      "Workspace",
+      "Europe/Rome",
+    );
+
+    assert.match(csv, /,-10\.00,/);
+    assert.doesNotMatch(csv, /'-10\.00/);
+  });
+
   it("keeps valid legacy entries even when sharing fields are missing", () => {
     const legacyEntry = createEntry({
       id: "legacy-entry",
