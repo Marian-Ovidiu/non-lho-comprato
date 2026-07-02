@@ -14,6 +14,13 @@ export type CraftedHabitView = {
   id: string;
   name: string;
   provider?: string;
+  categoryId: string;
+  activeDays: unknown;
+  isActive: boolean;
+  targetScope: string;
+  targetUserId: string | null;
+  reminderEnabled: boolean;
+  reminderTime: string | null;
   icon: CraftedIconName;
   amount: number;
   cadence: HabitCadence;
@@ -379,8 +386,11 @@ export function buildCraftedHabitsProps({
     amount: number;
     activeDays: unknown;
     isActive: boolean;
-    targetScope?: string | null;
-    targetUserId?: string | null;
+    categoryId: string;
+    targetScope: string;
+    targetUserId: string | null;
+    reminderEnabled: boolean;
+    reminderTime: string | null;
     createdAt: string;
     category: {
       name: string;
@@ -442,6 +452,13 @@ export function buildCraftedHabitsProps({
     return {
       id: habit.id,
       name: habit.name,
+      categoryId: habit.categoryId,
+      activeDays: habit.activeDays,
+      isActive: habit.isActive,
+      targetScope: habit.targetScope,
+      targetUserId: habit.targetUserId,
+      reminderEnabled: habit.reminderEnabled,
+      reminderTime: habit.reminderTime,
       icon: getCategoryCraftedIcon(habit.category),
       amount: habit.amount,
       cadence,

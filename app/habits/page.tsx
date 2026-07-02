@@ -133,7 +133,13 @@ export default async function HabitsPage() {
       {isEmpty ? (
         <CraftedHabitsEmptyState />
       ) : (
-        <CraftedHabits {...craftedProps} />
+        <CraftedHabits
+          {...craftedProps}
+          categories={categoryOptions}
+          members={members}
+          currentUserId={currentUser.id}
+          workspaceKind={workspace.kind}
+        />
       )}
 
       <section id="nuova-abitudine" className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
