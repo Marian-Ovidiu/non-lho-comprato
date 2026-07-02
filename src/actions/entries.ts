@@ -62,14 +62,7 @@ import {
   requireWorkspaceAccessForRecord,
 } from "@/src/lib/workspace-context";
 import {
-  formatEntryLoadError,
-  isEntryLoadDebugEnabled,
-  logEntryLoadStep,
-} from "@/src/lib/entry-load-debug";
-import {
-  entryEditSelect,
   entryEditSelectWithBeneficiaries,
-  entryListSelect,
   entryListSelectWithBeneficiaries,
 } from "@/src/lib/entry-list-select";
 import {
@@ -156,24 +149,6 @@ type SerializableEntryEdit = {
   source: string;
   paidByUserId: string;
   beneficiaryUserIds: string[];
-};
-
-type EntryEditRecord = {
-  id: string;
-  title: string;
-  categoryId: string;
-  realCost: unknown;
-  alternativeCost: unknown;
-  savedAmount: unknown;
-  mode: unknown;
-  savingContext: unknown;
-  paymentMode: unknown;
-  date: Date;
-  note: string | null;
-  source: string;
-  paidByUserId: string | null;
-  workspaceId: string | null;
-  beneficiaries: { userId: string }[];
 };
 
 type MonthlySummary = {
@@ -326,23 +301,6 @@ function resolveEntryPaymentAndOwnership(
   };
 }
 
-function isMissingEntryBeneficiaryTable(error: unknown): boolean {
-  if (!error || typeof error !== "object") {
-    return false;
-  }
-
-  const code = "code" in error ? String(error.code) : "";
-  if (code === "P2021") {
-    return true;
-  }
-
-  const message = "message" in error ? String(error.message) : "";
-  return (
-    message.includes("EntryBeneficiary") &&
-    message.includes("does not exist")
-  );
-}
-
 function logEntryLoadError(
   operation: string,
   error: unknown,
@@ -358,53 +316,11 @@ function logEntryLoadError(
     prismaCode,
     message: error instanceof Error ? error.message : String(error),
     hint:
-      prismaCode === "P2021" || isMissingEntryBeneficiaryTable(error)
-        ? 'Run "npx prisma migrate deploy" to create EntryBeneficiary.'
+      prismaCode === "P2021"
+        ? 'Run "npx prisma migrate deploy" to create the missing table.'
         : undefined,
   });
   console.error(error);
-}
-
-async function findEntriesForList(
-  where: Awaited<ReturnType<typeof getCurrentWorkspaceScopedWhere>>,
-): Promise<EntryWithCategory[]> {
-  const baseQuery = {
-    where,
-    orderBy: [
-      {
-        date: "desc" as const,
-      },
-      {
-        createdAt: "desc" as const,
-      },
-      {
-        id: "desc" as const,
-      },
-    ],
-    select: entryListSelect,
-  };
-
-  try {
-    return await prisma.entry.findMany({
-      ...baseQuery,
-      select: entryListSelectWithBeneficiaries,
-    });
-  } catch (error) {
-    if (!isMissingEntryBeneficiaryTable(error)) {
-      throw error;
-    }
-
-    logEntryLoadError("findEntriesForList.beneficiariesInclude", error, {
-      fallback: "legacy-person-fields",
-      where,
-    });
-
-    const entries = await prisma.entry.findMany(baseQuery);
-    return entries.map((entry) => ({
-      ...entry,
-      beneficiaries: [],
-    }));
-  }
 }
 
 async function findEntriesPage(
@@ -426,138 +342,66 @@ async function findEntriesPage(
     },
   ];
 
-  try {
-    if (options.cursor) {
-      return await prisma.entry.findMany({
-        where,
-        take: options.limit + 1,
-        cursor: { id: options.cursor },
-        skip: 1,
-        orderBy,
-        select: entryListSelectWithBeneficiaries,
-      });
-    }
-
-    return await prisma.entry.findMany({
+  if (options.cursor) {
+    return prisma.entry.findMany({
       where,
       take: options.limit + 1,
+      cursor: { id: options.cursor },
+      skip: 1,
       orderBy,
       select: entryListSelectWithBeneficiaries,
     });
-  } catch (error) {
-    if (!isMissingEntryBeneficiaryTable(error)) {
-      throw error;
-    }
-
-    logEntryLoadError("findEntriesPage.beneficiariesInclude", error, {
-      fallback: "legacy-person-fields",
-      where,
-      cursor: options.cursor ?? null,
-      limit: options.limit,
-    });
-
-    const entries = options.cursor
-      ? await prisma.entry.findMany({
-          where,
-          take: options.limit + 1,
-          cursor: { id: options.cursor },
-          skip: 1,
-          orderBy,
-          select: entryListSelect,
-        })
-      : await prisma.entry.findMany({
-          where,
-          take: options.limit + 1,
-          orderBy,
-          select: entryListSelect,
-        });
-
-    return entries.map((entry) => ({
-      ...entry,
-      beneficiaries: [],
-    }));
   }
+
+  return prisma.entry.findMany({
+    where,
+    take: options.limit + 1,
+    orderBy,
+    select: entryListSelectWithBeneficiaries,
+  });
 }
 
 async function findExpenseSuggestionCandidates(
   where: Prisma.EntryWhereInput,
 ): Promise<Array<ExpenseSuggestionCandidate>> {
-  try {
-    const entries = await prisma.entry.findMany({
-      where,
-      orderBy: [
-        {
-          date: "desc" as const,
-        },
-        {
-          createdAt: "desc" as const,
-        },
-      ],
-      take: 250,
-      select: {
-        title: true,
-        realCost: true,
-        date: true,
-        note: true,
-        paidByUserId: true,
-        beneficiaries: {
-          select: {
-            userId: true,
-          },
+  const entries = await prisma.entry.findMany({
+    where,
+    orderBy: [
+      {
+        date: "desc" as const,
+      },
+      {
+        createdAt: "desc" as const,
+      },
+    ],
+    take: 250,
+    select: {
+      title: true,
+      realCost: true,
+      date: true,
+      note: true,
+      paidByUserId: true,
+      beneficiaries: {
+        select: {
+          userId: true,
         },
       },
-    });
+    },
+  });
 
-    return entries
-      .filter((entry) =>
-        !isLikelyImportedNoise(entry.title, decryptOptionalText(entry.note)),
-      )
-      .map((entry) => ({
-        title: entry.title,
-        realCost: toNumber(entry.realCost),
-        date: entry.date,
-        paidByUserId: entry.paidByUserId,
-        beneficiaryUserIds: entry.beneficiaries.map(
-          (beneficiary) => beneficiary.userId,
-        ),
-      }));
-  } catch (error) {
-    if (!isMissingEntryBeneficiaryTable(error)) {
-      throw error;
-    }
-
-    const entries = await prisma.entry.findMany({
-      where,
-      orderBy: [
-        {
-          date: "desc" as const,
-        },
-        {
-          createdAt: "desc" as const,
-        },
-      ],
-      take: 250,
-      select: {
-        title: true,
-        realCost: true,
-        date: true,
-        note: true,
-        paidByUserId: true,
-      },
-    });
-
-    return entries
-      .filter((entry) =>
-        !isLikelyImportedNoise(entry.title, decryptOptionalText(entry.note)),
-      )
-      .map((entry) => ({
-        title: entry.title,
-        realCost: toNumber(entry.realCost),
-        date: entry.date,
-        paidByUserId: entry.paidByUserId,
-        beneficiaryUserIds: [],
-      }));
-  }
+  return entries
+    .filter((entry) =>
+      !isLikelyImportedNoise(entry.title, decryptOptionalText(entry.note)),
+    )
+    .map((entry) => ({
+      title: entry.title,
+      realCost: toNumber(entry.realCost),
+      date: entry.date,
+      paidByUserId: entry.paidByUserId,
+      beneficiaryUserIds: entry.beneficiaries.map(
+        (beneficiary) => beneficiary.userId,
+      ),
+    }));
 }
 
 function normalizeSearchQuery(query?: string): string {
@@ -758,72 +602,6 @@ function serializeEntry(
   };
 }
 
-export async function getEntries(): Promise<SerializableEntry[]> {
-  let workspaceId = "unknown";
-
-  logEntryLoadStep("start", {});
-
-  try {
-    const [workspaceWhere, members] = await Promise.all([
-      getCurrentWorkspaceScopedWhere(),
-      getCurrentWorkspaceMembers(),
-    ]);
-
-    workspaceId = workspaceWhere.workspaceId;
-
-    logEntryLoadStep("where", {
-      workspaceId,
-      prismaWhere: workspaceWhere,
-    });
-
-    const rawCount = await prisma.entry.count({
-      where: workspaceWhere,
-    });
-
-    logEntryLoadStep("rawCount", {
-      workspaceId,
-      rawCount,
-    });
-
-    const entries = await findEntriesForList(workspaceWhere);
-
-    logEntryLoadStep("result", {
-      workspaceId,
-      rawCount,
-      resultLength: entries.length,
-    });
-
-    if (isEntryLoadDebugEnabled() || isWorkspaceDebugEnabled()) {
-      logWorkspaceDebug("getEntries", {
-        workspaceId,
-        prismaWhere: workspaceWhere,
-        rawCount,
-        entryCount: entries.length,
-      });
-    }
-
-    return entries.map((entry) => serializeEntry(entry, members));
-  } catch (error) {
-    logEntryLoadError("getEntries", error, {
-      workspaceId,
-    });
-
-    logEntryLoadStep("error", {
-      workspaceId,
-      message: formatEntryLoadError(error),
-    });
-
-    if (isWorkspaceDebugEnabled()) {
-      logWorkspaceDebug("getEntries.error", {
-        workspaceId,
-        message: formatEntryLoadError(error),
-      });
-    }
-
-    throw error;
-  }
-}
-
 export async function getEntriesPage(
   options?: EntriesPageOptions,
 ): Promise<EntriesPageResult> {
@@ -909,35 +687,10 @@ export async function getEntryById(
 
   try {
     const workspaceId = await getCurrentWorkspaceId();
-    let entry: EntryEditRecord | null = null;
-
-    try {
-      entry = await prisma.entry.findUnique({
-        where: { id, workspaceId },
-        select: entryEditSelectWithBeneficiaries,
-      });
-    } catch (error) {
-      if (!isMissingEntryBeneficiaryTable(error)) {
-        throw error;
-      }
-
-      logEntryLoadError("getEntryById.beneficiariesSelect", error, {
-        entryId: id,
-        fallback: "legacy-person-fields",
-      });
-
-      const legacyEntry = await prisma.entry.findUnique({
-        where: { id, workspaceId },
-        select: entryEditSelect,
-      });
-
-      entry = legacyEntry
-        ? {
-            ...legacyEntry,
-            beneficiaries: [],
-          }
-        : null;
-    }
+    const entry = await prisma.entry.findUnique({
+      where: { id, workspaceId },
+      select: entryEditSelectWithBeneficiaries,
+    });
 
     if (!entry) {
       return null;

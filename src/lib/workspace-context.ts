@@ -107,38 +107,42 @@ export async function isWorkspaceSetupNeeded(): Promise<boolean> {
   return !(data?.setupCompleted ?? false);
 }
 
-export async function getCurrentWorkspaceMembers(): Promise<WorkspaceMemberOption[]> {
-  const workspaceId = await getCurrentWorkspaceId();
+// cache() dedupes the query across the many actions and pages that request
+// the member list while rendering a single request.
+export const getCurrentWorkspaceMembers = cache(
+  async (): Promise<WorkspaceMemberOption[]> => {
+    const workspaceId = await getCurrentWorkspaceId();
 
-  const memberships = await prisma.workspaceMember.findMany({
-    where: { workspaceId },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
+    const memberships = await prisma.workspaceMember.findMany({
+      where: { workspaceId },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: "asc",
-    },
-  });
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
 
-  return dedupeWorkspaceMemberOptions(
-    memberships.map((membership) => ({
-      userId: membership.userId,
-      name: membership.user.name,
-      email: membership.user.email,
-      label: getWorkspaceMemberLabel({
+    return dedupeWorkspaceMemberOptions(
+      memberships.map((membership) => ({
         userId: membership.userId,
         name: membership.user.name,
         email: membership.user.email,
-      }),
-    })),
-  );
-}
+        label: getWorkspaceMemberLabel({
+          userId: membership.userId,
+          name: membership.user.name,
+          email: membership.user.email,
+        }),
+      })),
+    );
+  },
+);
 
 export async function getCurrentWorkspaceMemberDetails(): Promise<
   CurrentWorkspaceMemberDetail[]
