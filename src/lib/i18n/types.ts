@@ -122,6 +122,10 @@ export type Translations = {
     comparisonIntent: string;
     comparisonIntentLabel: string;
     comparisonDesc: string;
+    avoidedIntent: string;
+    avoidedIntentDesc: string;
+    avoidedAmountLabel: string;
+    avoidedRecorded: string;
     jointIntent: string;
     jointDesc: string;
     jointPaymentInfo: string;

@@ -124,6 +124,10 @@ export const en: Translations = {
     comparisonIntent: "Spent + comparison",
     comparisonIntentLabel: "I spent and want to compare it",
     comparisonDesc: "Use this when you went with the cheaper option.",
+    avoidedIntent: "Avoided expense",
+    avoidedIntentDesc: "Avoided expense: track what you would have spent.",
+    avoidedAmountLabel: "What you would have spent",
+    avoidedRecorded: "expense avoided",
     jointIntent: "Paid together",
     jointDesc: "You each paid your share.",
     jointPaymentInfo:

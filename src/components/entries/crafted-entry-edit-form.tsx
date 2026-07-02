@@ -157,7 +157,9 @@ export function CraftedEntryEditForm({
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
   const [isDeleting, startDeleteTransition] = useTransition();
 
-  const [mode, setMode] = useState<EntryMode>("spent");
+  const [mode, setMode] = useState<EntryMode>(
+    entry.mode === "avoided" ? "avoided" : "spent",
+  );
   const [categoryId, setCategoryId] = useState(entry.categoryId);
   const [title, setTitle] = useState(entry.title);
   const [date, setDate] = useState(getDateValue(entry.date));
@@ -167,7 +169,9 @@ export function CraftedEntryEditForm({
     entry.mode === "spent" && entry.savingContext === "comparison",
   );
   const [amountSpentInput, setAmountSpentInput] = useState(() =>
-    moneyStringToInput(entry.amountSpent),
+    moneyStringToInput(
+      entry.mode === "avoided" ? entry.comparisonAmount : entry.amountSpent,
+    ),
   );
   const [comparisonInput, setComparisonInput] = useState(() =>
     moneyStringToInput(entry.comparisonAmount),
@@ -198,11 +202,20 @@ export function CraftedEntryEditForm({
 
   const canUseJointPayment = members.length === 2;
   const effectivePaymentMode = canUseJointPayment ? paymentMode : "single_payer";
+  const isAvoided = mode === "avoided";
   const savingContext: EntrySavingContext = showComparison ? "comparison" : "none";
   const entryIntent = getEntryIntent(showComparison, effectivePaymentMode);
-  const hiddenAmountSpent = toHiddenMoneyValue(amountSpentInput);
-  const hiddenComparisonAmount = showComparison ? toHiddenMoneyValue(comparisonInput) : "";
-  const primaryFieldError = getPrimaryFieldError(state.errors);
+  // For an avoided entry the single visible amount field edits the money the
+  // user would have spent, which the server reads from comparisonAmount.
+  const hiddenAmountSpent = isAvoided ? "" : toHiddenMoneyValue(amountSpentInput);
+  const hiddenComparisonAmount = isAvoided
+    ? toHiddenMoneyValue(amountSpentInput)
+    : showComparison
+      ? toHiddenMoneyValue(comparisonInput)
+      : "";
+  const primaryFieldError = isAvoided
+    ? (state.errors?.comparisonAmount ?? getPrimaryFieldError(state.errors))
+    : getPrimaryFieldError(state.errors);
   const comparisonFieldError = getComparisonFieldError(state.errors);
   const comparisonDelta = getMoneyDelta(amountSpentInput, comparisonInput);
   const showLargeComparisonWarning =
@@ -296,7 +309,9 @@ export function CraftedEntryEditForm({
             <Mono className="text-xl text-muted-foreground">{currencySymbol}</Mono>
           </div>
           <Serif className="mt-3 block text-sm text-ink-3">
-            {getSummaryText(savingContext, amountSpentInput, comparisonInput, currencySymbol, t.entryForm)}
+            {isAvoided
+              ? t.entryForm.avoidedRecorded
+              : getSummaryText(savingContext, amountSpentInput, comparisonInput, currencySymbol, t.entryForm)}
           </Serif>
         </section>
         <Rule />
@@ -314,6 +329,19 @@ export function CraftedEntryEditForm({
           </div>
         ) : null}
 
+        {isAvoided ? (
+          <div className="px-5 pb-4 pt-3">
+            <div className="flex min-h-12 items-center justify-center gap-1.5 border-b-[1.5px] border-accent text-[12.5px] leading-4 sm:text-sm">
+              <span className="font-num text-sm" aria-hidden="true">
+                ↘
+              </span>
+              {t.entryForm.avoidedIntent}
+            </div>
+            <p className="mt-3 text-center text-xs leading-5 text-ink-3">
+              {t.entryForm.avoidedIntentDesc}
+            </p>
+          </div>
+        ) : (
         <div className="px-5 pb-4 pt-3">
           <div className={cn("grid gap-2", canUseJointPayment ? "grid-cols-3" : "grid-cols-2")}>
             <button
@@ -372,6 +400,7 @@ export function CraftedEntryEditForm({
                 : t.entryForm.jointDesc}
           </p>
         </div>
+        )}
 
         <div className="px-5 pb-2">
           <Label className="mb-3 block">{t.entryForm.categoryLabel}</Label>
@@ -444,11 +473,16 @@ export function CraftedEntryEditForm({
                 className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none placeholder:text-ink-3/70"
                 aria-invalid={Boolean(primaryFieldError)}
               />
-              <Label>{t.entryForm.amountLabel}</Label>
+              <Label>
+                {isAvoided
+                  ? t.entryForm.avoidedAmountLabel
+                  : t.entryForm.amountLabel}
+              </Label>
             </label>
             <FormFieldError message={primaryFieldError} />
           </div>
 
+          {isAvoided ? null : (
           <>
             <button
               type="button"
@@ -505,6 +539,7 @@ export function CraftedEntryEditForm({
               </div>
             ) : null}
           </>
+          )}
         </div>
 
         <div className="space-y-3 px-5 pb-3">

@@ -96,7 +96,9 @@ describe("resolveEntryMoneyFromForm", () => {
     assert.equal(result.money?.savedAmount, 7);
   });
 
-  it("rejects the removed Non l'ho comprato form intent", () => {
+  // The create form no longer offers the avoided intent, but habit-generated
+  // avoided entries still exist and must survive the edit form.
+  it("resolves an avoided entry without requiring amountSpent", () => {
     const result = resolveEntryMoneyFromForm(
       formData({
         mode: "avoided",
@@ -106,9 +108,50 @@ describe("resolveEntryMoneyFromForm", () => {
     );
 
     assert.equal(result.usesTrackerFields, true);
+    assert.deepEqual(result.errors, {});
+    assert.equal(result.money?.mode, "avoided");
+    assert.equal(result.money?.savingContext, "comparison");
+    assert.equal(result.money?.realCost, 0);
+    assert.equal(result.money?.alternativeCost, 18);
+    assert.equal(result.money?.savedAmount, 18);
+  });
+
+  it("requires a positive comparison amount for avoided entries", () => {
+    const missing = resolveEntryMoneyFromForm(
+      formData({
+        mode: "avoided",
+      }),
+    );
+
+    assert.equal(missing.money, undefined);
+    assert.equal(missing.errors.comparisonAmount, "Questo campo è obbligatorio");
+    assert.equal(missing.errors.amountSpent, undefined);
+
+    const zero = resolveEntryMoneyFromForm(
+      formData({
+        mode: "avoided",
+        comparisonAmount: "0",
+      }),
+    );
+
+    assert.equal(zero.money, undefined);
+    assert.equal(
+      zero.errors.comparisonAmount,
+      "L'importo deve essere maggiore di 0",
+    );
+  });
+
+  it("rejects unknown modes", () => {
+    const result = resolveEntryMoneyFromForm(
+      formData({
+        mode: "banana",
+        amountSpent: "10",
+      }),
+    );
+
+    assert.equal(result.usesTrackerFields, true);
     assert.equal(result.money, undefined);
     assert.equal(result.errors.mode, "Seleziona una modalita valida");
-    assert.equal(result.errors.amountSpent, "Questo campo è obbligatorio");
   });
 
   it("rejects invalid tracker-first money", () => {

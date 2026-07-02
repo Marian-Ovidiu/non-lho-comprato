@@ -125,6 +125,10 @@ export const it: Translations = {
     comparisonIntent: "Speso + confronto",
     comparisonIntentLabel: "Ho speso e voglio confrontarlo",
     comparisonDesc: "Usalo quando hai scelto un'opzione più economica.",
+    avoidedIntent: "Spesa evitata",
+    avoidedIntentDesc: "Movimento evitato: registra quanto avresti speso.",
+    avoidedAmountLabel: "Quanto avresti speso",
+    avoidedRecorded: "spesa evitata",
     jointIntent: "Pagata insieme",
     jointDesc: "Entrambi avete pagato la vostra metà.",
     jointPaymentInfo:
