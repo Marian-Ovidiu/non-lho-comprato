@@ -209,11 +209,6 @@ function CategoryRow({ cat, totalBudget, last }: CategoryRowProps) {
               <Mono>{MINUS}{formatEUR(cat.avoided)}</Mono> evitati
             </span>
           ) : null}
-          {cat.rollover !== 0 ? (
-            <span className={cat.rollover > 0 ? "text-success" : "text-destructive"}>
-              rollover <Mono>{formatEUR(cat.rollover, { sign: true })}</Mono>
-            </span>
-          ) : null}
           {share > 0 ? (
             <span>
               quota <Mono>{Math.round(share)}%</Mono>

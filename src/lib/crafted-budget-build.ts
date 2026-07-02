@@ -28,7 +28,6 @@ export type CraftedBudgetCategory = {
   budget: number;
   spent: number;
   avoided: number;
-  rollover: number;
   txCount: number;
 };
 
@@ -163,15 +162,6 @@ function buildMonthOptions(selectedMonthKey: string): CraftedBudgetMonthOption[]
   });
 }
 
-function getRollover(categoryId: string, index: number) {
-  const seed = categoryId
-    .split("")
-    .reduce((total, char) => total + char.charCodeAt(0), 0);
-  const amount = ((seed + index * 17) % 41) - 20;
-
-  return Math.abs(amount) < 7 ? 0 : amount;
-}
-
 function sortCategories(
   categories: CraftedBudgetCategory[],
 ): CraftedBudgetCategory[] {
@@ -233,10 +223,7 @@ export async function buildCraftedBudgetProps(
   );
 
   const categoryMap = new Map<string, CraftedBudgetCategory>();
-  const ensureBudgetCategory = (
-    budget: BudgetSummaryView,
-    index = categoryMap.size,
-  ) => {
+  const ensureBudgetCategory = (budget: BudgetSummaryView) => {
     const category = budget.category;
     if (!budget.categoryId || !category) {
       return null;
@@ -256,7 +243,6 @@ export async function buildCraftedBudgetProps(
       budget: round2(toNumber(budget.budgetAmount)),
       spent: 0,
       avoided: 0,
-      rollover: getRollover(category.id, index),
       txCount: 0,
     };
     categoryMap.set(category.id, created);
@@ -264,9 +250,9 @@ export async function buildCraftedBudgetProps(
     return created;
   };
 
-  categoryBudgets.forEach((budget, index) => {
-    ensureBudgetCategory(budget, index);
-  });
+  for (const budget of categoryBudgets) {
+    ensureBudgetCategory(budget);
+  }
 
   const categoryLookup = new Map(
     budgetData.categories.map((category) => [category.id, category]),
