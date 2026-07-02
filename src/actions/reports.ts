@@ -1,6 +1,7 @@
 "use server";
 
-import type { Prisma } from "@/src/lib/generated/prisma/client";
+import { Prisma } from "@/src/lib/generated/prisma/client";
+import { entryLocalTimestampSql } from "@/src/lib/entry-metrics-query";
 import { formatMoney } from "@/src/lib/formatters";
 import { getEntryExpenseKind } from "@/src/lib/entry-ownership";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
@@ -522,12 +523,12 @@ export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOpti
       getCurrentWorkspaceId(),
       getCurrentWorkspaceTimezone(),
     ]);
-    const rows = await prisma.$queryRaw<Array<{ month: string }>>`
-      SELECT DISTINCT to_char("date" AT TIME ZONE ${timeZone}, 'YYYY-MM') AS month
-      FROM "Entry"
-      WHERE "workspaceId" = ${workspaceId}
+    const rows = await prisma.$queryRaw<Array<{ month: string }>>(Prisma.sql`
+      SELECT DISTINCT to_char(${entryLocalTimestampSql(timeZone)}, 'YYYY-MM') AS month
+      FROM "Entry" e
+      WHERE e."workspaceId" = ${workspaceId}
       ORDER BY month DESC
-    `;
+    `);
 
     const currentMonth = normalizeMonthKeyFromDates(timeZone);
     return buildMonthOptionsFromKeys(rows.map((row) => row.month), currentMonth);

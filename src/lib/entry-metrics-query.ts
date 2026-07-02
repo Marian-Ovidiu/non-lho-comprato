@@ -124,6 +124,16 @@ export const entryMetricAggregateSelectSql = Prisma.sql`
   COUNT(*)::int AS "entriesCount"
 `;
 
+/**
+ * Entry."date" is a naive timestamp holding UTC wall-clock time. A single
+ * AT TIME ZONE on a naive timestamp converts in the wrong direction (and the
+ * result depends on the session TimeZone), so the value must be tagged as UTC
+ * first and then shifted to the workspace timezone before day/month bucketing.
+ */
+export function entryLocalTimestampSql(timeZone: string) {
+  return Prisma.sql`(e."date" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}`;
+}
+
 export function entryMetricDateRangeSql(range: EntryMetricDateRange = {}) {
   return Prisma.sql`
     ${range.start ? Prisma.sql`AND e."date" >= ${range.start}` : Prisma.empty}

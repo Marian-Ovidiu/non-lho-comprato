@@ -20,6 +20,7 @@ import {
 import { getMonthRangeForMonthKey } from "@/src/lib/workspace-dates";
 import { overviewFromAggregate, type StatsOverview } from "@/src/lib/stats-overview";
 import {
+  entryLocalTimestampSql,
   entryMetricAggregateSelectSql,
   entryMetricDateRangeSql,
   entryMetricMemberFilterSql,
@@ -660,7 +661,7 @@ async function getMonthlyStatsForWorkspace(
 ): Promise<MonthlyStatsItem[]> {
   const rows = await prisma.$queryRaw<StatsMonthlyMetricRow[]>(Prisma.sql`
     SELECT
-      to_char(e."date" AT TIME ZONE ${timeZone}, 'YYYY-MM') AS "month",
+      to_char(${entryLocalTimestampSql(timeZone)}, 'YYYY-MM') AS "month",
       ${entryMetricAggregateSelectSql}
     FROM "Entry" e
     WHERE e."workspaceId" = ${workspaceId}
@@ -703,7 +704,7 @@ async function getMonthlyCategoryRowsForWorkspace(
 ): Promise<Array<StatsCategoryMetricRow & { month: string }>> {
   return prisma.$queryRaw<Array<StatsCategoryMetricRow & { month: string }>>(Prisma.sql`
     SELECT
-      to_char(e."date" AT TIME ZONE ${timeZone}, 'YYYY-MM') AS "month",
+      to_char(${entryLocalTimestampSql(timeZone)}, 'YYYY-MM') AS "month",
       c."id" AS "categoryId",
       c."name" AS "categoryName",
       c."slug" AS "categorySlug",
@@ -775,7 +776,7 @@ async function getDailySpendingRowsForWorkspace(
 
   return prisma.$queryRaw<StatsDailySpendingMetricRow[]>(Prisma.sql`
     SELECT
-      to_char(e."date" AT TIME ZONE ${timeZone}, 'YYYY-MM-DD') AS "dateKey",
+      to_char(${entryLocalTimestampSql(timeZone)}, 'YYYY-MM-DD') AS "dateKey",
       COALESCE(SUM(e."realCost"), 0)::text AS "totalRealSpent",
       COUNT(*)::int AS "entriesCount"
     FROM "Entry" e

@@ -12,13 +12,9 @@ function unquote(value: string) {
   return trimmed;
 }
 
-export function loadE2EEnv(fileName = ".env.e2e") {
-  const envPath = path.resolve(process.cwd(), fileName);
-  if (!existsSync(envPath)) {
-    return;
-  }
+export function parseEnvFile(contents: string): Record<string, string> {
+  const values: Record<string, string> = {};
 
-  const contents = readFileSync(envPath, "utf8");
   for (const line of contents.split(/\r?\n/u)) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("#")) {
@@ -31,8 +27,20 @@ export function loadE2EEnv(fileName = ".env.e2e") {
     }
 
     const key = trimmed.slice(0, equalsIndex).trim();
-    const value = unquote(trimmed.slice(equalsIndex + 1));
+    values[key] = unquote(trimmed.slice(equalsIndex + 1));
+  }
 
+  return values;
+}
+
+export function loadE2EEnv(fileName = ".env.e2e") {
+  const envPath = path.resolve(process.cwd(), fileName);
+  if (!existsSync(envPath)) {
+    return;
+  }
+
+  const values = parseEnvFile(readFileSync(envPath, "utf8"));
+  for (const [key, value] of Object.entries(values)) {
     if (!process.env[key]) {
       process.env[key] = value;
     }
