@@ -34,6 +34,7 @@ function logPerformance(label: string, startedAt: number) {
 export type AuthenticatedUser = {
   id: string;
   email: string | null;
+  emailVerified: boolean;
   name: string | null;
   image: string | null;
 };
@@ -65,7 +66,7 @@ const getSupabaseUser = cache(async () => {
 
       if (testUser) {
         logPerformance("auth/e2e-test-user", startedAt);
-        return testUser satisfies AuthenticatedUser;
+        return { ...testUser, emailVerified: true } satisfies AuthenticatedUser;
       }
     }
   }
@@ -93,6 +94,7 @@ const getSupabaseUser = cache(async () => {
   return {
     id: user.id,
     email: user.email ?? null,
+    emailVerified: Boolean(user.email_confirmed_at),
     name:
       (user.user_metadata?.full_name as string | undefined) ??
       (user.user_metadata?.name as string | undefined) ??

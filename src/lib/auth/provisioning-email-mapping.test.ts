@@ -223,6 +223,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "new-supabase-auth-id",
       email: "person@example.com",
       name: "Updated Name",
@@ -249,6 +250,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "new-auth-id-for-friend",
       email: "friend@example.com",
       name: "Friend New Metadata",
@@ -275,6 +277,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "same-auth-and-app-id",
       email: "new@example.com",
       name: "New Name",
@@ -302,6 +305,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "brand-new-auth-id",
       email: "new@example.com",
       name: "New User",
@@ -330,6 +334,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "email-less-auth-id",
       email: null,
       name: "No Email",
@@ -355,6 +360,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "new-auth-id-for-mixed-case-email",
       email: "PERSON@example.com",
       name: "Mixed Case Login",
@@ -394,6 +400,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "new-supabase-auth-id",
       email: "member@example.com",
       name: "Member",
@@ -453,6 +460,7 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     });
 
     const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
       id: "new-auth-id-for-entry-user",
       email: "entries@example.com",
       name: "Entry User",
@@ -474,5 +482,67 @@ describe("email-based auth provisioning for Supabase project migration", () => {
       visibleEntries.map((entry: TestEntry) => entry.id).sort(),
       ["beneficiary-entry", "created-entry", "paid-entry"],
     );
+  });
+
+  it("refuses to link an existing account when the email is not verified", async () => {
+    resetState({
+      users: [
+        {
+          id: "victim-app-user-id",
+          email: "victim@example.com",
+          name: "Victim",
+          image: null,
+        },
+      ],
+    });
+
+    await assert.rejects(
+      ensureAppUserForAuthUser({
+        emailVerified: false,
+        id: "attacker-auth-id",
+        email: "victim@example.com",
+        name: "Attacker",
+        image: null,
+      }),
+      /unverified email/,
+    );
+
+    assert.equal(state.users.length, 1);
+    assert.equal(state.users[0].id, "victim-app-user-id");
+    assert.equal(state.users[0].name, "Victim");
+    assert.equal(state.createdUsers.length, 0);
+  });
+
+  it("refuses to provision a new account with an unverified email", async () => {
+    resetState({ users: [] });
+
+    await assert.rejects(
+      ensureAppUserForAuthUser({
+        emailVerified: false,
+        id: "squatter-auth-id",
+        email: "future-victim@example.com",
+        name: "Squatter",
+        image: null,
+      }),
+      /unverified email/,
+    );
+
+    assert.equal(state.users.length, 0);
+    assert.equal(state.createdUsers.length, 0);
+  });
+
+  it("still provisions accounts without an email address", async () => {
+    resetState({ users: [] });
+
+    const user = await ensureAppUserForAuthUser({
+      emailVerified: false,
+      id: "email-less-unverified-id",
+      email: null,
+      name: "No Email",
+      image: null,
+    });
+
+    assert.equal(user.id, "email-less-unverified-id");
+    assert.equal(user.email, null);
   });
 });

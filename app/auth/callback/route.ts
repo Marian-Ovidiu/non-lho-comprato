@@ -91,6 +91,7 @@ export async function GET(request: NextRequest) {
       const { user: appUser, workspace } = await resolveWorkspaceForAuthenticatedUser({
         id: user.id,
         email: user.email ?? null,
+        emailVerified: Boolean(user.email_confirmed_at),
         name:
           (user.user_metadata?.full_name as string | undefined) ??
           (user.user_metadata?.name as string | undefined) ??

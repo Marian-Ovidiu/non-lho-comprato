@@ -18,6 +18,7 @@ function logPerformance(label: string, startedAt: number) {
 type AuthUserLike = {
   id: string;
   email: string | null;
+  emailVerified: boolean;
   name: string | null;
   image: string | null;
 };
@@ -72,6 +73,18 @@ function toWorkspaceRecord(workspace: {
 
 export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
   const startedAt = performance.now();
+
+  // Provisioning treats the email as an identity claim: it links new auth
+  // accounts to existing app users and overwrites the stored address. An
+  // unverified address from a misconfigured auth provider would therefore
+  // allow taking over the account that owns it, or squatting the address
+  // before its owner signs up. Refuse instead of trusting it.
+  if (authUser.email && !authUser.emailVerified) {
+    throw new Error(
+      "Refusing to provision an account for an unverified email address",
+    );
+  }
+
   const existingById = await prisma.user.findUnique({
     where: {
       id: authUser.id,

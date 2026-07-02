@@ -50,6 +50,17 @@ Official references:
 - Organization MFA enforcement:
   https://supabase.com/docs/guides/platform/mfa/org-mfa-enforcement
 
+### Auth provider invariant: verified emails only
+
+App provisioning links new Supabase auth accounts to existing app users by
+email address (`ensureAppUserForAuthUser` in `src/lib/auth/provisioning.ts`).
+This is safe only while every enabled auth provider verifies email ownership
+(magic link, Google OAuth). The code refuses to provision accounts whose
+email is not confirmed (`email_confirmed_at` unset), so a provider that
+skips verification will surface as login failures rather than as silent
+account takeover. Before enabling any new auth provider, confirm it verifies
+email addresses.
+
 ## Vercel Account Access
 
 Minimum baseline:
