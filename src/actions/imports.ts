@@ -37,6 +37,11 @@ import {
   encryptJsonValue,
   encryptOptionalText,
 } from "@/src/lib/field-encryption";
+import {
+  DEFAULT_WORKSPACE_TIMEZONE,
+  getDateKey,
+  parseWorkspaceDateKey,
+} from "@/src/lib/workspace-dates";
 
 type ImportBatchStatus =
   | "parsing"
@@ -113,6 +118,7 @@ type ImportWorkspaceRecord = {
   id: string;
   currency: string | null;
   language: string | null;
+  timezone?: string | null;
 };
 
 type ImportUserRecord = {
@@ -692,6 +698,14 @@ async function confirmImportedTransactions(
       };
     }
 
+    // Imported dates are parsed as UTC midnight of the CSV calendar day;
+    // re-anchor them to workspace-local midnight, the canonical Entry.date.
+    const entryDate =
+      parseWorkspaceDateKey(
+        getDateKey(transactionDate, "UTC"),
+        workspace.timezone ?? DEFAULT_WORKSPACE_TIMEZONE,
+      ) ?? transactionDate;
+
     const createResult = await deps.createEntryFromNormalizedInput(
       {
         workspaceId: workspace.id,
@@ -700,7 +714,7 @@ async function confirmImportedTransactions(
           transaction.merchantName?.trim() ||
           transaction.description.trim(),
         categoryId: category.id,
-        date: transactionDate,
+        date: entryDate,
         note: transaction.description.trim() || null,
         money: buildEntryMoney(transaction.amount),
         paymentMode: "single_payer",

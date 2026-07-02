@@ -22,7 +22,12 @@ import {
   normalizeEntryMetricAggregate,
   type EntryMetricAggregateRow,
 } from "@/src/lib/entry-metrics-query";
-import { getMonthRangeForMonthKey, normalizeMonthKey } from "@/src/lib/workspace-dates";
+import {
+  getMonthRangeForMonthKey,
+  isDateKey,
+  normalizeMonthKey,
+  parseWorkspaceDateKey,
+} from "@/src/lib/workspace-dates";
 import {
   parseBeneficiaryUserIdsFromForm,
   parsePaidByUserIdFromForm,
@@ -997,8 +1002,7 @@ export async function createEntry(
   }
   Object.assign(errors, entryMoney.errors);
 
-  const date = new Date(dateValue);
-  if (!dateValue || Number.isNaN(date.getTime())) {
+  if (!dateValue || !isDateKey(dateValue)) {
     errors.date = "Inserisci una data valida";
   }
 
@@ -1029,12 +1033,24 @@ export async function createEntry(
     const categoryPromise = workspaceIdPromise.then((workspaceId) =>
       resolveEntryCategory(categoryId, workspaceId),
     );
-    const [currentUser, workspaceId, members, category] = await Promise.all([
-      currentUserPromise,
-      workspaceIdPromise,
-      membersPromise,
-      categoryPromise,
-    ]);
+    const [currentUser, workspaceId, members, category, timeZone] =
+      await Promise.all([
+        currentUserPromise,
+        workspaceIdPromise,
+        membersPromise,
+        categoryPromise,
+        getCurrentWorkspaceTimezone(),
+      ]);
+
+    const date = parseWorkspaceDateKey(dateValue, timeZone);
+
+    if (!date) {
+      return {
+        success: false,
+        message: "Controlla i campi evidenziati",
+        errors: { date: "Inserisci una data valida" },
+      };
+    }
 
     const payment = resolveEntryPaymentAndOwnership(formData, members);
     const ownership = validateEntryOwnership(payment.ownershipInput, members);
@@ -1138,8 +1154,7 @@ export async function updateEntry(
     Object.assign(errors, ownership.errors);
   }
 
-  const date = new Date(dateValue);
-  if (!dateValue || Number.isNaN(date.getTime())) {
+  if (!dateValue || !isDateKey(dateValue)) {
     errors.date = "Inserisci una data valida";
   }
 
@@ -1162,7 +1177,21 @@ export async function updateEntry(
   const money = entryMoney.money;
 
   try {
-    const workspaceId = await getCurrentWorkspaceId();
+    const [workspaceId, timeZone] = await Promise.all([
+      getCurrentWorkspaceId(),
+      getCurrentWorkspaceTimezone(),
+    ]);
+
+    const date = parseWorkspaceDateKey(dateValue, timeZone);
+
+    if (!date) {
+      return {
+        success: false,
+        message: "Controlla i campi evidenziati",
+        errors: { date: "Inserisci una data valida" },
+      };
+    }
+
     const existingEntry = await prisma.entry.findUnique({
       where: { id, workspaceId },
       select: {

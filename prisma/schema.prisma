@@ -128,6 +128,9 @@ model Entry {
   mode              EntryMode          @default(spent)
   savingContext     EntrySavingContext @default(none)
   paymentMode       EntryPaymentMode   @default(single_payer)
+  /// Canonical value: midnight of the entry's calendar day in the workspace
+  /// timezone (see parseWorkspaceDateKey). Legacy rows may hold UTC midnight
+  /// instead; both bucket to the same local day for UTC+ timezones.
   date              DateTime
   isFirstEntryOfDay Boolean          @default(false)
   note              String?

@@ -57,9 +57,9 @@ test(
     const categoryId = `${runId}-category`;
 
     const fixtures = [
-      // UTC midnight, as stored by the <input type="date"> form path.
+      // UTC midnight, as stored by legacy form entries (pre-normalization).
       { date: new Date("2026-06-01T00:00:00Z"), expectedDateKey: "2026-06-01" },
-      // Rome midnight of June 1, as stored by the day-range helpers.
+      // Rome midnight of June 1, the canonical convention for all write paths.
       { date: new Date("2026-05-31T22:00:00Z"), expectedDateKey: "2026-06-01" },
       { date: new Date("2026-06-15T00:00:00Z"), expectedDateKey: "2026-06-15" },
       // Rome midnight of July 1: must land in July, not June.

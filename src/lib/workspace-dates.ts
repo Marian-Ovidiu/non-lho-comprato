@@ -104,10 +104,42 @@ function getMidnightUtc(dateParts: DateParts, timeZone: string): Date {
     Date.UTC(dateParts.year, dateParts.month - 1, dateParts.day, 0, 0, 0, 0),
   );
   const localParts = getTimeZoneParts(utcMidnight, timeZone);
-  const offsetMillis =
-    ((localParts.hour * 60 + localParts.minute) * 60 + localParts.second) * 1000;
+  // The offset must come from the full local date-time, not just the local
+  // time of day: for UTC-negative zones the local calendar day at utcMidnight
+  // is the previous one, which a time-only offset would miss by 24 hours.
+  const localAsUtcMillis = Date.UTC(
+    localParts.year,
+    localParts.month - 1,
+    localParts.day,
+    localParts.hour,
+    localParts.minute,
+    localParts.second,
+  );
+  const offsetMillis = localAsUtcMillis - utcMidnight.getTime();
 
   return new Date(utcMidnight.getTime() - offsetMillis);
+}
+
+export function isDateKey(value: string): boolean {
+  return parseDateKey(value) !== null;
+}
+
+/**
+ * Parses a calendar-day key ("YYYY-MM-DD", as sent by <input type="date">)
+ * into the canonical Entry.date instant: midnight of that day in the
+ * workspace timezone. Returns null for anything that is not a valid day key.
+ */
+export function parseWorkspaceDateKey(
+  dateKey: string,
+  timeZone: string,
+): Date | null {
+  const parts = parseDateKey(dateKey);
+
+  if (!parts) {
+    return null;
+  }
+
+  return getMidnightUtc(parts, timeZone);
 }
 
 export function getDateParts(date: Date, timeZone: string): DateParts {
