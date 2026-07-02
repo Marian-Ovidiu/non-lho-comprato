@@ -93,6 +93,12 @@ export function CraftedMore({
             detail={t.more.monthlyReportDetail}
             icon="arrowUp"
           />
+          <CraftedMoreRow
+            href="/budget"
+            label="Budget mese"
+            detail="Rimanente, ritmo e categorie sforate."
+            icon="target"
+          />
         </div>
       </CraftedMoreSection>
 
