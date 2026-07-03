@@ -1,5 +1,6 @@
 "use server";
 
+import { resolveEntryPaymentAndOwnership } from "@/src/features/entries/payment-ownership";
 import {
   serializeEntry,
   serializeEntryEdit,
@@ -40,11 +41,7 @@ import {
   normalizeMonthKey,
   parseWorkspaceDateKey,
 } from "@/src/lib/workspace-dates";
-import {
-  parseBeneficiaryUserIdsFromForm,
-  parsePaidByUserIdFromForm,
-  validateEntryOwnership,
-} from "@/src/lib/entry-ownership";
+import { validateEntryOwnership } from "@/src/lib/entry-ownership";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import {
   createEntryFromNormalizedInput,
@@ -58,14 +55,7 @@ import { resolveEntryCategory } from "@/src/features/entries/repository";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
-import {
-  getDefaultPaidByUserId,
-  type WorkspaceMemberOption,
-} from "@/src/lib/workspace-members";
-import {
-  parseEntryPaymentModeFromForm,
-  type EntryPaymentModeValue,
-} from "@/src/lib/entry-payment-mode";
+import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import {
   getCurrentUser,
   getCurrentWorkspaceId,
@@ -166,53 +156,6 @@ function tryRevalidatePath(path: string) {
   } catch (error) {
     console.warn(`Failed to revalidate ${path}:`, error);
   }
-}
-
-function resolveEntryPaymentAndOwnership(
-  formData: FormData,
-  members: WorkspaceMemberOption[],
-): {
-  paymentMode: EntryPaymentModeValue;
-  ownershipInput: {
-    paidByUserId: string;
-    beneficiaryUserIds: string[];
-  };
-  errors: Record<string, string>;
-} {
-  const paymentMode = parseEntryPaymentModeFromForm(formData);
-
-  if (paymentMode !== "joint_account") {
-    return {
-      paymentMode,
-      ownershipInput: {
-        paidByUserId: parsePaidByUserIdFromForm(formData),
-        beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
-      },
-      errors: {},
-    };
-  }
-
-  if (members.length !== 2) {
-    return {
-      paymentMode,
-      ownershipInput: {
-        paidByUserId: parsePaidByUserIdFromForm(formData),
-        beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
-      },
-      errors: {
-        paymentMode: "Pagata insieme è disponibile solo nei workspace con due membri",
-      },
-    };
-  }
-
-  return {
-    paymentMode,
-    ownershipInput: {
-      paidByUserId: getDefaultPaidByUserId(members),
-      beneficiaryUserIds: members.map((member) => member.userId),
-    },
-    errors: {},
-  };
 }
 
 function logEntryLoadError(
