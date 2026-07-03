@@ -1,7 +1,7 @@
 import { getDaysInMonth } from "@/src/lib/workspace-dates";
 import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
-import { getDashboardSummary } from "@/src/actions/entries";
 import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
+import { computeBudgetMonthTotals } from "@/src/features/budget/month-totals";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import type {
   BudgetCategoryOption,
@@ -167,9 +167,8 @@ export async function buildCraftedBudgetProps(
   const monthKey = normalizeMonthKey(timeZone, monthKeyInput);
   const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
 
-  const [budgetData, monthSummary, entries] = await Promise.all([
+  const [budgetData, entries] = await Promise.all([
     getWorkspaceBudgetsAction(),
-    getDashboardSummary(monthKey),
     prisma.entry.findMany({
       where: {
         workspaceId,
@@ -188,6 +187,10 @@ export async function buildCraftedBudgetProps(
       },
     }),
   ]);
+
+  // The card totals come from the same month entries used for the per-category
+  // breakdown below, so no separate dashboard-summary query is needed.
+  const monthTotals = computeBudgetMonthTotals(entries as EntryForBudget[]);
 
   const monthlyBudgets = budgetData.budgets.filter(
     (budget) => budget.period === "monthly",
@@ -277,8 +280,8 @@ export async function buildCraftedBudgetProps(
     monthCode: formatMonthCode(monthDate, timeZone),
     monthOptions: buildMonthOptions(monthKey),
     totalBudget,
-    spent: round2(monthSummary.ordinarySpent ?? monthSummary.totalRealSpent),
-    avoided: round2(monthSummary.avoidedAmount),
+    spent: monthTotals.ordinarySpent,
+    avoided: monthTotals.avoidedAmount,
     daysInMonth: getDaysInMonthFromKey(monthKey),
     dayOfMonth: getDayOfMonth(monthKey, timeZone),
     categories,
