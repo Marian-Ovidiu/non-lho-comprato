@@ -4,16 +4,15 @@ import {
   isHabitScheduledForDate,
   parseActiveDays,
 } from "@/src/features/habits/schedule";
+import { buildEntryDataForOccurrence } from "@/src/features/habits/occurrence-entry";
 
 import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
 
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
-import { calculateEntryMoney } from "@/src/lib/entry-domain";
 import { upsertDefaultCategoryForWorkspace } from "@/src/features/categories/repository";
 import type { Prisma } from "@/src/lib/generated/prisma/client";
-import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
 import { resolveIsFirstEntryOfDayForHabitOccurrence } from "@/src/lib/entry-first-of-day";
@@ -31,9 +30,7 @@ import {
 } from "@/src/lib/workspace-context";
 import {
   getDefaultHabitTargetUserId,
-  getHabitTargetUserIds,
   normalizeHabitTargetScope,
-  type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 
 type HabitActionResult = {
@@ -221,18 +218,6 @@ function serializeTodayHabitOccurrence(
   };
 }
 
-type OccurrenceWithHabit = {
-  id: string;
-  date: Date;
-  habit: {
-    name: string;
-    categoryId: string;
-    amount: unknown;
-    targetScope: string;
-    targetUserId: string | null;
-  };
-};
-
 function tryRevalidatePaths() {
   for (const path of ["/", "/entries", "/habits", "/stats", "/budget", "/workspace/budgets", "/more"]) {
     try {
@@ -371,104 +356,6 @@ async function resolveCategory(categoryId: string, workspaceId: string) {
   }
 
   return category;
-}
-
-function buildEntryDataForOccurrence(
-  occurrence: OccurrenceWithHabit,
-  status: Exclude<HabitStatus, "pending">,
-  context: {
-    workspaceId: string;
-    currentUserId: string;
-    members: WorkspaceMemberOption[];
-  },
-) {
-  const amount = Number(occurrence.habit.amount);
-  const money =
-    status === "spent"
-      ? calculateEntryMoney({
-          mode: "spent",
-          savingContext: "none",
-          amountSpent: amount,
-        })
-      : status === "avoided"
-        ? calculateEntryMoney({
-            mode: "avoided",
-            comparisonAmount: amount,
-          })
-        : calculateEntryMoney({
-            mode: "spent",
-            savingContext: "none",
-            amountSpent: 0,
-          });
-  const resolvedBeneficiaries = getHabitTargetUserIds({
-    targetScope: occurrence.habit.targetScope,
-    targetUserId: occurrence.habit.targetUserId,
-    members: context.members,
-    currentUserId: context.currentUserId,
-  });
-  const paidByUserId = context.currentUserId;
-  const beneficiaryUserIds =
-    resolvedBeneficiaries.length > 0
-      ? resolvedBeneficiaries
-      : [context.currentUserId];
-  const sharedFields = {
-    workspaceId: context.workspaceId,
-    createdByUserId: context.currentUserId,
-    paidByUserId,
-    beneficiaries: {
-      create: beneficiaryUserIds.map((userId) => ({ userId })),
-    },
-    visibility: EntryVisibility.workspace,
-  };
-
-  if (status === "spent") {
-    return {
-      ...sharedFields,
-      title: occurrence.habit.name,
-      categoryId: occurrence.habit.categoryId,
-      realCost: toDecimalString(money.realCost),
-      alternativeCost: toDecimalString(money.alternativeCost),
-      savedAmount: toDecimalString(money.savedAmount),
-      mode: money.mode,
-      savingContext: money.savingContext,
-      date: occurrence.date,
-      note: null,
-      source: "habit" as const,
-      habitOccurrenceId: occurrence.id,
-    };
-  }
-
-  if (status === "avoided") {
-    return {
-      ...sharedFields,
-      title: occurrence.habit.name,
-      categoryId: occurrence.habit.categoryId,
-      realCost: toDecimalString(money.realCost),
-      alternativeCost: toDecimalString(money.alternativeCost),
-      savedAmount: toDecimalString(money.savedAmount),
-      mode: money.mode,
-      savingContext: money.savingContext,
-      date: occurrence.date,
-      note: null,
-      source: "habit" as const,
-      habitOccurrenceId: occurrence.id,
-    };
-  }
-
-  return {
-    ...sharedFields,
-    title: occurrence.habit.name,
-    categoryId: occurrence.habit.categoryId,
-    realCost: toDecimalString(money.realCost),
-    alternativeCost: toDecimalString(money.alternativeCost),
-    savedAmount: toDecimalString(money.savedAmount),
-    mode: money.mode,
-    savingContext: money.savingContext,
-    date: occurrence.date,
-    note: null,
-    source: "habit" as const,
-    habitOccurrenceId: occurrence.id,
-  };
 }
 
 async function syncOccurrenceStatus(
