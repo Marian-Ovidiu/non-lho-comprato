@@ -154,7 +154,7 @@ export async function getHomeDashboardMetrics() {
     summary: loadedSummary,
     todaySummary: loadedTodaySummary,
     workspaceBalance: loadedWorkspaceBalance,
-    goals: loadedGoals.filter((goal) => goal.isActive),
+    goals: loadedGoals.goals.filter((goal) => goal.isActive),
     todayHabits: loadedTodayHabits,
     pendingHabitsCount: loadedTodayHabits.filter(
       (occurrence) => occurrence.status === "pending",

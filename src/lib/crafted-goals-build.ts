@@ -18,6 +18,14 @@ export type CraftedGoalSource = {
   contributors?: string[];
 };
 
+export type CraftedGoalsSource = {
+  goals: CraftedGoalSource[];
+  /// Pool "evitato" del workspace: i goal condividono questo totale, quindi
+  /// il hero lo conta una sola volta invece di sommare i progressi per goal.
+  savedPool: number;
+  monthlyPace: number;
+};
+
 export type CraftedGoalRow = {
   id: string;
   title: string;
@@ -147,11 +155,11 @@ export function shortGoalDate(iso: string, language = "it") {
 }
 
 export function buildCraftedGoalsProps(
-  goals: CraftedGoalSource[],
+  source: CraftedGoalsSource,
   allocations: GoalAllocationFeedItem[] = [],
   language = "it",
 ): CraftedGoalsProps {
-  const sorted = [...goals].sort(
+  const sorted = [...source.goals].sort(
     (left, right) =>
       Number(right.isActive) - Number(left.isActive) ||
       Number(left.isCompleted) - Number(right.isCompleted) ||
@@ -162,9 +170,8 @@ export function buildCraftedGoalsProps(
   const rows = sorted.map((goal) =>
     mapGoal(goal, goal.id === featuredSource?.id, language),
   );
-  const totalSaved = round2(rows.reduce((sum, goal) => sum + goal.saved, 0));
+  const totalSaved = round2(Math.max(source.savedPool, 0));
   const totalTarget = round2(rows.reduce((sum, goal) => sum + goal.target, 0));
-  const activeRows = rows.filter((goal) => goal.status === "in-corso");
 
   return {
     goals: rows,
@@ -173,9 +180,12 @@ export function buildCraftedGoalsProps(
     hero: {
       totalSaved,
       totalTarget,
-      totalPct: totalTarget > 0 ? round2((totalSaved / totalTarget) * 100) : 0,
-      activePace: round2(activeRows.reduce((sum, goal) => sum + goal.monthlyPace, 0)),
-      remaining: round2(rows.reduce((sum, goal) => sum + goal.remaining, 0)),
+      totalPct:
+        totalTarget > 0
+          ? round2(Math.min((totalSaved / totalTarget) * 100, 100))
+          : 0,
+      activePace: round2(source.monthlyPace),
+      remaining: round2(Math.max(totalTarget - totalSaved, 0)),
       completedCount: rows.filter((goal) => goal.status === "completato").length,
     },
     counts: {

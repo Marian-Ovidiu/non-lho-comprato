@@ -36,6 +36,14 @@ type GoalWithProgress = {
   contributors: string[];
 };
 
+export type GoalsWithProgress = {
+  goals: GoalWithProgress[];
+  /// Pool "evitato" del workspace: ogni goal senza targetUserId misura questo
+  /// stesso totale, quindi i riepiloghi devono contarlo una sola volta da qui.
+  savedPool: number;
+  monthlyPace: number;
+};
+
 export type GoalAllocationFeedItem = {
   id: string;
   from: string;
@@ -172,7 +180,7 @@ export async function createGoal(
   }
 }
 
-export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
+export async function getGoalsWithProgress(): Promise<GoalsWithProgress> {
   const [workspaceId, timeZone, members] = await Promise.all([
     getCurrentWorkspaceId(),
     getCurrentWorkspaceTimezone(),
@@ -190,7 +198,7 @@ async function _cachedGoalsWithProgress(
   workspaceId: string,
   timeZone: string,
   contributors: string[],
-): Promise<GoalWithProgress[]> {
+): Promise<GoalsWithProgress> {
   "use cache";
   cacheTag(`goals:${workspaceId}`, `entries:${workspaceId}`);
   cacheLife("hours");
@@ -260,7 +268,7 @@ async function _cachedGoalsWithProgress(
       totalByUserId.set(row.userId, round2(toMetricNumber(row.total)));
     }
 
-    return goals.map((goal) => {
+    const goalsWithProgress = goals.map((goal) => {
       const targetAmount = round2(toNumber(goal.targetAmount));
       const progressAmount = getProgressAmount(goal.targetUserId, totalByUserId, totalAll);
       const progressPercent = getProgressPercent(progressAmount, targetAmount);
@@ -282,6 +290,12 @@ async function _cachedGoalsWithProgress(
         contributors,
       };
     });
+
+    return {
+      goals: goalsWithProgress,
+      savedPool: totalAll,
+      monthlyPace,
+    };
   } catch (error) {
     logAndRethrowDataLoadError("Failed to load goals", error);
   }

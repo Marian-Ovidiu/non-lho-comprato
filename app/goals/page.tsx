@@ -20,11 +20,15 @@ export const metadata: Metadata = {
 
 export default async function GoalsPage() {
   let loadError: string | null = null;
-  let goals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
+  let goalsData: Awaited<ReturnType<typeof getGoalsWithProgress>> = {
+    goals: [],
+    savedPool: 0,
+    monthlyPace: 0,
+  };
   let allocations: Awaited<ReturnType<typeof getGoalAllocationFeed>> = [];
 
   try {
-    [goals, allocations] = await Promise.all([
+    [goalsData, allocations] = await Promise.all([
       getGoalsWithProgress(),
       getGoalAllocationFeed(),
     ]);
@@ -36,7 +40,7 @@ export default async function GoalsPage() {
 
   const language = await getCurrentWorkspaceLanguage();
   const t = getTranslations(language);
-  const craftedProps = buildCraftedGoalsProps(goals, allocations, language);
+  const craftedProps = buildCraftedGoalsProps(goalsData, allocations, language);
 
   return (
     <main className="pb-6">
@@ -64,14 +68,14 @@ export default async function GoalsPage() {
         </div>
       ) : null}
 
-      {!loadError && goals.length === 0 ? (
+      {!loadError && goalsData.goals.length === 0 ? (
         <CraftedGoalsEmptyState />
       ) : !loadError ? (
         <CraftedGoals {...craftedProps} />
       ) : null}
 
       <section id="nuovo-obiettivo" className="-mx-4 px-5 py-6 sm:-mx-6 lg:-mx-8">
-        {!loadError && goals.length > 0 ? <Rule className="mb-6" /> : null}
+        {!loadError && goalsData.goals.length > 0 ? <Rule className="mb-6" /> : null}
         <Label className="mb-4 block">{t.goals.newGoalLabel}</Label>
         <CraftedGoalForm />
       </section>
