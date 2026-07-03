@@ -280,6 +280,28 @@ export function getMonthRangeForMonthKey(
 }
 
 /**
+ * Counts the calendar months from fromMonthKey to toMonthKey, inclusive on
+ * both ends ("2026-01" → "2026-07" = 7). Months without activity count too,
+ * so averages over the result are not inflated. Returns 0 for invalid keys
+ * or when the range is reversed.
+ */
+export function countCalendarMonthsInclusive(
+  fromMonthKey: string,
+  toMonthKey: string,
+): number {
+  const from = parseMonthKey(fromMonthKey);
+  const to = parseMonthKey(toMonthKey);
+
+  if (!from || !to) {
+    return 0;
+  }
+
+  const months = (to.year - from.year) * 12 + (to.month - from.month) + 1;
+
+  return months > 0 ? months : 0;
+}
+
+/**
  * Counts how many times a given day-of-month occurs in [fromDateKey,
  * toDateKeyExclusive). Months too short for the day (e.g. the 31st in
  * February) contribute no occurrence.

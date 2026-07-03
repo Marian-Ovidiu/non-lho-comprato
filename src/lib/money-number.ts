@@ -3,6 +3,39 @@
  * round2/toMoneyNumber pair that used to be copy-pasted per module.
  */
 
+/**
+ * Normalizes a user-typed money string to a plain dot-decimal string, or
+ * null when it is not a number. Handles both locale formats ("1.234,56" and
+ * "1,234.56") plus currency symbols/spaces; a single ambiguous separator is
+ * read as decimal ("1,234" → "1.234").
+ */
+export function normalizeMoneyInputString(raw: string): string | null {
+  const cleaned = raw.replace(/[^\d,.-]/g, "").trim();
+
+  if (!cleaned) {
+    return null;
+  }
+
+  const normalized =
+    cleaned.includes(",") && cleaned.includes(".")
+      ? cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")
+        ? cleaned.replace(/\./g, "").replace(",", ".")
+        : cleaned.replace(/,/g, "")
+      : cleaned.replace(",", ".");
+
+  if (
+    !/^[-+]?\d*(\.\d+)?$/.test(normalized) ||
+    normalized === "+" ||
+    normalized === "-" ||
+    normalized === "." ||
+    normalized === "-."
+  ) {
+    return null;
+  }
+
+  return normalized;
+}
+
 /** Rounds to 2 decimals, normalizing -0 to 0. */
 export function round2(value: number): number {
   const rounded = Math.round((value + Number.EPSILON) * 100) / 100;

@@ -1,6 +1,10 @@
 "use server";
 
-import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
+import {
+  normalizeMoneyInputString,
+  round2,
+  toMoneyNumber as toNumber,
+} from "@/src/lib/money-number";
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
 import { Prisma } from "@/src/lib/generated/prisma/client";
@@ -12,7 +16,11 @@ import {
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
-import { getDateKey } from "@/src/lib/workspace-dates";
+import {
+  countCalendarMonthsInclusive,
+  getDateKey,
+  getMonthKey,
+} from "@/src/lib/workspace-dates";
 
 type GoalActionResult = {
   success: boolean;
@@ -73,7 +81,8 @@ function getTargetAmount(formData: FormData): {
     return { value: Number.NaN, error: "Questo campo è obbligatorio" };
   }
 
-  const value = Number(raw.replace(",", "."));
+  const normalized = normalizeMoneyInputString(raw);
+  const value = normalized === null ? Number.NaN : Number(normalized);
 
   if (!Number.isFinite(value)) {
     return { value: Number.NaN, error: "Inserisci un numero valido" };
@@ -190,14 +199,21 @@ export async function getGoalsWithProgress(): Promise<GoalsWithProgress> {
     members.length > 0
       ? members.map((member) => member.label.toLowerCase())
       : ["io"];
+  const currentMonthKey = getMonthKey(new Date(), timeZone);
 
-  return _cachedGoalsWithProgress(workspaceId, timeZone, contributors);
+  return _cachedGoalsWithProgress(
+    workspaceId,
+    timeZone,
+    contributors,
+    currentMonthKey,
+  );
 }
 
 async function _cachedGoalsWithProgress(
   workspaceId: string,
   timeZone: string,
   contributors: string[],
+  currentMonthKey: string,
 ): Promise<GoalsWithProgress> {
   "use cache";
   cacheTag(`goals:${workspaceId}`, `entries:${workspaceId}`);
@@ -261,7 +277,12 @@ async function _cachedGoalsWithProgress(
       (sum, row) => sum + toMetricNumber(row.total),
       0,
     );
-    const observedMonths = Math.max(monthlyRows.length, 1);
+    // Average over every calendar month since the first avoided entry, so
+    // months with zero savings pull the pace down instead of being skipped.
+    const firstMonthKey = monthlyRows[0]?.month;
+    const observedMonths = firstMonthKey
+      ? Math.max(countCalendarMonthsInclusive(firstMonthKey, currentMonthKey), 1)
+      : 1;
     const monthlyPace = round2(totalMonthlyAvoided / observedMonths);
 
     for (const row of userRows) {

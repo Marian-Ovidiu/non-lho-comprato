@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  countCalendarMonthsInclusive,
   countDayOfMonthOccurrences,
   getDateKey,
   isDateKey,
@@ -120,5 +121,23 @@ describe("countDayOfMonthOccurrences", () => {
     assert.equal(countDayOfMonthOccurrences("banana", "2026-07-01", 5), 0);
     assert.equal(countDayOfMonthOccurrences("2026-01-01", "2026-07-01", 0), 0);
     assert.equal(countDayOfMonthOccurrences("2026-01-01", "2026-07-01", 32), 0);
+  });
+});
+
+describe("countCalendarMonthsInclusive", () => {
+  it("counts both endpoints", () => {
+    assert.equal(countCalendarMonthsInclusive("2026-01", "2026-07"), 7);
+    assert.equal(countCalendarMonthsInclusive("2026-07", "2026-07"), 1);
+  });
+
+  it("spans year boundaries", () => {
+    assert.equal(countCalendarMonthsInclusive("2025-12", "2026-01"), 2);
+    assert.equal(countCalendarMonthsInclusive("2024-11", "2026-02"), 16);
+  });
+
+  it("returns zero for reversed ranges or invalid keys", () => {
+    assert.equal(countCalendarMonthsInclusive("2026-07", "2026-01"), 0);
+    assert.equal(countCalendarMonthsInclusive("banana", "2026-07"), 0);
+    assert.equal(countCalendarMonthsInclusive("2026-01", "2026-13"), 0);
   });
 });

@@ -1,6 +1,7 @@
 import { Prisma } from "@/src/lib/generated/prisma/client";
 
 import { shouldQueryEncryptedTextFields } from "@/src/lib/field-encryption";
+import { normalizeMoneyInputString } from "@/src/lib/money-number";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
 export type EntriesKindFilter = "all" | "spesa" | "evitata" | "confronto";
@@ -31,20 +32,9 @@ export function isLikelyImportedNoise(
 }
 
 export function parseSimpleAmountQuery(query: string): Prisma.Decimal | null {
-  const cleaned = query.replace(/[^\d,.-]/g, "").trim();
+  const normalized = normalizeMoneyInputString(query);
 
-  if (!cleaned) {
-    return null;
-  }
-
-  const normalized =
-    cleaned.includes(",") && cleaned.includes(".")
-      ? cleaned.lastIndexOf(",") > cleaned.lastIndexOf(".")
-        ? cleaned.replace(/\./g, "").replace(",", ".")
-        : cleaned.replace(/,/g, "")
-      : cleaned.replace(",", ".");
-
-  if (!/^[-+]?\d*(\.\d+)?$/.test(normalized) || normalized === "+" || normalized === "-" || normalized === "." || normalized === "-.") {
+  if (normalized === null) {
     return null;
   }
 
