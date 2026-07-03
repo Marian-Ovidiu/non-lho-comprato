@@ -57,14 +57,33 @@ async function resetInviteE2EState() {
   });
 }
 
+// Loading the home finalizes past pending habit occurrences into habit-sourced
+// entries (app/page.tsx). Across days these accumulate and crowd out the
+// seeded manual entries in the "recent movements" list, so tests that assert
+// on those entries need a deterministic starting point.
+async function resetHabitEntryState() {
+  await withE2EDatabase(async (pool) => {
+    await pool.query(
+      'DELETE FROM "Entry" WHERE "workspaceId" = $1 AND "source" = $2',
+      [E2E_WORKSPACE_ID, "habit"],
+    );
+    await pool.query(
+      'DELETE FROM "HabitOccurrence" WHERE "habitId" IN (SELECT "id" FROM "Habit" WHERE "workspaceId" = $1)',
+      [E2E_WORKSPACE_ID],
+    );
+  });
+}
+
 test.beforeAll(async () => {
   await deleteCreatedE2EEntries();
   await resetInviteE2EState();
+  await resetHabitEntryState();
 });
 
 test.afterAll(async () => {
   await deleteCreatedE2EEntries();
   await resetInviteE2EState();
+  await resetHabitEntryState();
 });
 
 async function authenticateE2EUser(
