@@ -1,11 +1,15 @@
 import {
   ArrowUp,
   Bike,
+  Camera,
   Check,
   Cigarette,
   Coffee,
   Delete,
+  GraduationCap,
+  Home,
   Martini,
+  PiggyBank,
   Plane,
   Receipt,
   Search,
@@ -23,7 +27,11 @@ export type CraftedIconName =
   | "bag"
   | "fork"
   | "bike"
+  | "camera"
   | "flame"
+  | "graduation"
+  | "home"
+  | "piggy"
   | "target"
   | "arrowUp"
   | "plane"
@@ -50,6 +58,10 @@ const LUCIDE_MAP: Record<
   bag: ShoppingBag,
   fork: Utensils,
   bike: Bike,
+  camera: Camera,
+  graduation: GraduationCap,
+  home: Home,
+  piggy: PiggyBank,
   target: Target,
   arrowUp: ArrowUp,
   plane: Plane,

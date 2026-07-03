@@ -4,13 +4,15 @@ import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
 import { Prisma } from "@/src/lib/generated/prisma/client";
-import {
-  entryNetImpactSql,
-  toMetricNumber,
-} from "@/src/lib/entry-metrics-query";
+import { toMetricNumber } from "@/src/lib/entry-metrics-query";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import { prisma } from "@/src/lib/prisma";
-import { getCurrentWorkspaceId } from "@/src/lib/workspace-context";
+import {
+  getCurrentWorkspaceId,
+  getCurrentWorkspaceMembers,
+  getCurrentWorkspaceTimezone,
+} from "@/src/lib/workspace-context";
+import { getDateKey } from "@/src/lib/workspace-dates";
 
 type GoalActionResult = {
   success: boolean;
@@ -30,6 +32,18 @@ type GoalWithProgress = {
   progressPercent: number;
   remainingAmount: number;
   isCompleted: boolean;
+  monthlyPace: number;
+  contributors: string[];
+};
+
+export type GoalAllocationFeedItem = {
+  id: string;
+  from: string;
+  amount: number;
+  goalId: string | null;
+  goalTitle: string | null;
+  goalIconTitle: string | null;
+  date: string;
 };
 
 function getText(formData: FormData, name: string): string {
@@ -159,17 +173,30 @@ export async function createGoal(
 }
 
 export async function getGoalsWithProgress(): Promise<GoalWithProgress[]> {
-  const workspaceId = await getCurrentWorkspaceId();
-  return _cachedGoalsWithProgress(workspaceId);
+  const [workspaceId, timeZone, members] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+    getCurrentWorkspaceMembers(),
+  ]);
+  const contributors =
+    members.length > 0
+      ? members.map((member) => member.label.toLowerCase())
+      : ["io"];
+
+  return _cachedGoalsWithProgress(workspaceId, timeZone, contributors);
 }
 
-async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithProgress[]> {
+async function _cachedGoalsWithProgress(
+  workspaceId: string,
+  timeZone: string,
+  contributors: string[],
+): Promise<GoalWithProgress[]> {
   "use cache";
   cacheTag(`goals:${workspaceId}`, `entries:${workspaceId}`);
   cacheLife("hours");
 
   try {
-    const [goals, totalRows, userRows] = await Promise.all([
+    const [goals, totalRows, userRows, monthlyRows] = await Promise.all([
       prisma.goal.findMany({
         where: { workspaceId },
         select: {
@@ -187,17 +214,19 @@ async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithPr
         ],
       }),
       prisma.$queryRaw<Array<{ totalAll: unknown }>>(Prisma.sql`
-        SELECT COALESCE(SUM(GREATEST(${entryNetImpactSql}, 0::numeric)), 0)::text AS "totalAll"
+        SELECT COALESCE(SUM(e."alternativeCost"), 0)::text AS "totalAll"
         FROM "Entry" e
         WHERE e."workspaceId" = ${workspaceId}
+          AND e."mode"::text = 'avoided'
       `),
       prisma.$queryRaw<Array<{ userId: string; total: unknown }>>(Prisma.sql`
         SELECT
           eb."userId",
-          COALESCE(SUM(GREATEST(${entryNetImpactSql}, 0::numeric)), 0)::text AS "total"
+          COALESCE(SUM(e."alternativeCost"), 0)::text AS "total"
         FROM "Entry" e
         INNER JOIN "EntryBeneficiary" eb ON eb."entryId" = e."id"
         WHERE e."workspaceId" = ${workspaceId}
+          AND e."mode"::text = 'avoided'
           AND NOT EXISTS (
             SELECT 1
             FROM "EntryBeneficiary" other
@@ -206,10 +235,26 @@ async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithPr
           )
         GROUP BY eb."userId"
       `),
+      prisma.$queryRaw<Array<{ month: string; total: unknown }>>(Prisma.sql`
+        SELECT
+          to_char((e."date" AT TIME ZONE 'UTC') AT TIME ZONE ${timeZone}, 'YYYY-MM') AS "month",
+          COALESCE(SUM(e."alternativeCost"), 0)::text AS "total"
+        FROM "Entry" e
+        WHERE e."workspaceId" = ${workspaceId}
+          AND e."mode"::text = 'avoided'
+        GROUP BY "month"
+        ORDER BY "month" ASC
+      `),
     ]);
 
     const totalByUserId = new Map<string, number>();
     const totalAll = round2(toMetricNumber(totalRows[0]?.totalAll));
+    const totalMonthlyAvoided = monthlyRows.reduce(
+      (sum, row) => sum + toMetricNumber(row.total),
+      0,
+    );
+    const observedMonths = Math.max(monthlyRows.length, 1);
+    const monthlyPace = round2(totalMonthlyAvoided / observedMonths);
 
     for (const row of userRows) {
       totalByUserId.set(row.userId, round2(toMetricNumber(row.total)));
@@ -233,10 +278,78 @@ async function _cachedGoalsWithProgress(workspaceId: string): Promise<GoalWithPr
         progressPercent,
         remainingAmount,
         isCompleted: targetAmount > 0 && progressAmount >= targetAmount,
+        monthlyPace,
+        contributors,
       };
     });
   } catch (error) {
     logAndRethrowDataLoadError("Failed to load goals", error);
+  }
+}
+
+export async function getGoalAllocationFeed(): Promise<GoalAllocationFeedItem[]> {
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+
+  return _cachedGoalAllocationFeed(workspaceId, timeZone);
+}
+
+async function _cachedGoalAllocationFeed(
+  workspaceId: string,
+  timeZone: string,
+): Promise<GoalAllocationFeedItem[]> {
+  "use cache";
+  cacheTag(`goals:${workspaceId}`, `entries:${workspaceId}`);
+  cacheLife("hours");
+
+  try {
+    const [goals, entries] = await Promise.all([
+      prisma.goal.findMany({
+        where: { workspaceId },
+        select: {
+          id: true,
+          title: true,
+          isActive: true,
+          targetAmount: true,
+          createdAt: true,
+        },
+        orderBy: [
+          { isActive: "desc" },
+          { createdAt: "desc" },
+        ],
+      }),
+      prisma.entry.findMany({
+        where: {
+          workspaceId,
+          mode: "avoided",
+        },
+        select: {
+          id: true,
+          title: true,
+          alternativeCost: true,
+          date: true,
+        },
+        orderBy: {
+          date: "desc",
+        },
+        take: 5,
+      }),
+    ]);
+    const targetGoal = goals.find((goal) => goal.isActive) ?? goals[0] ?? null;
+
+    return entries.map((entry) => ({
+      id: entry.id,
+      from: entry.title,
+      amount: round2(toNumber(entry.alternativeCost)),
+      goalId: targetGoal?.id ?? null,
+      goalTitle: targetGoal?.title ?? null,
+      goalIconTitle: targetGoal?.title ?? null,
+      date: getDateKey(entry.date, timeZone),
+    }));
+  } catch (error) {
+    logAndRethrowDataLoadError("Failed to load goal allocation feed", error);
   }
 }
 

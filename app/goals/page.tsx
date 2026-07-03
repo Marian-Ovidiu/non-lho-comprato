@@ -1,9 +1,9 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { unstable_rethrow } from "next/navigation";
 import { Plus } from "lucide-react";
 
-import { getGoalsWithProgress } from "@/src/actions/goals";
-import { getMonthlyStats } from "@/src/actions/stats";
+import { getGoalAllocationFeed, getGoalsWithProgress } from "@/src/actions/goals";
 import { CraftedGoalForm } from "@/src/components/goals/crafted-goal-form";
 import { CraftedGoals } from "@/src/components/goals/crafted-goals";
 import { CraftedGoalsEmptyState } from "@/src/components/goals/crafted-goals-empty-state";
@@ -15,38 +15,37 @@ import { getCurrentWorkspaceCurrency, getCurrentWorkspaceLanguage } from "@/src/
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 import { getTranslations } from "@/src/lib/i18n";
 
+export const metadata: Metadata = {
+  title: "Obiettivi · Non l'ho comprato",
+};
 
 export default async function GoalsPage() {
   let loadError: string | null = null;
-  let monthlyStatsError: string | null = null;
   let goals: Awaited<ReturnType<typeof getGoalsWithProgress>> = [];
-  let monthlyStats: Awaited<ReturnType<typeof getMonthlyStats>> = [];
+  let allocations: Awaited<ReturnType<typeof getGoalAllocationFeed>> = [];
 
   try {
-    goals = await getGoalsWithProgress();
+    [goals, allocations] = await Promise.all([
+      getGoalsWithProgress(),
+      getGoalAllocationFeed(),
+    ]);
   } catch (error) {
     unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load goals page:", error);
   }
 
-  if (!loadError) {
-    try {
-      monthlyStats = await getMonthlyStats();
-    } catch (error) {
-      unstable_rethrow(error);
-      monthlyStatsError = formatEntryLoadError(error);
-      console.error("Failed to load goals monthly stats:", error);
-    }
-  }
-
-  const monthSaved = monthlyStats.at(-1)?.totalSaved ?? 0;
   const [currency, language] = await Promise.all([
     getCurrentWorkspaceCurrency(),
     getCurrentWorkspaceLanguage(),
   ]);
   const t = getTranslations(language);
-  const craftedProps = buildCraftedGoalsProps(goals, monthSaved, getCurrencySymbol(currency), language);
+  const craftedProps = buildCraftedGoalsProps(
+    goals,
+    allocations,
+    getCurrencySymbol(currency),
+    language,
+  );
 
   return (
     <main className="pb-6">
@@ -70,15 +69,6 @@ export default async function GoalsPage() {
           <DataLoadErrorBanner
             title={t.goals.loadError}
             message={loadError}
-          />
-        </div>
-      ) : null}
-
-      {monthlyStatsError ? (
-        <div className="px-5 pb-4">
-          <DataLoadErrorBanner
-            title={t.goals.monthlyStatsError}
-            message={monthlyStatsError}
           />
         </div>
       ) : null}
