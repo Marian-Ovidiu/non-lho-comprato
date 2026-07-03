@@ -1,6 +1,14 @@
 "use server";
 
 import {
+  serializeEntry,
+  serializeEntryEdit,
+  type EntryWithCategory,
+  type SerializableEntry,
+  type SerializableEntryEdit,
+} from "@/src/features/entries/serialize";
+
+import {
   buildEntriesKindWhere,
   buildEntriesSearchWhere,
   isLikelyImportedNoise,
@@ -16,11 +24,6 @@ import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 
 import { mergeCategoryOptions } from "@/src/lib/categories";
-import {
-  toEntryMoneyView,
-  type EntryMode,
-  type EntrySavingContext,
-} from "@/src/lib/entry-domain";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import {
   decryptOptionalText,
@@ -57,12 +60,9 @@ import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
 import {
   getDefaultPaidByUserId,
-  getMemberLabel,
-  resolveEntryPeopleFromRecord,
   type WorkspaceMemberOption,
 } from "@/src/lib/workspace-members";
 import {
-  normalizeEntryPaymentMode,
   parseEntryPaymentModeFromForm,
   type EntryPaymentModeValue,
 } from "@/src/lib/entry-payment-mode";
@@ -86,84 +86,6 @@ import {
   type ExpenseSuggestionResult,
 } from "@/src/lib/expense-suggestion";
 import { isWorkspaceDebugEnabled, logWorkspaceDebug } from "@/src/lib/workspace-debug";
-
-type EntryWithCategory = {
-  id: string;
-  title: string;
-  categoryId: string;
-  realCost: unknown;
-  alternativeCost: unknown;
-  savedAmount: unknown;
-  mode: unknown;
-  savingContext: unknown;
-  paymentMode: unknown;
-  date: Date;
-  note: string | null;
-  source: string;
-  beneficiaries: { userId: string }[];
-  paidByUserId: string | null;
-  habitOccurrenceId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    color: string | null;
-    icon: string | null;
-  };
-};
-
-type SerializableEntry = {
-  id: string;
-  title: string;
-  categoryId: string;
-  mode: EntryMode;
-  savingContext: EntrySavingContext;
-  paymentMode: EntryPaymentModeValue;
-  realCost: number;
-  alternativeCost: number;
-  savedAmount: number;
-  amountSpent: number;
-  comparisonAmount: number;
-  savingImpact: number;
-  date: string;
-  note: string | null;
-  source: string;
-  paidByUserId: string;
-  paidByLabel: string | null;
-  beneficiaryUserIds: string[];
-  habitOccurrenceId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  category: {
-    id: string;
-    name: string;
-    slug: string;
-    color: string | null;
-    icon: string | null;
-  };
-};
-
-type SerializableEntryEdit = {
-  id: string;
-  title: string;
-  categoryId: string;
-  mode: EntryMode;
-  savingContext: EntrySavingContext;
-  paymentMode: EntryPaymentModeValue;
-  realCost: number;
-  alternativeCost: number;
-  savedAmount: number;
-  amountSpent: number;
-  comparisonAmount: number;
-  savingImpact: number;
-  date: string;
-  note: string | null;
-  source: string;
-  paidByUserId: string;
-  beneficiaryUserIds: string[];
-};
 
 type MonthlySummary = {
   // Legacy fields kept for caller compatibility
@@ -396,45 +318,6 @@ async function findExpenseSuggestionCandidates(
     }));
 }
 
-function serializeEntry(
-  entry: EntryWithCategory,
-  members: WorkspaceMemberOption[],
-): SerializableEntry {
-  const people = resolveEntryPeopleFromRecord(entry, members);
-  const money = toEntryMoneyView(entry);
-
-  return {
-    id: entry.id,
-    title: entry.title,
-    categoryId: entry.categoryId,
-    mode: money.mode,
-    savingContext: money.savingContext,
-    paymentMode: normalizeEntryPaymentMode(entry.paymentMode),
-    realCost: money.realCost,
-    alternativeCost: money.alternativeCost,
-    savedAmount: money.savedAmount,
-    amountSpent: money.amountSpent,
-    comparisonAmount: money.comparisonAmount,
-    savingImpact: money.savingImpact,
-    date: entry.date.toISOString(),
-    note: decryptOptionalText(entry.note),
-    source: entry.source,
-    paidByUserId: people.paidByUserId,
-    paidByLabel: getMemberLabel(members, people.paidByUserId),
-    beneficiaryUserIds: people.beneficiaryUserIds,
-    habitOccurrenceId: entry.habitOccurrenceId,
-    createdAt: entry.createdAt.toISOString(),
-    updatedAt: entry.updatedAt.toISOString(),
-    category: {
-      id: entry.category.id,
-      name: entry.category.name,
-      slug: entry.category.slug,
-      color: entry.category.color,
-      icon: entry.category.icon,
-    },
-  };
-}
-
 export async function getEntriesPage(
   options?: EntriesPageOptions,
 ): Promise<EntriesPageResult> {
@@ -529,28 +412,7 @@ export async function getEntryById(
     }
 
     const members = await getCurrentWorkspaceMembers();
-    const people = resolveEntryPeopleFromRecord(entry, members);
-    const money = toEntryMoneyView(entry);
-
-    return {
-      id: entry.id,
-      title: entry.title,
-      categoryId: entry.categoryId,
-      mode: money.mode,
-      savingContext: money.savingContext,
-      paymentMode: normalizeEntryPaymentMode(entry.paymentMode),
-      realCost: money.realCost,
-      alternativeCost: money.alternativeCost,
-      savedAmount: money.savedAmount,
-      amountSpent: money.amountSpent,
-      comparisonAmount: money.comparisonAmount,
-      savingImpact: money.savingImpact,
-      date: entry.date.toISOString(),
-      note: decryptOptionalText(entry.note),
-      source: entry.source,
-      paidByUserId: people.paidByUserId,
-      beneficiaryUserIds: people.beneficiaryUserIds,
-    };
+    return serializeEntryEdit(entry, members);
   } catch (error) {
     logEntryLoadError("getEntryById", error, { entryId: id });
     throw error;
