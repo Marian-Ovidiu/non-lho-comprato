@@ -8,7 +8,6 @@ import {
 } from "@/src/lib/crafted-goals-build";
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { getDateKey } from "@/src/lib/workspace-dates";
-import { getCurrencySymbol } from "@/src/lib/workspace-currency";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
@@ -195,7 +194,7 @@ export function buildCraftedDashboardProps(input: {
       progressPercent: goal.progressPercent,
       note:
         index === 0
-          ? buildFeaturedGoalNote(goal, getCurrencySymbol(input.currency), input.language)
+          ? buildFeaturedGoalNote(goal, input.language)
           : buildSecondaryGoalNote(goal, input.language),
       icon: getGoalCraftedIcon(goal.title),
     })),

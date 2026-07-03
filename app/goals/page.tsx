@@ -11,8 +11,7 @@ import { Label, Rule } from "@/components/crafted";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { buildCraftedGoalsProps } from "@/src/lib/crafted-goals-build";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
-import { getCurrentWorkspaceCurrency, getCurrentWorkspaceLanguage } from "@/src/lib/workspace-context";
-import { getCurrencySymbol } from "@/src/lib/workspace-currency";
+import { getCurrentWorkspaceLanguage } from "@/src/lib/workspace-context";
 import { getTranslations } from "@/src/lib/i18n";
 
 export const metadata: Metadata = {
@@ -35,17 +34,9 @@ export default async function GoalsPage() {
     console.error("Failed to load goals page:", error);
   }
 
-  const [currency, language] = await Promise.all([
-    getCurrentWorkspaceCurrency(),
-    getCurrentWorkspaceLanguage(),
-  ]);
+  const language = await getCurrentWorkspaceLanguage();
   const t = getTranslations(language);
-  const craftedProps = buildCraftedGoalsProps(
-    goals,
-    allocations,
-    getCurrencySymbol(currency),
-    language,
-  );
+  const craftedProps = buildCraftedGoalsProps(goals, allocations, language);
 
   return (
     <main className="pb-6">

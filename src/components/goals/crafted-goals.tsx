@@ -157,7 +157,7 @@ function FeaturedCard({
                 {formatEUR(goal.saved, currencySymbol)}
               </Mono>
               <Serif className="mt-2 block text-[13px] text-ink-3">
-                su {formatEUR(goal.target, currencySymbol)} · entro {shortGoalDate(goal.deadline)}
+                su {formatEUR(goal.target, currencySymbol)}
               </Serif>
             </div>
             <Mono className="shrink-0 text-right text-xs text-muted-foreground">
@@ -184,13 +184,7 @@ function FeaturedCard({
   );
 }
 
-function GoalRow({
-  goal,
-  currencySymbol,
-}: {
-  goal: CraftedGoalRow;
-  currencySymbol: string;
-}) {
+function GoalRow({ goal }: { goal: CraftedGoalRow }) {
   return (
     <button
       type="button"
@@ -206,7 +200,7 @@ function GoalRow({
             <StatusPill status={goal.status} />
           </div>
           <p className="truncate text-[11px] text-ink-3">
-            {goal.contributors.join(", ")} · entro {shortGoalDate(goal.deadline)}
+            {goal.contributors.join(", ")}
           </p>
         </div>
         <div className="text-right">
@@ -223,14 +217,9 @@ function GoalRow({
           className="bg-line-soft"
           indicatorClassName={progressTone(goal.status)}
         />
-        <div className="mt-2 flex items-center justify-between gap-3">
-          <Serif className="truncate text-[13px] text-ink-3">{goal.note}</Serif>
-          <Mono className="shrink-0 text-[11px] text-muted-foreground">
-            {goal.onTrack || goal.status !== "in-corso"
-              ? `${goal.monthsLeft} mesi`
-              : `${formatEUR(goal.neededPerMonth, currencySymbol)}/mese`}
-          </Mono>
-        </div>
+        <Serif className="mt-2 block truncate text-[13px] text-ink-3">
+          {goal.note}
+        </Serif>
       </div>
     </button>
   );
@@ -357,7 +346,7 @@ export function CraftedGoals({
               key={goal.id}
               className={cn(index < visibleGoals.length - 1 && "border-b border-line-soft")}
             >
-              <GoalRow goal={goal} currencySymbol={currencySymbol} />
+              <GoalRow goal={goal} />
             </div>
           ))
         ) : (
