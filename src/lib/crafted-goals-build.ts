@@ -1,6 +1,6 @@
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
-import type { GoalAllocationFeedItem } from "@/src/actions/goals";
+import type { RecentSavingFeedItem } from "@/src/actions/goals";
 
 export type GoalStatus = "in-corso" | "pausa" | "completato";
 
@@ -41,20 +41,17 @@ export type CraftedGoalRow = {
   remaining: number;
 };
 
-export type CraftedAllocationRow = {
+export type CraftedSavingRow = {
   id: string;
   from: string;
   amount: number;
-  goalId: string | null;
-  goalName: string;
-  goalIcon: ReturnType<typeof getGoalCraftedIcon>;
   date: string;
 };
 
 export type CraftedGoalsProps = {
   goals: CraftedGoalRow[];
   featured: CraftedGoalRow | null;
-  allocations: CraftedAllocationRow[];
+  savings: CraftedSavingRow[];
   hero: {
     totalSaved: number;
     totalTarget: number;
@@ -128,21 +125,6 @@ function mapGoal(
   };
 }
 
-function mapAllocation(
-  allocation: GoalAllocationFeedItem,
-): CraftedAllocationRow {
-  const goalName = allocation.goalTitle ?? "Obiettivi";
-
-  return {
-    id: allocation.id,
-    from: allocation.from,
-    amount: allocation.amount,
-    goalId: allocation.goalId,
-    goalName,
-    goalIcon: getGoalCraftedIcon(allocation.goalIconTitle ?? goalName),
-    date: allocation.date,
-  };
-}
 
 export function shortGoalDate(iso: string, language = "it") {
   return new Intl.DateTimeFormat(languageToLocale(language), {
@@ -156,7 +138,7 @@ export function shortGoalDate(iso: string, language = "it") {
 
 export function buildCraftedGoalsProps(
   source: CraftedGoalsSource,
-  allocations: GoalAllocationFeedItem[] = [],
+  savings: RecentSavingFeedItem[] = [],
   language = "it",
 ): CraftedGoalsProps {
   const sorted = [...source.goals].sort(
@@ -176,7 +158,7 @@ export function buildCraftedGoalsProps(
   return {
     goals: rows,
     featured: rows.find((goal) => goal.featured) ?? null,
-    allocations: allocations.map(mapAllocation),
+    savings,
     hero: {
       totalSaved,
       totalTarget,

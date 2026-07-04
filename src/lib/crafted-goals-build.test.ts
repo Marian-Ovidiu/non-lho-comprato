@@ -87,6 +87,17 @@ describe("buildCraftedGoalsProps", () => {
     });
   });
 
+  it("passes savings through without goal attribution", () => {
+    const props = buildCraftedGoalsProps(
+      { goals: [goal()], savedPool: 50, monthlyPace: 10 },
+      [{ id: "e1", from: "Caffè", amount: 3.5, date: "2026-06-10" }],
+    );
+
+    assert.deepEqual(props.savings, [
+      { id: "e1", from: "Caffè", amount: 3.5, date: "2026-06-10" },
+    ]);
+  });
+
   it("returns an empty hero for no goals", () => {
     const props = buildCraftedGoalsProps({
       goals: [],

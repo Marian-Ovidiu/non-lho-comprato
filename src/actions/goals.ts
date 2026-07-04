@@ -52,13 +52,10 @@ export type GoalsWithProgress = {
   monthlyPace: number;
 };
 
-export type GoalAllocationFeedItem = {
+export type RecentSavingFeedItem = {
   id: string;
   from: string;
   amount: number;
-  goalId: string | null;
-  goalTitle: string | null;
-  goalIconTitle: string | null;
   date: string;
 };
 
@@ -322,69 +319,49 @@ async function _cachedGoalsWithProgress(
   }
 }
 
-export async function getGoalAllocationFeed(): Promise<GoalAllocationFeedItem[]> {
+export async function getRecentSavingsFeed(): Promise<RecentSavingFeedItem[]> {
   const [workspaceId, timeZone] = await Promise.all([
     getCurrentWorkspaceId(),
     getCurrentWorkspaceTimezone(),
   ]);
 
-  return _cachedGoalAllocationFeed(workspaceId, timeZone);
+  return _cachedRecentSavingsFeed(workspaceId, timeZone);
 }
 
-async function _cachedGoalAllocationFeed(
+async function _cachedRecentSavingsFeed(
   workspaceId: string,
   timeZone: string,
-): Promise<GoalAllocationFeedItem[]> {
+): Promise<RecentSavingFeedItem[]> {
   "use cache";
-  cacheTag(`goals:${workspaceId}`, `entries:${workspaceId}`);
+  cacheTag(`entries:${workspaceId}`);
   cacheLife("hours");
 
   try {
-    const [goals, entries] = await Promise.all([
-      prisma.goal.findMany({
-        where: { workspaceId },
-        select: {
-          id: true,
-          title: true,
-          isActive: true,
-          targetAmount: true,
-          createdAt: true,
-        },
-        orderBy: [
-          { isActive: "desc" },
-          { createdAt: "desc" },
-        ],
-      }),
-      prisma.entry.findMany({
-        where: {
-          workspaceId,
-          mode: "avoided",
-        },
-        select: {
-          id: true,
-          title: true,
-          alternativeCost: true,
-          date: true,
-        },
-        orderBy: {
-          date: "desc",
-        },
-        take: 5,
-      }),
-    ]);
-    const targetGoal = goals.find((goal) => goal.isActive) ?? goals[0] ?? null;
+    const entries = await prisma.entry.findMany({
+      where: {
+        workspaceId,
+        mode: "avoided",
+      },
+      select: {
+        id: true,
+        title: true,
+        alternativeCost: true,
+        date: true,
+      },
+      orderBy: {
+        date: "desc",
+      },
+      take: 5,
+    });
 
     return entries.map((entry) => ({
       id: entry.id,
       from: entry.title,
       amount: round2(toNumber(entry.alternativeCost)),
-      goalId: targetGoal?.id ?? null,
-      goalTitle: targetGoal?.title ?? null,
-      goalIconTitle: targetGoal?.title ?? null,
       date: getDateKey(entry.date, timeZone),
     }));
   } catch (error) {
-    logAndRethrowDataLoadError("Failed to load goal allocation feed", error);
+    logAndRethrowDataLoadError("Failed to load recent savings feed", error);
   }
 }
 

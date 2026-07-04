@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { unstable_rethrow } from "next/navigation";
 import { Plus } from "lucide-react";
 
-import { getGoalAllocationFeed, getGoalsWithProgress } from "@/src/actions/goals";
+import { getGoalsWithProgress, getRecentSavingsFeed } from "@/src/actions/goals";
 import { CraftedGoalForm } from "@/src/components/goals/crafted-goal-form";
 import { CraftedGoals } from "@/src/components/goals/crafted-goals";
 import { CraftedGoalsEmptyState } from "@/src/components/goals/crafted-goals-empty-state";
@@ -25,12 +25,12 @@ export default async function GoalsPage() {
     savedPool: 0,
     monthlyPace: 0,
   };
-  let allocations: Awaited<ReturnType<typeof getGoalAllocationFeed>> = [];
+  let savings: Awaited<ReturnType<typeof getRecentSavingsFeed>> = [];
 
   try {
-    [goalsData, allocations] = await Promise.all([
+    [goalsData, savings] = await Promise.all([
       getGoalsWithProgress(),
-      getGoalAllocationFeed(),
+      getRecentSavingsFeed(),
     ]);
   } catch (error) {
     unstable_rethrow(error);
@@ -40,7 +40,7 @@ export default async function GoalsPage() {
 
   const language = await getCurrentWorkspaceLanguage();
   const t = getTranslations(language);
-  const craftedProps = buildCraftedGoalsProps(goalsData, allocations, language);
+  const craftedProps = buildCraftedGoalsProps(goalsData, savings, language);
 
   return (
     <main className="pb-6">

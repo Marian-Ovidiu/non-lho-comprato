@@ -17,9 +17,9 @@ import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import {
   shortGoalDate,
-  type CraftedAllocationRow,
   type CraftedGoalRow,
   type CraftedGoalsProps,
+  type CraftedSavingRow,
   type GoalStatus,
 } from "@/src/lib/crafted-goals-build";
 
@@ -225,11 +225,11 @@ function GoalRow({ goal }: { goal: CraftedGoalRow }) {
   );
 }
 
-function AllocationRow({
-  allocation,
+function SavingRow({
+  saving,
   currencySymbol,
 }: {
-  allocation: CraftedAllocationRow;
+  saving: CraftedSavingRow;
   currencySymbol: string;
 }) {
   return (
@@ -238,14 +238,13 @@ function AllocationRow({
         <ArrowUpRight className="size-4" aria-hidden="true" />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14.5px] font-medium">{allocation.from}</p>
+        <p className="truncate text-[14.5px] font-medium">{saving.from}</p>
         <p className="mt-0.5 truncate text-[11px] text-ink-3">
-          <CraftedIcon name={allocation.goalIcon} size={12} className="mr-1 inline" />
-          {allocation.goalName} · {shortGoalDate(allocation.date)}
+          {shortGoalDate(saving.date)}
         </p>
       </div>
       <Mono className="shrink-0 text-[14px] font-semibold text-success">
-        {formatEUR(allocation.amount, currencySymbol, { sign: true })}
+        {formatEUR(saving.amount, currencySymbol, { sign: true })}
       </Mono>
     </div>
   );
@@ -254,7 +253,7 @@ function AllocationRow({
 export function CraftedGoals({
   goals,
   featured,
-  allocations,
+  savings,
   hero,
   counts,
 }: CraftedGoalsProps) {
@@ -362,26 +361,26 @@ export function CraftedGoals({
       <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <Label className="mb-1.5 block">Versamenti</Label>
+            <Label className="mb-1.5 block">Ultimi risparmi</Label>
             <h2 className="text-[16px] font-semibold leading-tight">Acquisti evitati</h2>
           </div>
           <Link
             href="/entries?kind=evitata"
             className="text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            Regole
+            Vedi tutti
           </Link>
         </div>
-        {allocations.length > 0 ? (
-          allocations.map((allocation, index) => (
-            <div key={allocation.id}>
-              <AllocationRow allocation={allocation} currencySymbol={currencySymbol} />
-              {index < allocations.length - 1 ? <Rule soft /> : null}
+        {savings.length > 0 ? (
+          savings.map((saving, index) => (
+            <div key={saving.id}>
+              <SavingRow saving={saving} currencySymbol={currencySymbol} />
+              {index < savings.length - 1 ? <Rule soft /> : null}
             </div>
           ))
         ) : (
           <Serif className="block text-sm text-ink-3">
-            I prossimi acquisti evitati appariranno qui come +€ verso gli obiettivi.
+            I prossimi acquisti evitati appariranno qui.
           </Serif>
         )}
       </section>
