@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { ArrowUpRight, ChevronRight, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useMemo, useState, useTransition } from "react";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 
 import {
   CraftedIcon,
@@ -12,8 +13,16 @@ import {
   Rule,
   Serif,
 } from "@/components/crafted";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { deleteGoal, toggleGoalActive } from "@/src/actions/goals";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useTranslations } from "@/src/components/language/language-context";
 import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import {
   shortGoalDate,
@@ -109,13 +118,57 @@ function StatusPill({ status }: { status: GoalStatus }) {
   );
 }
 
+function GoalActions({
+  goal,
+  disabled,
+  onToggle,
+  onRequestDelete,
+}: {
+  goal: CraftedGoalRow;
+  disabled: boolean;
+  onToggle: (goalId: string) => void;
+  onRequestDelete: (goal: CraftedGoalRow) => void;
+}) {
+  const t = useTranslations();
+
+  return (
+    <div className="mt-2.5 flex items-center gap-5">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onToggle(goal.id)}
+        className="text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50"
+      >
+        {goal.status === "pausa" ? t.goals.resume : t.goals.pause}
+      </button>
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => onRequestDelete(goal)}
+        className="text-[12px] font-medium text-destructive/80 transition-colors hover:text-destructive disabled:opacity-50"
+      >
+        {t.goals.delete}
+      </button>
+    </div>
+  );
+}
+
+type GoalActionHandlers = {
+  actionsDisabled: boolean;
+  onToggle: (goalId: string) => void;
+  onRequestDelete: (goal: CraftedGoalRow) => void;
+};
+
 function FeaturedCard({
   goal,
   currencySymbol,
+  actionsDisabled,
+  onToggle,
+  onRequestDelete,
 }: {
   goal: CraftedGoalRow;
   currencySymbol: string;
-}) {
+} & GoalActionHandlers) {
   const calloutTone = goal.status === "completato" ? "success" : "accent";
 
   return (
@@ -178,18 +231,28 @@ function FeaturedCard({
               ritmo {formatEUR(goal.monthlyPace, currencySymbol)}/mese
             </Mono>
           </div>
+          <GoalActions
+            goal={goal}
+            disabled={actionsDisabled}
+            onToggle={onToggle}
+            onRequestDelete={onRequestDelete}
+          />
         </div>
       </div>
     </section>
   );
 }
 
-function GoalRow({ goal }: { goal: CraftedGoalRow }) {
+function GoalRow({
+  goal,
+  actionsDisabled,
+  onToggle,
+  onRequestDelete,
+}: {
+  goal: CraftedGoalRow;
+} & GoalActionHandlers) {
   return (
-    <button
-      type="button"
-      className="nlc-press block min-h-11 w-full py-4 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-    >
+    <div data-goal-row className="block min-h-11 w-full py-4 text-left">
       <div className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3">
         <span className="flex size-11 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
           <CraftedIcon name={goal.icon} size={19} />
@@ -208,7 +271,6 @@ function GoalRow({ goal }: { goal: CraftedGoalRow }) {
             {formatCraftedCompact(goal.saved)}
             <span className="text-ink-3">/{formatCraftedCompact(goal.target)}</span>
           </Mono>
-          <ChevronRight className="ml-auto mt-1 size-4 text-ink-3" aria-hidden="true" />
         </div>
       </div>
       <div className="mt-3 pl-[56px]">
@@ -220,8 +282,14 @@ function GoalRow({ goal }: { goal: CraftedGoalRow }) {
         <Serif className="mt-2 block truncate text-[13px] text-ink-3">
           {goal.note}
         </Serif>
+        <GoalActions
+          goal={goal}
+          disabled={actionsDisabled}
+          onToggle={onToggle}
+          onRequestDelete={onRequestDelete}
+        />
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -257,8 +325,13 @@ export function CraftedGoals({
   hero,
   counts,
 }: CraftedGoalsProps) {
+  const router = useRouter();
+  const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const [tab, setTab] = useState<TabKey>("tutti");
+  const [deleteTarget, setDeleteTarget] = useState<CraftedGoalRow | null>(null);
+  const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
+  const [isMutating, startMutation] = useTransition();
   const visibleGoals = useMemo(
     () =>
       goals.filter((goal) => {
@@ -267,6 +340,38 @@ export function CraftedGoals({
       }),
     [goals, tab],
   );
+
+  function handleToggle(goalId: string) {
+    startMutation(async () => {
+      await toggleGoalActive(goalId);
+      router.refresh();
+    });
+  }
+
+  function handleRequestDelete(goal: CraftedGoalRow) {
+    setDeleteMessage(null);
+    setDeleteTarget(goal);
+  }
+
+  function handleDelete() {
+    const target = deleteTarget;
+
+    if (!target) {
+      return;
+    }
+
+    startMutation(async () => {
+      const result = await deleteGoal(target.id);
+
+      if (!result.success) {
+        setDeleteMessage(result.message);
+        return;
+      }
+
+      setDeleteTarget(null);
+      router.refresh();
+    });
+  }
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
@@ -308,7 +413,13 @@ export function CraftedGoals({
 
       {tab === "tutti" && featured ? (
         <>
-          <FeaturedCard goal={featured} currencySymbol={currencySymbol} />
+          <FeaturedCard
+            goal={featured}
+            currencySymbol={currencySymbol}
+            actionsDisabled={isMutating}
+            onToggle={handleToggle}
+            onRequestDelete={handleRequestDelete}
+          />
           <Rule soft />
         </>
       ) : null}
@@ -345,7 +456,12 @@ export function CraftedGoals({
               key={goal.id}
               className={cn(index < visibleGoals.length - 1 && "border-b border-line-soft")}
             >
-              <GoalRow goal={goal} />
+              <GoalRow
+                goal={goal}
+                actionsDisabled={isMutating}
+                onToggle={handleToggle}
+                onRequestDelete={handleRequestDelete}
+              />
             </div>
           ))
         ) : (
@@ -384,6 +500,43 @@ export function CraftedGoals({
           </Serif>
         )}
       </section>
+
+      <Dialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDeleteTarget(null);
+          }
+        }}
+      >
+        <DialogContent className="border-line sm:max-w-md">
+          <DialogTitle>{t.goals.delete}</DialogTitle>
+          <DialogDescription>{t.goals.deleteConfirm}</DialogDescription>
+
+          {deleteMessage ? (
+            <p className="text-sm text-destructive">{deleteMessage}</p>
+          ) : null}
+
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              disabled={isMutating}
+              onClick={() => setDeleteTarget(null)}
+              className="px-4 py-2.5 text-sm text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
+            >
+              {t.common.cancel}
+            </button>
+            <button
+              type="button"
+              disabled={isMutating}
+              onClick={handleDelete}
+              className="rounded-[var(--r-cta)] border border-destructive/40 px-5 py-2.5 text-sm font-semibold text-destructive transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              {t.goals.delete}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
