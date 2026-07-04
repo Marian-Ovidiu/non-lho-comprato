@@ -8,7 +8,6 @@ import { revalidatePath, updateTag } from "next/cache";
 
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { createEntryFromNormalizedInput } from "@/src/actions/entry-create";
-import { calculateEntryMoney } from "@/src/lib/entry-domain";
 import { prisma } from "@/src/lib/prisma";
 import {
   assertWorkspaceMember,
@@ -34,11 +33,15 @@ import {
   parseCsvText,
 } from "@/src/lib/imports/import-parser";
 import {
-  decryptJsonValue,
-  decryptOptionalText,
-  encryptJsonValue,
-  encryptOptionalText,
-} from "@/src/lib/field-encryption";
+  buildEntryMoney,
+  buildRawTransactionPayload,
+  countTransactionStatuses,
+  decryptImportedTransactionRecords,
+  mapTransactionUpdatePayload,
+  normalizeTransactionAmount,
+  resolveCategoryIdForConfirmation,
+  type ImportedTransactionRecord,
+} from "@/src/lib/imports/transaction-payload";
 import {
   DEFAULT_WORKSPACE_TIMEZONE,
   getDateKey,
@@ -51,13 +54,6 @@ type ImportBatchStatus =
   | "partial"
   | "completed"
   | "failed";
-
-type ImportedTransactionStatus =
-  | "pending"
-  | "confirmed"
-  | "ignored"
-  | "duplicate"
-  | "error";
 
 type ImportBatchRecord = {
   id: string;
@@ -76,30 +72,6 @@ type ImportBatchRecord = {
   confirmedCount: number;
   ignoredCount: number;
   duplicateCount: number;
-  errorMessage: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type ImportedTransactionRecord = {
-  id: string;
-  workspaceId: string;
-  importBatchId: string;
-  source: "bank_csv";
-  sourceRowIndex: number;
-  externalId: string | null;
-  fingerprint: string;
-  date: Date | null;
-  description: string;
-  merchantName: string | null;
-  amount: Prisma.Decimal | string | number | null;
-  currency: string | null;
-  status: ImportedTransactionStatus;
-  categoryIdSuggested: string | null;
-  categoryIdConfirmed: string | null;
-  entryId: string | null;
-  duplicateOfId: string | null;
-  rawJson: Prisma.JsonValue | null;
   errorMessage: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -205,10 +177,6 @@ function makeDefaultDeps(): ImportActionsDeps {
   };
 }
 
-function toDecimalString(value: number): string {
-  return value.toFixed(2);
-}
-
 function tryRevalidatePath(
   path: string,
   revalidate: (path: string) => unknown,
@@ -289,135 +257,6 @@ function isAllowedCsvFile(file: File): boolean {
   }
 
   return file.name.toLowerCase().endsWith(".csv");
-}
-
-function countTransactionStatuses(transactions: ImportedTransactionRecord[]) {
-  return transactions.reduce(
-    (acc, transaction) => {
-      acc.rowCount += 1;
-      acc.parsedCount += transaction.status === "error" ? 0 : 1;
-      acc.confirmed += transaction.status === "confirmed" ? 1 : 0;
-      acc.ignored += transaction.status === "ignored" ? 1 : 0;
-      acc.duplicate += transaction.status === "duplicate" ? 1 : 0;
-      acc.pending += transaction.status === "pending" ? 1 : 0;
-      acc.error += transaction.status === "error" ? 1 : 0;
-      return acc;
-    },
-    {
-      rowCount: 0,
-      parsedCount: 0,
-      confirmed: 0,
-      ignored: 0,
-      duplicate: 0,
-      pending: 0,
-      error: 0,
-    },
-  );
-}
-
-function decryptImportedTransactionRecord(
-  transaction: ImportedTransactionRecord,
-): ImportedTransactionRecord {
-  return {
-    ...transaction,
-    description: decryptOptionalText(transaction.description) ?? "",
-    merchantName: decryptOptionalText(transaction.merchantName),
-    rawJson: decryptJsonValue<Prisma.JsonValue>(transaction.rawJson),
-  };
-}
-
-function decryptImportedTransactionRecords(
-  transactions: ImportedTransactionRecord[],
-): ImportedTransactionRecord[] {
-  return transactions.map(decryptImportedTransactionRecord);
-}
-
-function buildRawTransactionPayload(
-  batchId: string,
-  workspaceId: string,
-  sourceRowIndex: number,
-  rawJson: CsvImportRow,
-): Record<string, unknown> {
-  return {
-    workspaceId,
-    importBatchId: batchId,
-    source: "bank_csv",
-    sourceRowIndex,
-    externalId: null,
-    fingerprint: `raw:${batchId}:${sourceRowIndex}`,
-    date: null,
-    description: "",
-    merchantName: null,
-    amount: null,
-    currency: null,
-    status: "pending",
-    categoryIdSuggested: null,
-    categoryIdConfirmed: null,
-    entryId: null,
-    duplicateOfId: null,
-    rawJson: encryptJsonValue(rawJson),
-    errorMessage: null,
-  };
-}
-
-function normalizeTransactionAmount(value: unknown): number {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? Math.abs(value) : 0;
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? Math.abs(parsed) : 0;
-  }
-
-  if (value && typeof value === "object" && "toString" in value) {
-    const parsed = Number(String(value).replace(",", "."));
-    return Number.isFinite(parsed) ? Math.abs(parsed) : 0;
-  }
-
-  return 0;
-}
-
-function buildEntryMoney(amount: unknown) {
-  const normalized = normalizeTransactionAmount(amount);
-  return calculateEntryMoney({
-    mode: "spent",
-    savingContext: "none",
-    amountSpent: normalized,
-  });
-}
-
-function mapTransactionUpdatePayload(
-  draft: ReturnType<typeof mapCsvRowToImportedTransactionDraft>,
-  fingerprint: string,
-  duplicateOfId: string | null,
-  categoryIdSuggested: string | null,
-): Record<string, unknown> {
-  return {
-    date: draft.date,
-    description: encryptOptionalText(draft.description) ?? "",
-    merchantName: encryptOptionalText(draft.merchantName),
-    amount: draft.amount === null ? null : toDecimalString(draft.amount),
-    currency: draft.currency,
-    categoryIdSuggested,
-    status:
-      draft.status === "error"
-        ? "error"
-        : duplicateOfId
-          ? "duplicate"
-          : draft.status,
-    fingerprint,
-    duplicateOfId,
-    errorMessage: draft.errorMessage ?? null,
-    rawJson: encryptJsonValue(draft.raw),
-  };
-}
-
-function resolveCategoryIdForConfirmation(
-  transaction: ImportedTransactionRecord,
-  defaultCategoryId: string,
-): string | null {
-  return transaction.categoryIdConfirmed || defaultCategoryId || null;
 }
 
 async function loadCurrentWorkspace(
@@ -1000,7 +839,6 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
     async getImportBatchAction(
       batchId: string,
     ): Promise<ImportBatchDetails | null> {
-      const t = await deps.getTranslations();
       await deps.refreshSupabaseSessionForAction();
 
       const { workspace } = await loadCurrentWorkspace(deps);
