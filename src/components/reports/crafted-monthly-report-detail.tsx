@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import {
-  ArrowDownRight,
   ArrowUpRight,
   ChevronLeft,
   ChevronRight,
@@ -41,7 +40,7 @@ type CategoryReportRow = {
 type MonthData = {
   key: string;
   label: string;
-  income: number;
+  net: number;
   spent: number;
   avoided: number;
   savedToGoals: number;
@@ -151,14 +150,13 @@ function getBiggestEntry(entries: MonthlyReportEntry[]) {
 function buildMonthData(report: MonthlyReportData): MonthData {
   const spent = report.overview.totalRealSpent;
   const net = report.overview.netImpact;
-  const income = Math.max(0, round2(spent + net));
   const biggestSaving = report.biggestSaving;
   const winAmount = biggestSaving?.savedAmount ?? report.overview.avoidedAmount;
 
   return {
     key: report.monthKey,
     label: report.monthLabel,
-    income,
+    net,
     spent,
     avoided: report.overview.avoidedAmount,
     savedToGoals: report.overview.avoidedAmount,
@@ -209,7 +207,7 @@ function buildPreviousMonthData(report: MonthlyReportData): MonthData {
   return {
     key: "",
     label: "mese scorso",
-    income: Math.max(0, round2(spent + net)),
+    net,
     spent,
     avoided,
     savedToGoals: avoided,
@@ -469,7 +467,6 @@ function VerdictCard({
   previous: MonthData;
   currencySymbol: string;
 }) {
-  const net = round2(data.income - data.spent);
   const deltaSpent = round2(data.spent - previous.spent);
   const spentImproved = deltaSpent < 0;
 
@@ -479,7 +476,9 @@ function VerdictCard({
         <Label className="mb-3 block">Nota di fine mese</Label>
         <p className="text-[15px] leading-7 text-muted-foreground">
           Hai messo da parte{" "}
-          <Serif className="text-foreground">{formatEUR(net, currencySymbol, { sign: true })}</Serif>{" "}
+          <Serif className="text-foreground">
+            {formatEUR(data.net, currencySymbol, { sign: true })}
+          </Serif>{" "}
           e ne hai evitati altri{" "}
           <Serif className="text-success">{formatEUR(data.avoided, currencySymbol)}</Serif>.
           {spentImproved ? " Le uscite sono scese di " : " Le uscite sono salite di "}
@@ -509,10 +508,7 @@ export function CraftedMonthlyReport({
   const language = useWorkspaceLanguage();
   const data = buildMonthData(report);
   const previous = buildPreviousMonthData(report);
-  const net = round2(data.income - data.spent);
-  const previousNet = round2(previous.income - previous.spent);
-  const savingsRate = data.income > 0 ? Math.round((net / data.income) * 100) : 0;
-  const deltaNet = round2(net - previousNet);
+  const deltaNet = round2(data.net - previous.net);
   const deltaSpent = round2(data.spent - previous.spent);
   const maxCategory = Math.max(...data.categories.map((category) => category.spent), 0);
   const month = monthParts(data.key);
@@ -541,13 +537,13 @@ export function CraftedMonthlyReport({
           <Mono
             className={cn(
               "block text-[clamp(3.25rem,17vw,5rem)] font-semibold leading-[0.82] tracking-[-0.04em]",
-              net < 0 && "text-destructive",
+              data.net < 0 && "text-destructive",
             )}
           >
-            {formatEUR(net, currencySymbol, { sign: true })}
+            {formatEUR(data.net, currencySymbol, { sign: true })}
           </Mono>
           <Serif className="mt-3 block text-[15px] text-ink-2">
-            {savingsRate}% di quanto è entrato
+            evitate e confronti, senza inventare entrate
           </Serif>
           <div className="mt-4">
             <DeltaChip
@@ -563,11 +559,11 @@ export function CraftedMonthlyReport({
       <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <div className="rounded-[var(--r-card)] bg-surface-muted px-4">
           <BalanceRow
-            icon={ArrowDownRight}
-            label="Entrate"
-            sublabel="derivate dal netto del mese"
-            value={data.income}
-            delta={round2(data.income - previous.income)}
+            icon={Sparkles}
+            label="Impatto netto"
+            sublabel="evitate e confronti"
+            value={data.net}
+            delta={deltaNet}
             tone="success"
             currencySymbol={currencySymbol}
           />
