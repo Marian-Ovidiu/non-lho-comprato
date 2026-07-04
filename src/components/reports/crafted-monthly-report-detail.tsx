@@ -1,577 +1,676 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import Link from "next/link";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  ChevronLeft,
+  ChevronRight,
+  Flame,
+  PiggyBank,
+  Share2,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  Trophy,
+  type LucideIcon,
+} from "lucide-react";
 
 import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
-import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
-import { formatDate, formatMoney } from "@/src/lib/formatters";
-import { useCurrencyCode, useCurrencySymbol } from "@/src/components/currency/currency-context";
-import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
-import { languageToLocale } from "@/src/lib/i18n";
-import { getLocalizedCategoryName } from "@/src/lib/category-locale";
-import type { Translations } from "@/src/lib/i18n/types";
-
-type ReportT = Translations["report"];
 import { cn } from "@/lib/utils";
-import {
-  buildMonthlyReportAnalyticsSnapshot,
-  type MonthlyReportAnalyticsCategory,
-  type MonthlyReportAnalyticsEntry,
-  type MonthlyReportAnalyticsSnapshot,
-  type MonthlyReportAnalyticsUser,
-} from "@/src/lib/monthly-report-analytics";
-import type { CategoryOption } from "@/src/lib/categories";
-import type { MonthlyReportData } from "@/src/actions/reports";
+import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
+import { languageToLocale } from "@/src/lib/i18n";
+import { useCurrencySymbol } from "@/src/components/currency/currency-context";
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import type { CraftedIconName } from "@/components/crafted";
+import type { MonthlyReportData, MonthlyReportEntry } from "@/src/actions/reports";
 
-type CraftedMonthlyReportDetailProps = {
-  report: MonthlyReportData;
-  categories: CategoryOption[];
-};
-
-type CategoryFilterOption = {
+type MonthOption = {
   value: string;
   label: string;
 };
 
-const ALL_CATEGORY_VALUE = "__all__";
+type CategoryReportRow = {
+  id: string;
+  name: string;
+  icon: CraftedIconName;
+  spent: number;
+  prev: number;
+};
 
-/* ------------------------------------------------------------------ */
-/* helpers (parità con monthly-analytics-panel)                        */
-/* ------------------------------------------------------------------ */
+type MonthData = {
+  key: string;
+  label: string;
+  income: number;
+  spent: number;
+  avoided: number;
+  savedToGoals: number;
+  daysTracked: number;
+  streak: number;
+  categories: CategoryReportRow[];
+  highlights: {
+    biggest: { name: string; amount: number; date: string };
+    win: { name: string; amount: number; note: string };
+    streak: { days: number; note: string };
+  };
+};
 
-function getCategoryKey(category: MonthlyReportAnalyticsCategory): string {
-  return category.slug ?? category.id ?? category.name;
+function round2(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
-function formatSignedMoney(
+function formatEUR(
   value: number,
   currencySymbol: string,
-  locale: string,
-): string {
-  const prefix = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${prefix}${formatCraftedCompact(Math.abs(value), locale)}${currencySymbol}`;
+  options: { decimals?: 0 | 2; sign?: boolean } = {},
+) {
+  const sign = options.sign ? (value > 0 ? "+" : value < 0 ? "−" : "") : "";
+  const decimals = options.decimals ?? 0;
+  const formatted = new Intl.NumberFormat("it-IT", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  }).format(Math.abs(value));
+
+  return `${sign}${currencySymbol}${formatted}`;
 }
 
-function getShortBalanceLabel(balanceRatio: number, t: ReportT): string {
-  if (balanceRatio > 1.1) return t.aboveAvg;
-  if (balanceRatio < 0.9) return t.belowAvg;
-  return t.balanced;
+function shortDate(iso: string, language = "it") {
+  return new Intl.DateTimeFormat(languageToLocale(language), {
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  })
+    .format(new Date(iso.length === 10 ? `${iso}T00:00:00.000Z` : iso))
+    .replace(".", "");
 }
 
-function getInitials(label: string): string {
-  return (
-    label
-      .split(/\s+/)
-      .map((part) => part.trim().charAt(0))
-      .filter(Boolean)
-      .slice(0, 2)
-      .join("")
-      .toUpperCase() || "·"
+function monthParts(monthKey: string) {
+  const [yearPart, monthPart] = monthKey.split("-");
+  return {
+    year: Number(yearPart),
+    month: Number(monthPart),
+  };
+}
+
+function countDaysTracked(entries: MonthlyReportEntry[]) {
+  return new Set(entries.map((entry) => entry.date.slice(0, 10))).size;
+}
+
+function categoryKey(entry: MonthlyReportEntry) {
+  return entry.category.slug ?? entry.category.id ?? entry.category.name;
+}
+
+function buildCategoryRows(
+  entries: MonthlyReportEntry[],
+  previousEntries: MonthlyReportEntry[],
+): CategoryReportRow[] {
+  const rows = new Map<string, CategoryReportRow>();
+
+  for (const entry of entries) {
+    const key = categoryKey(entry);
+    const current = rows.get(key) ?? {
+      id: key,
+      name: entry.category.name,
+      icon: getCategoryCraftedIcon(entry.category),
+      spent: 0,
+      prev: 0,
+    };
+    current.spent = round2(current.spent + entry.realCost);
+    rows.set(key, current);
+  }
+
+  for (const entry of previousEntries) {
+    const key = categoryKey(entry);
+    const current = rows.get(key) ?? {
+      id: key,
+      name: entry.category.name,
+      icon: getCategoryCraftedIcon(entry.category),
+      spent: 0,
+      prev: 0,
+    };
+    current.prev = round2(current.prev + entry.realCost);
+    rows.set(key, current);
+  }
+
+  return Array.from(rows.values())
+    .filter((row) => row.spent > 0 || row.prev > 0)
+    .sort((left, right) => right.spent - left.spent)
+    .slice(0, 6);
+}
+
+function getBiggestEntry(entries: MonthlyReportEntry[]) {
+  const biggest = [...entries].sort((left, right) => right.realCost - left.realCost)[0];
+
+  return {
+    name: biggest?.title ?? "Nessuna uscita",
+    amount: biggest?.realCost ?? 0,
+    date: biggest?.date ?? new Date().toISOString(),
+  };
+}
+
+function buildMonthData(report: MonthlyReportData): MonthData {
+  const spent = report.overview.totalRealSpent;
+  const net = report.overview.netImpact;
+  const income = Math.max(0, round2(spent + net));
+  const biggestSaving = report.biggestSaving;
+  const winAmount = biggestSaving?.savedAmount ?? report.overview.avoidedAmount;
+
+  return {
+    key: report.monthKey,
+    label: report.monthLabel,
+    income,
+    spent,
+    avoided: report.overview.avoidedAmount,
+    savedToGoals: report.overview.avoidedAmount,
+    daysTracked: countDaysTracked(report.entries),
+    streak: report.streakSummary.bestStreak,
+    categories: buildCategoryRows(report.entries, report.previousMonthEntries),
+    highlights: {
+      biggest: getBiggestEntry(report.entries),
+      win: {
+        name: biggestSaving?.title ?? "Acquisti evitati",
+        amount: winAmount,
+        note: biggestSaving?.note ?? "denaro rimasto nel percorso del mese",
+      },
+      streak: {
+        days: report.streakSummary.bestStreak,
+        note:
+          report.streakSummary.bestStreak > 0
+            ? "giorni consecutivi tracciati nel mese"
+            : "la serie riparte dal prossimo movimento",
+      },
+    },
+  };
+}
+
+function buildPreviousMonthData(report: MonthlyReportData): MonthData {
+  const previousEntries = report.previousMonthEntries;
+  const spent = round2(previousEntries.reduce((sum, entry) => sum + entry.realCost, 0));
+  const avoided = round2(
+    previousEntries.reduce(
+      (sum, entry) => sum + (entry.mode === "avoided" ? entry.alternativeCost : 0),
+      0,
+    ),
   );
+  const comparisonSaved = round2(
+    previousEntries.reduce((sum, entry) => {
+      if (entry.mode !== "spent" || entry.savingContext !== "comparison") return sum;
+      return sum + Math.max(entry.alternativeCost - entry.realCost, 0);
+    }, 0),
+  );
+  const comparisonOverspent = round2(
+    previousEntries.reduce((sum, entry) => {
+      if (entry.mode !== "spent" || entry.savingContext !== "comparison") return sum;
+      return sum + Math.max(entry.realCost - entry.alternativeCost, 0);
+    }, 0),
+  );
+  const net = round2(avoided + comparisonSaved - comparisonOverspent);
+
+  return {
+    key: "",
+    label: "mese scorso",
+    income: Math.max(0, round2(spent + net)),
+    spent,
+    avoided,
+    savedToGoals: avoided,
+    daysTracked: countDaysTracked(previousEntries),
+    streak: 0,
+    categories: [],
+    highlights: {
+      biggest: getBiggestEntry(previousEntries),
+      win: { name: "Acquisti evitati", amount: avoided, note: "" },
+      streak: { days: 0, note: "" },
+    },
+  };
 }
 
-function getSummaryText({
-  locale,
-  isAllCategories,
-  categoryLabel,
-  snapshot,
-  currencySymbol,
-  currencyCode,
-  t,
+function MonthPicker({
+  months,
+  selectedMonth,
 }: {
-  locale: string;
-  isAllCategories: boolean;
-  categoryLabel: string;
-  snapshot: MonthlyReportAnalyticsSnapshot;
-  currencySymbol: string;
-  currencyCode: string;
-  t: ReportT;
-}): string {
-  if (!snapshot.hasData) {
-    return isAllCategories
-      ? t.noSpendingAll
-      : t.noSpendingCategory(categoryLabel.toLowerCase());
-  }
-
-  const topUser = snapshot.users[0];
-  const previousWorkspaceTotal = snapshot.users.some(
-    (user) => user.previousMonthTotal !== null,
-  )
-    ? snapshot.users.reduce(
-        (total, user) => total + (user.previousMonthTotal ?? 0),
-        0,
-      )
-    : null;
-  const workspaceDelta =
-    previousWorkspaceTotal === null
-      ? null
-      : snapshot.totalPaidByWorkspace - previousWorkspaceTotal;
-  const categoryPrefix = isAllCategories ? "" : `${categoryLabel}: `;
-
-  const balancedText = topUser
-    ? `${topUser.label} è ${topUser.balanceLabel.toLowerCase()}.`
-    : t.workspaceBalanced;
-  const deltaText =
-    workspaceDelta === null
-      ? t.noComparison
-      : workspaceDelta > 0
-        ? t.aboveLastMonth(formatSignedMoney(workspaceDelta, currencySymbol, locale))
-        : workspaceDelta < 0
-          ? t.belowLastMonth(formatSignedMoney(Math.abs(workspaceDelta), currencySymbol, locale))
-          : t.alignedLastMonth;
-
-  const savingText =
-    snapshot.overview.totalSaved > 0
-      ? t.netImpactSuffix(formatMoney(snapshot.overview.totalSaved, currencyCode, locale))
-      : "";
-
-  return `${categoryPrefix}${t.spentInMonthAmount(formatMoney(snapshot.overview.totalRealSpent, currencyCode, locale))}${savingText} ${balancedText} ${deltaText}`;
-}
-
-function buildCategoryOptions(
-  categories: CategoryOption[],
-  reportEntries: MonthlyReportAnalyticsEntry[],
-  previousEntries: MonthlyReportAnalyticsEntry[],
-  language: string,
-  locale: string,
-  allCategoriesLabel: string,
-  deletedCategoryLabel: string,
-): CategoryFilterOption[] {
-  const options = new Map<string, CategoryFilterOption>();
-
-  options.set(ALL_CATEGORY_VALUE, {
-    value: ALL_CATEGORY_VALUE,
-    label: allCategoriesLabel,
-  });
-
-  for (const category of categories) {
-    const value = category.slug ?? category.id;
-    options.set(value, { value, label: category.name });
-  }
-
-  for (const entry of [...reportEntries, ...previousEntries]) {
-    const value = getCategoryKey(entry.category);
-    if (!options.has(value)) {
-      options.set(value, {
-        value,
-        label:
-          getLocalizedCategoryName(entry.category.slug, language) ??
-          (entry.category.name || deletedCategoryLabel),
-      });
-    }
-  }
-
-  return [
-    options.get(ALL_CATEGORY_VALUE)!,
-    ...[...options.values()]
-      .filter((option) => option.value !== ALL_CATEGORY_VALUE)
-      .sort((left, right) => left.label.localeCompare(right.label, locale)),
-  ];
-}
-
-/* ------------------------------------------------------------------ */
-/* sub-components                                                      */
-/* ------------------------------------------------------------------ */
-
-const AVATAR_TONE = [
-  "bg-accent text-accent-foreground",
-  "bg-foreground text-background",
-] as const;
-
-function PersonBlock({
-  user,
-  index,
-  showPrevious,
-}: {
-  user: MonthlyReportAnalyticsUser;
-  index: number;
-  showPrevious: boolean;
+  months: MonthOption[];
+  selectedMonth: string;
 }) {
-  const t = useTranslations();
-  const currencySymbol = useCurrencySymbol();
-  const language = useWorkspaceLanguage();
-  const locale = languageToLocale(language);
-  const personalPct =
-    user.totalPaid > 0 ? (user.personalSpend / user.totalPaid) * 100 : 0;
-  const sharedPct = user.totalPaid > 0 ? 100 - personalPct : 0;
-  const diff = user.differenceVsPreviousMonth;
+  const index = months.findIndex((month) => month.value === selectedMonth);
+  const currentIndex = index >= 0 ? index : 0;
+  const previous = months[currentIndex + 1];
+  const next = months[currentIndex - 1];
+  const current = months[currentIndex] ?? { value: selectedMonth, label: selectedMonth };
 
   return (
-    <div className="px-[var(--sp-page-x)] py-[18px]">
-      <div className="flex items-center justify-between gap-3">
-        <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <span
-            className={cn(
-              "flex size-[26px] shrink-0 items-center justify-center rounded-full text-[10px] font-semibold",
-              AVATAR_TONE[index % AVATAR_TONE.length],
-            )}
-          >
-            {getInitials(user.label)}
-          </span>
-          <span className="truncate text-[15px] font-medium">{user.label}</span>
-        </div>
-        <span className="shrink-0 whitespace-nowrap rounded-full border border-line px-2.5 py-[3px] font-num text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
-          {getShortBalanceLabel(user.balanceRatio, t.report)} ·{" "}
-          {new Intl.NumberFormat(locale, {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-          }).format(user.balanceRatio)}
-          ×
-        </span>
-      </div>
-
-      <div className="mt-3.5 flex items-end justify-between gap-3">
-        <div>
-          <Label className="mb-1.5 block">{t.report.totalPaid}</Label>
-          <Mono className="text-[30px] font-semibold leading-none">
-            {formatCraftedCompact(user.totalPaid, locale)}
-            <span className="text-[13px] text-accent">{currencySymbol}</span>
-          </Mono>
-        </div>
-        {showPrevious && diff !== null && diff !== 0 ? (
-          <div
-            className={cn(
-              "flex items-center gap-1.5 text-[12px]",
-              diff > 0 ? "text-destructive" : "text-green",
-            )}
-          >
-            <CraftedIcon
-              name="arrowUp"
-              size={13}
-              strokeWidth={2}
-              className={cn(diff < 0 && "rotate-180")}
-            />
-            <Mono>{formatSignedMoney(diff, currencySymbol, locale)}</Mono>
-            <span className="text-ink-3">{t.report.vsPrevMonth}</span>
-          </div>
-        ) : null}
-      </div>
-
-      {user.totalPaid > 0 ? (
-        <>
-          <div className="mt-3.5 flex h-2 gap-0.5">
-            <span
-              className="block rounded-[1px] bg-foreground/85"
-              style={{ width: `${personalPct}%` }}
-            />
-            <span
-              className="block rounded-[1px] bg-accent"
-              style={{ width: `${sharedPct}%` }}
-            />
-          </div>
-          <div className="mt-2.5 flex items-center justify-between text-[12px] text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-[7px] rounded-[2px] bg-foreground/85" />
-              {t.report.personal}{" "}
-              <Mono className="text-foreground">
-                {formatCraftedCompact(user.personalSpend, locale)}{currencySymbol}
-              </Mono>
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-[7px] rounded-[2px] bg-accent" />
-              {t.report.shared}{" "}
-              <Mono className="text-foreground">
-                {formatCraftedCompact(user.sharedSpend, locale)}{currencySymbol}
-              </Mono>
-            </span>
-          </div>
-        </>
+    <div className="mt-5 grid grid-cols-[36px_minmax(0,1fr)_36px] items-center gap-3">
+      {previous ? (
+        <Link
+          href={`/reports/monthly?month=${previous.value}`}
+          className="nlc-press flex size-9 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label="Mese precedente"
+        >
+          <ChevronLeft className="size-4" aria-hidden="true" />
+        </Link>
       ) : (
-        <Serif className="mt-2 block text-[13px] text-ink-3">
-          {t.report.noSpendingPaid}
-        </Serif>
+        <span className="flex size-9 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-ink-3 opacity-45">
+          <ChevronLeft className="size-4" aria-hidden="true" />
+        </span>
+      )}
+      <h1 className="truncate text-center text-[22px] font-semibold leading-tight">
+        {current.label}
+      </h1>
+      {next ? (
+        <Link
+          href={`/reports/monthly?month=${next.value}`}
+          className="nlc-press flex size-9 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          aria-label="Mese successivo"
+        >
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </Link>
+      ) : (
+        <span className="flex size-9 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-ink-3 opacity-45">
+          <ChevronRight className="size-4" aria-hidden="true" />
+        </span>
       )}
     </div>
   );
 }
 
-function PayerCompare({ users }: { users: MonthlyReportAnalyticsUser[] }) {
-  const t = useTranslations();
-  const locale = languageToLocale(useWorkspaceLanguage());
-  const currencySymbol = useCurrencySymbol();
-  const ranked = [...users]
-    .filter((user) => user.totalPaid > 0)
-    .sort((left, right) => right.totalPaid - left.totalPaid);
-
-  if (ranked.length < 2) {
-    return null;
-  }
-
-  const max = ranked[0]!.totalPaid;
+function DeltaChip({
+  value,
+  betterWhenPositive,
+  currencySymbol,
+}: {
+  value: number;
+  betterWhenPositive: boolean;
+  currencySymbol: string;
+}) {
+  const improved = betterWhenPositive ? value >= 0 : value <= 0;
+  const Icon = betterWhenPositive
+    ? value >= 0 ? TrendingUp : TrendingDown
+    : value <= 0 ? TrendingDown : TrendingUp;
 
   return (
-    <>
-      <section className="px-5 pb-1 pt-[22px]">
-        <Label>{t.report.whoPayedMore}</Label>
-      </section>
-      <div className="px-5 pb-2">
-        {ranked.map((user, index) => (
-          <div
-            key={user.userId}
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-[var(--r-chip)] px-2.5 py-1.5 text-[12px] font-medium",
+        improved ? "bg-success/12 text-success" : "bg-destructive/10 text-destructive",
+      )}
+    >
+      <Icon className="size-3.5" aria-hidden="true" />
+      <Mono>{formatEUR(value, currencySymbol, { sign: true })}</Mono>
+      <span>vs mese scorso</span>
+    </span>
+  );
+}
+
+function BalanceRow({
+  icon: Icon,
+  label,
+  sublabel,
+  value,
+  delta,
+  tone = "default",
+  currencySymbol,
+}: {
+  icon: LucideIcon;
+  label: string;
+  sublabel: string;
+  value: number;
+  delta?: number;
+  tone?: "default" | "success" | "accent";
+  currencySymbol: string;
+}) {
+  return (
+    <div className="flex min-h-14 items-center gap-3 py-3">
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-background text-muted-foreground",
+          tone === "success" && "text-success",
+          tone === "accent" && "text-accent",
+        )}
+      >
+        <Icon className="size-4" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-medium">{label}</p>
+        <Serif className="mt-0.5 block truncate text-[12px] text-ink-3">
+          {sublabel}
+        </Serif>
+      </div>
+      <div className="shrink-0 text-right">
+        <Mono
+          className={cn(
+            "block text-[15px] font-semibold",
+            tone === "success" && "text-success",
+            tone === "accent" && "text-accent",
+          )}
+        >
+          {formatEUR(value, currencySymbol, { sign: true })}
+        </Mono>
+        {delta && delta !== 0 ? (
+          <Mono
             className={cn(
-              "flex items-center gap-3 py-2.5",
-              index < ranked.length - 1 && "border-b border-line-soft",
+              "mt-0.5 block text-[10.5px]",
+              delta > 0 ? "text-success" : "text-destructive",
             )}
           >
-            <span className="w-16 shrink-0 truncate text-[13px] font-[450]">
-              {user.label}
-            </span>
-            <span className="h-2 flex-1 overflow-hidden rounded-[1px] bg-line">
-              <span
-                className={cn(
-                  "block h-full rounded-[1px]",
-                  index === 0 ? "bg-accent" : "bg-foreground/80",
-                )}
-                style={{ width: `${max > 0 ? (user.totalPaid / max) * 100 : 0}%` }}
-              />
-            </span>
-            <Mono className="w-[62px] shrink-0 text-right text-[13px] font-medium">
-              {formatCraftedCompact(user.totalPaid, locale)}
-              <span className="text-[10.5px] text-accent">{currencySymbol}</span>
-            </Mono>
-          </div>
-        ))}
+            {formatEUR(delta, currencySymbol, { sign: true })}
+          </Mono>
+        ) : null}
       </div>
-      <Rule />
-    </>
+    </div>
   );
 }
 
-function MonthHighlights({
-  snapshot,
+function CategoryBar({
+  category,
+  max,
+  currencySymbol,
 }: {
-  snapshot: MonthlyReportAnalyticsSnapshot;
+  category: CategoryReportRow;
+  max: number;
+  currencySymbol: string;
 }) {
-  const t = useTranslations();
-  const locale = languageToLocale(useWorkspaceLanguage());
-  const currencySymbol = useCurrencySymbol();
-  const { bestCategory, worstCategory, biggestSaving } = snapshot;
+  const delta = round2(category.spent - category.prev);
+  const increased = delta > 0;
+  const width = max > 0 ? Math.max(4, (category.spent / max) * 100) : 0;
 
   return (
-    <>
-      <section className="px-5 pb-0.5 pt-[22px]">
-        <Label className="mb-1.5 block">{t.report.monthHighlights}</Label>
-        <Serif className="block text-[13px] text-ink-3">
-          {t.report.monthHighlightsDesc}
-        </Serif>
-      </section>
-
-      <div className="px-5">
-        {worstCategory ? (
-          <div className="flex items-start gap-4 border-b border-line-soft py-3.5">
-            <span className="flex w-[30px] shrink-0 justify-center pt-0.5 text-muted-foreground">
-              <CraftedIcon
-                name={getCategoryCraftedIcon({
-                  name: worstCategory.categoryName,
-                  slug: worstCategory.categorySlug,
-                })}
-                size={20}
-              />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-[450]">{worstCategory.name}</p>
-              <Serif className="mt-1 block text-[13px] text-ink-3">
-                {t.report.topSpendingCategory}
-              </Serif>
-            </div>
-            <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
-              {formatCraftedCompact(worstCategory.totalRealSpent, locale)}
-              <span className="text-[11px] text-accent">{currencySymbol}</span>
-            </Mono>
-          </div>
-        ) : null}
-
-        {bestCategory ? (
-          <div className="flex items-start gap-4 py-3.5">
-            <span className="flex w-[30px] shrink-0 justify-center pt-0.5 text-muted-foreground">
-              <CraftedIcon
-                name={getCategoryCraftedIcon({
-                  name: bestCategory.categoryName,
-                  slug: bestCategory.categorySlug,
-                })}
-                size={20}
-              />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-[15px] font-[450]">{bestCategory.name}</p>
-              <Serif className="mt-1 block text-[13px] text-ink-3">
-                {t.report.bestNetImpact}
-              </Serif>
-            </div>
-            <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-green">
-              {formatCraftedCompact(bestCategory.totalSaved, locale)}
-              <span className="text-[11px] text-accent">{currencySymbol}</span>
-            </Mono>
-          </div>
+    <div className="py-3">
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <div className="flex min-w-0 items-center gap-3">
+          <span className="flex size-8 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
+            <CraftedIcon name={category.icon} size={16} />
+          </span>
+          <span className="truncate text-[14px] font-medium">{category.name}</span>
+        </div>
+        <Mono className="shrink-0 text-[13px] font-semibold">
+          {formatEUR(category.spent, currencySymbol)}
+        </Mono>
+      </div>
+      <div className="flex items-center gap-3 pl-11">
+        <span className="h-2 flex-1 rounded-full bg-line-soft">
+          <span
+            className={cn(
+              "block h-full rounded-full",
+              increased ? "bg-destructive" : "bg-muted-foreground",
+            )}
+            style={{ width: `${width}%` }}
+          />
+        </span>
+        {delta !== 0 ? (
+          <Mono
+            className={cn(
+              "w-16 shrink-0 text-right text-[11px]",
+              increased ? "text-destructive" : "text-success",
+            )}
+          >
+            {formatEUR(delta, currencySymbol, { sign: true })}
+          </Mono>
         ) : null}
       </div>
-
-      {biggestSaving && biggestSaving.savedAmount > 0 ? (
-        <div className="mt-1 flex items-start gap-3.5 px-5 py-4">
-          <span className="mt-1.5 size-2 shrink-0 rounded-full bg-green" />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-baseline justify-between gap-3">
-              <span className="block font-num text-[10px] font-normal uppercase tracking-[0.22em] text-green">
-                {t.report.bestPositiveImpact}
-              </span>
-              <span className="shrink-0 rounded-full border border-line px-2.5 py-[3px] font-num text-[9.5px] uppercase tracking-[0.16em] text-muted-foreground">
-                {biggestSaving.ownershipLabel}
-              </span>
-            </div>
-            <p className="mt-2 text-[15px] font-[450]">{biggestSaving.title}</p>
-            <Serif className="mt-1 block text-[13px] text-ink-3">
-              {biggestSaving.categoryName} · {formatDate(biggestSaving.date, locale)} ·{" "}
-              {t.report.insteadOf(
-                `${formatCraftedCompact(biggestSaving.realCost, locale)}${currencySymbol}`,
-                `${formatCraftedCompact(biggestSaving.alternativeCost, locale)}${currencySymbol}`,
-              )}
-            </Serif>
-          </div>
-          <Mono className="shrink-0 whitespace-nowrap text-[17px] font-semibold text-green">
-            +{formatCraftedCompact(biggestSaving.savedAmount, locale)}
-            <span className="text-[11px] text-accent">{currencySymbol}</span>
-          </Mono>
-        </div>
-      ) : null}
-    </>
+    </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/* main                                                                */
-/* ------------------------------------------------------------------ */
+function StoryCard({
+  eyebrow,
+  icon: Icon,
+  title,
+  amount,
+  amountLabel,
+  note,
+  tone = "default",
+  currencySymbol,
+}: {
+  eyebrow: string;
+  icon: LucideIcon;
+  title: string;
+  amount: number;
+  amountLabel?: string;
+  note: string;
+  tone?: "default" | "accent" | "success";
+  currencySymbol: string;
+}) {
+  return (
+    <article className="w-[220px] shrink-0 rounded-[var(--r-card)] border border-line bg-surface p-4">
+      <div
+        className={cn(
+          "mb-4 flex size-9 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground",
+          tone === "accent" && "text-accent",
+          tone === "success" && "text-success",
+        )}
+      >
+        <Icon className="size-4" aria-hidden="true" />
+      </div>
+      <Label className="mb-2 block">{eyebrow}</Label>
+      <h3 className="line-clamp-2 min-h-10 text-[15px] font-semibold leading-tight">
+        {title}
+      </h3>
+      <Mono
+        className={cn(
+          "mt-3 block text-[20px] font-semibold",
+          tone === "accent" && "text-accent",
+          tone === "success" && "text-success",
+        )}
+      >
+        {amountLabel ?? formatEUR(amount, currencySymbol, { sign: tone !== "default" })}
+      </Mono>
+      <Serif className="mt-2 block line-clamp-2 text-[13px] text-ink-3">
+        {note}
+      </Serif>
+    </article>
+  );
+}
 
-export function CraftedMonthlyReportDetail({
+function VerdictCard({
+  data,
+  previous,
+  currencySymbol,
+}: {
+  data: MonthData;
+  previous: MonthData;
+  currencySymbol: string;
+}) {
+  const net = round2(data.income - data.spent);
+  const deltaSpent = round2(data.spent - previous.spent);
+  const spentImproved = deltaSpent < 0;
+
+  return (
+    <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+      <div className="rounded-[var(--r-card)] border border-line p-5">
+        <Label className="mb-3 block">Nota di fine mese</Label>
+        <p className="text-[15px] leading-7 text-muted-foreground">
+          Hai messo da parte{" "}
+          <Serif className="text-foreground">{formatEUR(net, currencySymbol, { sign: true })}</Serif>{" "}
+          e ne hai evitati altri{" "}
+          <Serif className="text-success">{formatEUR(data.avoided, currencySymbol)}</Serif>.
+          {spentImproved ? " Le uscite sono scese di " : " Le uscite sono salite di "}
+          <Mono className={spentImproved ? "text-success" : "text-destructive"}>
+            {formatEUR(Math.abs(deltaSpent), currencySymbol)}
+          </Mono>{" "}
+          rispetto al mese scorso:{" "}
+          {spentImproved
+            ? "il mese si chiude con più margine e meno rumore."
+            : "il segnale utile è capire dove si è concentrato l'aumento."}
+        </p>
+      </div>
+    </section>
+  );
+}
+
+export function CraftedMonthlyReport({
   report,
-  categories,
-}: CraftedMonthlyReportDetailProps) {
-  const t = useTranslations();
+  months,
+  selectedMonth,
+}: {
+  report: MonthlyReportData;
+  months: MonthOption[];
+  selectedMonth: string;
+}) {
   const currencySymbol = useCurrencySymbol();
-  const currencyCode = useCurrencyCode();
   const language = useWorkspaceLanguage();
-  const locale = languageToLocale(language);
-  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORY_VALUE);
-
-  const categoryOptions = useMemo(
-    () =>
-      buildCategoryOptions(
-        categories,
-        report.entries,
-        report.previousMonthEntries,
-        language,
-        locale,
-        t.report.allCategories,
-        t.report.deletedCategory,
-      ),
-    [categories, report.entries, report.previousMonthEntries, language, locale, t.report.allCategories, t.report.deletedCategory],
-  );
-
-  const isAllCategories = selectedCategory === ALL_CATEGORY_VALUE;
-
-  const selectedCategoryLabel = useMemo(
-    () =>
-      categoryOptions.find((option) => option.value === selectedCategory)?.label ??
-      t.report.allCategories,
-    [categoryOptions, selectedCategory, t.report.allCategories],
-  );
-
-  const filteredEntries = useMemo(() => {
-    if (isAllCategories) return report.entries;
-    return report.entries.filter(
-      (entry) => getCategoryKey(entry.category) === selectedCategory,
-    );
-  }, [report.entries, selectedCategory, isAllCategories]);
-
-  const filteredPreviousEntries = useMemo(() => {
-    if (isAllCategories) return report.previousMonthEntries;
-    return report.previousMonthEntries.filter(
-      (entry) => getCategoryKey(entry.category) === selectedCategory,
-    );
-  }, [report.previousMonthEntries, selectedCategory, isAllCategories]);
-
-  const snapshot = useMemo(
-    () =>
-      buildMonthlyReportAnalyticsSnapshot(
-        filteredEntries,
-        filteredPreviousEntries,
-        report.members,
-      ),
-    [filteredEntries, filteredPreviousEntries, report.members],
-  );
-
-  const summaryText = useMemo(
-    () => getSummaryText({ locale, isAllCategories, categoryLabel: selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t: t.report }),
-    [locale, isAllCategories, selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t.report],
-  );
-
-  const hasPreviousData = filteredPreviousEntries.length > 0;
+  const data = buildMonthData(report);
+  const previous = buildPreviousMonthData(report);
+  const net = round2(data.income - data.spent);
+  const previousNet = round2(previous.income - previous.spent);
+  const savingsRate = data.income > 0 ? Math.round((net / data.income) * 100) : 0;
+  const deltaNet = round2(net - previousNet);
+  const deltaSpent = round2(data.spent - previous.spent);
+  const maxCategory = Math.max(...data.categories.map((category) => category.spent), 0);
+  const month = monthParts(data.key);
+  const daysInMonth =
+    Number.isFinite(month.year) && Number.isFinite(month.month)
+      ? new Date(Date.UTC(month.year, month.month, 0)).getUTCDate()
+      : 30;
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <section className="px-[var(--sp-page-x)] pb-3.5 pt-[var(--sp-section-y)]">
-        <Label className="mb-3.5 block">{t.report.detailLabel}</Label>
-        <div className="flex gap-4 overflow-x-auto pb-0.5">
-          {categoryOptions.map((option) => {
-            const selected = option.value === selectedCategory;
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => setSelectedCategory(option.value)}
-                className={cn(
-                  "shrink-0 whitespace-nowrap border-b-[1.5px] pb-2 text-[13px] transition-colors",
-                  selected
-                    ? "border-accent font-semibold text-foreground"
-                    : "border-transparent font-[450] text-ink-3",
-                )}
-              >
-                {option.value === ALL_CATEGORY_VALUE ? t.report.allCategoriesShort : option.label}
-              </button>
-            );
-          })}
+      <section className="px-[var(--sp-page-x)] pb-6 pt-6">
+        <div className="flex items-center justify-between gap-4">
+          <Label>Report mensile</Label>
+          <button
+            type="button"
+            className="nlc-press flex size-9 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground"
+            aria-label="Condividi report"
+          >
+            <Share2 className="size-4" aria-hidden="true" />
+          </button>
+        </div>
+        <MonthPicker months={months} selectedMonth={selectedMonth} />
+
+        <div className="mt-10 text-center">
+          <Label className="mb-3 block">Risparmio netto</Label>
+          <Mono
+            className={cn(
+              "block text-[clamp(3.25rem,17vw,5rem)] font-semibold leading-[0.82] tracking-[-0.04em]",
+              net < 0 && "text-destructive",
+            )}
+          >
+            {formatEUR(net, currencySymbol, { sign: true })}
+          </Mono>
+          <Serif className="mt-3 block text-[15px] text-ink-2">
+            {savingsRate}% di quanto è entrato
+          </Serif>
+          <div className="mt-4">
+            <DeltaChip
+              value={deltaNet}
+              betterWhenPositive
+              currencySymbol={currencySymbol}
+            />
+          </div>
         </div>
       </section>
+      <Rule soft />
 
-      <section className="px-[var(--sp-page-x)] pb-[18px]">
-        <Serif className="block max-w-[32em] text-[15px] leading-[1.45] text-muted-foreground [text-wrap:pretty]">
-          {summaryText}
-        </Serif>
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <div className="rounded-[var(--r-card)] bg-surface-muted px-4">
+          <BalanceRow
+            icon={ArrowDownRight}
+            label="Entrate"
+            sublabel="derivate dal netto del mese"
+            value={data.income}
+            delta={round2(data.income - previous.income)}
+            tone="success"
+            currencySymbol={currencySymbol}
+          />
+          <Rule soft />
+          <BalanceRow
+            icon={ArrowUpRight}
+            label="Uscite"
+            sublabel="spesa reale registrata"
+            value={-data.spent}
+            delta={-deltaSpent}
+            currencySymbol={currencySymbol}
+          />
+          <Rule soft />
+          <BalanceRow
+            icon={Sparkles}
+            label="Evitate"
+            sublabel="bonus narrativo, non sconto"
+            value={data.avoided}
+            delta={round2(data.avoided - previous.avoided)}
+            tone="accent"
+            currencySymbol={currencySymbol}
+          />
+          <Rule soft />
+          <BalanceRow
+            icon={PiggyBank}
+            label="Verso obiettivi"
+            sublabel="alimentati dalle evitate"
+            value={data.savedToGoals}
+            delta={round2(data.savedToGoals - previous.savedToGoals)}
+            tone="success"
+            currencySymbol={currencySymbol}
+          />
+        </div>
       </section>
-      <Rule />
+      <Rule soft />
 
-      {snapshot.hasData ? (
-        <>
-          <section className="px-[var(--sp-page-x)] pb-1 pt-[var(--sp-section-y)]">
-            <div className="flex items-baseline justify-between gap-3">
-              <Label>{t.report.byPerson}</Label>
-              <Mono className="text-[11px] text-ink-3">
-                {t.report.memberCount(snapshot.users.length)}
-              </Mono>
-            </div>
-          </section>
-
-          {snapshot.users.map((user, index) => (
-            <div key={user.userId}>
-              <PersonBlock
-                user={user}
-                index={index}
-                showPrevious={hasPreviousData}
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <Label className="mb-1.5 block">Dove sono andati</Label>
+            <h2 className="text-[16px] font-semibold leading-tight">Categorie</h2>
+          </div>
+          <Mono className="text-[15px] font-semibold">
+            {formatEUR(data.spent, currencySymbol)}
+          </Mono>
+        </div>
+        {data.categories.length > 0 ? (
+          data.categories.map((category, index) => (
+            <div key={category.id}>
+              <CategoryBar
+                category={category}
+                max={maxCategory}
+                currencySymbol={currencySymbol}
               />
-              {index < snapshot.users.length - 1 ? (
-                <div className="mx-5">
-                  <Rule soft />
-                </div>
-              ) : null}
+              {index < data.categories.length - 1 ? <Rule soft /> : null}
             </div>
-          ))}
-          <Rule />
+          ))
+        ) : (
+          <Serif className="block text-sm text-ink-3">
+            Nessuna uscita categorizzata in questo mese.
+          </Serif>
+        )}
+      </section>
+      <Rule soft />
 
-          <PayerCompare users={snapshot.users} />
+      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
+        <Label className="mb-2 block">Il mese in tre storie</Label>
+        <Serif className="mb-4 block text-[15px] text-muted-foreground">
+          Tre appunti bastano per capire il mese.
+        </Serif>
+        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+          <StoryCard
+            eyebrow="Spesa più grande"
+            icon={ArrowUpRight}
+            title={data.highlights.biggest.name}
+            amount={data.highlights.biggest.amount}
+            note={shortDate(data.highlights.biggest.date, language)}
+            currencySymbol={currencySymbol}
+          />
+          <StoryCard
+            eyebrow="Vittoria"
+            icon={Trophy}
+            title={data.highlights.win.name}
+            amount={data.highlights.win.amount}
+            note={data.highlights.win.note}
+            tone="accent"
+            currencySymbol={currencySymbol}
+          />
+          <StoryCard
+            eyebrow="Costanza"
+            icon={Flame}
+            title={`${data.highlights.streak.days} giorni`}
+            amount={data.daysTracked}
+            amountLabel={`${data.highlights.streak.days} giorni`}
+            note={`${data.highlights.streak.note} · ${data.daysTracked}/${daysInMonth} giorni tracciati`}
+            tone="success"
+            currencySymbol=""
+          />
+        </div>
+      </section>
+      <Rule soft />
 
-          <MonthHighlights snapshot={snapshot} />
-        </>
-      ) : null}
+      <VerdictCard data={data} previous={previous} currencySymbol={currencySymbol} />
     </div>
   );
 }

@@ -4,10 +4,7 @@ import {
   getMonthlyReport,
 } from "@/src/actions/reports";
 import { unstable_rethrow } from "next/navigation";
-import { getCategories } from "@/src/actions/entries";
-import { CraftedMonthlyReportDetail } from "@/src/components/reports/crafted-monthly-report-detail";
-import { CraftedMonthlyReportExtras } from "@/src/components/reports/crafted-monthly-report-extras";
-import { CraftedMonthlyReportHeader } from "@/src/components/reports/crafted-monthly-report-header";
+import { CraftedMonthlyReport } from "@/src/components/reports/crafted-monthly-report-detail";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 
@@ -29,15 +26,11 @@ export default async function MonthlyReportPage({
 
   let loadError: string | null = null;
   let months: Awaited<ReturnType<typeof getAvailableReportMonths>> = [];
-  let categories: Awaited<ReturnType<typeof getCategories>> = [];
   let report: Awaited<ReturnType<typeof getMonthlyReport>>["report"] | null = null;
   let selectedMonth = monthParam ?? "";
 
   try {
-    [months, categories] = await Promise.all([
-      getAvailableReportMonths(),
-      getCategories(),
-    ]);
+    months = await getAvailableReportMonths();
     selectedMonth = monthParam ?? months[0]?.value ?? "";
     ({ report } = await getMonthlyReport(selectedMonth, months));
   } catch (error) {
@@ -61,24 +54,11 @@ export default async function MonthlyReportPage({
 
   return (
     <main className="space-y-6 pb-6">
-      <CraftedMonthlyReportHeader
+      <CraftedMonthlyReport
         report={report}
         months={months}
         selectedMonth={selectedMonth}
       />
-
-      {report.hasData ? (
-        <>
-          <CraftedMonthlyReportDetail report={report} categories={categories} />
-
-          <CraftedMonthlyReportExtras
-            bestStreak={report.streakSummary.bestStreak}
-            currentStreak={report.streakSummary.currentStreak}
-            habitsCompleted={report.habitsSummary.completed}
-            habitsSkipped={report.habitsSummary.skipped}
-          />
-        </>
-      ) : null}
     </main>
   );
 }
