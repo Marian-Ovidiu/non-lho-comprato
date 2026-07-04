@@ -36,8 +36,8 @@ export type DailySpendingComparison = {
   monthToDateDelta: number | null;
 };
 
-function formatMonthLabel(year: number, monthIndex: number): string {
-  const raw = new Intl.DateTimeFormat("it-IT", {
+function formatMonthLabel(year: number, monthIndex: number, locale: string): string {
+  const raw = new Intl.DateTimeFormat(locale, {
     month: "short",
     year: "numeric",
   }).format(new Date(year, monthIndex, 1));
@@ -147,6 +147,7 @@ function buildMonthRow(
   options: {
     todayKey: string;
     todayMonthKey: string;
+    locale: string;
   },
 ): DailySpendingMonthRow {
   const monthKey = buildMonthKey(year, month);
@@ -189,7 +190,7 @@ function buildMonthRow(
 
   return {
     monthKey,
-    label: formatMonthLabel(year, month - 1),
+    label: formatMonthLabel(year, month - 1, options.locale),
     days,
     totalRealSpent,
   };
@@ -248,6 +249,7 @@ function buildDailySpendingComparisonFromTotals(
   timeZone: string,
   now: Date = new Date(),
   selectedMonthKey?: string,
+  locale = "it-IT",
 ): DailySpendingComparison {
   const todayParts = getDateParts(now, timeZone);
   const todayKey = getDateKey(now, timeZone);
@@ -278,6 +280,7 @@ function buildDailySpendingComparisonFromTotals(
     {
       todayKey,
       todayMonthKey,
+      locale,
     },
   );
 
@@ -290,6 +293,7 @@ function buildDailySpendingComparisonFromTotals(
         {
           todayKey,
           todayMonthKey,
+          locale,
         },
       )
     : null;
@@ -315,12 +319,14 @@ export function buildDailySpendingComparison(
   timeZone: string,
   now: Date = new Date(),
   selectedMonthKey?: string,
+  locale = "it-IT",
 ): DailySpendingComparison {
   return buildDailySpendingComparisonFromTotals(
     aggregateDailyTotals(entries, timeZone),
     timeZone,
     now,
     selectedMonthKey,
+    locale,
   );
 }
 
@@ -329,11 +335,13 @@ export function buildDailySpendingComparisonFromRows(
   timeZone: string,
   now: Date = new Date(),
   selectedMonthKey?: string,
+  locale = "it-IT",
 ): DailySpendingComparison {
   return buildDailySpendingComparisonFromTotals(
     aggregateDailyRows(rows),
     timeZone,
     now,
     selectedMonthKey,
+    locale,
   );
 }

@@ -13,6 +13,7 @@ import {
 export type { StatsInsight } from "@/src/features/stats/insights";
 
 import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
+import { languageToLocale } from "@/src/lib/i18n";
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntrySource } from "@/src/lib/generated/prisma/enums";
 import { buildWorkspaceMemberEntryWhere } from "@/src/lib/workspace-member-filter";
@@ -23,6 +24,7 @@ import {
   getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
   getCurrentWorkspaceScopedWhere,
+  getCurrentWorkspaceLanguage,
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import {
@@ -621,9 +623,10 @@ export async function getStatsPageData(
 ): Promise<StatsPageData> {
   const now = options.now ?? new Date();
   const selectedPeriod = options.period ?? "month";
-  const [timeZone, workspaceId] = await Promise.all([
+  const [timeZone, workspaceId, language] = await Promise.all([
     getCurrentWorkspaceTimezone(),
     getCurrentWorkspaceId(),
+    getCurrentWorkspaceLanguage(),
   ]);
   const selectedMonthKey = normalizeStatsMonthKey(timeZone, options.selectedMonthKey, now);
   const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
@@ -694,6 +697,7 @@ export async function getStatsPageData(
     timeZone,
     now,
     selectedMonthKey,
+    languageToLocale(language),
   );
 
   return {

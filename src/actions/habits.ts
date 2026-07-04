@@ -6,7 +6,10 @@ import {
 } from "@/src/features/habits/schedule";
 import { buildEntryDataForOccurrence } from "@/src/features/habits/occurrence-entry";
 
-import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
+import {
+  normalizeMoneyInputString,
+  toMoneyNumber as toNumber,
+} from "@/src/lib/money-number";
 
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
@@ -254,8 +257,8 @@ function getMoney(formData: FormData, name: string): {
     return { value: Number.NaN, error: "Questo campo è obbligatorio" };
   }
 
-  const normalized = raw.replace(",", ".");
-  const value = Number(normalized);
+  const normalized = normalizeMoneyInputString(raw);
+  const value = normalized === null ? Number.NaN : Number(normalized);
 
   if (!Number.isFinite(value)) {
     return { value: Number.NaN, error: "Inserisci un numero valido" };

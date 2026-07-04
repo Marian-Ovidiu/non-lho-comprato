@@ -1,4 +1,5 @@
 import { getDaysInMonth } from "@/src/lib/workspace-dates";
+import { languageToLocale } from "@/src/lib/i18n";
 import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
 import { computeBudgetMonthTotals } from "@/src/features/budget/month-totals";
@@ -11,6 +12,7 @@ import { toEntryMoneyView } from "@/src/lib/entry-domain";
 import { prisma } from "@/src/lib/prisma";
 import {
   getCurrentWorkspaceId,
+  getCurrentWorkspaceLanguage,
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import {
@@ -99,8 +101,8 @@ function getDayOfMonth(monthKey: string, timeZone: string) {
   return selectedTime < currentTime ? daysInMonth : 1;
 }
 
-function formatMonthLabel(date: Date, timeZone: string) {
-  const month = new Intl.DateTimeFormat("it-IT", {
+function formatMonthLabel(date: Date, timeZone: string, locale: string) {
+  const month = new Intl.DateTimeFormat(locale, {
     month: "long",
     timeZone,
   }).format(date);
@@ -108,22 +110,22 @@ function formatMonthLabel(date: Date, timeZone: string) {
   return month.charAt(0).toUpperCase() + month.slice(1);
 }
 
-function formatYearLabel(date: Date, timeZone: string) {
-  return new Intl.DateTimeFormat("it-IT", {
+function formatYearLabel(date: Date, timeZone: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     year: "numeric",
     timeZone,
   }).format(date);
 }
 
-function formatMonthCode(date: Date, timeZone: string) {
-  return new Intl.DateTimeFormat("it-IT", {
+function formatMonthCode(date: Date, timeZone: string, locale: string) {
+  return new Intl.DateTimeFormat(locale, {
     month: "2-digit",
     year: "2-digit",
     timeZone,
   }).format(date);
 }
 
-function buildMonthOptions(selectedMonthKey: string): CraftedBudgetMonthOption[] {
+function buildMonthOptions(selectedMonthKey: string, locale: string): CraftedBudgetMonthOption[] {
   const selected = getMonthDate(selectedMonthKey);
 
   return Array.from({ length: 7 }, (_, index) => {
@@ -134,7 +136,7 @@ function buildMonthOptions(selectedMonthKey: string): CraftedBudgetMonthOption[]
 
     return {
       month,
-      label: `${formatMonthLabel(date, "Europe/Rome")} ${date.getUTCFullYear()}`,
+      label: `${formatMonthLabel(date, "Europe/Rome", locale)} ${date.getUTCFullYear()}`,
     };
   });
 }
@@ -160,10 +162,12 @@ function sortCategories(
 export async function buildCraftedBudgetProps(
   monthKeyInput?: string,
 ): Promise<CraftedBudgetPageData> {
-  const [workspaceId, timeZone] = await Promise.all([
+  const [workspaceId, timeZone, language] = await Promise.all([
     getCurrentWorkspaceId(),
     getCurrentWorkspaceTimezone(),
+    getCurrentWorkspaceLanguage(),
   ]);
+  const locale = languageToLocale(language);
   const monthKey = normalizeMonthKey(timeZone, monthKeyInput);
   const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
 
@@ -275,10 +279,10 @@ export async function buildCraftedBudgetProps(
 
   return {
     monthKey,
-    monthLabel: formatMonthLabel(monthDate, timeZone),
-    yearLabel: formatYearLabel(monthDate, timeZone),
-    monthCode: formatMonthCode(monthDate, timeZone),
-    monthOptions: buildMonthOptions(monthKey),
+    monthLabel: formatMonthLabel(monthDate, timeZone, locale),
+    yearLabel: formatYearLabel(monthDate, timeZone, locale),
+    monthCode: formatMonthCode(monthDate, timeZone, locale),
+    monthOptions: buildMonthOptions(monthKey, locale),
     totalBudget,
     spent: monthTotals.ordinarySpent,
     avoided: monthTotals.avoidedAmount,
