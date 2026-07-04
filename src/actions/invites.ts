@@ -1,5 +1,7 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import type { Translations } from "@/src/lib/i18n";
 import { cookies } from "next/headers";
 
 import { prisma } from "@/src/lib/prisma";
@@ -71,21 +73,22 @@ function tryRevalidatePath(path: string) {
   }
 }
 
-function rateLimitMessage() {
-  return "Troppi tentativi ravvicinati. Riprova tra poco.";
+function rateLimitMessage(t: Translations) {
+  return t.validation.tooManyAttempts;
 }
 
 export async function createWorkspaceInviteAction(
   formData: FormData,
 ): Promise<CreateWorkspaceInviteResult> {
+  const t = await getActionTranslations();
   const invitedEmailRaw = getText(formData, "email");
   const workspaceNameRaw = getText(formData, "workspaceName");
   const errors: Record<string, string> = {};
 
   if (!invitedEmailRaw) {
-    errors.email = "Inserisci un indirizzo email";
+    errors.email = t.inviteActions.emailRequired;
   } else if (!isValidInviteEmail(invitedEmailRaw)) {
-    errors.email = "Inserisci un indirizzo email valido";
+    errors.email = t.inviteActions.emailInvalid;
   }
 
   if (Object.keys(errors).length > 0) {
@@ -112,7 +115,7 @@ export async function createWorkspaceInviteAction(
     } else if (currentWorkspace.ownerUserId !== currentUser.id) {
       return {
         success: false,
-        message: "Solo un owner può creare inviti.",
+        message: t.inviteActions.ownerOnly,
       };
     }
 
@@ -126,7 +129,7 @@ export async function createWorkspaceInviteAction(
     if (invitedEmail === currentEmail) {
       return {
         success: false,
-        message: "Non puoi invitare il tuo stesso account.",
+        message: t.inviteActions.cantInviteSelf,
         errors: {
           email: "Usa un altro indirizzo email",
         },
@@ -143,7 +146,7 @@ export async function createWorkspaceInviteAction(
     );
 
     if (!userLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const workspaceLimit = await checkRateLimit(
@@ -156,7 +159,7 @@ export async function createWorkspaceInviteAction(
     );
 
     if (!workspaceLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const emailLimit = await checkRateLimit(
@@ -169,7 +172,7 @@ export async function createWorkspaceInviteAction(
     );
 
     if (!emailLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const token = generateInviteToken();
@@ -181,7 +184,7 @@ export async function createWorkspaceInviteAction(
       return {
         success: false,
         message:
-          "Non riesco a costruire il link invito adesso. Controlla NEXT_PUBLIC_APP_URL o prova dal browser.",
+          t.inviteActions.linkBuildFailed,
       };
     }
 
@@ -250,7 +253,7 @@ export async function createWorkspaceInviteAction(
 
     return {
       success: true,
-      message: "Link invito pronto",
+      message: t.inviteActions.linkReady,
       invitePath,
       inviteUrl,
       workspace: {
@@ -264,14 +267,14 @@ export async function createWorkspaceInviteAction(
     if (error instanceof WorkspaceRbacError) {
       return {
         success: false,
-        message: "Solo un owner può creare inviti.",
+        message: t.inviteActions.ownerOnly,
       };
     }
 
     console.error("Failed to create workspace invite:", error);
     return {
       success: false,
-      message: "Non riesco a creare l'invito adesso. Riprova tra poco.",
+      message: t.inviteActions.createFailed,
     };
   }
 }
@@ -279,12 +282,13 @@ export async function createWorkspaceInviteAction(
 export async function acceptWorkspaceInviteAction(
   formData: FormData,
 ): Promise<AcceptWorkspaceInviteResult> {
+  const t = await getActionTranslations();
   const token = getText(formData, "token");
 
   if (!token) {
     return {
       success: false,
-      message: "Invito non valido",
+      message: t.inviteActions.invalid,
     };
   }
 
@@ -302,7 +306,7 @@ export async function acceptWorkspaceInviteAction(
     );
 
     if (!tokenLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const userLimit = await checkRateLimit(
@@ -315,7 +319,7 @@ export async function acceptWorkspaceInviteAction(
     );
 
     if (!userLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const invite = await getWorkspaceInviteByTokenHash(tokenHash);
@@ -323,28 +327,28 @@ export async function acceptWorkspaceInviteAction(
     if (!invite) {
       return {
         success: false,
-        message: "Questo invito non è disponibile.",
+        message: t.inviteActions.notAvailable,
       };
     }
 
     if (invite.workspace == null) {
       return {
         success: false,
-        message: "Lo spazio condiviso non è più disponibile.",
+        message: t.inviteActions.sharedSpaceGone,
       };
     }
 
     if (invite.revokedAt) {
       return {
         success: false,
-        message: "Questo invito non è più disponibile.",
+        message: t.inviteActions.noLongerAvailable,
       };
     }
 
     if (invite.expiresAt.getTime() < Date.now()) {
       return {
         success: false,
-        message: "Questo invito è scaduto.",
+        message: t.inviteActions.expired,
       };
     }
 
@@ -354,14 +358,14 @@ export async function acceptWorkspaceInviteAction(
       if (!currentEmail) {
         return {
           success: false,
-          message: "Serve un account con email per accettare l'invito.",
+          message: t.inviteActions.emailAccountNeeded,
         };
       }
 
       if (currentEmail !== invite.invitedEmail) {
         return {
           success: false,
-          message: "Apri questo invito con l'account a cui è stato inviato.",
+          message: t.inviteActions.openWithInvitedAccount,
         };
       }
     }
@@ -404,7 +408,7 @@ export async function acceptWorkspaceInviteAction(
 
       return {
         success: true,
-        message: "Sei già dentro questo spazio.",
+        message: t.inviteActions.alreadyMember,
         status: "already_member",
         workspace: {
           id: invite.workspace.id,
@@ -442,7 +446,7 @@ export async function acceptWorkspaceInviteAction(
       if (claimedInvite.count !== 1) {
         throw new WorkspaceRbacError(
           "forbidden",
-          "Questo invito non è più disponibile.",
+          t.inviteActions.noLongerAvailable,
         );
       }
 
@@ -469,7 +473,7 @@ export async function acceptWorkspaceInviteAction(
 
     return {
       success: true,
-      message: "Invito accettato",
+      message: t.inviteActions.accepted,
       status: "accepted",
       workspace: {
         id: invite.workspace.id,
@@ -488,7 +492,7 @@ export async function acceptWorkspaceInviteAction(
     console.error("Failed to accept workspace invite:", error);
     return {
       success: false,
-      message: "Non riesco ad accettare l'invito adesso. Riprova tra poco.",
+      message: t.inviteActions.acceptFailed,
     };
   }
 }

@@ -1,5 +1,7 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import type { Translations } from "@/src/lib/i18n";
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntryVisibility } from "@/src/lib/generated/prisma/enums";
 import { revalidatePath, updateTag } from "next/cache";
@@ -153,6 +155,7 @@ type ImportActionsDeps = {
   assertWorkspaceMember: typeof assertWorkspaceMember;
   revalidatePath: (path: string) => unknown;
   updateTag: (tag: string) => unknown;
+  getTranslations: () => Promise<Translations>;
   createEntryFromNormalizedInput: typeof createEntryFromNormalizedInput;
 };
 
@@ -197,6 +200,7 @@ function makeDefaultDeps(): ImportActionsDeps {
     assertWorkspaceMember,
     revalidatePath,
     updateTag,
+    getTranslations: getActionTranslations,
     createEntryFromNormalizedInput,
   };
 }
@@ -601,6 +605,7 @@ async function confirmImportedTransactions(
   selectedIds: string[],
   defaultCategoryId: string,
 ): Promise<ImportBatchActionResult> {
+      const t = await deps.getTranslations();
   const transactions = decryptImportedTransactionRecords(
     await deps.prisma.importedTransaction.findMany({
       where: { importBatchId: batch.id, workspaceId: workspace.id },
@@ -618,17 +623,17 @@ async function confirmImportedTransactions(
     const transaction = transactionsById.get(transactionId);
 
     if (!transaction) {
-      errors[transactionId] = "Transazione non trovata.";
+      errors[transactionId] = t.importActions.txNotFound;
       continue;
     }
 
     if (transaction.status !== "pending") {
-      errors[transactionId] = "Puoi confermare solo righe in attesa.";
+      errors[transactionId] = t.importActions.onlyPendingConfirmable;
       continue;
     }
 
     if (!transaction.date || transaction.amount === null) {
-      errors[transactionId] = "La riga non ha dati sufficienti per essere confermata.";
+      errors[transactionId] = t.importActions.rowInsufficientData;
       continue;
     }
 
@@ -640,7 +645,7 @@ async function confirmImportedTransactions(
 
     const categoryId = resolveCategoryIdForConfirmation(transaction, defaultCategoryId);
     if (!categoryId) {
-      errors[transactionId] = "Seleziona una categoria per confermare la riga.";
+      errors[transactionId] = t.importActions.rowNeedsCategory;
       continue;
     }
 
@@ -651,7 +656,7 @@ async function confirmImportedTransactions(
     );
 
     if (!category) {
-      errors[transactionId] = "La categoria selezionata non appartiene al workspace.";
+      errors[transactionId] = t.importActions.categoryNotInWorkspace;
       continue;
     }
 
@@ -664,7 +669,7 @@ async function confirmImportedTransactions(
   if (Object.keys(errors).length > 0) {
     return {
       success: false,
-      message: "Controlla le righe selezionate.",
+      message: t.importActions.checkSelectedRows,
       errors,
     };
   }
@@ -687,7 +692,7 @@ async function confirmImportedTransactions(
     if (!category) {
       return {
         success: false,
-        message: "Categoria non valida durante la conferma.",
+        message: t.importActions.categoryInvalidOnConfirm,
       };
     }
 
@@ -695,7 +700,7 @@ async function confirmImportedTransactions(
     if (!transactionDate) {
       return {
         success: false,
-        message: "La riga non ha una data valida durante la conferma.",
+        message: t.importActions.rowInvalidDate,
       };
     }
 
@@ -752,7 +757,7 @@ async function confirmImportedTransactions(
 
   return {
     success: true,
-    message: "Righe confermate con successo.",
+    message: t.importActions.rowsConfirmed,
     batchId: updatedBatch.id,
     count: createdEntryIds.length,
   };
@@ -777,6 +782,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
     async uploadImportBatchAction(
       formData: FormData,
     ): Promise<ImportBatchActionResult> {
+      const t = await deps.getTranslations();
       await deps.refreshSupabaseSessionForAction();
 
       const file = readCsvFile(formData);
@@ -784,14 +790,14 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!file) {
         return {
           success: false,
-          message: "Seleziona un file CSV valido.",
+          message: t.importActions.invalidFile,
         };
       }
 
       if (!isAllowedCsvFile(file)) {
         return {
           success: false,
-          message: "Puoi caricare solo file CSV o di testo fino a 1 MB.",
+          message: t.importActions.fileTooLarge,
         };
       }
 
@@ -826,7 +832,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         });
 
         if (parsed.headers.length === 0 || parsed.headers.every((header) => header.trim() === "")) {
-          throw new Error("Il CSV non contiene intestazioni valide.");
+          throw new Error(t.importActions.csvNoHeaders);
         }
 
         await Promise.all(
@@ -857,7 +863,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
         return {
           success: true,
-          message: "Import CSV caricato con successo.",
+          message: t.importActions.uploaded,
           batchId: updatedBatch.id,
           count: parsed.rowCount,
         };
@@ -872,7 +878,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
         return {
           success: false,
-          message: "Non riesco a leggere il CSV. Controlla il file e riprova.",
+          message: t.importActions.csvUnreadable,
         };
       }
     },
@@ -880,6 +886,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
     async saveImportMappingAction(
       formData: FormData,
     ): Promise<ImportBatchActionResult> {
+      const t = await deps.getTranslations();
       await deps.refreshSupabaseSessionForAction();
 
       const batchId = getFormText(formData, "batchId");
@@ -888,7 +895,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batchId) {
         return {
           success: false,
-          message: "Batch import non valido.",
+          message: t.importActions.batchInvalid,
         };
       }
 
@@ -898,7 +905,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batch) {
         return {
           success: false,
-          message: "Batch import non trovato.",
+          message: t.importActions.batchNotFound,
         };
       }
 
@@ -916,7 +923,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
         return {
           success: false,
-          message: "Il mapping non è valido.",
+          message: t.importActions.mappingInvalid,
           errors: mappingValidation.errors,
         };
       }
@@ -984,7 +991,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
       return {
         success: true,
-        message: "Mapping import salvato.",
+        message: t.importActions.mappingSaved,
         batchId: updatedBatch.id,
         count: updatedBatch.parsedCount,
       };
@@ -993,6 +1000,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
     async getImportBatchAction(
       batchId: string,
     ): Promise<ImportBatchDetails | null> {
+      const t = await deps.getTranslations();
       await deps.refreshSupabaseSessionForAction();
 
       const { workspace } = await loadCurrentWorkspace(deps);
@@ -1025,6 +1033,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
     async confirmImportedTransactionsAction(
       formData: FormData,
     ): Promise<ImportBatchActionResult> {
+      const t = await deps.getTranslations();
       await deps.refreshSupabaseSessionForAction();
 
       const batchId = getFormText(formData, "batchId");
@@ -1034,21 +1043,21 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batchId) {
         return {
           success: false,
-          message: "Batch import non valido.",
+          message: t.importActions.batchInvalid,
         };
       }
 
       if (selectedIds.length === 0) {
         return {
           success: false,
-          message: "Seleziona almeno una transazione da confermare.",
+          message: t.importActions.selectAtLeastOneToConfirm,
         };
       }
 
       if (selectedIds.length > MAX_CONFIRM_BATCH_SIZE) {
         return {
           success: false,
-          message: `Puoi confermare al massimo ${MAX_CONFIRM_BATCH_SIZE} righe per volta.`,
+          message: t.importActions.maxConfirm(MAX_CONFIRM_BATCH_SIZE),
         };
       }
 
@@ -1058,7 +1067,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batch) {
         return {
           success: false,
-          message: "Batch import non trovato.",
+          message: t.importActions.batchNotFound,
         };
       }
 
@@ -1075,6 +1084,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
     async ignoreImportedTransactionsAction(
       formData: FormData,
     ): Promise<ImportBatchActionResult> {
+      const t = await deps.getTranslations();
       await deps.refreshSupabaseSessionForAction();
 
       const batchId = getFormText(formData, "batchId");
@@ -1083,21 +1093,21 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batchId) {
         return {
           success: false,
-          message: "Batch import non valido.",
+          message: t.importActions.batchInvalid,
         };
       }
 
       if (selectedIds.length === 0) {
         return {
           success: false,
-          message: "Seleziona almeno una transazione da ignorare.",
+          message: t.importActions.selectAtLeastOneToIgnore,
         };
       }
 
       if (selectedIds.length > MAX_CONFIRM_BATCH_SIZE) {
         return {
           success: false,
-          message: `Puoi gestire al massimo ${MAX_CONFIRM_BATCH_SIZE} righe per volta.`,
+          message: t.importActions.maxManage(MAX_CONFIRM_BATCH_SIZE),
         };
       }
 
@@ -1107,7 +1117,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batch) {
         return {
           success: false,
-          message: "Batch import non trovato.",
+          message: t.importActions.batchNotFound,
         };
       }
 
@@ -1126,7 +1136,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         const transaction = transactionsById.get(transactionId);
 
         if (!transaction) {
-          errors[transactionId] = "Transazione non trovata.";
+          errors[transactionId] = t.importActions.txNotFound;
           continue;
         }
 
@@ -1135,7 +1145,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
           transaction.status !== "duplicate" &&
           transaction.status !== "error"
         ) {
-          errors[transactionId] = "Puoi ignorare solo righe pending, duplicate o error.";
+          errors[transactionId] = t.importActions.onlyIgnorableStates;
           continue;
         }
 
@@ -1145,7 +1155,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (Object.keys(errors).length > 0) {
         return {
           success: false,
-          message: "Controlla le righe selezionate.",
+          message: t.importActions.checkSelectedRows,
           errors,
         };
       }
@@ -1164,7 +1174,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
       return {
         success: true,
-        message: "Righe ignorate.",
+        message: t.importActions.rowsIgnored,
         batchId: updatedBatch.id,
         count: idsToIgnore.length,
       };
@@ -1173,6 +1183,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
     async deleteImportBatchAction(
       formData: FormData,
     ): Promise<ImportBatchActionResult> {
+      const t = await deps.getTranslations();
       await deps.refreshSupabaseSessionForAction();
 
       const batchId = getFormText(formData, "batchId");
@@ -1180,7 +1191,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batchId) {
         return {
           success: false,
-          message: "Batch import non valido.",
+          message: t.importActions.batchInvalid,
         };
       }
 
@@ -1190,7 +1201,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (!batch) {
         return {
           success: false,
-          message: "Batch import non trovato.",
+          message: t.importActions.batchNotFound,
         };
       }
 
@@ -1202,7 +1213,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       if (counts.confirmed > 0) {
         return {
           success: false,
-          message: "Non puoi eliminare un batch che ha già Entry confermate.",
+          message: t.importActions.cantDeleteConfirmedBatch,
         };
       }
 
@@ -1214,7 +1225,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
 
       return {
         success: true,
-        message: "Batch import eliminato.",
+        message: t.importActions.batchDeleted,
         batchId: batch.id,
         count: counts.rowCount,
       };

@@ -1,5 +1,6 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
 import { redirect } from "next/navigation";
 import { unstable_rethrow } from "next/navigation";
 
@@ -29,6 +30,7 @@ export async function deleteAccountAction(
   _previousState: DeleteAccountState,
   formData: FormData,
 ): Promise<DeleteAccountState> {
+  const t = await getActionTranslations();
   const understood = formData.get("understood") === "on";
   const confirmation = String(formData.get("confirmation") ?? "").trim();
 
@@ -83,7 +85,7 @@ export async function deleteAccountAction(
     console.error("Failed to delete account:", error);
     return {
       success: false,
-      message: "Non riesco a eliminare l'account adesso. Riprova tra poco.",
+      message: t.account.deleteFailed,
     };
   }
 

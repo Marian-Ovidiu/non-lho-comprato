@@ -1,5 +1,6 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
 import { prisma } from "@/src/lib/prisma";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { ensureAppUserForAuthUser } from "@/src/lib/auth/provisioning";
@@ -33,6 +34,7 @@ export async function submitFeedback(
   _prev: FeedbackActionState,
   formData: FormData,
 ): Promise<FeedbackActionState> {
+  const t = await getActionTranslations();
   const result = validateFeedback({
     type: getString(formData, "type"),
     message: getString(formData, "message"),
@@ -111,7 +113,7 @@ export async function submitFeedback(
     console.error("[feedback] Failed to save:", error);
     return {
       success: false,
-      message: "Non sono riuscito a inviarlo. Riprova tra poco.",
+      message: t.feedback.sendFailed,
     };
   }
 }

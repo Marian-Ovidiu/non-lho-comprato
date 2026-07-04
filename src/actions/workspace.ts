@@ -1,5 +1,7 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import type { Translations } from "@/src/lib/i18n";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
@@ -51,14 +53,15 @@ type CreateWorkspaceResult = {
 export async function createWorkspaceAction(
   formData: FormData,
 ): Promise<CreateWorkspaceResult> {
+  const t = await getActionTranslations();
   const name = String(formData.get("name") ?? "").trim();
 
   if (!name) {
-    return { success: false, message: "Inserisci un nome per lo workspace." };
+    return { success: false, message: t.workspaceActions.nameRequired };
   }
 
   if (name.length > 80) {
-    return { success: false, message: "Il nome è troppo lungo (max 80 caratteri)." };
+    return { success: false, message: t.workspaceActions.nameTooLong };
   }
 
   try {
@@ -74,7 +77,7 @@ export async function createWorkspaceAction(
       return {
         success: false,
         message:
-          "Puoi creare un nuovo workspace solo partendo dal tuo workspace privato.",
+          t.workspaceActions.onlyFromPrivate,
       };
     }
 
@@ -108,11 +111,11 @@ export async function createWorkspaceAction(
 
     revalidatePath("/", "layout");
 
-    return { success: true, message: "Workspace creato.", workspaceId: workspace.id };
+    return { success: true, message: t.workspaceActions.created, workspaceId: workspace.id };
   } catch (error) {
     unstable_rethrow(error);
     console.error("Failed to create workspace:", error);
-    return { success: false, message: "Non riesco a creare lo workspace adesso. Riprova." };
+    return { success: false, message: t.workspaceActions.createFailed };
   }
 }
 
@@ -132,11 +135,12 @@ type GenerateOpenInviteResult = {
   inviteUrl?: string;
 };
 
-function rateLimitMessage() {
-  return "Troppi tentativi ravvicinati. Riprova tra poco.";
+function rateLimitMessage(t: Translations) {
+  return t.validation.tooManyAttempts;
 }
 
 export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResult> {
+  const t = await getActionTranslations();
   try {
     const clientIp = await getClientIpFromRequestHeaders();
     const user = await getCurrentUser();
@@ -156,7 +160,7 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
     });
 
     if (!workspace) {
-      return { success: false, message: "Nessuno workspace attivo." };
+      return { success: false, message: t.workspaceActions.noActiveWorkspace };
     }
 
     const workspaceLimit = await checkRateLimit(
@@ -169,7 +173,7 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
     );
 
     if (!workspaceLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const token = generateInviteToken();
@@ -178,7 +182,7 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
     const inviteUrl = await buildAbsoluteAppUrl(invitePath);
 
     if (!inviteUrl) {
-      return { success: false, message: "Non riesco a costruire il link. Controlla NEXT_PUBLIC_APP_URL." };
+      return { success: false, message: t.workspaceActions.linkBuildFailed };
     }
 
     await prisma.workspaceInvite.create({
@@ -198,11 +202,11 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
-      return { success: false, message: "Solo un owner può generare inviti." };
+      return { success: false, message: t.workspaceActions.ownerOnlyInvites };
     }
 
     console.error("Failed to generate open invite:", error);
-    return { success: false, message: "Non riesco a generare il link adesso. Riprova." };
+    return { success: false, message: t.workspaceActions.linkGenerateFailed };
   }
 }
 
@@ -215,6 +219,7 @@ type JoinByLinkResult = {
 export async function joinByLinkAction(
   formData: FormData,
 ): Promise<JoinByLinkResult> {
+  const t = await getActionTranslations();
   const raw = String(formData.get("link") ?? "").trim();
 
   // Extract token from URL or treat the whole string as token
@@ -231,7 +236,7 @@ export async function joinByLinkAction(
   }
 
   if (!token) {
-    return { success: false, message: "Inserisci un link o codice valido." };
+    return { success: false, message: t.workspaceActions.inviteLinkInvalidInput };
   }
 
   try {
@@ -248,7 +253,7 @@ export async function joinByLinkAction(
     );
 
     if (!tokenLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const userLimit = await checkRateLimit(
@@ -261,7 +266,7 @@ export async function joinByLinkAction(
     );
 
     if (!userLimit.allowed) {
-      return { success: false, message: rateLimitMessage() };
+      return { success: false, message: rateLimitMessage(t) };
     }
 
     const invite = await prisma.workspaceInvite.findUnique({
@@ -270,7 +275,7 @@ export async function joinByLinkAction(
     });
 
     if (!invite || !invite.workspace) {
-      return { success: false, message: "Link non valido o non più disponibile." };
+      return { success: false, message: t.workspaceActions.linkUnavailable };
     }
 
     const unavailableMessage = getWorkspaceInviteUnavailableMessage(invite);
@@ -284,7 +289,7 @@ export async function joinByLinkAction(
       const userEmail = user.email?.trim().toLowerCase();
       const invitedEmail = invite.invitedEmail.trim().toLowerCase();
       if (!userEmail || userEmail !== invitedEmail) {
-        return { success: false, message: "Questo link è destinato a un altro account." };
+        return { success: false, message: t.workspaceActions.linkForAnotherAccount };
       }
     }
 
@@ -314,7 +319,7 @@ export async function joinByLinkAction(
         if (claimedInvite.count !== 1) {
           throw new WorkspaceRbacError(
             "forbidden",
-            "Link non valido o non più disponibile.",
+            t.workspaceActions.linkUnavailable,
           );
         }
 
@@ -340,7 +345,7 @@ export async function joinByLinkAction(
 
     revalidatePath("/", "layout");
 
-    return { success: true, message: "Sei entrato nello workspace.", workspaceName: invite.workspace.name };
+    return { success: true, message: t.workspaceActions.joined, workspaceName: invite.workspace.name };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
@@ -348,7 +353,7 @@ export async function joinByLinkAction(
     }
 
     console.error("Failed to join workspace:", error);
-    return { success: false, message: "Non riesco a unirti adesso. Riprova." };
+    return { success: false, message: t.workspaceActions.joinFailed };
   }
 }
 
@@ -411,10 +416,11 @@ type UpdateCurrencyResult = {
 export async function updateWorkspaceCurrencyAction(
   formData: FormData,
 ): Promise<UpdateCurrencyResult> {
+  const t = await getActionTranslations();
   const code = String(formData.get("currency") ?? "").trim().toUpperCase();
 
   if (!isSupportedCurrency(code)) {
-    return { success: false, message: "Valuta non supportata." };
+    return { success: false, message: t.workspaceActions.currencyUnsupported };
   }
 
   try {
@@ -431,7 +437,7 @@ export async function updateWorkspaceCurrencyAction(
   } catch (error) {
     unstable_rethrow(error);
     console.error("Failed to update workspace currency:", error);
-    return { success: false, message: "Non riesco ad aggiornare la valuta adesso. Riprova." };
+    return { success: false, message: t.workspaceActions.currencyUpdateFailed };
   }
 }
 
@@ -443,10 +449,11 @@ type UpdateLanguageResult = {
 export async function updateWorkspaceLanguageAction(
   formData: FormData,
 ): Promise<UpdateLanguageResult> {
+  const t = await getActionTranslations();
   const code = String(formData.get("language") ?? "").trim().toLowerCase();
 
   if (!isSupportedLanguage(code)) {
-    return { success: false, message: "Lingua non supportata." };
+    return { success: false, message: t.workspaceActions.languageUnsupported };
   }
 
   try {
@@ -463,7 +470,7 @@ export async function updateWorkspaceLanguageAction(
   } catch (error) {
     unstable_rethrow(error);
     console.error("Failed to update workspace language:", error);
-    return { success: false, message: "Non riesco ad aggiornare la lingua adesso. Riprova." };
+    return { success: false, message: t.workspaceActions.languageUpdateFailed };
   }
 }
 
@@ -475,10 +482,11 @@ type UpdateTimezoneResult = {
 export async function updateWorkspaceTimezoneAction(
   formData: FormData,
 ): Promise<UpdateTimezoneResult> {
+  const t = await getActionTranslations();
   const timezone = String(formData.get("timezone") ?? "").trim();
 
   if (!isSupportedTimezone(timezone)) {
-    return { success: false, message: "Fuso orario non supportato." };
+    return { success: false, message: t.workspaceActions.timezoneUnsupported };
   }
 
   try {
@@ -495,7 +503,7 @@ export async function updateWorkspaceTimezoneAction(
   } catch (error) {
     unstable_rethrow(error);
     console.error("Failed to update workspace timezone:", error);
-    return { success: false, message: "Non riesco ad aggiornare il fuso orario. Riprova." };
+    return { success: false, message: t.workspaceActions.timezoneUpdateFailed };
   }
 }
 
@@ -507,20 +515,21 @@ type CompleteSetupResult = {
 export async function completeWorkspaceSetupAction(
   formData: FormData,
 ): Promise<CompleteSetupResult> {
+  const t = await getActionTranslations();
   const timezone = String(formData.get("timezone") ?? "").trim();
   const currency = String(formData.get("currency") ?? "").trim().toUpperCase();
   const language = String(formData.get("language") ?? "").trim().toLowerCase();
 
   if (!isSupportedTimezone(timezone)) {
-    return { success: false, message: "Fuso orario non supportato." };
+    return { success: false, message: t.workspaceActions.timezoneUnsupported };
   }
 
   if (!isSupportedCurrency(currency)) {
-    return { success: false, message: "Valuta non supportata." };
+    return { success: false, message: t.workspaceActions.currencyUnsupported };
   }
 
   if (!isSupportedLanguage(language)) {
-    return { success: false, message: "Lingua non supportata." };
+    return { success: false, message: t.workspaceActions.languageUnsupported };
   }
 
   try {
@@ -537,15 +546,16 @@ export async function completeWorkspaceSetupAction(
   } catch (error) {
     unstable_rethrow(error);
     console.error("Failed to complete workspace setup:", error);
-    return { success: false, message: "Non riesco a salvare la configurazione. Riprova." };
+    return { success: false, message: t.workspaceActions.setupSaveFailed };
   }
 }
 
 export async function removeWorkspaceMemberAction(
   targetUserId: string,
 ): Promise<RemoveMemberResult> {
+  const t = await getActionTranslations();
   if (!targetUserId) {
-    return { success: false, message: "Utente non specificato." };
+    return { success: false, message: t.workspaceActions.userNotSpecified };
   }
 
   try {
@@ -568,7 +578,7 @@ export async function removeWorkspaceMemberAction(
     revalidatePath("/more");
     revalidatePath("/workspace/members");
 
-    return { success: true, message: "Membro rimosso." };
+    return { success: true, message: t.workspaceActions.memberRemoved };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
@@ -576,6 +586,6 @@ export async function removeWorkspaceMemberAction(
     }
 
     console.error("Failed to remove workspace member:", error);
-    return { success: false, message: "Non riesco a rimuovere il membro adesso. Riprova." };
+    return { success: false, message: t.workspaceActions.removeMemberFailed };
   }
 }

@@ -41,6 +41,83 @@ export type Translations = {
     amountPositive: string;
     updateError: string;
     deleteError: string;
+    tooManyAttempts: string;
+  };
+
+  workspaceActions: {
+    created: string;
+    joined: string;
+    memberRemoved: string;
+    nameRequired: string;
+    nameTooLong: string;
+    noActiveWorkspace: string;
+    onlyFromPrivate: string;
+    userNotSpecified: string;
+    timezoneUnsupported: string;
+    languageUnsupported: string;
+    currencyUnsupported: string;
+    inviteLinkInvalidInput: string;
+    linkUnavailable: string;
+    linkForAnotherAccount: string;
+    ownerOnlyInvites: string;
+    createFailed: string;
+    joinFailed: string;
+    setupSaveFailed: string;
+    removeMemberFailed: string;
+    timezoneUpdateFailed: string;
+    languageUpdateFailed: string;
+    currencyUpdateFailed: string;
+    linkBuildFailed: string;
+    linkGenerateFailed: string;
+  };
+
+  inviteActions: {
+    accepted: string;
+    linkReady: string;
+    invalid: string;
+    expired: string;
+    notAvailable: string;
+    noLongerAvailable: string;
+    alreadyMember: string;
+    sharedSpaceGone: string;
+    cantInviteSelf: string;
+    openWithInvitedAccount: string;
+    emailRequired: string;
+    emailInvalid: string;
+    emailAccountNeeded: string;
+    ownerOnly: string;
+    createFailed: string;
+    acceptFailed: string;
+    linkBuildFailed: string;
+  };
+
+  importActions: {
+    uploaded: string;
+    mappingSaved: string;
+    rowsConfirmed: string;
+    rowsIgnored: string;
+    batchDeleted: string;
+    batchNotFound: string;
+    batchInvalid: string;
+    txNotFound: string;
+    invalidFile: string;
+    fileTooLarge: string;
+    csvUnreadable: string;
+    csvNoHeaders: string;
+    mappingInvalid: string;
+    checkSelectedRows: string;
+    rowInsufficientData: string;
+    rowInvalidDate: string;
+    rowNeedsCategory: string;
+    categoryInvalidOnConfirm: string;
+    categoryNotInWorkspace: string;
+    onlyPendingConfirmable: string;
+    onlyIgnorableStates: string;
+    selectAtLeastOneToConfirm: string;
+    selectAtLeastOneToIgnore: string;
+    cantDeleteConfirmedBatch: string;
+    maxConfirm: (count: number) => string;
+    maxManage: (count: number) => string;
   };
 
   entryActions: {
@@ -650,6 +727,7 @@ export type Translations = {
   };
 
   account: {
+    deleteFailed: string;
     deleteTitle: string;
     deleteConfirmHelp: string;
     deleteConfirmLabel: string;
@@ -659,6 +737,7 @@ export type Translations = {
   };
 
   feedback: {
+    sendFailed: string;
     buttonLabel: string;
     title: string;
     desc: string;
