@@ -1,7 +1,8 @@
+"use server";
+
 import { getActionTranslations } from "@/src/lib/i18n/server";
 import { it } from "@/src/lib/i18n/it";
 import type { Translations } from "@/src/lib/i18n";
-"use server";
 
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
