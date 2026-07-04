@@ -1,5 +1,8 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { revalidatePath } from "next/cache";
 
@@ -77,21 +80,25 @@ function getText(formData: FormData, name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function getMoney(formData: FormData, name: string): {
+function getMoney(
+  formData: FormData,
+  name: string,
+  v: Translations["validation"] = it.validation,
+): {
   value: number;
   error?: string;
 } {
   const raw = getText(formData, name);
 
   if (!raw) {
-    return { value: Number.NaN, error: "Questo campo è obbligatorio" };
+    return { value: Number.NaN, error: v.required };
   }
 
   const normalized = raw.replace(",", ".");
   const value = Number(normalized);
 
   if (!Number.isFinite(value)) {
-    return { value: Number.NaN, error: "Inserisci un numero valido" };
+    return { value: Number.NaN, error: v.invalidNumber };
   }
 
   if (value < 0) {
@@ -101,7 +108,11 @@ function getMoney(formData: FormData, name: string): {
   return { value };
 }
 
-function getOptionalMoney(formData: FormData, name: string): ParsedMoneyField {
+function getOptionalMoney(
+  formData: FormData,
+  name: string,
+  v: Translations["validation"] = it.validation,
+): ParsedMoneyField {
   const raw = getText(formData, name);
 
   if (!raw) {
@@ -118,7 +129,7 @@ function getOptionalMoney(formData: FormData, name: string): ParsedMoneyField {
     return {
       value: Number.NaN,
       provided: true,
-      error: "Inserisci un numero valido",
+      error: v.invalidNumber,
     };
   }
 
@@ -185,6 +196,7 @@ async function resolveCategory(categoryId: string, workspaceId: string) {
 function resolveLegacyAlternativeCost(
   formData: FormData,
   realCost: { value: number; error?: string },
+  v: Translations["validation"] = it.validation,
 ): { value: number; error?: string } {
   const raw = getText(formData, "alternativeCost");
 
@@ -196,7 +208,7 @@ function resolveLegacyAlternativeCost(
     return { value: realCost.value };
   }
 
-  return getMoney(formData, "alternativeCost");
+  return getMoney(formData, "alternativeCost", v);
 }
 
 function hasTrackerFirstMoneyFields(formData: FormData): boolean {
@@ -205,10 +217,13 @@ function hasTrackerFirstMoneyFields(formData: FormData): boolean {
   );
 }
 
-function resolveLegacyPresetMoney(formData: FormData): ResolvedPresetMoney {
+function resolveLegacyPresetMoney(
+  formData: FormData,
+  tr: Translations = it,
+): ResolvedPresetMoney {
   const errors: Record<string, string> = {};
-  const realCost = getMoney(formData, "realCost");
-  const alternativeCost = resolveLegacyAlternativeCost(formData, realCost);
+  const realCost = getMoney(formData, "realCost", tr.validation);
+  const alternativeCost = resolveLegacyAlternativeCost(formData, realCost, tr.validation);
 
   if (realCost.error) {
     errors.realCost = realCost.error;
@@ -232,12 +247,15 @@ function resolveLegacyPresetMoney(formData: FormData): ResolvedPresetMoney {
   };
 }
 
-function resolveTrackerFirstPresetMoney(formData: FormData): ResolvedPresetMoney {
+function resolveTrackerFirstPresetMoney(
+  formData: FormData,
+  tr: Translations = it,
+): ResolvedPresetMoney {
   const errors: Record<string, string> = {};
   const rawMode = getText(formData, "mode");
   const rawSavingContext = getText(formData, "savingContext");
-  const amountSpent = getOptionalMoney(formData, "amountSpent");
-  const comparisonAmount = getOptionalMoney(formData, "comparisonAmount");
+  const amountSpent = getOptionalMoney(formData, "amountSpent", tr.validation);
+  const comparisonAmount = getOptionalMoney(formData, "comparisonAmount", tr.validation);
 
   if (amountSpent.error) {
     errors.amountSpent = amountSpent.error;
@@ -250,7 +268,7 @@ function resolveTrackerFirstPresetMoney(formData: FormData): ResolvedPresetMoney
   const mode: EntryMode = rawMode === "avoided" ? "avoided" : "spent";
 
   if (rawMode && rawMode !== "spent" && rawMode !== "avoided") {
-    errors.mode = "Seleziona una modalita valida";
+    errors.mode = tr.presetActions.selectValidMode;
   }
 
   let savingContext: EntrySavingContext =
@@ -265,26 +283,26 @@ function resolveTrackerFirstPresetMoney(formData: FormData): ResolvedPresetMoney
     rawSavingContext !== "none" &&
     rawSavingContext !== "comparison"
   ) {
-    errors.savingContext = "Seleziona un contesto valido";
+    errors.savingContext = tr.presetActions.selectValidContext;
   }
 
   if (mode === "avoided") {
     savingContext = "comparison";
 
     if (!comparisonAmount.provided) {
-      errors.comparisonAmount = "Questo campo è obbligatorio";
+      errors.comparisonAmount = tr.validation.required;
     } else if (comparisonAmount.value <= 0) {
       errors.comparisonAmount = "L'importo deve essere maggiore di 0";
     }
   } else {
     if (!amountSpent.provided) {
-      errors.amountSpent = "Questo campo è obbligatorio";
+      errors.amountSpent = tr.validation.required;
     } else if (amountSpent.value <= 0) {
       errors.amountSpent = "L'importo deve essere maggiore di 0";
     }
 
     if (savingContext === "comparison" && !comparisonAmount.provided) {
-      errors.comparisonAmount = "Questo campo è obbligatorio";
+      errors.comparisonAmount = tr.validation.required;
     }
   }
 
@@ -305,12 +323,15 @@ function resolveTrackerFirstPresetMoney(formData: FormData): ResolvedPresetMoney
   };
 }
 
-function resolvePresetMoney(formData: FormData): ResolvedPresetMoney {
+function resolvePresetMoney(
+  formData: FormData,
+  tr: Translations = it,
+): ResolvedPresetMoney {
   if (hasTrackerFirstMoneyFields(formData)) {
-    return resolveTrackerFirstPresetMoney(formData);
+    return resolveTrackerFirstPresetMoney(formData, tr);
   }
 
-  return resolveLegacyPresetMoney(formData);
+  return resolveLegacyPresetMoney(formData, tr);
 }
 
 function buildPresetEntryFormData(params: {
@@ -404,15 +425,16 @@ function resolveDefaultPresetOwnership(
 export async function createPreset(
   formData: FormData,
 ): Promise<PresetActionResult> {
+  const t = await getActionTranslations();
   const errors: Record<string, string> = {};
 
   const title = getText(formData, "title");
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
-  const money = resolvePresetMoney(formData);
+  const money = resolvePresetMoney(formData, t);
 
   if (!title) {
-    errors.title = "Il titolo è obbligatorio";
+    errors.title = t.validation.titleRequired;
   }
 
   if (title && title.length < 2) {
@@ -420,7 +442,7 @@ export async function createPreset(
   }
 
   if (!categoryId) {
-    errors.categoryId = "Seleziona una categoria";
+    errors.categoryId = t.validation.selectCategory;
   }
 
   Object.assign(errors, money.errors);
@@ -428,7 +450,7 @@ export async function createPreset(
   if (Object.keys(errors).length > 0) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -436,7 +458,7 @@ export async function createPreset(
   if (!money.money) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -448,7 +470,7 @@ export async function createPreset(
     if (!category) {
       return {
         success: false,
-        message: "Seleziona una categoria valida",
+        message: t.validation.selectValidCategory,
       };
     }
 
@@ -467,14 +489,14 @@ export async function createPreset(
 
     return {
       success: true,
-      message: "Preset salvato con successo",
+      message: t.presetActions.saved,
     };
   } catch (error) {
     console.error("Failed to create preset:", error);
     return {
       success: false,
       message:
-        "Non riesco a salvare il preset adesso. Controlla il database e riprova tra poco.",
+        t.presetActions.saveFailed,
     };
   }
 }
@@ -483,23 +505,24 @@ export async function updatePreset(
   id: string,
   formData: FormData,
 ): Promise<PresetActionResult> {
+  const t = await getActionTranslations();
   const presetId = id.trim();
   const errors: Record<string, string> = {};
 
   if (!presetId) {
     return {
       success: false,
-      message: "ID preset non valido",
+      message: t.presetActions.invalidId,
     };
   }
 
   const title = getText(formData, "title");
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
-  const money = resolvePresetMoney(formData);
+  const money = resolvePresetMoney(formData, t);
 
   if (!title) {
-    errors.title = "Il titolo è obbligatorio";
+    errors.title = t.validation.titleRequired;
   }
 
   if (title && title.length < 2) {
@@ -507,7 +530,7 @@ export async function updatePreset(
   }
 
   if (!categoryId) {
-    errors.categoryId = "Seleziona una categoria";
+    errors.categoryId = t.validation.selectCategory;
   }
 
   Object.assign(errors, money.errors);
@@ -515,7 +538,7 @@ export async function updatePreset(
   if (Object.keys(errors).length > 0 || !money.money) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -532,7 +555,7 @@ export async function updatePreset(
     if (!preset) {
       return {
         success: false,
-        message: "Preset non trovato",
+        message: t.presetActions.notFound,
       };
     }
 
@@ -541,7 +564,7 @@ export async function updatePreset(
     if (!category) {
       return {
         success: false,
-        message: "Seleziona una categoria valida",
+        message: t.validation.selectValidCategory,
       };
     }
 
@@ -560,14 +583,14 @@ export async function updatePreset(
 
     return {
       success: true,
-      message: "Preset aggiornato",
+      message: t.presetActions.updated,
     };
   } catch (error) {
     console.error("Failed to update preset:", error);
     return {
       success: false,
       message:
-        "Non riesco ad aggiornare il preset adesso. Riprova tra poco.",
+        t.presetActions.updateFailed,
     };
   }
 }
@@ -668,12 +691,13 @@ export async function getPresets(): Promise<SerializablePreset[]> {
 export async function createEntryFromPreset(
   presetId: string,
 ): Promise<PresetActionResult> {
+  const t = await getActionTranslations();
   const id = presetId.trim();
 
   if (!id) {
     return {
       success: false,
-      message: "ID preset non valido",
+      message: t.presetActions.invalidId,
     };
   }
 
@@ -695,7 +719,7 @@ export async function createEntryFromPreset(
     if (!preset) {
       return {
         success: false,
-        message: "Preset non trovato",
+        message: t.presetActions.notFound,
       };
     }
 
@@ -744,7 +768,7 @@ export async function createEntryFromPreset(
 
     return {
       success: true,
-      message: "Movimento creato dal preset",
+      message: t.presetActions.entryCreated,
       isFirstEntryOfDay: result.isFirstEntryOfDay,
       streakFrom: result.streakFrom,
       streakTo: result.streakTo,
@@ -754,18 +778,19 @@ export async function createEntryFromPreset(
     return {
       success: false,
       message:
-        "Non riesco a creare il movimento dal preset adesso. Riprova tra poco.",
+        t.presetActions.entryCreateFailed,
     };
   }
 }
 
 export async function deletePreset(id: string): Promise<PresetActionResult> {
+  const t = await getActionTranslations();
   const presetId = id.trim();
 
   if (!presetId) {
     return {
       success: false,
-      message: "ID preset non valido",
+      message: t.presetActions.invalidId,
     };
   }
 
@@ -781,7 +806,7 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
     if (!preset) {
       return {
         success: false,
-        message: "Preset non trovato",
+        message: t.presetActions.notFound,
       };
     }
 
@@ -793,13 +818,13 @@ export async function deletePreset(id: string): Promise<PresetActionResult> {
 
     return {
       success: true,
-      message: "Preset eliminato",
+      message: t.presetActions.deleted,
     };
   } catch (error) {
     console.error("Failed to delete preset:", error);
     return {
       success: false,
-      message: "Si è verificato un errore durante l'eliminazione",
+      message: t.validation.deleteError,
     };
   }
 }

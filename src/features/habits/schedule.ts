@@ -1,3 +1,5 @@
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import {
   getDateParts,
   getDaysInMonth,
@@ -64,7 +66,10 @@ export function isHabitScheduledForDate(
   return activeDays.includes(getIsoWeekday(date, timeZone));
 }
 
-export function parseActiveDays(formData: FormData): {
+export function parseActiveDays(
+  formData: FormData,
+  m: Translations["habitActions"] = it.habitActions,
+): {
   value: HabitSchedule;
   error?: string;
 } {
@@ -76,7 +81,7 @@ export function parseActiveDays(formData: FormData): {
     if (!Number.isInteger(day) || day < 1 || day > 31) {
       return {
         value: [],
-        error: "Seleziona un giorno del mese valido",
+        error: m.scheduleDayOfMonth,
       };
     }
 
@@ -125,7 +130,7 @@ export function parseActiveDays(formData: FormData): {
       if (!Number.isFinite(day)) {
         return {
           value: [],
-          error: "I giorni attivi non sono validi",
+          error: m.scheduleInvalid,
         };
       }
 
@@ -138,7 +143,7 @@ export function parseActiveDays(formData: FormData): {
   if (!activeDays.length) {
     return {
       value: [],
-      error: "Seleziona almeno un giorno attivo",
+      error: m.scheduleAtLeastOneDay,
     };
   }
 

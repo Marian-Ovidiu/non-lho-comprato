@@ -35,8 +35,49 @@ export type Translations = {
     emojiMax: string;
     checkFields: string;
     selectCategory: string;
+    selectValidCategory: string;
     updateError: string;
     deleteError: string;
+  };
+
+  presetActions: {
+    invalidId: string;
+    saved: string;
+    updated: string;
+    deleted: string;
+    notFound: string;
+    entryCreated: string;
+    entryCreateFailed: string;
+    saveFailed: string;
+    updateFailed: string;
+    selectValidContext: string;
+    selectValidMode: string;
+  };
+
+  habitActions: {
+    invalidId: string;
+    nameRequired: string;
+    reminderTimeInvalid: string;
+    reminderTimeRequired: string;
+    deleteModeInvalid: string;
+    saveFailed: string;
+    updateFailed: string;
+    updateFailedDb: string;
+    deleteFailed: string;
+    occurrenceNotFound: string;
+    saved: string;
+    updated: string;
+    notFound: string;
+    deletedWithEntries: string;
+    deletedKeepEntries: string;
+    markedSpent: string;
+    markedAvoided: string;
+    markedSkipped: string;
+    targetScopeRequired: string;
+    selectValidUser: string;
+    scheduleInvalid: string;
+    scheduleAtLeastOneDay: string;
+    scheduleDayOfMonth: string;
   };
 
   goalActions: {

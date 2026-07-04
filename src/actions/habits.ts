@@ -1,5 +1,8 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import {
   isHabitScheduledForDate,
   parseActiveDays,
@@ -247,25 +250,29 @@ function getText(formData: FormData, name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function getMoney(formData: FormData, name: string): {
+function getMoney(
+  formData: FormData,
+  name: string,
+  v: Translations["validation"] = it.validation,
+): {
   value: number;
   error?: string;
 } {
   const raw = getText(formData, name);
 
   if (!raw) {
-    return { value: Number.NaN, error: "Questo campo è obbligatorio" };
+    return { value: Number.NaN, error: v.required };
   }
 
   const normalized = normalizeMoneyInputString(raw);
   const value = normalized === null ? Number.NaN : Number(normalized);
 
   if (!Number.isFinite(value)) {
-    return { value: Number.NaN, error: "Inserisci un numero valido" };
+    return { value: Number.NaN, error: v.invalidNumber };
   }
 
   if (value < 0) {
-    return { value, error: "Il valore deve essere maggiore o uguale a 0" };
+    return { value, error: v.nonNegative };
   }
 
   return { value };
@@ -291,7 +298,10 @@ function parseCheckbox(value: string): boolean {
   return value === "1" || value === "true" || value === "on";
 }
 
-function parseReminderTime(value: string): {
+function parseReminderTime(
+  value: string,
+  m: Translations["habitActions"] = it.habitActions,
+): {
   value: string | null;
   error?: string;
 } {
@@ -305,7 +315,7 @@ function parseReminderTime(value: string): {
   if (!match) {
     return {
       value: null,
-      error: "Inserisci un orario valido nel formato HH:mm",
+      error: m.reminderTimeInvalid,
     };
   }
 
@@ -315,7 +325,7 @@ function parseReminderTime(value: string): {
   if (hours > 23 || minutes > 59) {
     return {
       value: null,
-      error: "Inserisci un orario valido nel formato HH:mm",
+      error: m.reminderTimeInvalid,
     };
   }
 
@@ -366,6 +376,7 @@ async function syncOccurrenceStatus(
   occurrenceId: string,
   status: Exclude<HabitStatus, "pending">,
 ): Promise<HabitActionResult> {
+  const t = await getActionTranslations();
   const id = occurrenceId.trim();
   const startedAt = performance.now();
   const logStep = (label: string) => {
@@ -381,7 +392,7 @@ async function syncOccurrenceStatus(
   if (!id) {
     return {
       success: false,
-      message: "ID ricorrente non valido",
+      message: t.habitActions.invalidId,
     };
   }
 
@@ -401,7 +412,7 @@ async function syncOccurrenceStatus(
     if (!occurrence) {
       return {
         success: false,
-        message: "Occorrenza non trovata",
+        message: t.habitActions.occurrenceNotFound,
       };
     }
 
@@ -469,16 +480,16 @@ async function syncOccurrenceStatus(
       success: true,
       message:
         status === "spent"
-          ? "Segnata come pagata"
+          ? t.habitActions.markedSpent
           : status === "avoided"
-            ? "Segnata come evitata"
-            : "Segnata come non applicabile",
+            ? t.habitActions.markedAvoided
+            : t.habitActions.markedSkipped,
     };
   } catch (error) {
     console.error("Failed to update habit occurrence:", error);
     return {
       success: false,
-      message: "Non riesco ad aggiornare la ricorrente adesso. Riprova tra poco.",
+      message: t.habitActions.updateFailed,
     };
   }
 }
@@ -487,12 +498,13 @@ async function syncOccurrenceStatus(
 export async function createHabit(
   formData: FormData,
 ): Promise<HabitActionResult> {
+  const t = await getActionTranslations();
   const errors: Record<string, string> = {};
 
   const name = getText(formData, "name");
   const categoryId = getText(formData, "categoryId");
-  const amount = getMoney(formData, "amount");
-  const activeDays = parseActiveDays(formData);
+  const amount = getMoney(formData, "amount", t.validation);
+  const activeDays = parseActiveDays(formData, t.habitActions);
   const targetScopeInput = getOptionalFormText(formData, "targetScope");
   const targetUserIdInput = getOptionalFormText(formData, "targetUserId");
   const reminderEnabledInput = getOptionalFormText(formData, "reminderEnabled");
@@ -502,15 +514,15 @@ export async function createHabit(
     reminderEnabledInput === null ? false : parseCheckbox(reminderEnabledInput);
   const reminderTime =
     reminderEnabled && reminderTimeInput !== null
-      ? parseReminderTime(reminderTimeInput)
+      ? parseReminderTime(reminderTimeInput, t.habitActions)
       : { value: null as string | null };
 
   if (!name) {
-    errors.name = "Il nome è obbligatorio";
+    errors.name = t.habitActions.nameRequired;
   }
 
   if (!categoryId) {
-    errors.categoryId = "Seleziona una categoria";
+    errors.categoryId = t.validation.selectCategory;
   }
 
   if (amount.error) {
@@ -522,20 +534,20 @@ export async function createHabit(
   }
 
   if (targetScopeInput !== null && !targetScopeInput) {
-    errors.targetScope = "Seleziona per chi vale la ricorrente";
+    errors.targetScope = t.habitActions.targetScopeRequired;
   } else if (
     targetScopeInput !== null &&
     targetScopeInput !== "self" &&
     targetScopeInput !== "shared"
   ) {
-    errors.targetScope = "Seleziona per chi vale la ricorrente";
+    errors.targetScope = t.habitActions.targetScopeRequired;
   }
 
   if (
     reminderEnabled &&
     (reminderTimeInput === null || !reminderTimeInput.trim())
   ) {
-    errors.reminderTime = "Seleziona un orario per il promemoria";
+    errors.reminderTime = t.habitActions.reminderTimeRequired;
   } else if (reminderEnabled && reminderTime.error) {
     errors.reminderTime = reminderTime.error;
   }
@@ -543,7 +555,7 @@ export async function createHabit(
   if (Object.keys(errors).length > 0) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -559,9 +571,9 @@ export async function createHabit(
     if (!category) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
+        message: t.validation.checkFields,
         errors: {
-          categoryId: "Seleziona una categoria valida",
+          categoryId: t.validation.selectValidCategory,
         },
       };
     }
@@ -581,9 +593,9 @@ export async function createHabit(
     ) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
+        message: t.validation.checkFields,
         errors: {
-          targetUserId: "Seleziona un utente valido",
+          targetUserId: t.habitActions.selectValidUser,
         },
       };
     }
@@ -608,14 +620,14 @@ export async function createHabit(
 
     return {
       success: true,
-      message: "Ricorrente salvata con successo",
+      message: t.habitActions.saved,
     };
   } catch (error) {
     console.error("Failed to create habit:", error);
     return {
       success: false,
       message:
-        "Non riesco a salvare la ricorrente adesso. Controlla il database e riprova tra poco.",
+        t.habitActions.saveFailed,
     };
   }
 }
@@ -663,19 +675,20 @@ export async function deleteHabit(
   habitId: string,
   mode: HabitDeleteMode,
 ): Promise<HabitActionResult> {
+  const t = await getActionTranslations();
   const id = habitId.trim();
 
   if (!id) {
     return {
       success: false,
-      message: "ID ricorrente non valido",
+      message: t.habitActions.invalidId,
     };
   }
 
   if (!isHabitDeleteMode(mode)) {
     return {
       success: false,
-      message: "Modalità di eliminazione non valida",
+      message: t.habitActions.deleteModeInvalid,
     };
   }
 
@@ -691,7 +704,7 @@ export async function deleteHabit(
     if (!habit) {
       return {
         success: false,
-        message: "Ricorrente non trovata",
+        message: t.habitActions.notFound,
       };
     }
 
@@ -709,14 +722,14 @@ export async function deleteHabit(
       success: true,
       message:
         mode === "habit_and_entries"
-          ? "Ricorrente e movimenti collegati eliminati"
-          : "Ricorrente eliminata. I movimenti generati restano nel registro.",
+          ? t.habitActions.deletedWithEntries
+          : t.habitActions.deletedKeepEntries,
     };
   } catch (error) {
     console.error("Failed to delete habit:", error);
     return {
       success: false,
-      message: "Non riesco a eliminare la ricorrente adesso. Riprova tra poco.",
+      message: t.habitActions.deleteFailed,
     };
   }
 }
@@ -725,20 +738,21 @@ export async function updateHabit(
   habitId: string,
   formData: FormData,
 ): Promise<HabitActionResult> {
+  const t = await getActionTranslations();
   const id = habitId.trim();
   const errors: Record<string, string> = {};
 
   if (!id) {
     return {
       success: false,
-      message: "ID ricorrente non valido",
+      message: t.habitActions.invalidId,
     };
   }
 
   const name = getText(formData, "name");
   const categoryId = getText(formData, "categoryId");
-  const amount = getMoney(formData, "amount");
-  const activeDays = parseActiveDays(formData);
+  const amount = getMoney(formData, "amount", t.validation);
+  const activeDays = parseActiveDays(formData, t.habitActions);
   const isActive = parseBoolean(getText(formData, "isActive"));
   const targetScopeInput = getOptionalFormText(formData, "targetScope");
   const targetUserIdInput = getOptionalFormText(formData, "targetUserId");
@@ -746,11 +760,11 @@ export async function updateHabit(
   const reminderTimeInput = getOptionalFormText(formData, "reminderTime");
 
   if (!name) {
-    errors.name = "Il nome è obbligatorio";
+    errors.name = t.habitActions.nameRequired;
   }
 
   if (!categoryId) {
-    errors.categoryId = "Seleziona una categoria";
+    errors.categoryId = t.validation.selectCategory;
   }
 
   if (amount.error) {
@@ -764,7 +778,7 @@ export async function updateHabit(
   if (Object.keys(errors).length > 0) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -785,7 +799,7 @@ export async function updateHabit(
     if (!existingHabit) {
       return {
         success: false,
-        message: "Ricorrente non trovata",
+        message: t.habitActions.notFound,
       };
     }
 
@@ -798,9 +812,9 @@ export async function updateHabit(
     if (!category) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
+        message: t.validation.checkFields,
         errors: {
-          categoryId: "Seleziona una categoria valida",
+          categoryId: t.validation.selectValidCategory,
         },
       };
     }
@@ -822,7 +836,7 @@ export async function updateHabit(
       reminderTimeInput !== null ? reminderTimeInput : existingHabit.reminderTime;
     const nextReminderTime =
       nextReminderEnabled && nextReminderTimeInput !== null
-        ? parseReminderTime(nextReminderTimeInput)
+        ? parseReminderTime(nextReminderTimeInput, t.habitActions)
         : { value: null as string | null };
 
     if (
@@ -830,7 +844,7 @@ export async function updateHabit(
       targetScopeInput !== "self" &&
       targetScopeInput !== "shared"
     ) {
-      errors.targetScope = "Seleziona per chi vale la ricorrente";
+      errors.targetScope = t.habitActions.targetScopeRequired;
     }
 
     if (
@@ -838,14 +852,14 @@ export async function updateHabit(
       nextTargetUserId &&
       !members.some((member) => member.userId === nextTargetUserId)
     ) {
-      errors.targetUserId = "Seleziona un utente valido";
+      errors.targetUserId = t.habitActions.selectValidUser;
     }
 
     if (
       nextReminderEnabled &&
       (nextReminderTimeInput === null || !nextReminderTimeInput.trim())
     ) {
-      errors.reminderTime = "Seleziona un orario per il promemoria";
+      errors.reminderTime = t.habitActions.reminderTimeRequired;
     } else if (nextReminderEnabled && nextReminderTime.error) {
       errors.reminderTime = nextReminderTime.error;
     }
@@ -853,7 +867,7 @@ export async function updateHabit(
     if (Object.keys(errors).length > 0) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
+        message: t.validation.checkFields,
         errors,
       };
     }
@@ -877,14 +891,14 @@ export async function updateHabit(
 
     return {
       success: true,
-      message: "Ricorrente aggiornata con successo",
+      message: t.habitActions.updated,
     };
   } catch (error) {
     console.error("Failed to update habit:", error);
     return {
       success: false,
       message:
-        "Non riesco ad aggiornare la ricorrente adesso. Controlla il database e riprova tra poco.",
+        t.habitActions.updateFailedDb,
     };
   }
 }
@@ -892,13 +906,14 @@ export async function updateHabit(
 export async function deleteHabitFromForm(
   formData: FormData,
 ): Promise<HabitActionResult> {
+  const t = await getActionTranslations();
   const habitId = getText(formData, "habitId");
   const mode = getText(formData, "deleteMode");
 
   if (!isHabitDeleteMode(mode)) {
     return {
       success: false,
-      message: "Modalità di eliminazione non valida",
+      message: t.habitActions.deleteModeInvalid,
     };
   }
 
