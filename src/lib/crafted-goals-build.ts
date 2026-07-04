@@ -1,5 +1,6 @@
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
+import { round2 } from "@/src/lib/money-number";
 import type { RecentSavingFeedItem } from "@/src/actions/goals";
 
 export type GoalStatus = "in-corso" | "pausa" | "completato";
@@ -62,10 +63,6 @@ export type CraftedGoalsProps = {
   };
   counts: Record<"tutti" | GoalStatus, number>;
 };
-
-function round2(value: number) {
-  return Math.round((value + Number.EPSILON) * 100) / 100;
-}
 
 function getStatus(goal: CraftedGoalSource): GoalStatus {
   if (goal.isCompleted) return "completato";

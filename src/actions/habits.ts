@@ -228,16 +228,6 @@ function tryRevalidatePaths() {
   }
 }
 
-function revalidateHabitOccurrencePaths() {
-  for (const path of ["/habits", "/", "/budget", "/workspace/budgets", "/more"]) {
-    try {
-      revalidatePath(path);
-    } catch (error) {
-      console.warn(`Failed to revalidate ${path}:`, error);
-    }
-  }
-}
-
 function getText(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim() : "";
@@ -356,127 +346,6 @@ async function resolveCategory(categoryId: string, workspaceId: string) {
   }
 
   return category;
-}
-
-async function syncOccurrenceStatus(
-  occurrenceId: string,
-  status: Exclude<HabitStatus, "pending">,
-): Promise<HabitActionResult> {
-  const id = occurrenceId.trim();
-  const startedAt = performance.now();
-  const logStep = (label: string) => {
-    if (process.env.NODE_ENV === "production") {
-      return;
-    }
-
-    console.info(
-      `[perf] habits/syncOccurrenceStatus/${label} ${Math.round(performance.now() - startedAt)}ms`,
-    );
-  };
-
-  if (!id) {
-    return {
-      success: false,
-      message: "ID ricorrente non valido",
-    };
-  }
-
-  try {
-    const workspaceId = await getCurrentWorkspaceId();
-    const occurrence = await prisma.habitOccurrence.findFirst({
-      where: {
-        id,
-        habit: { workspaceId },
-      },
-      include: {
-        habit: true,
-      },
-    });
-    logStep("load-occurrence");
-
-    if (!occurrence) {
-      return {
-        success: false,
-        message: "Occorrenza non trovata",
-      };
-    }
-
-    await requireWorkspaceAccessForRecord(occurrence, "Occorrenza ricorrente");
-    logStep("access-check");
-
-    const [currentUser, members, workspaceWhere, timeZone] = await Promise.all([
-      getCurrentUser(),
-      getCurrentWorkspaceMembers(),
-      getCurrentWorkspaceScopedWhere(),
-      getCurrentWorkspaceTimezone(),
-    ]);
-    logStep("workspace-context");
-
-    await prisma.$transaction(async (tx) => {
-      await tx.habitOccurrence.updateMany({
-        where: {
-          id,
-          habit: { workspaceId },
-        },
-        data: { status },
-      });
-
-      if (status === "skipped") {
-        await tx.entry.deleteMany({
-          where: {
-            workspaceId,
-            habitOccurrenceId: id,
-          },
-        });
-        return;
-      }
-
-      const isFirstEntryOfDay = await resolveIsFirstEntryOfDayForHabitOccurrence(
-        occurrence.date,
-        timeZone,
-        workspaceWhere,
-        tx,
-        id,
-      );
-
-      const entryData = {
-        ...buildEntryDataForOccurrence(occurrence, status, {
-          workspaceId,
-          currentUserId: currentUser.id,
-          members,
-        }),
-        isFirstEntryOfDay,
-      };
-
-      await tx.entry.upsert({
-        where: { habitOccurrenceId: id },
-        update: entryData,
-        create: entryData,
-      });
-    });
-    logStep("transaction");
-
-    revalidateHabitOccurrencePaths();
-    updateTag(`habits:${workspaceId}`);
-    updateTag(`entries:${workspaceId}`);
-    logStep("revalidate");
-
-    return {
-      success: true,
-      message:
-        status === "spent"
-          ? "Segnata come pagata"
-          : status === "avoided"
-            ? "Segnata come evitata"
-            : "Segnata come non applicabile",
-    };
-  } catch (error) {
-    console.error("Failed to update habit occurrence:", error);
-    return {
-      success: false,
-      message: "Non riesco ad aggiornare la ricorrente adesso. Riprova tra poco.",
-    };
-  }
 }
 
 export async function createHabit(
@@ -1046,24 +915,6 @@ async function _cachedTodayHabitOccurrences(workspaceId: string, timeZone: strin
   } catch (error) {
     logAndRethrowDataLoadError("Failed to load today habit occurrences", error);
   }
-}
-
-export async function markHabitOccurrenceSpent(
-  id: string,
-): Promise<HabitActionResult> {
-  return syncOccurrenceStatus(id, "spent");
-}
-
-export async function markHabitOccurrenceAvoided(
-  id: string,
-): Promise<HabitActionResult> {
-  return syncOccurrenceStatus(id, "avoided");
-}
-
-export async function markHabitOccurrenceSkipped(
-  id: string,
-): Promise<HabitActionResult> {
-  return syncOccurrenceStatus(id, "skipped");
 }
 
 export async function finalizeOldPendingOccurrences(): Promise<SyncResult> {

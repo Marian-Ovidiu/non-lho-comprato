@@ -6,26 +6,25 @@ import {
   buildFeaturedGoalNote,
   buildSecondaryGoalNote,
 } from "@/src/lib/crafted-goals-build";
+import type {
+  CategoryStatsItem as StatsCategoryStatsItem,
+  MonthlyStatsItem as StatsMonthlyStatsItem,
+} from "@/src/features/stats/insights";
 import { getGoalCraftedIcon } from "@/src/lib/goal-crafted-icon";
 import { getDateKey } from "@/src/lib/workspace-dates";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 
-type CategoryStatsItem = {
-  categoryName: string;
-  categorySlug: string;
-  totalRealSpent: number;
-  totalSaved: number;
-  entriesCount: number;
-};
+type CategoryStatsItem = Pick<
+  StatsCategoryStatsItem,
+  "categoryName" | "categorySlug" | "totalRealSpent" | "totalSaved" | "entriesCount"
+>;
 
-type MonthlyStatsItem = {
-  month: string;
-  totalRealSpent: number;
-  totalSaved: number;
-  entriesCount: number;
-};
+type MonthlyStatsItem = Pick<
+  StatsMonthlyStatsItem,
+  "month" | "totalRealSpent" | "totalSaved" | "entriesCount"
+>;
 
 type GoalRow = {
   id: string;
