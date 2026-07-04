@@ -38,12 +38,7 @@ import {
 type TabKey = "tutti" | GoalStatus;
 type Tone = "default" | "success" | "accent" | "muted";
 
-const TABS: Array<{ key: TabKey; label: string }> = [
-  { key: "tutti", label: "Tutti" },
-  { key: "in-corso", label: "In corso" },
-  { key: "pausa", label: "Pausa" },
-  { key: "completato", label: "Completati" },
-];
+const TAB_KEYS: TabKey[] = ["tutti", "in-corso", "pausa", "completato"];
 
 function formatEURBase(
   locale: string,
@@ -61,10 +56,10 @@ function formatEURBase(
   return `${sign}${currencySymbol}${formatted}`;
 }
 
-function statusLabel(status: GoalStatus) {
-  if (status === "completato") return "Completato";
-  if (status === "pausa") return "In pausa";
-  return "In corso";
+function statusLabel(status: GoalStatus, t: ReturnType<typeof useTranslations>) {
+  if (status === "completato") return t.goals.statusCompleted;
+  if (status === "pausa") return t.goals.statusPaused;
+  return t.goals.statusInProgress;
 }
 
 function statusTone(status: GoalStatus): Tone {
@@ -106,6 +101,7 @@ function MicroStat({
 }
 
 function StatusPill({ status }: { status: GoalStatus }) {
+  const t = useTranslations();
   const tone = statusTone(status);
 
   return (
@@ -117,7 +113,7 @@ function StatusPill({ status }: { status: GoalStatus }) {
         tone === "muted" && "border-line text-ink-3",
       )}
     >
-      {statusLabel(status)}
+      {statusLabel(status, t)}
     </span>
   );
 }
@@ -173,6 +169,7 @@ function FeaturedCard({
   goal: CraftedGoalRow;
   currencySymbol: string;
 } & GoalActionHandlers) {
+  const t = useTranslations();
   const formatEUR = useBoundLocale(formatEURBase);
   const calloutTone = goal.status === "completato" ? "success" : "accent";
 
@@ -190,7 +187,7 @@ function FeaturedCard({
                 <CraftedIcon name={goal.icon} size={19} />
               </span>
               <div className="min-w-0">
-                <Label className="mb-1 block">In evidenza</Label>
+                <Label className="mb-1 block">{t.goals.featuredLabel}</Label>
                 <h2 className="truncate text-[21px] font-semibold leading-tight">
                   {goal.title}
                 </h2>
@@ -215,12 +212,12 @@ function FeaturedCard({
                 {formatEUR(goal.saved, currencySymbol)}
               </Mono>
               <Serif className="mt-2 block text-[13px] text-ink-3">
-                su {formatEUR(goal.target, currencySymbol)}
+                {t.goals.ofTarget(formatEUR(goal.target, currencySymbol))}
               </Serif>
             </div>
             <Mono className="shrink-0 text-right text-xs text-muted-foreground">
               {formatEUR(goal.remaining, currencySymbol)}
-              <span className="block text-ink-3">rimangono</span>
+              <span className="block text-ink-3">{t.goals.remainingShort}</span>
             </Mono>
           </div>
 
@@ -233,7 +230,7 @@ function FeaturedCard({
           <div className="mt-3 flex items-center justify-between gap-4">
             <Serif className="text-[13px] text-ink-3">{goal.note}</Serif>
             <Mono className="text-xs text-muted-foreground">
-              ritmo {formatEUR(goal.monthlyPace, currencySymbol)}/mese
+              {t.goals.paceLine(formatEUR(goal.monthlyPace, currencySymbol))}
             </Mono>
           </div>
           <GoalActions
@@ -338,6 +335,13 @@ export function CraftedGoals({
   const t = useTranslations();
   const formatEUR = useBoundLocale(formatEURBase);
   const currencySymbol = useCurrencySymbol();
+  const tabLabels: Record<TabKey, string> = {
+    tutti: t.goals.tabAll,
+    "in-corso": t.goals.tabInProgress,
+    pausa: t.goals.tabPaused,
+    completato: t.goals.tabCompleted,
+  };
+  const tabs = TAB_KEYS.map((key) => ({ key, label: tabLabels[key] }));
   const [tab, setTab] = useState<TabKey>("tutti");
   const [deleteTarget, setDeleteTarget] = useState<CraftedGoalRow | null>(null);
   const [deleteMessage, setDeleteMessage] = useState<string | null>(null);
@@ -388,17 +392,17 @@ export function CraftedGoals({
       <section className="px-[var(--sp-page-x)] pb-6 pt-8">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <Label className="mb-2 block">Obiettivi</Label>
+            <Label className="mb-2 block">{t.nav.goals}</Label>
             <h1 className="text-[30px] font-semibold leading-none tracking-[-0.02em]">
-              Gli acquisti evitati{" "}
-              <Serif className="font-normal text-ink-2">crescono</Serif>
+              {t.goals.heroTitle}{" "}
+              <Serif className="font-normal text-ink-2">{t.goals.heroTitleAccent}</Serif>
             </h1>
           </div>
           <Link
             href="#nuovo-obiettivo"
             className="nlc-press inline-flex h-9 shrink-0 items-center rounded-[var(--r-chip)] bg-accent px-3 text-[13px] font-bold text-accent-foreground"
           >
-            Nuovo
+            {t.goals.newShort}
           </Link>
         </div>
 
@@ -414,9 +418,9 @@ export function CraftedGoals({
           />
         </div>
         <div className="mt-4 grid grid-cols-3 gap-3">
-          <MicroStat label="Ritmo attivo" value={`${formatEUR(hero.activePace, currencySymbol)}/m`} tone="accent" />
-          <MicroStat label="Da coprire" value={formatEUR(hero.remaining, currencySymbol)} />
-          <MicroStat label="Completati" value={hero.completedCount} tone="success" />
+          <MicroStat label={t.goals.activePaceLabel} value={`${formatEUR(hero.activePace, currencySymbol)}/m`} tone="accent" />
+          <MicroStat label={t.goals.toCoverLabel} value={formatEUR(hero.remaining, currencySymbol)} />
+          <MicroStat label={t.goals.completedCountLabel} value={hero.completedCount} tone="success" />
         </div>
       </section>
       <Rule soft />
@@ -436,7 +440,7 @@ export function CraftedGoals({
 
       <section className="sticky top-14 z-30 border-b border-line-soft bg-background/95 px-[var(--sp-page-x)] py-3 backdrop-blur-md">
         <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5">
-          {TABS.map((item) => {
+          {tabs.map((item) => {
             const active = item.key === tab;
 
             return (
@@ -477,7 +481,7 @@ export function CraftedGoals({
         ) : (
           <div className="py-8 text-center">
             <Serif className="text-sm text-ink-3">
-              Nessun obiettivo in questa vista.
+              {t.goals.emptyTab}
             </Serif>
           </div>
         )}
@@ -487,14 +491,14 @@ export function CraftedGoals({
       <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <Label className="mb-1.5 block">Ultimi risparmi</Label>
-            <h2 className="text-[16px] font-semibold leading-tight">Acquisti evitati</h2>
+            <Label className="mb-1.5 block">{t.goals.recentSavingsLabel}</Label>
+            <h2 className="text-[16px] font-semibold leading-tight">{t.goals.avoidedPurchasesTitle}</h2>
           </div>
           <Link
             href="/entries?kind=evitata"
             className="text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
-            Vedi tutti
+            {t.goals.viewAll}
           </Link>
         </div>
         {savings.length > 0 ? (
@@ -506,7 +510,7 @@ export function CraftedGoals({
           ))
         ) : (
           <Serif className="block text-sm text-ink-3">
-            I prossimi acquisti evitati appariranno qui.
+            {t.goals.savingsEmpty}
           </Serif>
         )}
       </section>
