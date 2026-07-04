@@ -24,6 +24,7 @@ import type {
   HabitStatus,
 } from "@/src/lib/crafted-habits-build";
 import { deleteHabit, updateHabit, type HabitDeleteMode } from "@/src/actions/habits";
+import { CraftedHabitOccurrenceActions } from "@/src/components/habits/crafted-habit-occurrence-actions";
 import {
   Dialog,
   DialogContent,
@@ -378,6 +379,16 @@ function HabitRow({
           />
         </div>
       </button>
+
+      {habit.todayOccurrence && !paused ? (
+        <div className="flex items-center justify-between gap-3 pb-3.5 pl-[52px]">
+          <Label>{t.common.today}</Label>
+          <CraftedHabitOccurrenceActions
+            occurrenceId={habit.todayOccurrence.occurrenceId}
+            currentStatus={habit.todayOccurrence.status}
+          />
+        </div>
+      ) : null}
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-h-[90vh] overflow-y-auto border-line sm:max-w-lg">
@@ -788,7 +799,7 @@ export function CraftedHabits({
       <section className="px-[var(--sp-page-x)] pb-2">
         {visibleHabits.length > 0 ? (
           visibleHabits.map((habit, index) => (
-            <div key={habit.id}>
+            <div key={habit.id} data-habit-row>
               <HabitRow
                 habit={habit}
                 currencySymbol={currencySymbol}

@@ -12,6 +12,13 @@ export type HabitCadence = "mensile" | "annuale" | "settimanale" | "giornaliera"
 export type HabitGroup = "abbonamenti" | "utenze" | "quotidiane";
 export type HabitStatus = "attiva" | "pausa" | "da-rivedere";
 
+export type HabitOccurrenceStatus = "pending" | "spent" | "avoided" | "skipped";
+
+export type CraftedHabitTodayOccurrence = {
+  occurrenceId: string;
+  status: HabitOccurrenceStatus;
+};
+
 export type CraftedHabitView = {
   id: string;
   name: string;
@@ -35,6 +42,7 @@ export type CraftedHabitView = {
   monthlyAmount: number;
   sharePercent: number;
   frequencyLabel: string;
+  todayOccurrence: CraftedHabitTodayOccurrence | null;
 };
 
 export type CraftedUpcomingHabit = CraftedHabitView & {
@@ -372,8 +380,13 @@ export function buildCraftedHabitsProps({
   members = [],
   currentUserId = null,
   todayDateKey,
+  todayOccurrences = [],
 }: {
-  todayOccurrences?: unknown[];
+  todayOccurrences?: Array<{
+    id: string;
+    habitId: string;
+    status: HabitOccurrenceStatus;
+  }>;
   habits: Array<{
     id: string;
     name: string;
@@ -408,6 +421,12 @@ export function buildCraftedHabitsProps({
   todayDateKey?: string;
 }): CraftedHabitsProps {
   const statsByHabitId = new Map(habitStats.map((item) => [item.habitId, item]));
+  const occurrenceByHabitId = new Map(
+    todayOccurrences.map((occurrence) => [
+      occurrence.habitId,
+      { occurrenceId: occurrence.id, status: occurrence.status },
+    ]),
+  );
   const currentDateKey = todayDateKey ?? getUtcTodayKey();
 
   const firstPass = habits.map((habit) => {
@@ -471,6 +490,7 @@ export function buildCraftedHabitsProps({
       monthlyAmount,
       sharePercent: 0,
       frequencyLabel: formatHabitFrequency(habit.activeDays, language),
+      todayOccurrence: occurrenceByHabitId.get(habit.id) ?? null,
     } satisfies CraftedHabitView & { cadenceShort: string };
   });
 
