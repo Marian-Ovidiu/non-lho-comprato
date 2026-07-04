@@ -36,7 +36,9 @@ export type BudgetSummaryEntry = {
   date: Date;
 };
 
-export type BudgetSummaryView = BudgetSummarySource & {
+// "amount" (Prisma Decimal) stays out of the view: it is not serializable
+// across the RSC boundary; clients read the numeric budgetAmount instead.
+export type BudgetSummaryView = Omit<BudgetSummarySource, "amount"> & {
   budgetAmount: number;
   periodStart: Date;
   periodEnd: Date;
@@ -133,8 +135,10 @@ export function summarizeBudget(
     now,
   });
 
+  const { amount: _rawAmount, ...budgetRecord } = budget;
+
   return {
-    ...budget,
+    ...budgetRecord,
     currency: budget.currency ?? workspaceCurrency,
     budgetAmount: round2(progress.budgetAmount),
     periodStart: start,
