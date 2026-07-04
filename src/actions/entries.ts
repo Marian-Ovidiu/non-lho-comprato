@@ -1,5 +1,6 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
 import { resolveEntryPaymentAndOwnership } from "@/src/features/entries/payment-ownership";
 import {
   serializeEntry,
@@ -616,33 +617,34 @@ export async function getExpenseSuggestion(
 export async function createEntry(
   formData: FormData,
 ): Promise<CreateEntryResult> {
+  const t = await getActionTranslations();
   const errors: Record<string, string> = {};
 
   const title = getText(formData, "title");
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
-  const entryMoney = resolveEntryMoneyFromForm(formData);
+  const entryMoney = resolveEntryMoneyFromForm(formData, t);
 
   if (!title) {
-    errors.title = "Il titolo è obbligatorio";
+    errors.title = t.validation.titleRequired;
   } else if (title.length < 2) {
     errors.title = "Il titolo deve avere almeno 2 caratteri";
   }
 
   if (!categoryId) {
-    errors.categoryId = "Seleziona una categoria";
+    errors.categoryId = t.validation.selectCategory;
   }
   Object.assign(errors, entryMoney.errors);
 
   if (!dateValue || !isDateKey(dateValue)) {
-    errors.date = "Inserisci una data valida";
+    errors.date = t.entryActions.invalidDate;
   }
 
   if (Object.keys(errors).length > 0) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -650,7 +652,7 @@ export async function createEntry(
   if (!entryMoney.money) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -680,12 +682,12 @@ export async function createEntry(
     if (!date) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
-        errors: { date: "Inserisci una data valida" },
+        message: t.validation.checkFields,
+        errors: { date: t.entryActions.invalidDate },
       };
     }
 
-    const payment = resolveEntryPaymentAndOwnership(formData, members);
+    const payment = resolveEntryPaymentAndOwnership(formData, members, t);
     const ownership = validateEntryOwnership(payment.ownershipInput, members);
 
     Object.assign(errors, payment.errors);
@@ -697,7 +699,7 @@ export async function createEntry(
     if (Object.keys(errors).length > 0 || !ownership.ok) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
+        message: t.validation.checkFields,
         errors,
       };
     }
@@ -705,9 +707,9 @@ export async function createEntry(
     if (!category) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
+        message: t.validation.checkFields,
         errors: {
-          categoryId: "Seleziona una categoria valida",
+          categoryId: t.validation.selectValidCategory,
         },
       };
     }
@@ -739,7 +741,7 @@ export async function createEntry(
     return {
       success: false,
       message:
-        "Non riesco a salvare il movimento adesso. Controlla il database e riprova tra poco.",
+        t.entryActions.saveFailed,
     };
   }
 }
@@ -748,18 +750,19 @@ export async function updateEntry(
   entryId: string,
   formData: FormData,
 ): Promise<CreateEntryResult> {
+  const t = await getActionTranslations();
   const id = entryId.trim();
   const errors: Record<string, string> = {};
 
   if (!id) {
-    errors.entryId = "ID movimento non valido";
+    errors.entryId = t.entryActions.invalidId;
   }
 
   const title = getText(formData, "title");
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
-  const entryMoney = resolveEntryMoneyFromForm(formData);
+  const entryMoney = resolveEntryMoneyFromForm(formData, t);
   let members: WorkspaceMemberOption[] = [];
 
   try {
@@ -768,17 +771,17 @@ export async function updateEntry(
     members = [];
   }
 
-  const payment = resolveEntryPaymentAndOwnership(formData, members);
+  const payment = resolveEntryPaymentAndOwnership(formData, members, t);
   const ownership = validateEntryOwnership(payment.ownershipInput, members);
 
   if (!title) {
-    errors.title = "Il titolo è obbligatorio";
+    errors.title = t.validation.titleRequired;
   } else if (title.length < 2) {
     errors.title = "Il titolo deve avere almeno 2 caratteri";
   }
 
   if (!categoryId) {
-    errors.categoryId = "Seleziona una categoria";
+    errors.categoryId = t.validation.selectCategory;
   }
   Object.assign(errors, entryMoney.errors);
   Object.assign(errors, payment.errors);
@@ -788,13 +791,13 @@ export async function updateEntry(
   }
 
   if (!dateValue || !isDateKey(dateValue)) {
-    errors.date = "Inserisci una data valida";
+    errors.date = t.entryActions.invalidDate;
   }
 
   if (Object.keys(errors).length > 0 || !ownership.ok) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -802,7 +805,7 @@ export async function updateEntry(
   if (!entryMoney.money) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors,
     };
   }
@@ -820,8 +823,8 @@ export async function updateEntry(
     if (!date) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
-        errors: { date: "Inserisci una data valida" },
+        message: t.validation.checkFields,
+        errors: { date: t.entryActions.invalidDate },
       };
     }
 
@@ -839,7 +842,7 @@ export async function updateEntry(
     if (!existingEntry) {
       return {
         success: false,
-        message: "Movimento non trovato",
+        message: t.entryActions.notFound,
       };
     }
 
@@ -849,9 +852,9 @@ export async function updateEntry(
     if (!category) {
       return {
         success: false,
-        message: "Controlla i campi evidenziati",
+        message: t.validation.checkFields,
         errors: {
-          categoryId: "Seleziona una categoria valida",
+          categoryId: t.validation.selectValidCategory,
         },
       };
     }
@@ -906,7 +909,7 @@ export async function updateEntry(
 
     return {
       success: true,
-      message: "Movimento aggiornato con successo",
+      message: t.entryActions.updated,
     };
   } catch (error) {
     unstable_rethrow(error);
@@ -914,7 +917,7 @@ export async function updateEntry(
     return {
       success: false,
       message:
-        "Non riesco ad aggiornare il movimento adesso. Controlla il database e riprova tra poco.",
+        t.entryActions.updateFailedDb,
     };
   }
 }
@@ -925,12 +928,13 @@ type DeleteEntryResult = {
 };
 
 export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
+  const t = await getActionTranslations();
   const id = entryId.trim();
 
   if (!id) {
     return {
       success: false,
-      message: "ID movimento non valido",
+      message: t.entryActions.invalidId,
     };
   }
 
@@ -948,7 +952,7 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
     if (!entry) {
       return {
         success: false,
-        message: "Movimento non trovato",
+        message: t.entryActions.notFound,
       };
     }
 
@@ -1003,14 +1007,14 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
 
     return {
       success: true,
-      message: "Movimento eliminato",
+      message: t.entryActions.deleted,
     };
   } catch (error) {
     unstable_rethrow(error);
     console.error("Failed to delete entry:", error);
     return {
       success: false,
-      message: "Si è verificato un errore durante l'eliminazione",
+      message: t.validation.deleteError,
     };
   }
 }

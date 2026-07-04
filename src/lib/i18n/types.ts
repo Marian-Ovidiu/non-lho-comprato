@@ -36,8 +36,25 @@ export type Translations = {
     checkFields: string;
     selectCategory: string;
     selectValidCategory: string;
+    selectValidContext: string;
+    selectValidMode: string;
+    amountPositive: string;
     updateError: string;
     deleteError: string;
+  };
+
+  entryActions: {
+    invalidId: string;
+    invalidDate: string;
+    updated: string;
+    deleted: string;
+    notFound: string;
+    saveFailed: string;
+    updateFailedDb: string;
+    importedTxInvalid: string;
+    workspaceInvalid: string;
+    jointNeedsTwoMembers: string;
+    incomeSaved: string;
   };
 
   presetActions: {

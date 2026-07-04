@@ -1,5 +1,7 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import type { Translations } from "@/src/lib/i18n";
 import { revalidatePath, updateTag } from "next/cache";
 
 import { getGlobalStreak } from "@/src/actions/streaks";
@@ -92,6 +94,7 @@ export type EntryCreateDependencies = {
   getGlobalStreak?: () => Promise<{ currentStreak: number }>;
   revalidatePath?: (path: string) => unknown;
   updateTag?: (tag: string) => unknown;
+  getTranslations?: () => Promise<Translations>;
 };
 
 const DEFAULT_INVALIDATION_PATHS = [
@@ -141,6 +144,7 @@ export async function createEntryFromNormalizedInput(
     path: string,
   ) => unknown;
   const updateCacheTag = deps.updateTag ?? updateTag;
+  const t = await (deps.getTranslations ?? getActionTranslations)();
 
   const [currentWorkspaceWhere, timeZone] = await Promise.all([
     getWorkspaceWhere() as Promise<Prisma.EntryWhereInput & { workspaceId: string }>,
@@ -150,7 +154,7 @@ export async function createEntryFromNormalizedInput(
   if (currentWorkspaceWhere.workspaceId !== input.workspaceId) {
     return {
       success: false,
-      message: "Workspace non valido",
+      message: t.entryActions.workspaceInvalid,
     };
   }
 
@@ -195,7 +199,7 @@ export async function createEntryFromNormalizedInput(
     if (!importedTransaction || importedTransaction.workspaceId !== input.workspaceId) {
       return {
         success: false,
-        message: "Transazione importata non valida per questo workspace",
+        message: t.entryActions.importedTxInvalid,
       };
     }
   }
@@ -251,7 +255,7 @@ export async function createEntryFromNormalizedInput(
 
     return {
       success: true,
-      message: "Entrata salvata con successo",
+      message: t.entryActions.incomeSaved,
       entryId: entry.id,
       isFirstEntryCreated,
       isFirstEntryOfDay,

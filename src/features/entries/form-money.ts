@@ -1,3 +1,5 @@
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import {
   calculateEntryMoney,
   calculateEntrySavedAmount,
@@ -25,7 +27,11 @@ export function getEntryFormText(formData: FormData, name: string): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
-function getMoney(formData: FormData, name: string): {
+function getMoney(
+  formData: FormData,
+  name: string,
+  v: Translations["validation"] = it.validation,
+): {
   value: number;
   error?: string;
 } {
@@ -36,24 +42,28 @@ function getMoney(formData: FormData, name: string): {
   }
 
   if (parsed.reason === "empty") {
-    return { value: Number.NaN, error: "Questo campo è obbligatorio" };
+    return { value: Number.NaN, error: v.required };
   }
 
   if (parsed.reason === "invalid") {
-    return { value: Number.NaN, error: "Inserisci un numero valido" };
+    return { value: Number.NaN, error: v.invalidNumber };
   }
 
   if (parsed.reason === "negative") {
     return {
       value: Number.NaN,
-      error: "Il valore deve essere maggiore o uguale a 0",
+      error: v.nonNegative,
     };
   }
 
-  return { value: Number.NaN, error: "Inserisci un numero valido" };
+  return { value: Number.NaN, error: v.invalidNumber };
 }
 
-function getOptionalMoney(formData: FormData, name: string): ParsedMoneyField {
+function getOptionalMoney(
+  formData: FormData,
+  name: string,
+  v: Translations["validation"] = it.validation,
+): ParsedMoneyField {
   const parsed = parseEntryMoneyInput(getEntryFormText(formData, name));
 
   if (parsed.ok) {
@@ -74,7 +84,7 @@ function getOptionalMoney(formData: FormData, name: string): ParsedMoneyField {
     return {
       value: Number.NaN,
       provided: true,
-      error: "Inserisci un numero valido",
+      error: v.invalidNumber,
     };
   }
 
@@ -82,20 +92,21 @@ function getOptionalMoney(formData: FormData, name: string): ParsedMoneyField {
     return {
       value: Number.NaN,
       provided: true,
-      error: "Il valore deve essere maggiore o uguale a 0",
+      error: v.nonNegative,
     };
   }
 
   return {
     value: Number.NaN,
     provided: true,
-    error: "Inserisci un numero valido",
+    error: v.invalidNumber,
   };
 }
 
 function resolveAlternativeCost(
   formData: FormData,
   realCost: { value: number; error?: string },
+  v: Translations["validation"] = it.validation,
 ): { value: number; error?: string } {
   const raw = getEntryFormText(formData, "alternativeCost");
 
@@ -107,7 +118,7 @@ function resolveAlternativeCost(
     return { value: realCost.value };
   }
 
-  return getMoney(formData, "alternativeCost");
+  return getMoney(formData, "alternativeCost", v);
 }
 
 function hasTrackerFirstMoneyFields(formData: FormData): boolean {
@@ -116,10 +127,13 @@ function hasTrackerFirstMoneyFields(formData: FormData): boolean {
   );
 }
 
-function resolveLegacyEntryMoney(formData: FormData): ResolvedEntryMoney {
+function resolveLegacyEntryMoney(
+  formData: FormData,
+  tr: Translations = it,
+): ResolvedEntryMoney {
   const errors: Record<string, string> = {};
-  const realCost = getMoney(formData, "realCost");
-  const alternativeCost = resolveAlternativeCost(formData, realCost);
+  const realCost = getMoney(formData, "realCost", tr.validation);
+  const alternativeCost = resolveAlternativeCost(formData, realCost, tr.validation);
 
   if (realCost.error) {
     errors.realCost = realCost.error;
@@ -152,12 +166,15 @@ function resolveLegacyEntryMoney(formData: FormData): ResolvedEntryMoney {
   };
 }
 
-function resolveTrackerFirstEntryMoney(formData: FormData): ResolvedEntryMoney {
+function resolveTrackerFirstEntryMoney(
+  formData: FormData,
+  tr: Translations = it,
+): ResolvedEntryMoney {
   const errors: Record<string, string> = {};
   const rawMode = getEntryFormText(formData, "mode");
   const rawSavingContext = getEntryFormText(formData, "savingContext");
-  const amountSpent = getOptionalMoney(formData, "amountSpent");
-  const comparisonAmount = getOptionalMoney(formData, "comparisonAmount");
+  const amountSpent = getOptionalMoney(formData, "amountSpent", tr.validation);
+  const comparisonAmount = getOptionalMoney(formData, "comparisonAmount", tr.validation);
 
   if (amountSpent.error) {
     errors.amountSpent = amountSpent.error;
@@ -170,7 +187,7 @@ function resolveTrackerFirstEntryMoney(formData: FormData): ResolvedEntryMoney {
   const mode: EntryMode = rawMode === "avoided" ? "avoided" : "spent";
 
   if (rawMode && rawMode !== "spent" && rawMode !== "avoided") {
-    errors.mode = "Seleziona una modalita valida";
+    errors.mode = tr.validation.selectValidMode;
   }
 
   let savingContext: EntrySavingContext =
@@ -185,26 +202,26 @@ function resolveTrackerFirstEntryMoney(formData: FormData): ResolvedEntryMoney {
     rawSavingContext !== "none" &&
     rawSavingContext !== "comparison"
   ) {
-    errors.savingContext = "Seleziona un contesto valido";
+    errors.savingContext = tr.validation.selectValidContext;
   }
 
   if (mode === "avoided") {
     // An avoided entry spends nothing: the only money field is the amount
     // the user would have spent (comparisonAmount).
     if (!comparisonAmount.provided) {
-      errors.comparisonAmount = "Questo campo è obbligatorio";
+      errors.comparisonAmount = tr.validation.required;
     } else if (comparisonAmount.value <= 0) {
-      errors.comparisonAmount = "L'importo deve essere maggiore di 0";
+      errors.comparisonAmount = tr.validation.amountPositive;
     }
   } else {
     if (!amountSpent.provided) {
-      errors.amountSpent = "Questo campo è obbligatorio";
+      errors.amountSpent = tr.validation.required;
     } else if (amountSpent.value <= 0) {
-      errors.amountSpent = "L'importo deve essere maggiore di 0";
+      errors.amountSpent = tr.validation.amountPositive;
     }
 
     if (savingContext === "comparison" && !comparisonAmount.provided) {
-      errors.comparisonAmount = "Questo campo è obbligatorio";
+      errors.comparisonAmount = tr.validation.required;
     }
   }
 
@@ -229,10 +246,13 @@ function resolveTrackerFirstEntryMoney(formData: FormData): ResolvedEntryMoney {
   };
 }
 
-export function resolveEntryMoneyFromForm(formData: FormData): ResolvedEntryMoney {
+export function resolveEntryMoneyFromForm(
+  formData: FormData,
+  tr: Translations = it,
+): ResolvedEntryMoney {
   if (hasTrackerFirstMoneyFields(formData)) {
-    return resolveTrackerFirstEntryMoney(formData);
+    return resolveTrackerFirstEntryMoney(formData, tr);
   }
 
-  return resolveLegacyEntryMoney(formData);
+  return resolveLegacyEntryMoney(formData, tr);
 }

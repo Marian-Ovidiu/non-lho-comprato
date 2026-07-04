@@ -38,8 +38,25 @@ export const en: Translations = {
     checkFields: "Check the highlighted fields",
     selectCategory: "Select a category",
     selectValidCategory: "Select a valid category",
+    selectValidContext: "Select a valid context",
+    selectValidMode: "Select a valid mode",
+    amountPositive: "The amount must be greater than 0",
     updateError: "Something went wrong while updating",
     deleteError: "Something went wrong while deleting",
+  },
+
+  entryActions: {
+    invalidId: "Invalid entry ID",
+    invalidDate: "Enter a valid date",
+    updated: "Entry updated",
+    deleted: "Entry deleted",
+    notFound: "Entry not found",
+    saveFailed: "Can't save the entry right now. Check the database and try again shortly.",
+    updateFailedDb: "Can't update the entry right now. Check the database and try again shortly.",
+    importedTxInvalid: "Imported transaction not valid for this workspace",
+    workspaceInvalid: "Invalid workspace",
+    jointNeedsTwoMembers: "Paid together is only available in workspaces with two members",
+    incomeSaved: "Income saved",
   },
 
   presetActions: {

@@ -38,8 +38,25 @@ export const it: Translations = {
     checkFields: "Controlla i campi evidenziati",
     selectCategory: "Seleziona una categoria",
     selectValidCategory: "Seleziona una categoria valida",
+    selectValidContext: "Seleziona un contesto valido",
+    selectValidMode: "Seleziona una modalita valida",
+    amountPositive: "L'importo deve essere maggiore di 0",
     updateError: "Si è verificato un errore durante l'aggiornamento",
     deleteError: "Si è verificato un errore durante l'eliminazione",
+  },
+
+  entryActions: {
+    invalidId: "ID movimento non valido",
+    invalidDate: "Inserisci una data valida",
+    updated: "Movimento aggiornato con successo",
+    deleted: "Movimento eliminato",
+    notFound: "Movimento non trovato",
+    saveFailed: "Non riesco a salvare il movimento adesso. Controlla il database e riprova tra poco.",
+    updateFailedDb: "Non riesco ad aggiornare il movimento adesso. Controlla il database e riprova tra poco.",
+    importedTxInvalid: "Transazione importata non valida per questo workspace",
+    workspaceInvalid: "Workspace non valido",
+    jointNeedsTwoMembers: "Pagata insieme è disponibile solo nei workspace con due membri",
+    incomeSaved: "Entrata salvata con successo",
   },
 
   presetActions: {

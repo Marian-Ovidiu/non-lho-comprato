@@ -1,3 +1,5 @@
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import {
   parseBeneficiaryUserIdsFromForm,
   parsePaidByUserIdFromForm,
@@ -29,6 +31,7 @@ export type ResolvedEntryPaymentAndOwnership = {
 export function resolveEntryPaymentAndOwnership(
   formData: FormData,
   members: WorkspaceMemberOption[],
+  tr: Translations = it,
 ): ResolvedEntryPaymentAndOwnership {
   const paymentMode = parseEntryPaymentModeFromForm(formData);
 
@@ -51,7 +54,7 @@ export function resolveEntryPaymentAndOwnership(
         beneficiaryUserIds: parseBeneficiaryUserIdsFromForm(formData),
       },
       errors: {
-        paymentMode: "Pagata insieme è disponibile solo nei workspace con due membri",
+        paymentMode: tr.entryActions.jointNeedsTwoMembers,
       },
     };
   }
