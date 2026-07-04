@@ -1,33 +1,35 @@
-export function splitCraftedAmount(value: number) {
-  const formatted = new Intl.NumberFormat("it-IT", {
+const DEFAULT_LOCALE = "it-IT";
+
+export function splitCraftedAmount(value: number, locale = DEFAULT_LOCALE) {
+  const parts = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(Math.abs(value));
+  }).formatToParts(Math.abs(value));
 
-  const [whole, decimals] = formatted.split(",");
+  const whole = parts
+    .filter((part) => part.type === "integer" || part.type === "group")
+    .map((part) => part.value)
+    .join("");
+  const decimals = parts.find((part) => part.type === "fraction")?.value;
 
   return {
-    whole,
+    whole: whole || "0",
     decimals: decimals ?? "00",
   };
 }
 
-export function formatCraftedCompact(value: number) {
-  return new Intl.NumberFormat("it-IT", {
+export function formatCraftedCompact(value: number, locale = DEFAULT_LOCALE) {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value);
 }
 
-export function formatCraftedEntryAmount(value: unknown) {
+export function formatCraftedEntryAmount(value: unknown, locale = DEFAULT_LOCALE) {
   const amount = Number(value);
 
-  if (!Number.isFinite(amount)) {
-    return "0,00";
-  }
-
-  return new Intl.NumberFormat("it-IT", {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(Math.abs(amount));
+  }).format(Number.isFinite(amount) ? Math.abs(amount) : 0);
 }

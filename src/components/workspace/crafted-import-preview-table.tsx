@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Label, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
 import { CraftedImportRowActions } from "@/src/components/workspace/crafted-import-row-actions";
+import { useBoundLocale } from "@/src/components/language/use-locale-formatters";
 
 type ImportCategoryOption = {
   id: string;
@@ -30,25 +31,26 @@ type CraftedImportPreviewTableProps = {
   currency: string;
 };
 
-function formatMoney(
+function formatMoneyBase(
+  locale: string,
   amount: string | number | null,
   currency: string,
 ): string {
   const value = typeof amount === "string" ? Number(amount) : amount ?? 0;
   const normalized = Number.isFinite(value) ? value : 0;
-  return new Intl.NumberFormat("it-IT", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency,
     maximumFractionDigits: 2,
   }).format(normalized);
 }
 
-function formatDate(date: Date | null): string {
+function formatDateBase(locale: string, date: Date | null): string {
   if (!date) {
     return "—";
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -72,6 +74,8 @@ export function CraftedImportPreviewTable({
   categories,
   currency,
 }: CraftedImportPreviewTableProps) {
+  const formatMoney = useBoundLocale(formatMoneyBase);
+  const formatDate = useBoundLocale(formatDateBase);
   const pendingRows = transactions.filter((transaction) => transaction.status === "pending");
   const hasSelectableRows = pendingRows.length > 0;
   const defaultCategoryId = categories[0]?.id ?? "";

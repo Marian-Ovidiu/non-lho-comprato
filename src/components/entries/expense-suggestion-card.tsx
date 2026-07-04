@@ -3,7 +3,7 @@
 import { Check, Sparkles } from "lucide-react";
 
 import { Label, Mono } from "@/components/crafted";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations } from "@/src/components/language/language-context";
 import type { ExpenseSuggestionResult } from "@/src/lib/expense-suggestion";
@@ -20,6 +20,7 @@ export function ExpenseSuggestionCard({
   onApply,
   className,
 }: ExpenseSuggestionCardProps) {
+  const { formatCraftedCompact } = useLocaleFormatters();
   const currencySymbol = useCurrencySymbol();
   const t = useTranslations();
   return (

@@ -77,8 +77,8 @@ const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 250;
 const RECENT_ENTRY_HIGHLIGHT_MS = 2_000;
 
-function formatEUR(value: number) {
-  const formatted = new Intl.NumberFormat("it-IT", {
+function formatEUR(value: number, locale: string) {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Math.abs(value));
@@ -517,7 +517,7 @@ export function CraftedEntryList({
                 ) : null}
               </div>
               <Mono className="shrink-0 text-right text-[11px] text-ink-3">
-                {group.count} mov · {formatEUR(group.dayTotal)}
+                {group.count} mov · {formatEUR(group.dayTotal, locale)}
               </Mono>
             </div>
             <div className="px-[var(--sp-page-x)]">

@@ -27,7 +27,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import {
+  useBoundLocale,
+  useLocaleFormatters,
+} from "@/src/components/language/use-locale-formatters";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { languageToLocale } from "@/src/lib/i18n";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
@@ -192,13 +195,14 @@ function toFiniteNumber(value: unknown) {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function formatEUR(
+function formatEURBase(
+  locale: string,
   value: number,
   currencySymbol: string,
   options: { sign?: "auto" | "never"; decimals?: boolean } = {},
 ) {
   const sign = options.sign === "auto" ? (value > 0 ? "+" : value < 0 ? "−" : "") : "";
-  const formatted = new Intl.NumberFormat("it-IT", {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: options.decimals === false ? 0 : 2,
     maximumFractionDigits: options.decimals === false ? 0 : 2,
   }).format(Math.abs(value));
@@ -346,6 +350,7 @@ function DailyComparisonCard({
   emptyLabel: string;
   currencySymbol: string;
 }) {
+  const formatEUR = useBoundLocale(formatEURBase);
   const tone = compareSpending(todaySpent, reference);
 
   return (
@@ -395,6 +400,7 @@ function NextHabitPaymentCard({
   habit: NonNullable<CraftedDashboardProps["nextHabitPayment"]>;
   currencySymbol: string;
 }) {
+  const formatEUR = useBoundLocale(formatEURBase);
   return (
     <Link
       href="/habits"
@@ -430,6 +436,7 @@ function BudgetBlock({
   budget: BudgetDashboardSelection["mainBudget"];
   currencySymbol: string;
 }) {
+  const formatEUR = useBoundLocale(formatEURBase);
   const used = budget?.spentAmount ?? PREVIEW.budget.used;
   const total = budget?.budgetAmount ?? PREVIEW.budget.total;
   const pct = total > 0 ? Math.round((used / total) * 100) : 0;
@@ -525,6 +532,8 @@ export function CraftedDashboard({
   coupleBalance,
   budgetDashboardState,
 }: CraftedDashboardProps) {
+  const formatEUR = useBoundLocale(formatEURBase);
+  const { formatCraftedCompact } = useLocaleFormatters();
   const currencySymbol = useCurrencySymbol();
   const language = useWorkspaceLanguage();
   const locale = languageToLocale(language);
@@ -642,7 +651,7 @@ export function CraftedDashboard({
             ) : (
               <TrendingUp className="size-3.5 text-destructive" aria-hidden="true" />
             )}
-            <Mono>{displayDeltaPct > 0 ? "+" : "−"}{Math.abs(displayDeltaPct).toLocaleString("it-IT")}%</Mono>
+            <Mono>{displayDeltaPct > 0 ? "+" : "−"}{Math.abs(displayDeltaPct).toLocaleString(locale)}%</Mono>
           </span>
         </div>
         <Mono className="mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">

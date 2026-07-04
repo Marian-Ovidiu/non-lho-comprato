@@ -1,5 +1,7 @@
 "use client";
 
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 import Link from "next/link";
 
 import { CraftedIcon, Mono, Rule, Serif, type CraftedIconName } from "@/components/crafted";
@@ -27,8 +29,12 @@ type CraftedEntryRowProps = {
   showDivider?: boolean;
 };
 
-function formatEUR(value: number, options: { sign?: "plus" | "minus" | "none" } = {}) {
-  const formatted = new Intl.NumberFormat("it-IT", {
+function formatEUR(
+  value: number,
+  locale: string,
+  options: { sign?: "plus" | "minus" | "none" } = {},
+) {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Math.abs(value));
@@ -63,6 +69,7 @@ export function CraftedEntryRow({
   className,
   showDivider = true,
 }: CraftedEntryRowProps) {
+  const locale = languageToLocale(useWorkspaceLanguage());
   const isAvoided = entry.kind === "evitata";
   const isComparison = entry.kind === "confronto";
 
@@ -106,10 +113,10 @@ export function CraftedEntryRow({
           {isComparison ? (
             <>
               <Mono className="block text-[14px] font-semibold leading-none text-accent">
-                {formatEUR(entry.saved ?? 0, { sign: "plus" })}
+                {formatEUR(entry.saved ?? 0, locale, { sign: "plus" })}
               </Mono>
               <Mono className="mt-1 block text-[10px] leading-none text-ink-3">
-                vs {formatEUR(entry.original ?? entry.amount)}
+                vs {formatEUR(entry.original ?? entry.amount, locale)}
               </Mono>
             </>
           ) : (
@@ -119,7 +126,7 @@ export function CraftedEntryRow({
                 isAvoided && "text-success",
               )}
             >
-              {formatEUR(entry.amount, { sign: isAvoided ? "plus" : "minus" })}
+              {formatEUR(entry.amount, locale, { sign: isAvoided ? "plus" : "minus" })}
             </Mono>
           )}
         </div>

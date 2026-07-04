@@ -5,8 +5,7 @@ import Link from "next/link";
 import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
 import { EntrySource } from "@/src/lib/generated/prisma/enums";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
-import { formatDate } from "@/src/lib/formatters";
+import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
@@ -31,6 +30,7 @@ function toDate(value: string | Date) {
 }
 
 export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
+  const { formatCraftedCompact, formatDate } = useLocaleFormatters();
   const currencySymbol = useCurrencySymbol();
   const t = useTranslations();
   const sortedEntries = [...entries].sort(

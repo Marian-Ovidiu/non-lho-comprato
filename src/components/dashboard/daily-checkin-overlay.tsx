@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 
 import { Label, Mono, Rule, Serif } from "@/components/crafted";
 import { Button } from "@/components/ui/button";
-import { splitCraftedAmount } from "@/src/lib/crafted-money";
+import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
@@ -37,6 +37,7 @@ export function DailyCheckinOverlay({
   pendingHabitsCount,
   isVisible = true,
 }: DailyCheckinOverlayProps) {
+  const { locale, splitCraftedAmount } = useLocaleFormatters();
   const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const [isOpen, setIsOpen] = useState(false);
@@ -134,7 +135,7 @@ export function DailyCheckinOverlay({
           <div className="mt-3">
             <Label className="mb-1.5 block">{t.dailyCheckin.netImpactToday}</Label>
             <Mono className="text-lg font-medium text-accent">
-              {savedToday.toLocaleString("it-IT", {
+              {savedToday.toLocaleString(locale, {
                 minimumFractionDigits: 2,
                 maximumFractionDigits: 2,
               })}

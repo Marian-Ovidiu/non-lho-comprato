@@ -36,6 +36,7 @@ import { FormFieldError } from "@/src/components/shared/form-field-error";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { useTranslations } from "@/src/components/language/language-context";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
+import { useBoundLocale } from "@/src/components/language/use-locale-formatters";
 
 type CategoryOption = {
   id: string;
@@ -58,7 +59,8 @@ const GROUP_COLORS: Record<HabitGroup, string> = {
   quotidiane: "bg-success/70",
 };
 
-function formatMoney(
+function formatMoneyBase(
+  locale: string,
   value: number,
   currencySymbol: string,
   options: { decimals?: "auto" | 0 | 2 } = {},
@@ -70,7 +72,7 @@ function formatMoney(
         : 0
       : options.decimals ?? 2;
 
-  return `${currencySymbol}${new Intl.NumberFormat("it-IT", {
+  return `${currencySymbol}${new Intl.NumberFormat(locale, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(value)}`;
@@ -83,12 +85,12 @@ function cadenceShort(cadence: HabitCadence) {
   return "/giorno";
 }
 
-function formatShortDate(dateKey?: string) {
+function formatShortDateBase(locale: string, dateKey?: string) {
   if (!dateKey) {
     return "non previsto";
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "short",
     timeZone: "UTC",
@@ -163,6 +165,7 @@ function UpcomingCard({
   habit: CraftedUpcomingHabit;
   currencySymbol: string;
 }) {
+  const formatMoney = useBoundLocale(formatMoneyBase);
   return (
     <article className="w-[180px] shrink-0 rounded-[var(--r-card)] bg-surface-muted p-3.5">
       <div className="mb-4 flex items-start justify-between gap-3">
@@ -226,6 +229,8 @@ function HabitRow({
   currentUserId: string;
   workspaceKind: "private" | "shared";
 }) {
+  const formatMoney = useBoundLocale(formatMoneyBase);
+  const formatShortDate = useBoundLocale(formatShortDateBase);
   const router = useRouter();
   const t = useTranslations();
   const paused = habit.status === "pausa";
@@ -660,6 +665,7 @@ export function CraftedHabits({
   currentUserId,
   workspaceKind,
 }: CraftedHabitsComponentProps) {
+  const formatMoney = useBoundLocale(formatMoneyBase);
   const [activeGroup, setActiveGroup] = useState<HabitGroup>(
     () =>
       groups.find((group) => habits.some((habit) => habit.group === group.group))?.group ??

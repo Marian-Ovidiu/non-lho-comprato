@@ -35,7 +35,7 @@ import {
   GrowBar,
   Stagger,
 } from "@/components/crafted/motion";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
@@ -65,6 +65,7 @@ function CraftedCategoryBars({
 }: {
   categories: CraftedStatsProps["categories"];
 }) {
+  const { formatCraftedCompact } = useLocaleFormatters();
   const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const language = useWorkspaceLanguage();
@@ -132,6 +133,7 @@ export function CraftedStats({
   topSavings = [],
   habitStats = [],
 }: CraftedStatsComponentProps) {
+  const { formatCraftedCompact } = useLocaleFormatters();
   const t = useTranslations();
   const period = selectedPeriod;
   const currencySymbol = useCurrencySymbol();

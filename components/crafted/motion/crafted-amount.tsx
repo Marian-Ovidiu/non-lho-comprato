@@ -2,6 +2,9 @@
 
 import { cn } from "@/lib/utils";
 
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
+
 import { useCountUp } from "./use-count-up";
 
 type CraftedAmountProps = {
@@ -16,11 +19,12 @@ type CraftedAmountProps = {
 };
 
 function formatAmount(
+  locale: string,
   value: number,
   minimumFractionDigits: number,
   maximumFractionDigits: number,
 ) {
-  return new Intl.NumberFormat("it-IT", {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits,
     maximumFractionDigits,
   }).format(value);
@@ -36,6 +40,7 @@ export function CraftedAmount({
   duration,
   startOnMount,
 }: CraftedAmountProps) {
+  const locale = languageToLocale(useWorkspaceLanguage());
   const displayValue = useCountUp(value, {
     duration,
     precision: maximumFractionDigits,
@@ -45,7 +50,7 @@ export function CraftedAmount({
   return (
     <span className={cn("tabular-nums", className)}>
       {prefix}
-      {formatAmount(displayValue, minimumFractionDigits, maximumFractionDigits)}
+      {formatAmount(locale, displayValue, minimumFractionDigits, maximumFractionDigits)}
       {suffix}
     </span>
   );

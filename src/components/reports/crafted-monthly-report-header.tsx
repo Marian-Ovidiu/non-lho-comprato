@@ -2,7 +2,7 @@
 
 import { Label, Mono, Rule, Serif, StatTrio } from "@/components/crafted";
 import { CraftedMonthSelector } from "@/src/components/reports/crafted-month-selector";
-import { formatCraftedCompact, splitCraftedAmount } from "@/src/lib/crafted-money";
+import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations } from "@/src/components/language/language-context";
 import type { MonthlyReportData } from "@/src/actions/reports";
@@ -18,6 +18,7 @@ export function CraftedMonthlyReportHeader({
   months,
   selectedMonth,
 }: CraftedMonthlyReportHeaderProps) {
+  const { formatCraftedCompact, splitCraftedAmount } = useLocaleFormatters();
   const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const hero = splitCraftedAmount(report.overview?.totalRealSpent ?? 0);

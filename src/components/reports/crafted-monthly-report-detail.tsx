@@ -44,9 +44,13 @@ function getCategoryKey(category: MonthlyReportAnalyticsCategory): string {
   return category.slug ?? category.id ?? category.name;
 }
 
-function formatSignedMoney(value: number, currencySymbol: string): string {
+function formatSignedMoney(
+  value: number,
+  currencySymbol: string,
+  locale: string,
+): string {
   const prefix = value > 0 ? "+" : value < 0 ? "−" : "";
-  return `${prefix}${formatCraftedCompact(Math.abs(value))}${currencySymbol}`;
+  return `${prefix}${formatCraftedCompact(Math.abs(value), locale)}${currencySymbol}`;
 }
 
 function getShortBalanceLabel(balanceRatio: number, t: ReportT): string {
@@ -68,6 +72,7 @@ function getInitials(label: string): string {
 }
 
 function getSummaryText({
+  locale,
   isAllCategories,
   categoryLabel,
   snapshot,
@@ -75,6 +80,7 @@ function getSummaryText({
   currencyCode,
   t,
 }: {
+  locale: string;
   isAllCategories: boolean;
   categoryLabel: string;
   snapshot: MonthlyReportAnalyticsSnapshot;
@@ -110,17 +116,17 @@ function getSummaryText({
     workspaceDelta === null
       ? t.noComparison
       : workspaceDelta > 0
-        ? t.aboveLastMonth(formatSignedMoney(workspaceDelta, currencySymbol))
+        ? t.aboveLastMonth(formatSignedMoney(workspaceDelta, currencySymbol, locale))
         : workspaceDelta < 0
-          ? t.belowLastMonth(formatSignedMoney(Math.abs(workspaceDelta), currencySymbol))
+          ? t.belowLastMonth(formatSignedMoney(Math.abs(workspaceDelta), currencySymbol, locale))
           : t.alignedLastMonth;
 
   const savingText =
     snapshot.overview.totalSaved > 0
-      ? t.netImpactSuffix(formatMoney(snapshot.overview.totalSaved, currencyCode))
+      ? t.netImpactSuffix(formatMoney(snapshot.overview.totalSaved, currencyCode, locale))
       : "";
 
-  return `${categoryPrefix}${t.spentInMonthAmount(formatMoney(snapshot.overview.totalRealSpent, currencyCode))}${savingText} ${balancedText} ${deltaText}`;
+  return `${categoryPrefix}${t.spentInMonthAmount(formatMoney(snapshot.overview.totalRealSpent, currencyCode, locale))}${savingText} ${balancedText} ${deltaText}`;
 }
 
 function buildCategoryOptions(
@@ -219,7 +225,7 @@ function PersonBlock({
         <div>
           <Label className="mb-1.5 block">{t.report.totalPaid}</Label>
           <Mono className="text-[30px] font-semibold leading-none">
-            {formatCraftedCompact(user.totalPaid)}
+            {formatCraftedCompact(user.totalPaid, locale)}
             <span className="text-[13px] text-accent">{currencySymbol}</span>
           </Mono>
         </div>
@@ -236,7 +242,7 @@ function PersonBlock({
               strokeWidth={2}
               className={cn(diff < 0 && "rotate-180")}
             />
-            <Mono>{formatSignedMoney(diff, currencySymbol)}</Mono>
+            <Mono>{formatSignedMoney(diff, currencySymbol, locale)}</Mono>
             <span className="text-ink-3">{t.report.vsPrevMonth}</span>
           </div>
         ) : null}
@@ -259,14 +265,14 @@ function PersonBlock({
               <span className="size-[7px] rounded-[2px] bg-foreground/85" />
               {t.report.personal}{" "}
               <Mono className="text-foreground">
-                {formatCraftedCompact(user.personalSpend)}{currencySymbol}
+                {formatCraftedCompact(user.personalSpend, locale)}{currencySymbol}
               </Mono>
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="size-[7px] rounded-[2px] bg-accent" />
               {t.report.shared}{" "}
               <Mono className="text-foreground">
-                {formatCraftedCompact(user.sharedSpend)}{currencySymbol}
+                {formatCraftedCompact(user.sharedSpend, locale)}{currencySymbol}
               </Mono>
             </span>
           </div>
@@ -282,6 +288,7 @@ function PersonBlock({
 
 function PayerCompare({ users }: { users: MonthlyReportAnalyticsUser[] }) {
   const t = useTranslations();
+  const locale = languageToLocale(useWorkspaceLanguage());
   const currencySymbol = useCurrencySymbol();
   const ranked = [...users]
     .filter((user) => user.totalPaid > 0)
@@ -320,7 +327,7 @@ function PayerCompare({ users }: { users: MonthlyReportAnalyticsUser[] }) {
               />
             </span>
             <Mono className="w-[62px] shrink-0 text-right text-[13px] font-medium">
-              {formatCraftedCompact(user.totalPaid)}
+              {formatCraftedCompact(user.totalPaid, locale)}
               <span className="text-[10.5px] text-accent">{currencySymbol}</span>
             </Mono>
           </div>
@@ -337,6 +344,7 @@ function MonthHighlights({
   snapshot: MonthlyReportAnalyticsSnapshot;
 }) {
   const t = useTranslations();
+  const locale = languageToLocale(useWorkspaceLanguage());
   const currencySymbol = useCurrencySymbol();
   const { bestCategory, worstCategory, biggestSaving } = snapshot;
 
@@ -368,7 +376,7 @@ function MonthHighlights({
               </Serif>
             </div>
             <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium">
-              {formatCraftedCompact(worstCategory.totalRealSpent)}
+              {formatCraftedCompact(worstCategory.totalRealSpent, locale)}
               <span className="text-[11px] text-accent">{currencySymbol}</span>
             </Mono>
           </div>
@@ -392,7 +400,7 @@ function MonthHighlights({
               </Serif>
             </div>
             <Mono className="shrink-0 whitespace-nowrap text-[15px] font-medium text-green">
-              {formatCraftedCompact(bestCategory.totalSaved)}
+              {formatCraftedCompact(bestCategory.totalSaved, locale)}
               <span className="text-[11px] text-accent">{currencySymbol}</span>
             </Mono>
           </div>
@@ -413,15 +421,15 @@ function MonthHighlights({
             </div>
             <p className="mt-2 text-[15px] font-[450]">{biggestSaving.title}</p>
             <Serif className="mt-1 block text-[13px] text-ink-3">
-              {biggestSaving.categoryName} · {formatDate(biggestSaving.date)} ·{" "}
+              {biggestSaving.categoryName} · {formatDate(biggestSaving.date, locale)} ·{" "}
               {t.report.insteadOf(
-                `${formatCraftedCompact(biggestSaving.realCost)}${currencySymbol}`,
-                `${formatCraftedCompact(biggestSaving.alternativeCost)}${currencySymbol}`,
+                `${formatCraftedCompact(biggestSaving.realCost, locale)}${currencySymbol}`,
+                `${formatCraftedCompact(biggestSaving.alternativeCost, locale)}${currencySymbol}`,
               )}
             </Serif>
           </div>
           <Mono className="shrink-0 whitespace-nowrap text-[17px] font-semibold text-green">
-            +{formatCraftedCompact(biggestSaving.savedAmount)}
+            +{formatCraftedCompact(biggestSaving.savedAmount, locale)}
             <span className="text-[11px] text-accent">{currencySymbol}</span>
           </Mono>
         </div>
@@ -493,8 +501,8 @@ export function CraftedMonthlyReportDetail({
   );
 
   const summaryText = useMemo(
-    () => getSummaryText({ isAllCategories, categoryLabel: selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t: t.report }),
-    [isAllCategories, selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t.report],
+    () => getSummaryText({ locale, isAllCategories, categoryLabel: selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t: t.report }),
+    [locale, isAllCategories, selectedCategoryLabel, snapshot, currencySymbol, currencyCode, t.report],
   );
 
   const hasPreviousData = filteredPreviousEntries.length > 0;

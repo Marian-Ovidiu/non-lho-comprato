@@ -23,7 +23,10 @@ import { cn } from "@/lib/utils";
 import { deleteGoal, toggleGoalActive } from "@/src/actions/goals";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations } from "@/src/components/language/language-context";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import {
+  useBoundLocale,
+  useLocaleFormatters,
+} from "@/src/components/language/use-locale-formatters";
 import {
   shortGoalDate,
   type CraftedGoalRow,
@@ -42,14 +45,15 @@ const TABS: Array<{ key: TabKey; label: string }> = [
   { key: "completato", label: "Completati" },
 ];
 
-function formatEUR(
+function formatEURBase(
+  locale: string,
   value: number,
   currencySymbol: string,
   options: { sign?: boolean; decimals?: 0 | 2 } = {},
 ) {
   const sign = options.sign ? (value > 0 ? "+" : value < 0 ? "−" : "") : "";
   const decimals = options.decimals ?? 0;
-  const formatted = new Intl.NumberFormat("it-IT", {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(Math.abs(value));
@@ -169,6 +173,7 @@ function FeaturedCard({
   goal: CraftedGoalRow;
   currencySymbol: string;
 } & GoalActionHandlers) {
+  const formatEUR = useBoundLocale(formatEURBase);
   const calloutTone = goal.status === "completato" ? "success" : "accent";
 
   return (
@@ -251,6 +256,8 @@ function GoalRow({
 }: {
   goal: CraftedGoalRow;
 } & GoalActionHandlers) {
+  const { formatCraftedCompact } = useLocaleFormatters();
+
   return (
     <div data-goal-row className="block min-h-11 w-full py-4 text-left">
       <div className="grid grid-cols-[44px_minmax(0,1fr)_auto] items-center gap-3">
@@ -300,6 +307,8 @@ function SavingRow({
   saving: CraftedSavingRow;
   currencySymbol: string;
 }) {
+  const formatEUR = useBoundLocale(formatEURBase);
+
   return (
     <div className="flex min-h-14 items-center gap-3 py-2.5">
       <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-success/10 text-success">
@@ -327,6 +336,7 @@ export function CraftedGoals({
 }: CraftedGoalsProps) {
   const router = useRouter();
   const t = useTranslations();
+  const formatEUR = useBoundLocale(formatEURBase);
   const currencySymbol = useCurrencySymbol();
   const [tab, setTab] = useState<TabKey>("tutti");
   const [deleteTarget, setDeleteTarget] = useState<CraftedGoalRow | null>(null);

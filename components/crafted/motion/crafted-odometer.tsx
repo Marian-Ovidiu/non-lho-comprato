@@ -4,6 +4,9 @@ import { useMemo } from "react";
 
 import { cn } from "@/lib/utils";
 
+import { useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
+
 import { useCountUp } from "./use-count-up";
 
 type CraftedOdometerProps = {
@@ -21,16 +24,23 @@ type CraftedOdometerProps = {
 };
 
 function formatParts(
+  locale: string,
   value: number,
   minimumFractionDigits: number,
   maximumFractionDigits: number,
 ) {
-  const formatter = new Intl.NumberFormat("it-IT", {
+  const formatter = new Intl.NumberFormat(locale, {
     minimumFractionDigits,
     maximumFractionDigits,
   });
   const formatted = formatter.format(Math.abs(value));
-  const [integerPart = "0", fractionPart = ""] = formatted.split(",");
+  const parts = formatter.formatToParts(Math.abs(value));
+  const integerPart =
+    parts
+      .filter((part) => part.type === "integer" || part.type === "group")
+      .map((part) => part.value)
+      .join("") || "0";
+  const fractionPart = parts.find((part) => part.type === "fraction")?.value ?? "";
 
   return {
     formatted,
@@ -93,14 +103,15 @@ export function CraftedOdometer({
   duration,
   startOnMount,
 }: CraftedOdometerProps) {
+  const locale = languageToLocale(useWorkspaceLanguage());
   const displayValue = useCountUp(value, {
     duration,
     precision: maximumFractionDigits,
     startOnMount,
   });
   const parts = useMemo(
-    () => formatParts(displayValue, minimumFractionDigits, maximumFractionDigits),
-    [displayValue, maximumFractionDigits, minimumFractionDigits],
+    () => formatParts(locale, displayValue, minimumFractionDigits, maximumFractionDigits),
+    [locale, displayValue, maximumFractionDigits, minimumFractionDigits],
   );
   const accessibleValue = `${parts.isNegative ? "-" : ""}${parts.formatted}${suffix}`;
 

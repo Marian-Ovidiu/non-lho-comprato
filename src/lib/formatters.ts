@@ -18,30 +18,32 @@ function toNumber(value: unknown): number {
   return Number.NaN;
 }
 
-export function formatMoney(value: unknown, currency = "EUR"): string {
+export function formatMoney(
+  value: unknown,
+  currency = "EUR",
+  locale = "it-IT",
+): string {
   const amount = toNumber(value);
   const symbol = getCurrencySymbol(currency);
-
-  if (!Number.isFinite(amount)) {
-    return `0,00 ${symbol}`;
-  }
-
-  const formatted = new Intl.NumberFormat("it-IT", {
+  const formatter = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  });
 
-  return `${formatted} ${symbol}`;
+  return `${formatter.format(Number.isFinite(amount) ? amount : 0)} ${symbol}`;
 }
 
-export function formatDate(value: string | number | Date): string {
+export function formatDate(
+  value: string | number | Date,
+  locale = "it-IT",
+): string {
   const date = value instanceof Date ? value : new Date(value);
 
   if (Number.isNaN(date.getTime())) {
     return "";
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "short",
     year: "numeric",

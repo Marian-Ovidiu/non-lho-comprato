@@ -7,7 +7,8 @@ import { ChevronDown, Plus } from "lucide-react";
 import { Label, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
-import { useTranslations } from "@/src/components/language/language-context";
+import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
+import { languageToLocale } from "@/src/lib/i18n";
 
 type CraftedEntriesHeaderProps = {
   monthLabel: string;
@@ -32,8 +33,13 @@ type TotalTileProps = {
   tone?: "default" | "success" | "accent";
 };
 
-function formatEUR(value: number, currencySymbol: string, sign: "none" | "plus" = "none") {
-  const formatted = new Intl.NumberFormat("it-IT", {
+function formatEUR(
+  value: number,
+  currencySymbol: string,
+  locale: string,
+  sign: "none" | "plus" = "none",
+) {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(Math.abs(value));
@@ -43,6 +49,7 @@ function formatEUR(value: number, currencySymbol: string, sign: "none" | "plus" 
 
 function TotalTile({ label, value, tone = "default" }: TotalTileProps) {
   const currencySymbol = useCurrencySymbol();
+  const locale = languageToLocale(useWorkspaceLanguage());
 
   return (
     <div className="min-w-0 rounded-[var(--r-card)] bg-surface-muted px-3 py-3.5">
@@ -54,7 +61,7 @@ function TotalTile({ label, value, tone = "default" }: TotalTileProps) {
           tone === "accent" && "text-accent",
         )}
       >
-        {formatEUR(value, currencySymbol, tone === "default" ? "none" : "plus")}
+        {formatEUR(value, currencySymbol, locale, tone === "default" ? "none" : "plus")}
       </Mono>
     </div>
   );

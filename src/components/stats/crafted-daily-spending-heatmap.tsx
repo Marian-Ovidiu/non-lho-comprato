@@ -64,8 +64,12 @@ const INTENSITY_CLASS = [
   "border-accent/35 bg-accent/60 text-foreground",
 ] as const;
 
-function formatSignedMoney(value: number, currencyCode: string): string {
-  const normalized = formatMoney(Math.abs(value), currencyCode);
+function formatSignedMoney(
+  value: number,
+  currencyCode: string,
+  locale: string,
+): string {
+  const normalized = formatMoney(Math.abs(value), currencyCode, locale);
 
   if (value > 0) {
     return `+${normalized}`;
@@ -186,7 +190,7 @@ function getSubtitle(data: DailySpendingComparison, currencyCode: string, locale
     ? hs.soFar
     : hs.monthTotalScope;
 
-  return hs.subtitleWithDelta(data.currentMonth.label, formatSignedMoney(data.monthToDateDelta, currencyCode), scope, previousAbbrev);
+  return hs.subtitleWithDelta(data.currentMonth.label, formatSignedMoney(data.monthToDateDelta, currencyCode, locale), scope, previousAbbrev);
 }
 
 function getIntensityLevel(spent: number, maxDailySpent: number): number {
@@ -269,16 +273,21 @@ function buildDayDetails(
   };
 }
 
-function getDayAriaLabel(details: DayDetails, currencyCode: string, hs: HeatmapStrings): string {
+function getDayAriaLabel(
+  details: DayDetails,
+  currencyCode: string,
+  hs: HeatmapStrings,
+  locale: string,
+): string {
   const parts = [
     details.currentLabel,
-    hs.ariaSpentForReal(formatMoney(details.cell.totalRealSpent, currencyCode)),
+    hs.ariaSpentForReal(formatMoney(details.cell.totalRealSpent, currencyCode, locale)),
   ];
 
   if (details.previousDateExists && details.previousLabel) {
     parts.push(
       details.hasPreviousData
-        ? `${details.previousLabel}: ${formatMoney(details.previousTotal ?? 0, currencyCode)}`
+        ? `${details.previousLabel}: ${formatMoney(details.previousTotal ?? 0, currencyCode, locale)}`
         : hs.ariaNoData(details.previousLabel),
     );
   } else {
@@ -286,7 +295,7 @@ function getDayAriaLabel(details: DayDetails, currencyCode: string, hs: HeatmapS
   }
 
   if (details.delta !== null) {
-    parts.push(hs.ariaDiff(formatSignedMoney(details.delta, currencyCode)));
+    parts.push(hs.ariaDiff(formatSignedMoney(details.delta, currencyCode, locale)));
   }
 
   return parts.join(". ");
@@ -346,7 +355,7 @@ function DayDetailPopover({
         <div className="flex items-center justify-between gap-3">
           <span className="text-ink-3">{hs.realSpentLabel}</span>
           <Mono className="font-semibold text-foreground">
-            {formatMoney(details.cell.totalRealSpent, currencyCode)}
+            {formatMoney(details.cell.totalRealSpent, currencyCode, locale)}
           </Mono>
         </div>
         <div className="flex items-center justify-between gap-3">
@@ -361,14 +370,14 @@ function DayDetailPopover({
           </span>
           <Mono className="shrink-0 font-semibold text-foreground">
             {details.previousDateExists
-              ? formatMoney(details.previousTotal ?? 0, currencyCode)
+              ? formatMoney(details.previousTotal ?? 0, currencyCode, locale)
               : hs.notAvailable}
           </Mono>
         </div>
         <div className="flex items-center justify-between gap-3 border-t border-line-soft pt-1.5">
           <span className="text-ink-3">{hs.diffLabel}</span>
           <Mono className={cn("font-semibold", deltaTone)}>
-            {details.delta === null ? hs.notCalculable : formatSignedMoney(details.delta, currencyCode)}
+            {details.delta === null ? hs.notCalculable : formatSignedMoney(details.delta, currencyCode, locale)}
           </Mono>
         </div>
         <div className="flex items-center justify-between gap-3">
@@ -389,6 +398,7 @@ function DayDetailPopover({
 }
 
 function IntensityLegend({ maxDailySpent, currency, hs }: { maxDailySpent: number; currency: string; hs: HeatmapStrings }) {
+  const locale = languageToLocale(useWorkspaceLanguage());
   return (
     <div className="flex items-center justify-end gap-2 text-[10px] text-ink-3">
       <span>{hs.lessLabel}</span>
@@ -398,7 +408,7 @@ function IntensityLegend({ maxDailySpent, currency, hs }: { maxDailySpent: numbe
             key={level}
             className={cn("size-4 rounded-md border", className)}
             title={
-              level === 0 ? hs.noSpendingTitle : formatMoney((maxDailySpent * level) / 5, currency)
+              level === 0 ? hs.noSpendingTitle : formatMoney((maxDailySpent * level) / 5, currency, locale)
             }
             aria-hidden="true"
           />
@@ -538,7 +548,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                   <li key={cell.dateKey} className="relative min-w-0">
                     <button
                       type="button"
-                      aria-label={getDayAriaLabel(details, currencyCode, hs)}
+                      aria-label={getDayAriaLabel(details, currencyCode, hs, locale)}
                       aria-describedby={isActive ? "daily-spending-heatmap-detail" : undefined}
                       aria-expanded={isActive}
                       onClick={(event) =>
@@ -618,7 +628,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
               <p className="text-xs leading-5 text-muted-foreground">
                 {data.currentMonth.days.some((cell) => cell.isToday) ? hs.monthProgress : hs.monthTotal}:{" "}
                 <Mono className="font-semibold text-foreground">
-                  {formatCraftedCompact(data.currentMonth.totalRealSpent)}{currencySymbol}
+                  {formatCraftedCompact(data.currentMonth.totalRealSpent, locale)}{currencySymbol}
                 </Mono>{" "}
                 {hs.inMonth(data.currentMonth.label.toLowerCase())},{" "}
                 <Mono
@@ -631,7 +641,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                         : "text-foreground",
                   )}
                 >
-                  {formatSignedMoney(data.monthToDateDelta, currencyCode)}
+                  {formatSignedMoney(data.monthToDateDelta, currencyCode, locale)}
                 </Mono>{" "}
                 {hs.comparedToPrevious}
               </p>

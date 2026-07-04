@@ -22,7 +22,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
+import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
@@ -112,6 +112,7 @@ export function CraftedHabitCard({
   currentUserId,
   workspaceKind,
 }: CraftedHabitCardProps) {
+  const { formatCraftedCompact } = useLocaleFormatters();
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
   const t = useTranslations();

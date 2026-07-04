@@ -19,6 +19,7 @@ import {
 
 import { Label, Mono, ProgressLine, Rule, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
+import { useBoundLocale } from "@/src/components/language/use-locale-formatters";
 import type {
   CraftedBudgetCategory,
   CraftedBudgetProps,
@@ -110,11 +111,12 @@ function BudgetCategoryIcon({
   }
 }
 
-function formatEUR(
+function formatEURBase(
+  locale: string,
   value: number,
   { sign = false, decimals = 0 }: { sign?: boolean; decimals?: number } = {},
 ) {
-  const formatted = new Intl.NumberFormat("it-IT", {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
   }).format(Math.abs(value));
@@ -123,8 +125,8 @@ function formatEUR(
   return `${prefix}€${formatted}`;
 }
 
-function formatOverDelta(value: number) {
-  return `+${formatEUR(value, { decimals: 0 }).replace(MINUS, "")}`;
+function formatOverDeltaBase(locale: string, value: number) {
+  return `+${formatEURBase(locale, value, { decimals: 0 }).replace(MINUS, "")}`;
 }
 
 function getCategoryTone(cat: CraftedBudgetCategory): CraftedBudgetTone {
@@ -138,6 +140,7 @@ function getCategoryTone(cat: CraftedBudgetCategory): CraftedBudgetTone {
 }
 
 function MiniStat({ label, value, tone = "default" }: MiniStatProps) {
+  const formatEUR = useBoundLocale(formatEURBase);
   return (
     <div className="min-w-0 rounded-[var(--r-card)] bg-surface-muted px-3 py-2.5">
       <Label className="mb-2 block truncate">{label}</Label>
@@ -156,6 +159,8 @@ function MiniStat({ label, value, tone = "default" }: MiniStatProps) {
 }
 
 function CategoryRow({ cat, totalBudget, last }: CategoryRowProps) {
+  const formatEUR = useBoundLocale(formatEURBase);
+  const formatOverDelta = useBoundLocale(formatOverDeltaBase);
   const iconName = getCategoryIconName(cat);
   const tone = getCategoryTone(cat);
   const pct = cat.budget > 0 ? (cat.spent / cat.budget) * 100 : 100;
@@ -238,6 +243,8 @@ function CategoryRow({ cat, totalBudget, last }: CategoryRowProps) {
 }
 
 export function CraftedBudgetPage(props: CraftedBudgetPageProps) {
+  const formatEUR = useBoundLocale(formatEURBase);
+  const formatOverDelta = useBoundLocale(formatOverDeltaBase);
   const router = useRouter();
   const remaining = props.totalBudget - props.spent;
   const spentPct = props.totalBudget > 0 ? (props.spent / props.totalBudget) * 100 : 0;

@@ -18,12 +18,14 @@ import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-
 import { triggerHaptic } from "@/src/lib/haptics";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useLocalizedCategoryName, useTranslations } from "@/src/components/language/language-context";
+import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
 import type { Translations } from "@/src/lib/i18n/types";
 
 function getPresetMoneySummary(
   preset: SerializablePreset,
   currencySymbol: string,
   t: Translations["preset"],
+  locale: string,
 ) {
   const amountSpent = toNumber(preset.amountSpent);
   const comparisonAmount = toNumber(preset.comparisonAmount);
@@ -31,25 +33,25 @@ function getPresetMoneySummary(
 
   if (preset.mode === "avoided") {
     return {
-      primaryAmount: `${formatCraftedCompact(comparisonAmount)}${currencySymbol}`,
+      primaryAmount: `${formatCraftedCompact(comparisonAmount, locale)}${currencySymbol}`,
       detail: t.avoided,
-      note: t.avoidedNote(`${formatCraftedCompact(comparisonAmount)}${currencySymbol}`),
+      note: t.avoidedNote(`${formatCraftedCompact(comparisonAmount, locale)}${currencySymbol}`),
     };
   }
 
   if (preset.savingContext === "comparison") {
     return {
-      primaryAmount: `${formatCraftedCompact(amountSpent)}${currencySymbol}`,
-      detail: t.comparisonDetail(`${formatCraftedCompact(comparisonAmount)}${currencySymbol}`),
+      primaryAmount: `${formatCraftedCompact(amountSpent, locale)}${currencySymbol}`,
+      detail: t.comparisonDetail(`${formatCraftedCompact(comparisonAmount, locale)}${currencySymbol}`),
       note:
         savingImpact >= 0
-          ? t.savedBetter(`${formatCraftedCompact(savingImpact)}${currencySymbol}`)
-          : t.spentMoreThan(`${formatCraftedCompact(Math.abs(savingImpact))}${currencySymbol}`),
+          ? t.savedBetter(`${formatCraftedCompact(savingImpact, locale)}${currencySymbol}`)
+          : t.spentMoreThan(`${formatCraftedCompact(Math.abs(savingImpact), locale)}${currencySymbol}`),
     };
   }
 
   return {
-    primaryAmount: `${formatCraftedCompact(amountSpent)}${currencySymbol}`,
+    primaryAmount: `${formatCraftedCompact(amountSpent, locale)}${currencySymbol}`,
     detail: t.normalSpend,
     note: t.noComparison,
   };
@@ -60,6 +62,7 @@ type CraftedPresetRowProps = {
 };
 
 export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
+  const { locale } = useLocaleFormatters();
   const t = useTranslations();
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
@@ -69,7 +72,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
   });
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
-  const summary = getPresetMoneySummary(preset, currencySymbol, t.preset);
+  const summary = getPresetMoneySummary(preset, currencySymbol, t.preset, locale);
 
   function handleCreate() {
     startTransition(async () => {
@@ -103,7 +106,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
           <div className="min-w-0">
             <p className="truncate text-[15px] font-[450]">{preset.title}</p>
             <p className="mt-0.5 text-xs text-ink-3">
-              {categoryName} · {preset.targetUserLabel} · {formatDate(preset.createdAt)}
+              {categoryName} · {preset.targetUserLabel} · {formatDate(preset.createdAt, locale)}
             </p>
             <p className="mt-1 text-xs text-ink-3">{summary.detail} · {summary.note}</p>
           </div>

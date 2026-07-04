@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { Label, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
+import { useBoundLocale } from "@/src/components/language/use-locale-formatters";
 
 type ImportBatchListItem = {
   id: string;
@@ -33,8 +34,8 @@ const STATUS_CLASSES: Record<ImportBatchListItem["status"], string> = {
   failed: "border-destructive/20 bg-destructive/10 text-destructive",
 };
 
-function formatDate(value: Date): string {
-  return new Intl.DateTimeFormat("it-IT", {
+function formatDateBase(locale: string, value: Date): string {
+  return new Intl.DateTimeFormat(locale, {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -42,6 +43,7 @@ function formatDate(value: Date): string {
 }
 
 export function CraftedImportBatchList({ batches }: CraftedImportBatchListProps) {
+  const formatDate = useBoundLocale(formatDateBase);
   if (batches.length === 0) {
     return (
       <section className="border-y border-line py-5">
