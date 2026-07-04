@@ -1,3 +1,6 @@
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 "use server";
 
 import { revalidatePath } from "next/cache";
@@ -51,9 +54,12 @@ async function requireOwner(): Promise<{ userId: string; workspaceId: string }> 
   return { userId: user.id, workspaceId };
 }
 
-function validateCategoryName(name: string): string | null {
-  if (!name) return "Il nome è obbligatorio.";
-  if (name.length > 80) return "Il nome è troppo lungo (max 80 caratteri).";
+function validateCategoryName(
+  name: string,
+  m: Translations["categoryActions"] = it.categoryActions,
+): string | null {
+  if (!name) return m.nameRequired;
+  if (name.length > 80) return m.nameTooLong;
   return null;
 }
 
@@ -134,6 +140,7 @@ export async function createCategory(
   formData: FormData,
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
+  const t = await getActionTranslations();
   try {
     const { workspaceId } = await requireOwner();
 
@@ -141,7 +148,7 @@ export async function createCategory(
     const icon = String(formData.get("icon") ?? "").trim() || null;
     const color = String(formData.get("color") ?? "").trim() || null;
 
-    const nameError = validateCategoryName(name);
+    const nameError = validateCategoryName(name, t.categoryActions);
     if (nameError) return { success: false, message: nameError };
 
     const baseSlug = generateSlugFromName(name);
@@ -152,20 +159,20 @@ export async function createCategory(
     });
 
     revalidateCategoryPaths();
-    return { success: true, message: "Categoria creata." };
+    return { success: true, message: t.categoryActions.created };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
-      return { success: false, message: "Solo un owner può gestire le categorie." };
+      return { success: false, message: t.categoryActions.ownerOnly };
     }
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return { success: false, message: "Esiste già una categoria con questo nome." };
+      return { success: false, message: t.categoryActions.duplicateName };
     }
     console.error("createCategory failed:", error);
-    return { success: false, message: "Non riesco a creare la categoria adesso. Riprova." };
+    return { success: false, message: t.categoryActions.createFailed };
   }
 }
 
@@ -176,6 +183,7 @@ export async function updateCategory(
   formData: FormData,
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
+  const t = await getActionTranslations();
   try {
     const { workspaceId } = await requireOwner();
 
@@ -183,14 +191,14 @@ export async function updateCategory(
     const icon = String(formData.get("icon") ?? "").trim() || null;
     const color = String(formData.get("color") ?? "").trim() || null;
 
-    const nameError = validateCategoryName(name);
+    const nameError = validateCategoryName(name, t.categoryActions);
     if (nameError) return { success: false, message: nameError };
 
     const category = await prisma.category.findFirst({
       where: await getCurrentWorkspaceScopedWhere({ id: categoryId }),
       select: { id: true },
     });
-    if (!category) return { success: false, message: "Categoria non trovata." };
+    if (!category) return { success: false, message: t.categoryActions.notFound };
 
     await prisma.category.update({
       where: { id: categoryId, workspaceId },
@@ -198,22 +206,22 @@ export async function updateCategory(
     });
 
     revalidateCategoryPaths();
-    return { success: true, message: "Categoria aggiornata." };
+    return { success: true, message: t.categoryActions.updated };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
-      return { success: false, message: "Solo un owner può gestire le categorie." };
+      return { success: false, message: t.categoryActions.ownerOnly };
     }
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       error.code === "P2002"
     ) {
-      return { success: false, message: "Esiste già una categoria con questo nome." };
+      return { success: false, message: t.categoryActions.duplicateName };
     }
     console.error("updateCategory failed:", error);
     return {
       success: false,
-      message: "Non riesco ad aggiornare la categoria adesso. Riprova.",
+      message: t.categoryActions.updateFailed,
     };
   }
 }
@@ -224,6 +232,7 @@ export async function archiveCategory(
   categoryId: string,
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
+  const t = await getActionTranslations();
   try {
     const { workspaceId } = await requireOwner();
 
@@ -231,10 +240,10 @@ export async function archiveCategory(
       where: await getCurrentWorkspaceScopedWhere({ id: categoryId }),
       select: { id: true, archivedAt: true },
     });
-    if (!category) return { success: false, message: "Categoria non trovata." };
+    if (!category) return { success: false, message: t.categoryActions.notFound };
 
     if (category.archivedAt !== null) {
-      return { success: true, message: "Categoria già archiviata." };
+      return { success: true, message: t.categoryActions.alreadyArchived };
     }
 
     await prisma.category.update({
@@ -243,16 +252,16 @@ export async function archiveCategory(
     });
 
     revalidateCategoryPaths();
-    return { success: true, message: "Categoria archiviata." };
+    return { success: true, message: t.categoryActions.archived };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
-      return { success: false, message: "Solo un owner può gestire le categorie." };
+      return { success: false, message: t.categoryActions.ownerOnly };
     }
     console.error("archiveCategory failed:", error);
     return {
       success: false,
-      message: "Non riesco ad archiviare la categoria adesso. Riprova.",
+      message: t.categoryActions.archiveFailed,
     };
   }
 }
@@ -263,6 +272,7 @@ export async function restoreCategory(
   categoryId: string,
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
+  const t = await getActionTranslations();
   try {
     const { workspaceId } = await requireOwner();
 
@@ -270,7 +280,7 @@ export async function restoreCategory(
       where: await getCurrentWorkspaceScopedWhere({ id: categoryId }),
       select: { id: true, name: true, archivedAt: true },
     });
-    if (!category) return { success: false, message: "Categoria non trovata." };
+    if (!category) return { success: false, message: t.categoryActions.notFound };
 
     // Check for a name conflict with another active category
     const nameConflict = await prisma.category.findFirst({
@@ -285,7 +295,7 @@ export async function restoreCategory(
     if (nameConflict) {
       return {
         success: false,
-        message: `Esiste già una categoria attiva chiamata "${category.name}". Rinominala prima di ripristinarla.`,
+        message: t.categoryActions.activeDuplicate(category.name),
       };
     }
 
@@ -295,16 +305,16 @@ export async function restoreCategory(
     });
 
     revalidateCategoryPaths();
-    return { success: true, message: "Categoria ripristinata." };
+    return { success: true, message: t.categoryActions.restored };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
-      return { success: false, message: "Solo un owner può gestire le categorie." };
+      return { success: false, message: t.categoryActions.ownerOnly };
     }
     console.error("restoreCategory failed:", error);
     return {
       success: false,
-      message: "Non riesco a ripristinare la categoria adesso. Riprova.",
+      message: t.categoryActions.restoreFailed,
     };
   }
 }
@@ -315,6 +325,7 @@ export async function deleteCategory(
   categoryId: string,
 ): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
+  const t = await getActionTranslations();
   try {
     const { workspaceId } = await requireOwner();
 
@@ -326,7 +337,7 @@ export async function deleteCategory(
         _count: { select: { entries: true, habits: true, quickPresets: true } },
       },
     });
-    if (!category) return { success: false, message: "Categoria non trovata." };
+    if (!category) return { success: false, message: t.categoryActions.notFound };
 
     const entriesCount = category._count.entries;
     const habitsCount = category._count.habits;
@@ -342,18 +353,18 @@ export async function deleteCategory(
       if (presetsCount > 0) parts.push(`${presetsCount} preset`);
       return {
         success: false,
-        message: `Questa categoria è usata da ${parts.join(", ")}. Archiviala per nasconderla dai selettori.`,
+        message: t.categoryActions.inUseBy(parts.join(", ")),
       };
     }
 
     await prisma.category.delete({ where: { id: categoryId, workspaceId } });
 
     revalidateCategoryPaths();
-    return { success: true, message: "Categoria eliminata." };
+    return { success: true, message: t.categoryActions.deleted };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
-      return { success: false, message: "Solo un owner può gestire le categorie." };
+      return { success: false, message: t.categoryActions.ownerOnly };
     }
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -362,13 +373,13 @@ export async function deleteCategory(
       return {
         success: false,
         message:
-          "Questa categoria è usata da movimenti, abitudini o preset. Archiviala per nasconderla dai selettori.",
+          t.categoryActions.inUseGeneric,
       };
     }
     console.error("deleteCategory failed:", error);
     return {
       success: false,
-      message: "Non riesco ad eliminare la categoria adesso. Riprova.",
+      message: t.categoryActions.deleteFailed,
     };
   }
 }
@@ -377,6 +388,7 @@ export async function deleteCategory(
 
 export async function resetDefaultCategories(): Promise<CategoryActionResult> {
   await refreshSupabaseSessionForAction();
+  const t = await getActionTranslations();
   try {
     const { workspaceId } = await requireOwner();
 
@@ -426,16 +438,16 @@ export async function resetDefaultCategories(): Promise<CategoryActionResult> {
     }
 
     revalidateCategoryPaths();
-    return { success: true, message: "Categorie predefinite ripristinate." };
+    return { success: true, message: t.categoryActions.defaultsRestored };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
-      return { success: false, message: "Solo un owner può gestire le categorie." };
+      return { success: false, message: t.categoryActions.ownerOnly };
     }
     console.error("resetDefaultCategories failed:", error);
     return {
       success: false,
-      message: "Non riesco a ripristinare le categorie adesso. Riprova.",
+      message: t.categoryActions.restoreAllFailed,
     };
   }
 }

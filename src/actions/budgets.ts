@@ -5,6 +5,9 @@ import { unstable_rethrow } from "next/navigation";
 
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
 import {
@@ -85,6 +88,7 @@ type BudgetPrismaLike = BudgetTransactionClientLike & {
 type BudgetActionDeps = {
   prisma: BudgetPrismaLike;
   refreshSupabaseSessionForAction: () => Promise<unknown>;
+  getTranslations: () => Promise<Translations>;
   getCurrentUser: typeof getCurrentUser;
   getCurrentWorkspace: typeof getCurrentWorkspace;
   getCurrentWorkspaceId: typeof getCurrentWorkspaceId;
@@ -99,6 +103,7 @@ function makeDefaultDeps(): BudgetActionDeps {
   return {
     prisma: prisma as unknown as BudgetPrismaLike,
     refreshSupabaseSessionForAction,
+    getTranslations: getActionTranslations,
     getCurrentUser,
     getCurrentWorkspace,
     getCurrentWorkspaceId,
@@ -142,9 +147,12 @@ function getFormTexts(formData: FormData, key: string): string[] {
     .filter(Boolean);
 }
 
-function mapKnownBudgetError(error: unknown): string | null {
+function mapKnownBudgetError(
+  error: unknown,
+  m: Translations["budgetActions"] = it.budgetActions,
+): string | null {
   if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-    return "Esiste già un budget con questa combinazione di periodo e scope.";
+    return m.duplicate;
   }
 
   return null;
@@ -264,6 +272,7 @@ async function createBudgetRecord(
   formData: FormData,
 ): Promise<BudgetActionResult> {
   await deps.refreshSupabaseSessionForAction();
+  const t = await deps.getTranslations();
 
   try {
     const currentUser = await deps.getCurrentUser();
@@ -282,7 +291,7 @@ async function createBudgetRecord(
       currency: getFormText(formData, "currency"),
     };
 
-    const validation = validateBudgetScopeInput(rawInput);
+    const validation = validateBudgetScopeInput(rawInput, t.budgetActions);
     if (!validation.ok) {
       return toActionResult(
         "Controlla i campi evidenziati",
@@ -298,7 +307,7 @@ async function createBudgetRecord(
     if (normalized.scope === "category") {
       if (uniqueCategoryIds.length === 0) {
         return toActionResult("Controlla i campi evidenziati", {
-          categoryId: "Seleziona almeno una categoria.",
+          categoryId: t.budgetActions.selectAtLeastOneCategory,
         });
       }
 
@@ -313,7 +322,7 @@ async function createBudgetRecord(
 
         if (!category) {
           return toActionResult("Controlla i campi evidenziati", {
-            categoryId: "Una delle categorie selezionate non appartiene a questo workspace.",
+            categoryId: t.budgetActions.someCategoryNotInWorkspace,
           });
         }
       }
@@ -333,7 +342,7 @@ async function createBudgetRecord(
 
     if (duplicate) {
       if (normalized.scope === "workspace" || targetCategoryIds.length <= 1) {
-        return toActionResult("Esiste già un budget con questa combinazione di periodo e scope.");
+        return toActionResult(t.budgetActions.duplicate);
       }
     }
 
@@ -401,7 +410,7 @@ async function createBudgetRecord(
     }
 
     if (!created) {
-      return toActionResult("Esiste già un budget per le categorie selezionate.");
+      return toActionResult(t.budgetActions.duplicateForCategories);
     }
 
     revalidateBudgetPaths(deps);
@@ -410,19 +419,19 @@ async function createBudgetRecord(
       success: true,
       message:
         skippedCount > 0
-          ? `Budget creato. ${skippedCount} già presente.`
-          : "Budget creato.",
+          ? t.budgetActions.createdWithSkipped(skippedCount)
+          : t.budgetActions.created,
       budgetId: created.id,
     };
   } catch (error) {
     unstable_rethrow(error);
-    const mapped = mapKnownBudgetError(error);
+    const mapped = mapKnownBudgetError(error, t.budgetActions);
     if (mapped) {
       return toActionResult(mapped);
     }
 
     console.error("createBudgetAction failed:", error);
-    return toActionResult("Non riesco a creare il budget adesso. Riprova.");
+    return toActionResult(t.budgetActions.createFailed);
   }
 }
 
@@ -431,6 +440,7 @@ async function updateBudgetRecord(
   formData: FormData,
 ): Promise<BudgetActionResult> {
   await deps.refreshSupabaseSessionForAction();
+  const t = await deps.getTranslations();
 
   try {
     const currentUser = await deps.getCurrentUser();
@@ -439,8 +449,8 @@ async function updateBudgetRecord(
 
     const budgetId = getFormText(formData, "budgetId");
     if (!budgetId) {
-      return toActionResult("ID budget non valido.", {
-        budgetId: "Seleziona un budget valido.",
+      return toActionResult(t.budgetActions.invalidId, {
+        budgetId: t.budgetActions.selectValidBudget,
       });
     }
 
@@ -459,7 +469,7 @@ async function updateBudgetRecord(
     });
 
     if (!existingBudget) {
-      return toActionResult("Budget non trovato.");
+      return toActionResult(t.budgetActions.notFound);
     }
 
     const rawInput = {
@@ -471,7 +481,7 @@ async function updateBudgetRecord(
       currency: getFormText(formData, "currency"),
     };
 
-    const validation = validateBudgetScopeInput(rawInput);
+    const validation = validateBudgetScopeInput(rawInput, t.budgetActions);
     if (!validation.ok) {
       return toActionResult(
         "Controlla i campi evidenziati",
@@ -494,7 +504,7 @@ async function updateBudgetRecord(
 
       if (!category) {
         return toActionResult("Controlla i campi evidenziati", {
-          categoryId: "La categoria selezionata non appartiene a questo workspace.",
+          categoryId: t.budgetActions.categoryNotInWorkspace,
         });
       }
     }
@@ -512,7 +522,7 @@ async function updateBudgetRecord(
     });
 
     if (duplicate) {
-      return toActionResult("Esiste già un budget con questa combinazione di periodo e scope.");
+      return toActionResult(t.budgetActions.duplicate);
     }
 
     await deps.prisma.budget.update({
@@ -531,18 +541,18 @@ async function updateBudgetRecord(
 
     return {
       success: true,
-      message: "Budget aggiornato.",
+      message: t.budgetActions.updated,
       budgetId,
     };
   } catch (error) {
     unstable_rethrow(error);
-    const mapped = mapKnownBudgetError(error);
+    const mapped = mapKnownBudgetError(error, t.budgetActions);
     if (mapped) {
       return toActionResult(mapped);
     }
 
     console.error("updateBudgetAction failed:", error);
-    return toActionResult("Non riesco ad aggiornare il budget adesso. Riprova.");
+    return toActionResult(t.budgetActions.updateFailed);
   }
 }
 
@@ -551,6 +561,7 @@ async function deleteBudgetRecord(
   formData: FormData,
 ): Promise<BudgetActionResult> {
   await deps.refreshSupabaseSessionForAction();
+  const t = await deps.getTranslations();
 
   try {
     const currentUser = await deps.getCurrentUser();
@@ -559,8 +570,8 @@ async function deleteBudgetRecord(
 
     const budgetId = getFormText(formData, "budgetId");
     if (!budgetId) {
-      return toActionResult("ID budget non valido.", {
-        budgetId: "Seleziona un budget valido.",
+      return toActionResult(t.budgetActions.invalidId, {
+        budgetId: t.budgetActions.selectValidBudget,
       });
     }
 
@@ -573,7 +584,7 @@ async function deleteBudgetRecord(
     });
 
     if (!budget) {
-      return toActionResult("Budget non trovato.");
+      return toActionResult(t.budgetActions.notFound);
     }
 
     await deps.prisma.budget.delete({
@@ -584,18 +595,18 @@ async function deleteBudgetRecord(
 
     return {
       success: true,
-      message: "Budget eliminato.",
+      message: t.budgetActions.deleted,
       budgetId,
     };
   } catch (error) {
     unstable_rethrow(error);
-    const mapped = mapKnownBudgetError(error);
+    const mapped = mapKnownBudgetError(error, t.budgetActions);
     if (mapped) {
       return toActionResult(mapped);
     }
 
     console.error("deleteBudgetAction failed:", error);
-    return toActionResult("Non riesco a eliminare il budget adesso. Riprova.");
+    return toActionResult(t.budgetActions.deleteFailed);
   }
 }
 

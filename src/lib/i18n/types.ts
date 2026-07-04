@@ -25,6 +25,80 @@ export type Translations = {
     sending: string;
   };
 
+  validation: {
+    required: string;
+    invalidNumber: string;
+    positive: string;
+    nonNegative: string;
+    titleRequired: string;
+    titleMinLength: string;
+    emojiMax: string;
+    checkFields: string;
+    selectCategory: string;
+    updateError: string;
+    deleteError: string;
+  };
+
+  goalActions: {
+    invalidId: string;
+    saved: string;
+    deleted: string;
+    notFound: string;
+    archived: string;
+    reactivated: string;
+    saveFailed: string;
+  };
+
+  budgetActions: {
+    created: string;
+    updated: string;
+    deleted: string;
+    notFound: string;
+    invalidId: string;
+    duplicate: string;
+    duplicateForCategories: string;
+    categoryNotInWorkspace: string;
+    someCategoryNotInWorkspace: string;
+    selectAtLeastOneCategory: string;
+    selectValidBudget: string;
+    createFailed: string;
+    updateFailed: string;
+    deleteFailed: string;
+    createdWithSkipped: (count: number) => string;
+    scopeInvalid: string;
+    periodInvalid: string;
+    amountRequired: string;
+    amountPositive: string;
+    categoryForbidden: string;
+    categoryRequired: string;
+    scopeKeyWorkspace: string;
+    scopeKeyCategoryMismatch: string;
+    scopeKeyMismatch: string;
+  };
+
+  categoryActions: {
+    created: string;
+    updated: string;
+    archived: string;
+    restored: string;
+    deleted: string;
+    alreadyArchived: string;
+    notFound: string;
+    defaultsRestored: string;
+    duplicateName: string;
+    ownerOnly: string;
+    nameRequired: string;
+    nameTooLong: string;
+    createFailed: string;
+    updateFailed: string;
+    archiveFailed: string;
+    restoreFailed: string;
+    restoreAllFailed: string;
+    deleteFailed: string;
+    inUseGeneric: string;
+    activeDuplicate: (name: string) => string;
+    inUseBy: (usage: string) => string;
+  };
   nav: {
     today: string;
     entries: string;

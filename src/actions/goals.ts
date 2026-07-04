@@ -11,6 +11,8 @@ import {
   validateGoalForm,
   type GoalsWithProgress,
 } from "@/src/features/goals/domain";
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import type { Translations } from "@/src/lib/i18n";
 import {
   getCurrentWorkspaceId,
   getCurrentWorkspaceMembers,
@@ -51,6 +53,7 @@ type GoalDelegateLike = {
 type GoalActionDeps = {
   prisma: { goal: GoalDelegateLike };
   getCurrentWorkspaceId: () => Promise<string>;
+  getTranslations: () => Promise<Translations>;
   revalidatePath: (path: string) => void;
   updateTag: (tag: string) => unknown;
 };
@@ -59,6 +62,7 @@ function makeDefaultDeps(): GoalActionDeps {
   return {
     prisma: prisma as unknown as GoalActionDeps["prisma"],
     getCurrentWorkspaceId,
+    getTranslations: getActionTranslations,
     revalidatePath,
     updateTag,
   };
@@ -87,16 +91,20 @@ async function createGoalRecord(
   deps: GoalActionDeps,
   formData: FormData,
 ): Promise<GoalActionResult> {
-  const validation = validateGoalForm({
-    title: getText(formData, "title"),
-    emoji: getText(formData, "emoji"),
-    targetAmountRaw: getText(formData, "targetAmount"),
-  });
+  const t = await deps.getTranslations();
+  const validation = validateGoalForm(
+    {
+      title: getText(formData, "title"),
+      emoji: getText(formData, "emoji"),
+      targetAmountRaw: getText(formData, "targetAmount"),
+    },
+    t.validation,
+  );
 
   if (Object.keys(validation.errors).length > 0) {
     return {
       success: false,
-      message: "Controlla i campi evidenziati",
+      message: t.validation.checkFields,
       errors: validation.errors,
     };
   }
@@ -119,14 +127,13 @@ async function createGoalRecord(
 
     return {
       success: true,
-      message: "Obiettivo salvato con successo",
+      message: t.goalActions.saved,
     };
   } catch (error) {
     console.error("Failed to create goal:", error);
     return {
       success: false,
-      message:
-        "Non riesco a salvare l'obiettivo adesso. Controlla il database e riprova tra poco.",
+      message: t.goalActions.saveFailed,
     };
   }
 }
@@ -136,11 +143,12 @@ async function deleteGoalRecord(
   goalId: string,
 ): Promise<GoalActionResult> {
   const id = goalId.trim();
+  const t = await deps.getTranslations();
 
   if (!id) {
     return {
       success: false,
-      message: "ID obiettivo non valido",
+      message: t.goalActions.invalidId,
     };
   }
 
@@ -156,7 +164,7 @@ async function deleteGoalRecord(
     if (!goal) {
       return {
         success: false,
-        message: "Obiettivo non trovato",
+        message: t.goalActions.notFound,
       };
     }
 
@@ -169,13 +177,13 @@ async function deleteGoalRecord(
 
     return {
       success: true,
-      message: "Obiettivo eliminato",
+      message: t.goalActions.deleted,
     };
   } catch (error) {
     console.error("Failed to delete goal:", error);
     return {
       success: false,
-      message: "Si è verificato un errore durante l'eliminazione",
+      message: t.validation.deleteError,
     };
   }
 }
@@ -185,11 +193,12 @@ async function toggleGoalRecord(
   goalId: string,
 ): Promise<GoalActionResult> {
   const id = goalId.trim();
+  const t = await deps.getTranslations();
 
   if (!id) {
     return {
       success: false,
-      message: "ID obiettivo non valido",
+      message: t.goalActions.invalidId,
     };
   }
 
@@ -206,7 +215,7 @@ async function toggleGoalRecord(
     if (!goal) {
       return {
         success: false,
-        message: "Obiettivo non trovato",
+        message: t.goalActions.notFound,
       };
     }
 
@@ -222,13 +231,13 @@ async function toggleGoalRecord(
 
     return {
       success: true,
-      message: goal.isActive ? "Obiettivo archiviato" : "Obiettivo riattivato",
+      message: goal.isActive ? t.goalActions.archived : t.goalActions.reactivated,
     };
   } catch (error) {
     console.error("Failed to toggle goal:", error);
     return {
       success: false,
-      message: "Si è verificato un errore durante l'aggiornamento",
+      message: t.validation.updateError,
     };
   }
 }

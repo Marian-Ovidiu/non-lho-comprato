@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { it as itDict } from "@/src/lib/i18n/it";
+
 process.env.DATABASE_URL ??=
   "postgresql://goal_test:goal_test@127.0.0.1:5432/goal_test";
 process.env.DIRECT_URL ??= process.env.DATABASE_URL;
@@ -87,6 +89,7 @@ async function createFakeGoalWorld(options?: { failCreate?: boolean }) {
       },
     },
     getCurrentWorkspaceId: async () => workspaceId,
+    getTranslations: async () => itDict,
     revalidatePath: (path) => {
       revalidatedPaths.push(path);
     },

@@ -3,6 +3,8 @@ import {
   round2,
   toMoneyNumber,
 } from "@/src/lib/money-number";
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import { countCalendarMonthsInclusive } from "@/src/lib/workspace-dates";
 
 export type GoalWithProgress = {
@@ -36,38 +38,41 @@ export type GoalFormValidation = {
   targetAmount: number;
 };
 
-export function validateGoalForm(input: {
-  title: string;
-  emoji: string;
-  targetAmountRaw: string;
-}): GoalFormValidation {
+export function validateGoalForm(
+  input: {
+    title: string;
+    emoji: string;
+    targetAmountRaw: string;
+  },
+  v: Translations["validation"] = it.validation,
+): GoalFormValidation {
   const errors: Record<string, string> = {};
   const title = input.title;
   const emoji = input.emoji;
 
   if (!title) {
-    errors.title = "Il titolo è obbligatorio";
+    errors.title = v.titleRequired;
   } else if (title.length < 2) {
-    errors.title = "Il titolo deve avere almeno 2 caratteri";
+    errors.title = v.titleMinLength;
   }
 
   let targetAmount = Number.NaN;
 
   if (!input.targetAmountRaw) {
-    errors.targetAmount = "Questo campo è obbligatorio";
+    errors.targetAmount = v.required;
   } else {
     const normalized = normalizeMoneyInputString(input.targetAmountRaw);
     targetAmount = normalized === null ? Number.NaN : Number(normalized);
 
     if (!Number.isFinite(targetAmount)) {
-      errors.targetAmount = "Inserisci un numero valido";
+      errors.targetAmount = v.invalidNumber;
     } else if (targetAmount <= 0) {
-      errors.targetAmount = "Il valore deve essere maggiore di 0";
+      errors.targetAmount = v.positive;
     }
   }
 
   if (emoji && Array.from(emoji).length > 4) {
-    errors.emoji = "Usa al massimo 4 caratteri";
+    errors.emoji = v.emojiMax;
   }
 
   return { errors, title, emoji, targetAmount };

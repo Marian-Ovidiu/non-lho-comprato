@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { it as itDict } from "@/src/lib/i18n/it";
+
 process.env.DATABASE_URL ??=
   "postgresql://budget_test:budget_test@127.0.0.1:5432/budget_test";
 process.env.DIRECT_URL ??= process.env.DATABASE_URL;
@@ -324,6 +326,7 @@ async function createFakeBudgetWorld() {
   const deps = {
     prisma,
     refreshSupabaseSessionForAction: async () => undefined,
+    getTranslations: async () => itDict,
     getCurrentUser: async () => currentUser,
     getCurrentWorkspace: async () => workspace,
     getCurrentWorkspaceId: async () => workspace.id,

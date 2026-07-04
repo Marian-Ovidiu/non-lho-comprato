@@ -1,3 +1,5 @@
+import { it } from "@/src/lib/i18n/it";
+import type { Translations } from "@/src/lib/i18n";
 import { round2 } from "@/src/lib/money-number";
 export const BUDGET_PERIODS = ["weekly", "monthly"] as const;
 export const BUDGET_SCOPES = ["workspace", "category"] as const;
@@ -115,39 +117,40 @@ export function normalizeBudgetScopeInput(
 
 export function validateBudgetScopeInput(
   input: BudgetScopeInput,
+  m: Translations["budgetActions"] = it.budgetActions,
 ): BudgetValidationResult {
   const normalized = normalizeBudgetScopeInput(input);
   const errors: BudgetValidationErrors = {};
 
   if (!normalized.scope) {
-    errors.scope = "Lo scope deve essere workspace o category.";
+    errors.scope = m.scopeInvalid;
   }
 
   if (!normalized.period) {
-    errors.period = "Il periodo deve essere weekly o monthly.";
+    errors.period = m.periodInvalid;
   }
 
   if (normalized.amount === null) {
-    errors.amount = "L'importo è obbligatorio.";
+    errors.amount = m.amountRequired;
   } else if (normalized.amount <= 0) {
-    errors.amount = "L'importo deve essere maggiore di 0.";
+    errors.amount = m.amountPositive;
   }
 
   if (normalized.scope === "workspace") {
     if (normalized.categoryId) {
-      errors.categoryId = "Un budget workspace non può avere categoryId.";
+      errors.categoryId = m.categoryForbidden;
     }
 
     if (normalized.scopeKey !== "workspace") {
-      errors.scopeKey = "scopeKey deve essere 'workspace' per un budget workspace.";
+      errors.scopeKey = m.scopeKeyWorkspace;
     }
   }
 
   if (normalized.scope === "category") {
     if (!normalized.categoryId) {
-      errors.categoryId = "Un budget category richiede categoryId.";
+      errors.categoryId = m.categoryRequired;
     } else if (normalized.scopeKey !== normalized.categoryId) {
-      errors.scopeKey = "scopeKey deve corrispondere a categoryId.";
+      errors.scopeKey = m.scopeKeyCategoryMismatch;
     }
   }
 
@@ -155,7 +158,7 @@ export function validateBudgetScopeInput(
     normalized.requestedScopeKey &&
     normalized.requestedScopeKey !== normalized.scopeKey
   ) {
-    errors.scopeKey = "scopeKey incoerente con scope e categoryId.";
+    errors.scopeKey = m.scopeKeyMismatch;
   }
 
   if (Object.keys(errors).length > 0) {
