@@ -174,6 +174,7 @@ function toActionResult(
 async function loadWorkspaceBudgetPageData(
   deps: BudgetActionDeps,
 ): Promise<WorkspaceBudgetPageData> {
+  const t = await deps.getTranslations();
   const [user, workspace] = await Promise.all([
     deps.getCurrentUser(),
     deps.getCurrentWorkspace(),
@@ -263,7 +264,7 @@ async function loadWorkspaceBudgetPageData(
     categories,
     budgets: sortBudgetSummariesForManagement(summarizedBudgets),
     dashboardBudgetState: selectDashboardBudgetSelection(summarizedBudgets),
-    alertSelection: selectBudgetAlertSelection(summarizedBudgets),
+    alertSelection: selectBudgetAlertSelection(summarizedBudgets, {}, t),
   };
 }
 

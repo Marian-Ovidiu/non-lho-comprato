@@ -1,4 +1,7 @@
 import { formatMoney } from "@/src/lib/formatters";
+import { it } from "@/src/lib/i18n/it";
+import { languageToLocale } from "@/src/lib/i18n";
+import type { Translations } from "@/src/lib/i18n";
 import { round2 } from "@/src/lib/money-number";
 
 export type MonthlyStatsItem = {
@@ -52,8 +55,8 @@ export type StatsInsight = {
   tone: StatsInsightTone;
 };
 
-function formatSignedMoney(value: number): string {
-  const normalized = formatMoney(Math.abs(value));
+function formatSignedMoney(value: number, locale: string): string {
+  const normalized = formatMoney(Math.abs(value), undefined, locale);
   if (value > 0) {
     return `+${normalized}`;
   }
@@ -76,16 +79,19 @@ export function buildSavingCategoryInsight(
   monthlyStats: MonthlyStatsItem[],
   monthlyCategoryGrouped: Map<string, Map<string, StatsMonthlyCategoryRow>>,
   categoryStats: CategoryStatsItem[],
+  tr: Translations = it,
 ): StatsInsight {
+  const si = tr.statsInsights;
+  const locale = languageToLocale(tr.language);
   const latestMonth = monthlyStats.at(-1);
 
   if (!latestMonth) {
     return {
       id: "best-savings-category",
-      label: "Miglior impatto positivo",
-      value: "In costruzione",
+      label: si.bestImpactTitle,
+      value: si.underConstruction,
       detail:
-        "Appena ci saranno non comprati o confronti positivi, qui comparirà la categoria più protetta.",
+        si.emptySavingDetail,
       tone: "default",
     };
   }
@@ -103,11 +109,11 @@ export function buildSavingCategoryInsight(
 
     return {
       id: "best-savings-category",
-      label: "Miglior impatto positivo",
-      value: fallback?.categoryName ?? "In costruzione",
+      label: si.bestImpactTitle,
+      value: fallback?.categoryName ?? si.underConstruction,
       detail: fallback
-        ? `${formatMoney(fallback.totalSaved)} di impatto netto positivo finora in questa categoria.`
-        : "Appena compariranno dati positivi, qui vedrai la categoria più protetta.",
+        ? si.savedSoFarInCategory(formatMoney(fallback.totalSaved, undefined, locale))
+        : si.emptySavingDetailAlt,
       tone: "success",
     };
   }
@@ -125,9 +131,9 @@ export function buildSavingCategoryInsight(
   if (!currentCategory) {
     return {
       id: "best-savings-category",
-      label: "Miglior impatto positivo",
-      value: "Nessun dato positivo",
-      detail: `Nel mese di ${latestMonth.label} non ci sono ancora non comprati o confronti positivi.`,
+      label: si.bestImpactTitle,
+      value: si.noPositiveTitle,
+      detail: si.noSavingsInMonth(latestMonth.label),
       tone: "default",
     };
   }
@@ -139,27 +145,27 @@ export function buildSavingCategoryInsight(
         currentCategory.categoryId,
       )
     : null;
-  const monthPart = `nel mese di ${latestMonth.label}`;
+  const monthPart = si.inMonthPart(latestMonth.label);
 
   if (previousCategory) {
     const delta = round2(currentCategory.totalSaved - previousCategory.totalSaved);
     const deltaLabel =
-      delta === 0 ? "in linea con il mese scorso" : `${formatSignedMoney(delta)} rispetto al mese scorso`;
+      delta === 0 ? si.inLineWithLastMonth : si.deltaVsLastMonth(formatSignedMoney(delta, locale));
 
     return {
       id: "best-savings-category",
-      label: "Miglior impatto positivo",
+      label: si.bestImpactTitle,
       value: currentCategory.categoryName,
-      detail: `${formatMoney(currentCategory.totalSaved)} di impatto netto positivo ${monthPart}. ${deltaLabel}.`,
+      detail: si.savedInCategoryWithDelta(formatMoney(currentCategory.totalSaved, undefined, locale), monthPart, deltaLabel),
       tone: "success",
     };
   }
 
   return {
     id: "best-savings-category",
-    label: "Miglior impatto positivo",
+    label: si.bestImpactTitle,
     value: currentCategory.categoryName,
-    detail: `${formatMoney(currentCategory.totalSaved)} di impatto netto positivo ${monthPart}.`,
+    detail: si.savedInCategory(formatMoney(currentCategory.totalSaved, undefined, locale), monthPart),
     tone: "success",
   };
 }
@@ -168,16 +174,19 @@ export function buildSpendingCategoryInsight(
   monthlyStats: MonthlyStatsItem[],
   monthlyCategoryGrouped: Map<string, Map<string, StatsMonthlyCategoryRow>>,
   categoryStats: CategoryStatsItem[],
+  tr: Translations = it,
 ): StatsInsight {
+  const si = tr.statsInsights;
+  const locale = languageToLocale(tr.language);
   const latestMonth = monthlyStats.at(-1);
 
   if (!latestMonth) {
     return {
       id: "top-spending-category",
-      label: "Categoria dove spendi di più",
-      value: "In costruzione",
+      label: si.topSpendingTitle,
+      value: si.underConstruction,
       detail:
-        "Appena ci saranno movimenti, qui comparirà la categoria con più spesa reale.",
+        si.emptySpendingDetail,
       tone: "default",
     };
   }
@@ -200,33 +209,38 @@ export function buildSpendingCategoryInsight(
   if (!topCategory) {
     return {
       id: "top-spending-category",
-      label: "Categoria dove spendi di più",
-      value: "In costruzione",
-      detail: "Appena compariranno dati, qui vedrai la categoria principale.",
+      label: si.topSpendingTitle,
+      value: si.underConstruction,
+      detail: si.emptyCategoryDetail,
       tone: "default",
     };
   }
 
   return {
     id: "top-spending-category",
-    label: "Categoria dove spendi di più",
+    label: si.topSpendingTitle,
     value: topCategory.categoryName,
-    detail: `${formatMoney(topCategory.totalRealSpent)} spesi nel mese di ${latestMonth.label}.`,
+    detail: si.spentInMonth(formatMoney(topCategory.totalRealSpent, undefined, locale), latestMonth.label),
     tone: "premium",
   };
 }
 
-export function buildSpendingTrendInsight(monthlyStats: MonthlyStatsItem[]): StatsInsight {
+export function buildSpendingTrendInsight(
+  monthlyStats: MonthlyStatsItem[],
+  tr: Translations = it,
+): StatsInsight {
+  const si = tr.statsInsights;
+  const locale = languageToLocale(tr.language);
   const latestMonth = monthlyStats.at(-1);
   const previousMonth = monthlyStats.at(-2);
 
   if (!latestMonth || !previousMonth) {
     return {
       id: "month-trend",
-      label: "Spesa mese su mese",
-      value: "Confronto non ancora disponibile",
+      label: si.trendTitle,
+      value: si.comparisonNotAvailable,
       detail:
-        "Serve almeno un secondo mese con dati per leggere se la spesa sale o scende.",
+        si.trendNeedsSecondMonth,
       tone: "default",
     };
   }
@@ -238,9 +252,9 @@ export function buildSpendingTrendInsight(monthlyStats: MonthlyStatsItem[]): Sta
   if (realSpentDelta > 0) {
     return {
       id: "month-trend",
-      label: "Spesa mese su mese",
-      value: "Spesa in salita",
-      detail: `${formatMoney(realSpentDelta)} in più rispetto al mese scorso.`,
+      label: si.trendTitle,
+      value: si.trendUpValue,
+      detail: si.trendUpDetail(formatMoney(realSpentDelta, undefined, locale)),
       tone: "warning",
     };
   }
@@ -248,18 +262,18 @@ export function buildSpendingTrendInsight(monthlyStats: MonthlyStatsItem[]): Sta
   if (realSpentDelta < 0) {
     return {
       id: "month-trend",
-      label: "Spesa mese su mese",
-      value: "Spesa in discesa",
-      detail: `${formatMoney(Math.abs(realSpentDelta))} in meno rispetto al mese scorso.`,
+      label: si.trendTitle,
+      value: si.trendDownValue,
+      detail: si.trendDownDetail(formatMoney(Math.abs(realSpentDelta), undefined, locale)),
       tone: "success",
     };
   }
 
   return {
     id: "month-trend",
-    label: "Spesa mese su mese",
-    value: "Spesa stabile",
-    detail: "La spesa reale è in linea con il mese scorso.",
+    label: si.trendTitle,
+    value: si.trendFlatValue,
+    detail: si.trendFlatDetail,
     tone: "default",
   };
 }

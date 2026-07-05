@@ -1,5 +1,9 @@
 "use server";
 
+import { getActionTranslations } from "@/src/lib/i18n/server";
+import { it } from "@/src/lib/i18n/it";
+import { languageToLocale } from "@/src/lib/i18n";
+import type { Translations } from "@/src/lib/i18n";
 import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { entryLocalTimestampSql } from "@/src/lib/entry-metrics-query";
@@ -189,13 +193,14 @@ function getPreviousMonthKey(monthKey: string): string {
   return getPreviousMonthKeyFromDates(monthKey);
 }
 
-function formatMonthLabel(monthKey: string): string {
-  return formatMonthLabelFromDates(monthKey);
+function formatMonthLabel(monthKey: string, locale: string): string {
+  return formatMonthLabelFromDates(monthKey, locale);
 }
 
 function buildMonthOptionsFromKeys(
   monthKeys: string[],
   currentMonth: string,
+  locale: string,
 ): MonthlyReportMonthOption[] {
   const uniqueMonthKeys = new Set(
     monthKeys.filter((monthKey) => /^\d{4}-\d{2}$/.test(monthKey)),
@@ -206,13 +211,14 @@ function buildMonthOptionsFromKeys(
     .sort((left, right) => right.localeCompare(left))
     .map((value) => ({
       value,
-      label: formatMonthLabel(value),
+      label: formatMonthLabel(value, locale),
     }));
 }
 
 function ensureSelectedMonthOption(
   options: MonthlyReportMonthOption[],
   selectedMonth: string,
+  locale: string,
 ): MonthlyReportMonthOption[] {
   if (options.some((option) => option.value === selectedMonth)) {
     return options;
@@ -221,7 +227,7 @@ function ensureSelectedMonthOption(
   return [
     {
       value: selectedMonth,
-      label: formatMonthLabel(selectedMonth),
+      label: formatMonthLabel(selectedMonth, locale),
     },
     ...options,
   ];
@@ -320,16 +326,17 @@ function getEntryOwnershipLabelFromMembers(
     beneficiaries: Array<{ userId: string }>;
   },
   members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
+  tr: Translations = it,
 ): string {
   const resolved = resolveEntryPeopleFromRecord(entry, members);
   const expenseKind = getEntryExpenseKind(resolved.beneficiaryUserIds);
 
   if (expenseKind === "shared") {
-    return "Condivise";
+    return tr.reportRecap.sharedLabel;
   }
 
   const soleUserId = resolved.beneficiaryUserIds[0] ?? resolved.paidByUserId;
-  return getMemberLabel(members, soleUserId) ?? "Membro";
+  return getMemberLabel(members, soleUserId) ?? tr.reportRecap.memberFallback;
 }
 
 function buildMemberSplit(
@@ -346,12 +353,13 @@ function buildMemberSplit(
   totalRealSpent: number,
   totalSaved: number,
   entriesCount: number,
+  tr: Translations = it,
 ): MonthlyReportMemberSplit {
   const sortedMembers = sortWorkspaceMembers(members);
   const primaryUserId = sortedMembers[0]?.userId ?? null;
   const secondaryUserId = sortedMembers[1]?.userId ?? null;
-  const primaryLabel = getMemberLabel(members, primaryUserId) ?? "Membro";
-  const secondaryLabel = getMemberLabel(members, secondaryUserId) ?? "Membro";
+  const primaryLabel = getMemberLabel(members, primaryUserId) ?? tr.reportRecap.memberFallback;
+  const secondaryLabel = getMemberLabel(members, secondaryUserId) ?? tr.reportRecap.memberFallback;
 
   const primary = createMonthlyReportMemberSummary(
     primaryUserId,
@@ -361,7 +369,7 @@ function buildMemberSplit(
     secondaryUserId,
     secondaryLabel,
   );
-  const shared = createMonthlyReportMemberSummary(null, "Condivise");
+  const shared = createMonthlyReportMemberSummary(null, tr.reportRecap.sharedLabel);
 
   for (const entry of entries) {
     const resolved = resolveEntryPeopleFromRecord(entry, members);
@@ -418,12 +426,14 @@ function buildStreakSummary(dayTotals: Map<string, number>): MonthlyReportStreak
 function buildEmptyReport(
   monthKey: string,
   members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>>,
+  tr: Translations = it,
 ): MonthlyReportData {
-  const memberSplit = buildMemberSplit([], members, 0, 0, 0);
+  const locale = languageToLocale(tr.language);
+  const memberSplit = buildMemberSplit([], members, 0, 0, 0, tr);
 
   return {
     month: monthKey,
-    label: formatMonthLabel(monthKey),
+    label: formatMonthLabel(monthKey, locale),
     entries: [],
     previousMonthEntries: [],
     members: members.map((member) => ({
@@ -468,11 +478,11 @@ function buildEmptyReport(
       totalSaved: 0,
       disciplineRatePercent: 0,
     },
-    recapText: `Nessun dato disponibile per ${formatMonthLabel(monthKey).toLowerCase()}.`,
+    recapText: tr.reportRecap.noDataForMonth(formatMonthLabel(monthKey, locale).toLowerCase()),
     hasData: false,
     monthKey,
-    monthLabel: formatMonthLabel(monthKey),
-    recap: `Nessun dato disponibile per ${formatMonthLabel(monthKey).toLowerCase()}.`,
+    monthLabel: formatMonthLabel(monthKey, locale),
+    recap: tr.reportRecap.noDataForMonth(formatMonthLabel(monthKey, locale).toLowerCase()),
     habitSummary: {
       totalOccurrences: 0,
       completed: 0,
@@ -502,7 +512,12 @@ export async function getAvailableReportMonths(): Promise<MonthlyReportMonthOpti
     `);
 
     const currentMonth = normalizeMonthKeyFromDates(timeZone);
-    return buildMonthOptionsFromKeys(rows.map((row) => row.month), currentMonth);
+    const tr = await getActionTranslations();
+    return buildMonthOptionsFromKeys(
+      rows.map((row) => row.month),
+      currentMonth,
+      languageToLocale(tr.language),
+    );
   } catch (error) {
     logAndRethrowDataLoadError("Failed to load available report months", error);
   }
@@ -512,6 +527,8 @@ export async function getMonthlyReport(
   requestedMonth?: string,
   availableMonths?: MonthlyReportMonthOption[],
 ): Promise<MonthlyReportPageData> {
+  const tr = await getActionTranslations();
+  const locale = languageToLocale(tr.language);
   const [selectedMonth, timeZone] = await Promise.all([
     normalizeMonthKey(requestedMonth),
     getCurrentWorkspaceTimezone(),
@@ -594,6 +611,7 @@ export async function getMonthlyReport(
     const monthOptions = ensureSelectedMonthOption(
       resolvedAvailableMonths,
       selectedMonth,
+      locale,
     );
 
     const monthOccurrences = await prisma.habitOccurrence.findMany({
@@ -619,9 +637,9 @@ export async function getMonthlyReport(
     if (monthEntries.length === 0 && monthOccurrences.length === 0) {
       return {
         selectedMonth,
-        selectedMonthLabel: formatMonthLabel(selectedMonth),
+        selectedMonthLabel: formatMonthLabel(selectedMonth, locale),
         monthOptions,
-        report: buildEmptyReport(selectedMonth, members),
+        report: buildEmptyReport(selectedMonth, members, tr),
       };
     }
 
@@ -635,6 +653,7 @@ export async function getMonthlyReport(
       totalRealSpent,
       totalSaved,
       entriesCount,
+      tr,
     );
 
     const categoryMap = new Map<
@@ -677,7 +696,7 @@ export async function getMonthlyReport(
           realCost: entryMetrics.spentReal,
           alternativeCost: entryMetrics.wouldHaveSpent,
           savedAmount: entryMetrics.netImpact,
-          ownershipLabel: getEntryOwnershipLabelFromMembers(entry, members),
+          ownershipLabel: getEntryOwnershipLabelFromMembers(entry, members, tr),
           note: decryptOptionalText(entry.note),
         };
       }
@@ -790,7 +809,7 @@ export async function getMonthlyReport(
     }
 
     const streakSummary = buildStreakSummary(dayTotals);
-    const monthLabel = formatMonthLabel(selectedMonth);
+    const monthLabel = formatMonthLabel(selectedMonth, locale);
     const monthLower = monthLabel.toLowerCase();
     const serializedMonthEntries = monthEntries.map(serializeMonthlyReportEntry);
     const serializedPreviousMonthEntries = previousMonthEntries.map(
@@ -798,26 +817,30 @@ export async function getMonthlyReport(
     );
 
     const recapParts = [
-      `A ${monthLower} avete speso ${formatMoney(totalRealSpent)} in ${entriesCount} movimenti.`,
-      `Spesa per membro: ${memberSplit.primary.label} ${formatMoney(
-        memberSplit.primary.totalRealSpent,
-      )}, ${memberSplit.secondary.label} ${formatMoney(
-        memberSplit.secondary.totalRealSpent,
-      )}, ${memberSplit.shared.label} ${formatMoney(memberSplit.shared.totalRealSpent)}.`,
+      tr.reportRecap.monthlySpend(monthLower, formatMoney(totalRealSpent, undefined, locale), entriesCount),
+      tr.reportRecap.memberSplit(
+        memberSplit.primary.label,
+        formatMoney(memberSplit.primary.totalRealSpent, undefined, locale),
+        memberSplit.secondary.label,
+        formatMoney(memberSplit.secondary.totalRealSpent, undefined, locale),
+        memberSplit.shared.label,
+        formatMoney(memberSplit.shared.totalRealSpent, undefined, locale),
+      ),
       worstCategory
-        ? `La categoria con più spesa è stata ${worstCategory.categoryName}.`
-        : "Nessuna categoria si è distinta per spesa questo mese.",
+        ? tr.reportRecap.worstCategory(worstCategory.categoryName)
+        : tr.reportRecap.noStandoutSpendingCategory,
       totalSaved > 0
-        ? `Impatto netto positivo: ${formatMoney(totalSaved)}.`
-        : "Nessun impatto positivo da segnalare.",
+        ? tr.reportRecap.netPositiveImpact(formatMoney(totalSaved, undefined, locale))
+        : tr.reportRecap.noPositiveImpact,
       bestCategory && bestCategory.totalSaved > 0
-        ? `Miglior impatto positivo: ${bestCategory.categoryName}.`
-        : "Nessuna categoria si è distinta per impatto positivo questo mese.",
+        ? tr.reportRecap.bestCategory(bestCategory.categoryName)
+        : tr.reportRecap.noStandoutSavingCategory,
       biggestSaving
-        ? `Miglior impatto positivo: ${biggestSaving.title} (+${formatMoney(
-            biggestSaving.savedAmount,
-          )}).`
-        : "Nessun impatto positivo rilevante da segnalare.",
+        ? tr.reportRecap.biggestSaving(
+            biggestSaving.title,
+            formatMoney(biggestSaving.savedAmount, undefined, locale),
+          )
+        : tr.reportRecap.noRelevantPositiveImpact,
     ];
 
     return {

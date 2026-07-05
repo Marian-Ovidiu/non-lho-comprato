@@ -13,7 +13,7 @@ import {
 export type { StatsInsight } from "@/src/features/stats/insights";
 
 import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
-import { languageToLocale } from "@/src/lib/i18n";
+import { getTranslations, languageToLocale } from "@/src/lib/i18n";
 import { Prisma } from "@/src/lib/generated/prisma/client";
 import { EntrySource } from "@/src/lib/generated/prisma/enums";
 import { buildWorkspaceMemberEntryWhere } from "@/src/lib/workspace-member-filter";
@@ -628,6 +628,7 @@ export async function getStatsPageData(
     getCurrentWorkspaceId(),
     getCurrentWorkspaceLanguage(),
   ]);
+  const translations = getTranslations(language);
   const selectedMonthKey = normalizeStatsMonthKey(timeZone, options.selectedMonthKey, now);
   const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
   const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
@@ -674,13 +675,15 @@ export async function getStatsPageData(
       periodMonthlyStats,
       monthlyCategoryGrouped,
       categoryStats,
+      translations,
     ),
     buildSavingCategoryInsight(
       periodMonthlyStats,
       monthlyCategoryGrouped,
       categoryStats,
+      translations,
     ),
-    buildSpendingTrendInsight(periodMonthlyStats),
+    buildSpendingTrendInsight(periodMonthlyStats, translations),
   ].slice(0, 3);
   const monthOptions = buildStatsMonthOptionsFromMonthlyStats(
     allTimeMonthlyStats,

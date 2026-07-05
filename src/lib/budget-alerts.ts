@@ -1,4 +1,7 @@
 import { round2 } from "@/src/lib/money-number";
+import { it } from "@/src/lib/i18n/it";
+import { languageToLocale } from "@/src/lib/i18n";
+import type { Translations } from "@/src/lib/i18n";
 import type { BudgetPeriod } from "@/src/lib/budget-model";
 import type { BudgetSummaryView } from "@/src/lib/budget-summary";
 import { getCurrencySymbol } from "@/src/lib/workspace-currency";
@@ -68,12 +71,16 @@ function toFiniteNumber(value: unknown): number {
   return Number.isFinite(amount) ? amount : 0;
 }
 
-function formatCurrencyAmount(amount: number, currency: string | null): string {
+function formatCurrencyAmount(
+  amount: number,
+  currency: string | null,
+  locale: string,
+): string {
   const normalizedCurrency = currency ?? "EUR";
   const symbol = getCurrencySymbol(normalizedCurrency);
   const rounded = round2(Math.abs(amount));
   const isInteger = Number.isInteger(rounded);
-  const formatted = new Intl.NumberFormat("it-IT", {
+  const formatted = new Intl.NumberFormat(locale, {
     minimumFractionDigits: isInteger ? 0 : 2,
     maximumFractionDigits: 2,
   }).format(rounded);
@@ -81,23 +88,28 @@ function formatCurrencyAmount(amount: number, currency: string | null): string {
   return `${formatted}${symbol}`;
 }
 
-function getPeriodDescriptor(period: BudgetPeriod): string {
-  return period === "monthly" ? "mensile" : "settimanale";
+function getPeriodDescriptor(period: BudgetPeriod, ba: Translations["budgetAlerts"]): string {
+  return period === "monthly" ? ba.periodMonthly : ba.periodWeekly;
 }
 
-function getKindLabel(kind: BudgetAlertKind): string {
+function getKindLabel(kind: BudgetAlertKind, ba: Translations["budgetAlerts"]): string {
   if (kind === "over_budget") {
-    return "Budget superato";
+    return ba.overBudgetTitle;
   }
 
   if (kind === "pace_risk") {
-    return "Ritmo troppo alto";
+    return ba.paceTitle;
   }
 
-  return "Poco margine rimasto";
+  return ba.lowRunwayTitle;
 }
 
-function getAlertMessage(summary: BudgetSummaryView, kind: BudgetAlertKind): string {
+function getAlertMessage(
+  summary: BudgetSummaryView,
+  kind: BudgetAlertKind,
+  ba: Translations["budgetAlerts"],
+  locale: string,
+): string {
   if (kind === "over_budget") {
     const overAmount = Math.max(
       0,
@@ -106,31 +118,48 @@ function getAlertMessage(summary: BudgetSummaryView, kind: BudgetAlertKind): str
     );
     const scopeDescriptor =
       summary.scope === "workspace"
-        ? "totale"
+        ? ba.scopeTotal
         : summary.category?.name
-          ? `di ${summary.category.name}`
-          : "di questa categoria";
+          ? ba.scopeOfCategory(summary.category.name)
+          : ba.scopeThisCategory;
 
-    return `Hai superato il budget ${getPeriodDescriptor(summary.period)} ${scopeDescriptor} di ${formatCurrencyAmount(overAmount, summary.currency)}.`;
+    return ba.overBudgetMessage(
+      getPeriodDescriptor(summary.period, ba),
+      scopeDescriptor,
+      formatCurrencyAmount(overAmount, summary.currency, locale),
+    );
   }
 
   if (kind === "pace_risk") {
-    return "Stai usando il budget più velocemente del previsto.";
+    return ba.paceMessage;
   }
 
-  return `Ti restano circa ${formatCurrencyAmount(summary.dailyRemainingAmount, summary.currency)} al giorno fino a fine periodo.`;
+  return ba.lowRunwayMessage(
+    formatCurrencyAmount(summary.dailyRemainingAmount, summary.currency, locale),
+  );
 }
 
-function getAlertDetail(summary: BudgetSummaryView, kind: BudgetAlertKind, daysRemaining: number): string {
+function getAlertDetail(
+  summary: BudgetSummaryView,
+  kind: BudgetAlertKind,
+  daysRemaining: number,
+  ba: Translations["budgetAlerts"],
+  locale: string,
+): string {
   if (kind === "over_budget") {
-    return `Speso ${formatCurrencyAmount(summary.spentAmount, summary.currency)} su ${formatCurrencyAmount(summary.budgetAmount, summary.currency)}.`;
+    return ba.overBudgetDetail(
+      formatCurrencyAmount(summary.spentAmount, summary.currency, locale),
+      formatCurrencyAmount(summary.budgetAmount, summary.currency, locale),
+    );
   }
 
   if (kind === "pace_risk") {
-    return `Spesa proiettata a fine periodo: ${formatCurrencyAmount(summary.projectedSpendAtPeriodEnd, summary.currency)}.`;
+    return ba.paceDetail(
+      formatCurrencyAmount(summary.projectedSpendAtPeriodEnd, summary.currency, locale),
+    );
   }
 
-  return `Restano circa ${daysRemaining.toFixed(1)} giorni nel periodo.`;
+  return ba.lowRunwayDetail(daysRemaining.toFixed(1));
 }
 
 function getDaysRemaining(summary: BudgetSummaryView): number {
@@ -219,8 +248,10 @@ function toIndexedBudgetAlert(
   summary: BudgetSummaryView,
   kind: BudgetAlertKind,
   sourceIndex: number,
+  tr: Translations,
 ): IndexedBudgetAlert {
   const daysRemaining = getDaysRemaining(summary);
+  const locale = languageToLocale(tr.language);
 
   return {
     id: `budget-alert:${summary.id}:${kind}`,
@@ -229,11 +260,11 @@ function toIndexedBudgetAlert(
     budgetId: summary.id,
     scope: summary.scope,
     period: summary.period,
-    title: getKindLabel(kind),
+    title: getKindLabel(kind, tr.budgetAlerts),
     subtitle: summary.subtitle,
     categoryName: summary.category?.name ?? null,
-    message: getAlertMessage(summary, kind),
-    detail: getAlertDetail(summary, kind, daysRemaining),
+    message: getAlertMessage(summary, kind, tr.budgetAlerts, locale),
+    detail: getAlertDetail(summary, kind, daysRemaining, tr.budgetAlerts, locale),
     spentAmount: round2(toFiniteNumber(summary.spentAmount)),
     remainingAmount: round2(toFiniteNumber(summary.remainingAmount)),
     spentPercentage: round2(toFiniteNumber(summary.spentPercentage)),
@@ -250,17 +281,19 @@ function toIndexedBudgetAlert(
 
 export function createBudgetAlertFromSummary(
   summary: BudgetSummaryView,
+  tr: Translations = it,
 ): BudgetAlert | null {
   const kind = getAlertKind(summary);
   if (!kind) {
     return null;
   }
 
-  return toIndexedBudgetAlert(summary, kind, 0);
+  return toIndexedBudgetAlert(summary, kind, 0, tr);
 }
 
 export function createBudgetAlertsFromSummaries(
   summaries: ReadonlyArray<BudgetSummaryView>,
+  tr: Translations = it,
 ): BudgetAlert[] {
   const alerts: IndexedBudgetAlert[] = [];
   const seenBudgetIds = new Set<string>();
@@ -277,7 +310,7 @@ export function createBudgetAlertsFromSummaries(
       return;
     }
 
-    alerts.push(toIndexedBudgetAlert(summary, kind, index));
+    alerts.push(toIndexedBudgetAlert(summary, kind, index, tr));
   });
 
   return alerts.sort(compareBudgetAlerts);
@@ -286,8 +319,9 @@ export function createBudgetAlertsFromSummaries(
 export function selectBudgetAlertSelection(
   summaries: ReadonlyArray<BudgetSummaryView>,
   options: BudgetAlertSelectionOptions = {},
+  tr: Translations = it,
 ): BudgetAlertSelection {
-  const pageAlerts = createBudgetAlertsFromSummaries(summaries);
+  const pageAlerts = createBudgetAlertsFromSummaries(summaries, tr);
   const maxPrimaryAlerts = Math.max(
     0,
     Math.floor(options.maxPrimaryAlerts ?? DEFAULT_MAX_PRIMARY_ALERTS),

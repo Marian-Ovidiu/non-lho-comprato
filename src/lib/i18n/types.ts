@@ -25,6 +25,69 @@ export type Translations = {
     sending: string;
   };
 
+  language: "it" | "en";
+
+  budgetAlerts: {
+    overBudgetTitle: string;
+    paceTitle: string;
+    lowRunwayTitle: string;
+    periodMonthly: string;
+    periodWeekly: string;
+    scopeTotal: string;
+    scopeOfCategory: (name: string) => string;
+    scopeThisCategory: string;
+    overBudgetMessage: (period: string, scope: string, amount: string) => string;
+    paceMessage: string;
+    lowRunwayMessage: (amountPerDay: string) => string;
+    overBudgetDetail: (spent: string, budget: string) => string;
+    paceDetail: (projected: string) => string;
+    lowRunwayDetail: (days: string) => string;
+  };
+
+  statsInsights: {
+    topSpendingTitle: string;
+    underConstruction: string;
+    comparisonNotAvailable: string;
+    trendUpValue: string;
+    trendDownValue: string;
+    trendFlatValue: string;
+    bestImpactTitle: string;
+    trendTitle: string;
+    noPositiveTitle: string;
+    emptySpendingDetail: string;
+    emptySavingDetail: string;
+    emptySavingDetailAlt: string;
+    emptyCategoryDetail: string;
+    trendFlatDetail: string;
+    trendNeedsSecondMonth: string;
+    inLineWithLastMonth: string;
+    savedSoFarInCategory: (amount: string) => string;
+    noSavingsInMonth: (month: string) => string;
+    inMonthPart: (month: string) => string;
+    deltaVsLastMonth: (signedAmount: string) => string;
+    savedInCategory: (amount: string, monthPart: string) => string;
+    savedInCategoryWithDelta: (amount: string, monthPart: string, delta: string) => string;
+    spentInMonth: (amount: string, month: string) => string;
+    trendUpDetail: (amount: string) => string;
+    trendDownDetail: (amount: string) => string;
+  };
+
+  reportRecap: {
+    memberFallback: string;
+    sharedLabel: string;
+    noPositiveImpact: string;
+    noRelevantPositiveImpact: string;
+    noStandoutSavingCategory: string;
+    noStandoutSpendingCategory: string;
+    noDataForMonth: (month: string) => string;
+    monthlySpend: (month: string, total: string, count: number) => string;
+    memberSplit: (primaryLabel: string, primaryTotal: string, secondaryLabel: string, secondaryTotal: string, sharedLabel: string, sharedTotal: string) => string;
+    netPositiveImpact: (amount: string) => string;
+    worstCategory: (name: string) => string;
+    bestCategory: (name: string) => string;
+    biggestSaving: (title: string, amount: string) => string;
+  };
+
   validation: {
     required: string;
     invalidNumber: string;

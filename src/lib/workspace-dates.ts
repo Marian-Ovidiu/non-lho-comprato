@@ -376,7 +376,7 @@ export function isNextCalendarDay(previousDateKey: string, nextDateKey: string):
   return shiftDateKey(previousDateKey, 1) === nextDateKey;
 }
 
-export function formatDateLabel(dateKey: string): string {
+export function formatDateLabel(dateKey: string, locale = "it-IT"): string {
   const [yearPart, monthPart, dayPart] = dateKey.split("-");
   const year = Number(yearPart);
   const month = Number(monthPart);
@@ -390,21 +390,21 @@ export function formatDateLabel(dateKey: string): string {
     return dateKey;
   }
 
-  return new Intl.DateTimeFormat("it-IT", {
+  return new Intl.DateTimeFormat(locale, {
     day: "numeric",
     month: "long",
     timeZone: "UTC",
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-export function formatMonthLabel(monthKey: string): string {
+export function formatMonthLabel(monthKey: string, locale = "it-IT"): string {
   const parts = parseMonthKey(monthKey);
 
   if (!parts) {
     return monthKey;
   }
 
-  const raw = new Intl.DateTimeFormat("it-IT", {
+  const raw = new Intl.DateTimeFormat(locale, {
     timeZone: "UTC",
     month: "long",
     year: "numeric",

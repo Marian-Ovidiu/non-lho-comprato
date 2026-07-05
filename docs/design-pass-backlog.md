@@ -25,10 +25,12 @@ giudizio visivo/di prodotto.
 2. **Iniziali mesi del grafico stats**: i mesi inattivi usano `text-ink-3`
    pieno; se si vuole più fade servono varianti che restino ≥ 4.5:1 o un
    trattamento `aria-hidden` + label alternativa.
-3. **Stringhe hardcoded nelle pagine crafted** (fase 8c i18n contenuti):
-   frasi di budget-alerts, insight e report mensile ancora in italiano fisso;
-   varie label sparse nelle pagine crafted non-goals ("In coda", "Prossimo
-   pagamento", "Filtri", "Persona", "Periodo", hero di /more, ecc.).
+3. **Stringhe hardcoded nelle pagine crafted** (residuo fase 8c): i CONTENUTI
+   server (budget-alerts, insight stats, recap report) sono tradotti; restano
+   le label componente sparse nelle pagine crafted non-goals ("In coda",
+   "Prossimo pagamento", "Filtri", "Persona", "Periodo", "rispetto al mese
+   scorso:" nel report detail, etichette mesi del picker stats
+   getStatsMonthLabel it-IT, hero di /more, ecc.).
 4. **Input importi nei form entry**: la mask forza la virgola
    (`entry-form-money.ts`) — per l'inglese serve il separatore per locale.
 5. **Chevron/affordance**: righe che sembrano cliccabili ma non lo sono state
