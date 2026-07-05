@@ -145,7 +145,7 @@ function GoalActions({
         type="button"
         disabled={disabled}
         onClick={() => onRequestDelete(goal)}
-        className="text-[12px] font-medium text-destructive/80 transition-colors hover:text-destructive disabled:opacity-50"
+        className="text-[12px] font-medium text-destructive transition-colors hover:opacity-80 disabled:opacity-50"
       >
         {t.goals.delete}
       </button>

@@ -59,7 +59,10 @@ test("create, pause, reactivate and delete a goal through the UI", async ({
   await page.click('#nuovo-obiettivo form button[type="submit"]');
   await expect(page.getByText(/Obiettivo salvato/i)).toBeVisible();
 
-  const row = page.locator("[data-goal-row]", { hasText: title });
+  // filter visible: la shell PPR può lasciare una copia nascosta della riga
+  const row = page
+    .locator("[data-goal-row]", { hasText: title })
+    .filter({ visible: true });
   await expect(row).toBeVisible({ timeout: 15_000 });
   await expect(row).toContainText("In corso");
 

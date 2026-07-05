@@ -253,7 +253,9 @@ export function CraftedBudgetForm({
             <span className="text-sm font-medium leading-none">Categorie</span>
             <div
               className="max-h-40 overflow-y-auto rounded-[var(--r-control)] border border-line p-2"
+              role="group"
               aria-label="Categorie budget"
+              tabIndex={0}
             >
               {categories.map((category) => {
                 const checked = categoryIds.includes(category.id);

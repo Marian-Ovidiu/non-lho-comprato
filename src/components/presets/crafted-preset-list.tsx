@@ -130,7 +130,7 @@ export function CraftedPresetRow({ preset }: CraftedPresetRowProps) {
             type="button"
             disabled={isPending}
             onClick={handleDelete}
-            className="text-[12px] text-destructive/70 hover:text-destructive"
+            className="text-[12px] text-destructive hover:opacity-80"
           >
             {t.preset.deleteButton}
           </button>

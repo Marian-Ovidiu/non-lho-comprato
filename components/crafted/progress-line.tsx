@@ -6,6 +6,8 @@ type ProgressLineProps = {
   className?: string;
   indicatorClassName?: string;
   animate?: boolean;
+  /** Nome accessibile; senza label la barra è decorativa (valore già nel testo accanto). */
+  label?: string;
 };
 
 export function ProgressLine({
@@ -14,6 +16,7 @@ export function ProgressLine({
   className,
   indicatorClassName,
   animate = true,
+  label,
 }: ProgressLineProps) {
   const clamped = Math.min(100, Math.max(0, value));
 
@@ -24,10 +27,15 @@ export function ProgressLine({
         thick ? "h-1" : "h-[3px]",
         className,
       )}
-      role="progressbar"
-      aria-valuenow={clamped}
-      aria-valuemin={0}
-      aria-valuemax={100}
+      {...(label
+        ? {
+            role: "progressbar",
+            "aria-label": label,
+            "aria-valuenow": clamped,
+            "aria-valuemin": 0,
+            "aria-valuemax": 100,
+          }
+        : { "aria-hidden": true })}
     >
       <div
         className={cn(

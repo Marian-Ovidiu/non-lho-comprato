@@ -634,7 +634,12 @@ export function CraftedMonthlyReport({
         <Serif className="mb-4 block text-[15px] text-muted-foreground">
           Tre appunti bastano per capire il mese.
         </Serif>
-        <div className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1">
+        <div
+          className="-mx-1 flex gap-3 overflow-x-auto px-1 pb-1"
+          role="region"
+          aria-label="Selettore categorie"
+          tabIndex={0}
+        >
           <StoryCard
             eyebrow="Spesa più grande"
             icon={ArrowUpRight}

@@ -86,7 +86,7 @@ export function CraftedDefaultPresetList() {
                   <button
                     type="button"
                     onClick={() => hideDefaultPreset(preset.id)}
-                    className="text-[12px] text-destructive/70 hover:text-destructive"
+                    className="text-[12px] text-destructive hover:opacity-80"
                   >
                     {t.preset.deleteButton}
                   </button>

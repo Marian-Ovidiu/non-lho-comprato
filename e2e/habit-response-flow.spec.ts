@@ -94,7 +94,10 @@ test("marking today's habit as avoided creates the avoided entry", async ({
     await quotidianeTab.first().click();
   }
 
-  const row = page.locator("[data-habit-row]", { hasText: E2E_HABIT_NAME });
+  // filter visible: la shell PPR può lasciare una copia nascosta della riga
+  const row = page
+    .locator("[data-habit-row]", { hasText: E2E_HABIT_NAME })
+    .filter({ visible: true });
   await expect(row).toBeVisible({ timeout: 15_000 });
 
   // Pending state: the three response buttons are offered.
