@@ -207,6 +207,7 @@ describe("createEntryFromNormalizedInput", () => {
       "/",
       "/entries",
       "/stats",
+      "/insights",
       "/budget",
       "/workspace/budgets",
       "/more",

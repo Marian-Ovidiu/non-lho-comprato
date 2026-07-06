@@ -93,6 +93,12 @@ export function CraftedMore({
             detail={t.more.monthlyReportDetail}
             icon="arrowUp"
           />
+          <CraftedMoreRow
+            href="/insights"
+            label="Pattern"
+            detail="Resistenza, trigger, vittorie e punti deboli."
+            icon="brain"
+          />
         </div>
       </CraftedMoreSection>
 

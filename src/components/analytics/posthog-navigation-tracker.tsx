@@ -17,6 +17,7 @@ function getScreenName(pathname: string) {
   if (pathname === "/goals") return "goals";
   if (pathname === "/habits") return "habits";
   if (pathname === "/stats") return "stats";
+  if (pathname === "/insights") return "insights";
   if (pathname === "/more") return "more";
   if (pathname === "/login") return "login";
   if (pathname === "/onboarding") return "onboarding";

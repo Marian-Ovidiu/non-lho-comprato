@@ -898,6 +898,7 @@ export async function updateEntry(
     tryRevalidatePath("/");
     tryRevalidatePath("/entries");
     tryRevalidatePath("/stats");
+    tryRevalidatePath("/insights");
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");
@@ -996,6 +997,7 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
     tryRevalidatePath("/");
     tryRevalidatePath("/entries");
     tryRevalidatePath("/stats");
+    tryRevalidatePath("/insights");
     tryRevalidatePath("/habits");
     tryRevalidatePath("/goals");
     tryRevalidatePath("/reports/monthly");

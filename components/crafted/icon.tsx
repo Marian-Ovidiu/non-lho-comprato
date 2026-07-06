@@ -1,6 +1,7 @@
 import {
   ArrowUp,
   Bike,
+  Brain,
   Camera,
   Check,
   Cigarette,
@@ -27,6 +28,7 @@ export type CraftedIconName =
   | "bag"
   | "fork"
   | "bike"
+  | "brain"
   | "camera"
   | "flame"
   | "graduation"
@@ -58,6 +60,7 @@ const LUCIDE_MAP: Record<
   bag: ShoppingBag,
   fork: Utensils,
   bike: Bike,
+  brain: Brain,
   camera: Camera,
   graduation: GraduationCap,
   home: Home,
