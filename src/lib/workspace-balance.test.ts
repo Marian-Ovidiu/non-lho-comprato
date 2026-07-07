@@ -4,6 +4,7 @@ import { describe, it } from "node:test";
 import {
   computeCoupleWorkspaceBalance,
   type WorkspaceBalanceEntry,
+  type WorkspaceBalanceSettlement,
 } from "@/src/lib/workspace-balance";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
@@ -114,6 +115,78 @@ describe("computeCoupleWorkspaceBalance", () => {
       const marian = computeCoupleWorkspaceBalance(MEMBERS, MARIAN_ID, entries);
       const martina = computeCoupleWorkspaceBalance(MEMBERS, MARTINA_ID, entries);
       assert.equal(marian.amount, martina.amount);
+    });
+  });
+
+  describe("settlements", () => {
+    const entries: WorkspaceBalanceEntry[] = [
+      sharedEntry(20, MARIAN_ID),
+      sharedEntry(50, MARTINA_ID),
+    ];
+
+    it("a payment from the debtor to the creditor clears the balance", () => {
+      const settlements: WorkspaceBalanceSettlement[] = [
+        { fromUserId: MARIAN_ID, toUserId: MARTINA_ID, amount: 15 },
+      ];
+
+      const marian = computeCoupleWorkspaceBalance(
+        MEMBERS,
+        MARIAN_ID,
+        entries,
+        settlements,
+      );
+      const martina = computeCoupleWorkspaceBalance(
+        MEMBERS,
+        MARTINA_ID,
+        entries,
+        settlements,
+      );
+
+      assert.equal(marian.status, "balanced");
+      assert.equal(marian.amount, 0);
+      assert.equal(martina.status, "balanced");
+      assert.equal(martina.amount, 0);
+    });
+
+    it("a partial payment reduces the outstanding balance", () => {
+      const settlements: WorkspaceBalanceSettlement[] = [
+        { fromUserId: MARIAN_ID, toUserId: MARTINA_ID, amount: 5 },
+      ];
+
+      const marian = computeCoupleWorkspaceBalance(
+        MEMBERS,
+        MARIAN_ID,
+        entries,
+        settlements,
+      );
+      const martina = computeCoupleWorkspaceBalance(
+        MEMBERS,
+        MARTINA_ID,
+        entries,
+        settlements,
+      );
+
+      assert.equal(marian.status, "you-owe");
+      assert.equal(marian.amount, 10);
+      assert.equal(martina.status, "they-owe");
+      assert.equal(martina.amount, 10);
+    });
+
+    it("ignores settlements involving non-members or the same user", () => {
+      const settlements: WorkspaceBalanceSettlement[] = [
+        { fromUserId: MARIAN_ID, toUserId: "user-outside", amount: 15 },
+        { fromUserId: MARIAN_ID, toUserId: MARIAN_ID, amount: 15 },
+      ];
+
+      const result = computeCoupleWorkspaceBalance(
+        MEMBERS,
+        MARIAN_ID,
+        entries,
+        settlements,
+      );
+
+      assert.equal(result.status, "you-owe");
+      assert.equal(result.amount, 15);
     });
   });
 

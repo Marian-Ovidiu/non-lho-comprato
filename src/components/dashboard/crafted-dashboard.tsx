@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useActionState, useEffect, useRef } from "react";
 import {
   BarChart3,
   ChevronRight,
   CalendarDays,
   Layers3,
+  Loader2,
   Minus,
   Plus,
   PlusCircle,
@@ -38,6 +41,10 @@ import {
   useTranslations,
   useWorkspaceLanguage,
 } from "@/src/components/language/language-context";
+import {
+  createWorkspaceSettlementAction,
+  type SettlementActionResult,
+} from "@/src/actions/dashboard";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import type { WorkspaceBalanceStatus } from "@/src/lib/workspace-balance";
@@ -147,6 +154,11 @@ const CATEGORY_COLORS = [
   "bg-foreground/60",
   "bg-ink-3",
 ] as const;
+
+const INITIAL_SETTLEMENT_STATE: SettlementActionResult = {
+  success: false,
+  message: "",
+};
 
 const PREVIEW = {
   month: {
@@ -468,6 +480,75 @@ function BudgetBlock({
   );
 }
 
+function SettlementAction({
+  canSettle,
+  label,
+}: {
+  canSettle: boolean;
+  label: string;
+}) {
+  const router = useRouter();
+  const didRefreshRef = useRef(false);
+  const [state, formAction, pending] = useActionState(
+    async (previousState: SettlementActionResult, formData: FormData) => {
+      void previousState;
+      void formData;
+      return createWorkspaceSettlementAction();
+    },
+    INITIAL_SETTLEMENT_STATE,
+  );
+
+  useEffect(() => {
+    if (!state.success) {
+      didRefreshRef.current = false;
+      return;
+    }
+
+    if (didRefreshRef.current) {
+      return;
+    }
+
+    didRefreshRef.current = true;
+    router.refresh();
+  }, [router, state.success]);
+
+  if (!canSettle) {
+    return null;
+  }
+
+  return (
+    <form action={formAction} className="mt-3">
+      <button
+        type="submit"
+        disabled={pending}
+        className={cn(
+          "nlc-press flex h-11 w-full items-center justify-center gap-2 rounded-[var(--r-cta)]",
+          "border border-accent/35 bg-accent/10 px-4 text-[14px] font-semibold text-accent",
+          "transition-colors hover:bg-accent/15 disabled:pointer-events-none disabled:opacity-60",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        )}
+      >
+        {pending ? (
+          <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+        ) : null}
+        {pending ? "Registro..." : label}
+      </button>
+      {state.message ? (
+        <p
+          className={cn(
+            "mt-2 text-xs leading-4",
+            state.success ? "text-success" : "text-destructive",
+          )}
+          role="status"
+          aria-live="polite"
+        >
+          {state.message}
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
 function formatEntryWhen(date: Date, locale: string) {
   const today = new Date();
   const sameDay = date.toDateString() === today.toDateString();
@@ -639,6 +720,10 @@ export function CraftedDashboard({
   const coupleThem = coupleBalance.supported ? 0 : PREVIEW.couple.them;
   const recurringTotal = habitsTotal > 0 ? habitsTotal : PREVIEW.recurring.totalToday;
   const recurringDone = habitsTotal > 0 ? habitsAvoided : PREVIEW.recurring.doneToday;
+  const canSettleCoupleBalance =
+    coupleBalance.supported &&
+    coupleBalance.status !== "balanced" &&
+    coupleAmount > 0;
 
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
@@ -767,6 +852,10 @@ export function CraftedDashboard({
             {formatEUR(coupleAmount, currencySymbol, { sign: "auto" })}
           </Mono>
         </div>
+        <SettlementAction
+          canSettle={canSettleCoupleBalance}
+          label="Segna come regolato"
+        />
       </section>
       <Rule soft />
 

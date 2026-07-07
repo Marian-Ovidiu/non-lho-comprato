@@ -263,6 +263,28 @@ model Budget {
   @@index([workspaceId, categoryId])
 }
 
+model WorkspaceSettlement {
+  id              String    @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  fromUserId      String
+  fromUser        User      @relation("WorkspaceSettlementFromUser", fields: [fromUserId], references: [id], onDelete: Cascade)
+  toUserId        String
+  toUser          User      @relation("WorkspaceSettlementToUser", fields: [toUserId], references: [id], onDelete: Cascade)
+  amount          Decimal   @db.Decimal(10, 2)
+  date            DateTime
+  note            String?
+  createdByUserId String?
+  createdBy       User?     @relation("WorkspaceSettlementCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([workspaceId, date])
+  @@index([workspaceId, fromUserId])
+  @@index([workspaceId, toUserId])
+  @@index([createdByUserId])
+}
+
 model ImportBatch {
   id                String               @id @default(cuid())
   workspaceId       String
@@ -343,6 +365,9 @@ model User {
   createdEntries       Entry[]             @relation("EntryCreatedBy")
   paidEntries          Entry[]             @relation("EntryPaidBy")
   beneficiaryEntries   EntryBeneficiary[]
+  settlementsSent      WorkspaceSettlement[] @relation("WorkspaceSettlementFromUser")
+  settlementsReceived  WorkspaceSettlement[] @relation("WorkspaceSettlementToUser")
+  settlementsCreated   WorkspaceSettlement[] @relation("WorkspaceSettlementCreatedBy")
   targetHabits         Habit[]             @relation("HabitTargetUser")
   targetGoals          Goal[]              @relation("GoalTargetUser")
   targetPresets        QuickPreset[]       @relation("QuickPresetTargetUser")
@@ -364,6 +389,7 @@ model Workspace {
   invites      WorkspaceInvite[]
   categories   Category[]
   budgets      Budget[]
+  settlements  WorkspaceSettlement[]
   importBatches ImportBatch[]
   importedTransactions ImportedTransaction[]
   entries      Entry[]

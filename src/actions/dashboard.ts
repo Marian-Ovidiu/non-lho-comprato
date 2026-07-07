@@ -2,7 +2,7 @@
 
 import { getDaysInMonth, parseDateKey } from "@/src/lib/workspace-dates";
 import { round2 } from "@/src/lib/money-number";
-import { cacheLife, cacheTag } from "next/cache";
+import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
 import { getDashboardSummary } from "@/src/actions/entries";
 import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
@@ -71,6 +71,11 @@ export type DashboardDailyPaceComparison = {
   averageSampleSize: number;
   previousMonthSpent: number | null;
   previousMonthDateKey: string | null;
+};
+
+export type SettlementActionResult = {
+  success: boolean;
+  message: string;
 };
 
 function getPreviousMonthSameDayKey(todayKey: string) {
@@ -382,7 +387,9 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
     }
 
     const memberIds = members.map((member) => member.userId);
-    const rows = await prisma.$queryRaw<Array<{ paid: unknown; owed: unknown }>>(Prisma.sql`
+    const rows = await prisma.$queryRaw<
+      Array<{ paid: unknown; owed: unknown; settlementNet: unknown }>
+    >(Prisma.sql`
       WITH entry_shares AS (
         SELECT
           e."id",
@@ -397,6 +404,21 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
         INNER JOIN "EntryBeneficiary" eb ON eb."entryId" = e."id"
         WHERE e."workspaceId" = ${workspaceId}
         GROUP BY e."id", e."realCost", e."paidByUserId", e."paymentMode"
+      ),
+      settlement_adjustments AS (
+        SELECT
+          COALESCE(SUM(
+            CASE
+              WHEN s."fromUserId" = ${currentUser.id} THEN s."amount"
+              WHEN s."toUserId" = ${currentUser.id} THEN -s."amount"
+              ELSE 0::numeric
+            END
+          ), 0)::text AS "settlementNet"
+        FROM "WorkspaceSettlement" s
+        WHERE s."workspaceId" = ${workspaceId}
+          AND s."fromUserId" IN (${Prisma.join(memberIds)})
+          AND s."toUserId" IN (${Prisma.join(memberIds)})
+          AND s."fromUserId" <> s."toUserId"
       )
       SELECT
         COALESCE(SUM(
@@ -420,12 +442,18 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
               THEN "realCost" / "beneficiaryCount"
             ELSE 0::numeric
           END
-        ), 0)::text AS "owed"
+        ), 0)::text AS "owed",
+        (SELECT "settlementNet" FROM settlement_adjustments) AS "settlementNet"
       FROM entry_shares
     `);
 
     const currentNet = Math.round(
-      (toMetricNumber(rows[0]?.paid) - toMetricNumber(rows[0]?.owed) + Number.EPSILON) *
+      (
+        toMetricNumber(rows[0]?.paid) -
+        toMetricNumber(rows[0]?.owed) +
+        toMetricNumber(rows[0]?.settlementNet) +
+        Number.EPSILON
+      ) *
         100,
     ) / 100;
 
@@ -452,5 +480,65 @@ export async function getWorkspaceBalance(): Promise<WorkspaceBalanceCardState> 
     // failed balance behind a silently missing card.
     console.error("Failed to load workspace balance:", error);
     throw error;
+  }
+}
+
+export async function createWorkspaceSettlementAction(): Promise<SettlementActionResult> {
+  try {
+    const currentUser = await getCurrentUser();
+    const balance = await getWorkspaceBalance();
+
+    if (!balance.supported || !balance.counterpartUserId) {
+      return {
+        success: false,
+        message: "I regolamenti sono disponibili solo negli spazi condivisi con due persone.",
+      };
+    }
+
+    if (balance.status === "balanced" || balance.amount <= 0) {
+      return {
+        success: false,
+        message: "Il bilancio è già in pari.",
+      };
+    }
+
+    const workspaceId = await getCurrentWorkspaceId();
+    const fromUserId =
+      balance.status === "you-owe" ? currentUser.id : balance.counterpartUserId;
+    const toUserId =
+      balance.status === "you-owe" ? balance.counterpartUserId : currentUser.id;
+
+    if (fromUserId === toUserId) {
+      return {
+        success: false,
+        message: "Il regolamento deve avvenire tra due persone diverse.",
+      };
+    }
+
+    await prisma.workspaceSettlement.create({
+      data: {
+        workspaceId,
+        fromUserId,
+        toUserId,
+        amount: balance.amount.toFixed(2),
+        date: new Date(),
+        createdByUserId: currentUser.id,
+      },
+    });
+
+    revalidatePath("/");
+    updateTag(`entries:${workspaceId}`);
+
+    return {
+      success: true,
+      message: "Regolamento registrato. Il bilancio è stato aggiornato.",
+    };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to create workspace settlement:", error);
+    return {
+      success: false,
+      message: "Non sono riuscito a registrare il regolamento.",
+    };
   }
 }

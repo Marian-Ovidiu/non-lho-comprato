@@ -11,6 +11,12 @@ export type WorkspaceBalanceEntry = {
   paymentMode?: "single_payer" | "joint_account" | string | null;
 };
 
+export type WorkspaceBalanceSettlement = {
+  amount: number;
+  fromUserId: string;
+  toUserId: string;
+};
+
 export type WorkspaceBalanceStatus =
   | "unsupported"
   | "balanced"
@@ -40,6 +46,7 @@ export function computeCoupleWorkspaceBalance(
   members: WorkspaceMemberOption[],
   currentUserId: string,
   entries: readonly WorkspaceBalanceEntry[],
+  settlements: readonly WorkspaceBalanceSettlement[] = [],
 ): WorkspaceBalanceCardState {
   const normalizedMembers = sortWorkspaceMembers(members);
 
@@ -124,10 +131,28 @@ export function computeCoupleWorkspaceBalance(
     paidTotals.set(payerUserId, (paidTotals.get(payerUserId) ?? 0) + entry.realCost);
   }
 
-  const currentNet = round2(
-    (paidTotals.get(currentUserId) ?? 0) - (owedTotals.get(currentUserId) ?? 0),
+  let settlementNet = 0;
+  for (const settlement of settlements) {
+    const fromUserId = settlement.fromUserId.trim();
+    const toUserId = settlement.toUserId.trim();
+
+    if (!memberIds.has(fromUserId) || !memberIds.has(toUserId) || fromUserId === toUserId) {
+      continue;
+    }
+
+    if (fromUserId === currentUserId) {
+      settlementNet += settlement.amount;
+    } else if (toUserId === currentUserId) {
+      settlementNet -= settlement.amount;
+    }
+  }
+
+  const roundedCurrentNet = round2(
+    (paidTotals.get(currentUserId) ?? 0) -
+      (owedTotals.get(currentUserId) ?? 0) +
+      settlementNet,
   );
-  if (Math.abs(currentNet) < 0.005) {
+  if (Math.abs(roundedCurrentNet) < 0.005) {
     return {
       supported: true,
       status: "balanced",
@@ -137,11 +162,11 @@ export function computeCoupleWorkspaceBalance(
     };
   }
 
-  if (currentNet > 0) {
+  if (roundedCurrentNet > 0) {
     return {
       supported: true,
       status: "they-owe",
-      amount: round2(currentNet),
+      amount: round2(roundedCurrentNet),
       counterpartUserId: counterpartMember.userId,
       counterpartLabel: counterpartMember.label,
     };
@@ -150,7 +175,7 @@ export function computeCoupleWorkspaceBalance(
   return {
     supported: true,
     status: "you-owe",
-    amount: round2(Math.abs(currentNet)),
+    amount: round2(Math.abs(roundedCurrentNet)),
     counterpartUserId: counterpartMember.userId,
     counterpartLabel: counterpartMember.label,
   };
