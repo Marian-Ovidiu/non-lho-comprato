@@ -577,7 +577,7 @@ function EntryBadge({ kind }: { kind: EntryBadgeKind }) {
     <span
       className={cn(
         "shrink-0 rounded-[var(--r-chip)] border px-2 py-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em]",
-        isAvoided ? "border-success/45 text-success" : "border-accent/45 text-accent",
+        isAvoided ? "border-success/45 text-success" : "border-lilac/45 text-lilac",
       )}
     >
       {isAvoided ? "Evitata" : "Confronto"}
@@ -719,10 +719,11 @@ export function CraftedDashboard({
   const recurringDone = habitsTotal > 0 ? habitsAvoided : PREVIEW.recurring.doneToday;
 
   return (
-    <div ref={rootRef} className="relative isolate -mx-4 sm:-mx-6 lg:-mx-8">
+    <div ref={rootRef} className="nlc-glass-home nlc-palette-sage relative isolate -mx-4 sm:-mx-6 lg:-mx-8">
       <div
         aria-hidden="true"
-        className="nlc-dash-aura pointer-events-none absolute inset-0 -z-10"
+        className="nlc-dash-aura pointer-events-none absolute inset-x-0 bottom-0 -z-10"
+        style={{ top: "calc(-1 * (var(--nlc-chrome-top, 4rem) + 1.5rem))" }}
       />
       <div
         aria-hidden="true"
@@ -742,13 +743,13 @@ export function CraftedDashboard({
               />
             </defs>
             <g className="nlc-wave-layer" data-sp="0.13">
-              <use href="#nlc-waveband" transform="translate(0,-30)" fill="rgba(233,176,88,0.10)" />
+              <use href="#nlc-waveband" transform="translate(0,-30)" fill="rgba(209,249,117,0.09)" />
             </g>
             <g className="nlc-wave-layer" data-sp="-0.24">
-              <use href="#nlc-waveband" transform="translate(0,4)" fill="rgba(220,132,54,0.13)" />
+              <use href="#nlc-waveband" transform="translate(0,4)" fill="rgba(202,146,246,0.12)" />
             </g>
             <g className="nlc-wave-layer" data-sp="0.36">
-              <use href="#nlc-waveband" transform="translate(0,30)" fill="rgba(233,184,100,0.18)" />
+              <use href="#nlc-waveband" transform="translate(0,30)" fill="rgba(154,162,94,0.16)" />
             </g>
           </svg>
         </div>
@@ -886,7 +887,7 @@ export function CraftedDashboard({
                 <span className="text-[13px] text-muted-foreground">
                   {coupleIsTheyOwe ? `${partner} ti deve` : `Devi a ${partner}`}
                 </span>
-                <Mono className={coupleIsTheyOwe ? "text-accent" : "text-destructive"}>
+                <Mono className={coupleIsTheyOwe ? "text-lilac" : "text-destructive"}>
                   {formatEUR(coupleAmount, currencySymbol, { sign: "auto" })}
                 </Mono>
               </div>
@@ -994,7 +995,7 @@ export function CraftedDashboard({
                       <span className="text-ink-3"> / {formatCraftedCompact(goal.target)}</span>
                     </Mono>
                   </div>
-                  <ProgressLine value={goal.pct} className="mb-3 bg-line-soft" />
+                  <ProgressLine value={goal.pct} className="mb-3 bg-line-soft" indicatorClassName="bg-lilac" />
                   {index < displayGoals.length - 1 ? <Rule soft /> : null}
                 </div>
               ))}
@@ -1053,7 +1054,7 @@ export function CraftedDashboard({
           <div className="nlc-parallax col-span-2" data-amt="12">
             <Button
               asChild
-              className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground shadow-[0_10px_26px_-8px_rgba(216,168,91,0.55)] hover:bg-accent-hover"
+              className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground shadow-[0_10px_26px_-8px_rgba(209,249,117,0.5)] hover:bg-accent-hover"
             >
               <Link href="/entries/new">
                 <Plus className="size-4" aria-hidden="true" />

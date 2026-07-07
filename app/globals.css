@@ -43,6 +43,7 @@
   --color-warm: var(--warm);
   --color-info: var(--info);
   --color-violet: var(--violet);
+  --color-lilac: var(--lilac);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-instrument-serif);
@@ -139,17 +140,18 @@
   --state-press: 0.965;
   --state-hover: rgba(244, 241, 234, 0.04);
 
-  /* Glassmorphism dashboard (test) — dark-first */
-  --glass-sheet-bg: 26 22 18;
-  --glass-alpha: 0.12;
+  /* Glassmorphism dashboard — salvia notturna, accenti lime + lilla */
+  --glass-sheet-bg: 58 72 67;
+  --glass-alpha: 0.18;
   --sheet-blur: 6px;
-  --glass-edge: rgba(255, 255, 255, 0.11);
-  --glass-hair: rgba(242, 237, 228, 0.08);
+  --glass-edge: rgba(169, 171, 170, 0.22);
+  --glass-hair: rgba(169, 171, 170, 0.14);
   --glass-tile-a: rgba(255, 255, 255, 0.08);
   --glass-tile-b: rgba(255, 255, 255, 0.02);
-  --glass-tile-border: rgba(255, 255, 255, 0.11);
+  --glass-tile-border: rgba(169, 171, 170, 0.22);
   --glass-tile-blur: 16px;
   --wave-opacity: 1;
+  --lilac: #ca92f6;
 }
 
 .dark {
@@ -756,7 +758,48 @@ html.nlc-splash-pending #nlc-splash-shell {
   }
 }
 
-/* ---------- Dashboard glassmorphism (test) ---------- */
+/* ---------- Dashboard glassmorphism ---------- */
+/* Palette scoped to the home dashboard only — header, bottom nav and the rest
+   of the app keep the app-wide (warm) tokens. */
+/* Sage-night palette — the dashboard content and, on the home route, the chrome */
+.nlc-palette-sage {
+  --background: #0d1916;
+  --foreground: #e2dfe0;
+  --surface: #283835;
+  --surface-muted: #525f5d;
+  --accent: #d1f975;
+  --accent-hover: #c2ec5f;
+  --accent-foreground: #16231a;
+  --primary: #d1f975;
+  --primary-foreground: #16231a;
+  --premium-accent: #ca92f6;
+  --success: #d1f975;
+  --destructive: #e5896e;
+  --muted-text: #cbcfca;
+  --ink-3: #a6aca5;
+  --text-3: #a6aca5;
+  --line: rgba(169, 171, 170, 0.18);
+  --line-soft: rgba(169, 171, 170, 0.12);
+}
+
+.nlc-glass-home {
+  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Numerals drop the monospace look for a proportional-but-tabular sans */
+.nlc-glass-home .font-num {
+  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
+}
+
+/* Frosted chrome for the sticky header and bottom nav */
+.nlc-glass-chrome {
+  background: color-mix(in srgb, var(--background) 72%, transparent);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  backdrop-filter: blur(18px) saturate(150%);
+}
+
 .nlc-glass-tile {
   background: linear-gradient(180deg, var(--glass-tile-a), var(--glass-tile-b));
   -webkit-backdrop-filter: blur(var(--glass-tile-blur)) saturate(150%);
@@ -800,17 +843,17 @@ html.nlc-splash-pending #nlc-splash-shell {
 /* Ambient background behind the dashboard sheet (rendered dashboard-only) */
 .nlc-dash-aura {
   background:
-    radial-gradient(130% 86% at 8% -16%, rgba(233, 176, 88, 0.66), transparent 54%),
-    radial-gradient(108% 78% at 110% 0%, rgba(222, 124, 42, 0.56), transparent 52%),
-    radial-gradient(100% 70% at 44% 118%, rgba(127, 176, 105, 0.34), transparent 55%),
-    radial-gradient(78% 56% at 92% 56%, rgba(214, 94, 58, 0.34), transparent 60%),
+    radial-gradient(130% 86% at 8% -16%, rgba(209, 249, 117, 0.22), transparent 54%),
+    radial-gradient(108% 78% at 110% 0%, rgba(202, 146, 246, 0.30), transparent 52%),
+    radial-gradient(100% 70% at 44% 118%, rgba(154, 162, 94, 0.26), transparent 55%),
+    radial-gradient(78% 56% at 92% 56%, rgba(167, 128, 197, 0.26), transparent 60%),
     var(--background);
 }
 :root:not(.dark) .nlc-dash-aura {
   background:
-    radial-gradient(130% 86% at 8% -16%, rgba(233, 176, 88, 0.5), transparent 56%),
-    radial-gradient(108% 78% at 110% 0%, rgba(222, 150, 90, 0.4), transparent 54%),
-    radial-gradient(100% 70% at 44% 118%, rgba(127, 176, 105, 0.26), transparent 56%),
+    radial-gradient(130% 86% at 8% -16%, rgba(154, 162, 94, 0.28), transparent 56%),
+    radial-gradient(108% 78% at 110% 0%, rgba(202, 146, 246, 0.24), transparent 54%),
+    radial-gradient(100% 70% at 44% 118%, rgba(209, 249, 117, 0.22), transparent 56%),
     var(--background);
 }
 
@@ -832,14 +875,14 @@ html.nlc-splash-pending #nlc-splash-shell {
   border-radius: 50%;
   background:
     radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.1) 14%, transparent 42%),
-    radial-gradient(circle at 68% 74%, var(--orb-core, rgba(216, 168, 91, 0.6)), transparent 60%),
-    radial-gradient(circle at 50% 55%, rgba(38, 28, 18, 0.35), rgba(9, 7, 5, 0.6));
+    radial-gradient(circle at 68% 74%, var(--orb-core, rgba(202, 146, 246, 0.55)), transparent 60%),
+    radial-gradient(circle at 50% 55%, rgba(20, 34, 30, 0.35), rgba(8, 15, 12, 0.6));
 }
-.nlc-orb-1 { width: 300px; height: 300px; top: -40px; left: -70px; --orb-core: rgba(230, 180, 96, 0.7); }
-.nlc-orb-2 { width: 220px; height: 220px; top: 32vh; right: -60px; --orb-core: rgba(214, 120, 50, 0.7); }
-.nlc-orb-3 { width: 140px; height: 140px; top: 58vh; left: 8%; --orb-core: rgba(127, 176, 105, 0.6); }
-.nlc-orb-4 { width: 96px; height: 96px; top: 20vh; left: 60%; --orb-core: rgba(214, 94, 58, 0.65); }
-.nlc-orb-5 { width: 170px; height: 170px; top: 76vh; right: 14%; --orb-core: rgba(233, 196, 137, 0.6); }
+.nlc-orb-1 { width: 300px; height: 300px; top: -40px; left: -70px; --orb-core: rgba(209, 249, 117, 0.55); }
+.nlc-orb-2 { width: 220px; height: 220px; top: 32vh; right: -60px; --orb-core: rgba(202, 146, 246, 0.6); }
+.nlc-orb-3 { width: 140px; height: 140px; top: 58vh; left: 8%; --orb-core: rgba(154, 162, 94, 0.6); }
+.nlc-orb-4 { width: 96px; height: 96px; top: 20vh; left: 60%; --orb-core: rgba(167, 128, 197, 0.6); }
+.nlc-orb-5 { width: 170px; height: 170px; top: 76vh; right: 14%; --orb-core: rgba(209, 249, 117, 0.45); }
 
 /* Parallax wrapper — carries the scroll-linked transform so the inner card keeps its press feedback */
 .nlc-parallax {
