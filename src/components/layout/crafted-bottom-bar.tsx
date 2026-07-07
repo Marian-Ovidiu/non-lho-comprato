@@ -84,6 +84,7 @@ export function CraftedBottomBar({
 }: CraftedBottomBarProps) {
   const pathname = usePathname();
   const t = useTranslations();
+  const isHome = pathname === "/";
 
   const leftNavItems = [
     { href: "/", label: t.nav.today },
@@ -98,7 +99,10 @@ export function CraftedBottomBar({
   return (
     <nav
       aria-label={t.nav.mainNavLabel}
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-background md:hidden"
+      className={cn(
+        "nlc-glass-chrome fixed inset-x-0 bottom-0 z-40 border-t border-line/60 md:hidden",
+        isHome && "nlc-palette-sage",
+      )}
     >
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-2.5">
         {leftNavItems.map((item) => (

@@ -24,7 +24,6 @@ import {
   ProgressLine,
   Rule,
   Serif,
-  StatTrio,
   type CraftedIconName,
 } from "@/components/crafted";
 import { Button } from "@/components/ui/button";
@@ -222,33 +221,95 @@ function formatEURBase(
   return `${sign}${currencySymbol}${formatted}`;
 }
 
-function SectionHeader({
-  eyebrow,
+function CardHeader({
   title,
   action,
   href,
 }: {
-  eyebrow: string;
   title: string;
   action?: string;
   href?: string;
 }) {
   return (
-    <div className="mb-4 flex items-end justify-between gap-4">
-      <div className="min-w-0">
-        <Label className="mb-1.5 block">{eyebrow}</Label>
-        <h2 className="text-[16px] font-semibold leading-tight">{title}</h2>
-      </div>
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <Label>{title}</Label>
       {action && href ? (
         <Link
           href={href}
-          className="shrink-0 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="shrink-0 text-[12px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           {action}
         </Link>
       ) : null}
     </div>
   );
+}
+
+/**
+ * Scroll-linked parallax: orb, wave and card transforms are a pure function of
+ * scroll position — motion stops when the scroll stops and reverses when the
+ * user scrolls back up. No time-based autoplay, no one-time reveals. Bails out
+ * entirely under prefers-reduced-motion.
+ */
+function useScrollLinkedParallax(
+  rootRef: React.RefObject<HTMLDivElement | null>,
+) {
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) {
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
+    const orbs = Array.from(root.querySelectorAll<HTMLElement>(".nlc-orb"));
+    const waves = Array.from(root.querySelectorAll<SVGGElement>(".nlc-wave-layer"));
+    const cards = Array.from(root.querySelectorAll<HTMLElement>(".nlc-parallax"));
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+      const scrollY = window.scrollY;
+      const viewport = window.innerHeight || 1;
+
+      for (const orb of orbs) {
+        const speed = Number(orb.dataset.sp) || 0;
+        const spin = Number(orb.dataset.rot) || 0;
+        orb.style.transform = `translate3d(0, ${(scrollY * speed).toFixed(1)}px, 0) rotate(${(scrollY * spin).toFixed(2)}deg)`;
+      }
+      for (const wave of waves) {
+        const speed = Number(wave.dataset.sp) || 0;
+        wave.style.transform = `translateX(${(scrollY * speed).toFixed(1)}px)`;
+      }
+      for (const card of cards) {
+        const rect = card.getBoundingClientRect();
+        const center = rect.top + rect.height / 2;
+        let progress = (viewport / 2 - center) / viewport;
+        progress = Math.max(-1, Math.min(1, progress));
+        const amount = Number(card.dataset.amt) || 16;
+        card.style.transform = `perspective(1000px) translateY(${(progress * amount).toFixed(1)}px) rotateX(${(progress * -3.2).toFixed(2)}deg)`;
+      }
+    };
+
+    const onScroll = () => {
+      if (!frame) {
+        frame = requestAnimationFrame(update);
+      }
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    update();
+
+    return () => {
+      if (frame) {
+        cancelAnimationFrame(frame);
+      }
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [rootRef]);
 }
 
 function IconBubble({
@@ -259,7 +320,7 @@ function IconBubble({
   children?: React.ReactNode;
 }) {
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-white/10 bg-white/[0.06] text-muted-foreground">
       {Icon ? <Icon className="size-4" aria-hidden="true" /> : children}
     </span>
   );
@@ -273,13 +334,12 @@ function Sparkline({ values }: { values: number[] }) {
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = Math.max(max - min, 1);
-  const points = values
-    .map((value, index) => {
-      const x = (index / (values.length - 1)) * 100;
-      const y = 36 - ((value - min) / range) * 32;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
+  const coords = values.map((value, index) => ({
+    x: (index / (values.length - 1)) * 100,
+    y: 36 - ((value - min) / range) * 32,
+  }));
+  const points = coords.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
+  const last = coords[coords.length - 1]!;
 
   return (
     <svg
@@ -288,6 +348,13 @@ function Sparkline({ values }: { values: number[] }) {
       className="mt-5 h-10 w-full overflow-visible"
       aria-hidden="true"
     >
+      <defs>
+        <linearGradient id="nlc-spark-fill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="var(--accent)" stopOpacity="0.28" />
+          <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={`0,40 ${points} 100,40`} fill="url(#nlc-spark-fill)" />
       <polyline
         points={points}
         fill="none"
@@ -296,6 +363,14 @@ function Sparkline({ values }: { values: number[] }) {
         strokeLinejoin="round"
         strokeWidth="2"
         vectorEffect="non-scaling-stroke"
+      />
+      <circle
+        cx={last.x}
+        cy={last.y}
+        r="2.4"
+        fill="var(--accent)"
+        stroke="var(--background)"
+        strokeWidth="1"
       />
     </svg>
   );
@@ -368,11 +443,11 @@ function DailyComparisonCard({
   return (
     <div
       className={cn(
-        "min-h-[118px] rounded-[var(--r-card)] border p-3.5",
-        tone === "success" && "border-success/30 bg-success/10",
-        tone === "accent" && "border-accent/35 bg-accent/10",
-        tone === "destructive" && "border-destructive/30 bg-destructive/10",
-        tone === "muted" && "border-line bg-surface-muted",
+        "nlc-glass-blur min-h-[118px] rounded-[var(--r-card)] border p-3.5",
+        tone === "success" && "border-success/35 bg-success/[0.14]",
+        tone === "accent" && "border-accent/40 bg-accent/[0.14]",
+        tone === "destructive" && "border-destructive/35 bg-destructive/[0.14]",
+        tone === "muted" && "border-white/10 bg-white/[0.05]",
       )}
     >
       <div
@@ -416,9 +491,9 @@ function NextHabitPaymentCard({
   return (
     <Link
       href="/habits"
-      className="nlc-press flex min-h-[88px] items-center gap-3 rounded-[var(--r-card)] border border-line bg-surface-muted p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="nlc-press nlc-glass-tile flex min-h-[88px] items-center gap-3 rounded-[var(--r-card)] p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-background text-muted-foreground">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-white/10 bg-white/[0.06] text-muted-foreground">
         <CraftedIcon name={habit.icon} size={18} />
       </span>
       <div className="min-w-0 flex-1">
@@ -459,10 +534,10 @@ function BudgetBlock({
   const tone = pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-accent" : "bg-success";
 
   return (
-    <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-      <SectionHeader eyebrow="Budget" title={budget?.title ?? PREVIEW.budget.label} action="Gestisci" href="/budget#gestione-budget" />
+    <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+      <CardHeader title={budget?.title ?? PREVIEW.budget.label} action="Gestisci" href="/budget#gestione-budget" />
       <div className="flex items-end gap-2">
-        <Mono className="text-[26px] font-semibold leading-none">
+        <Mono className="nlc-num-legible text-[26px] font-semibold leading-none">
           {formatEUR(used, currencySymbol, { decimals: false })}
         </Mono>
         <span className="pb-0.5 text-[13px] text-ink-3">
@@ -582,7 +657,7 @@ function EntryBadge({ kind }: { kind: EntryBadgeKind }) {
     <span
       className={cn(
         "shrink-0 rounded-[var(--r-chip)] border px-2 py-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em]",
-        isAvoided ? "border-success/45 text-success" : "border-accent/45 text-accent",
+        isAvoided ? "border-success/45 text-success" : "border-lilac/45 text-lilac",
       )}
     >
       {isAvoided ? "Evitata" : "Confronto"}
@@ -620,6 +695,8 @@ export function CraftedDashboard({
   const locale = languageToLocale(language);
   const t = useTranslations();
   const usePreview = entriesCountMonth === 0 && recentEntries.length === 0;
+  const rootRef = useRef<HTMLDivElement>(null);
+  useScrollLinkedParallax(rootRef);
 
   const displayMonthSpent = usePreview ? PREVIEW.month.spent : monthRealSpent;
   const displayMonthImpact = usePreview ? PREVIEW.month.impact : monthSaved;
@@ -726,299 +803,361 @@ export function CraftedDashboard({
     coupleAmount > 0;
 
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <section className="px-[var(--sp-page-x)] pb-[var(--sp-section-y)] pt-4">
-        <div className="flex items-start justify-between gap-4">
-          <Label className="pt-1">{t.dashboard.spentMonth}</Label>
-          <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] border border-line px-2.5 py-1.5 text-[11px] text-muted-foreground">
-            {trendDown ? (
-              <TrendingDown className="size-3.5 text-success" aria-hidden="true" />
-            ) : (
-              <TrendingUp className="size-3.5 text-destructive" aria-hidden="true" />
-            )}
-            <Mono>{displayDeltaPct > 0 ? "+" : "−"}{Math.abs(displayDeltaPct).toLocaleString(locale)}%</Mono>
-          </span>
-        </div>
-        <Mono className="mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">
-          {formatEUR(displayMonthSpent, currencySymbol)}
-        </Mono>
-        <div className="mt-3 flex items-end justify-between gap-3">
-          <Serif className="text-[15px] text-muted-foreground">
-            {monthLabel.toLowerCase()} · {t.dashboard.netImpact}
-          </Serif>
-          <Mono
-            className={cn(
-              "shrink-0 text-[17px] font-medium",
-              displayMonthImpact >= 0 ? "text-success" : "text-destructive",
-            )}
-          >
-            {formatEUR(displayMonthImpact, currencySymbol, { sign: "auto" })}
-          </Mono>
-        </div>
-        <Sparkline values={sparkValues} />
-        <Serif className="mt-3 block text-[13px] text-ink-3">
-          {reflection?.text ??
-            (trendDown
-              ? "Il ritmo del mese sta scendendo, senza confondere spese e impatto."
-              : "Questo mese sta accelerando: tieni d'occhio budget e categorie.")}
-        </Serif>
-      </section>
-      <Rule soft />
-
-      <StatTrio
-        className="border-y-0"
-        items={[
-          { label: t.dashboard.spentToday, value: formatEUR(displaySpentToday, currencySymbol) },
-          {
-            label: "Impatto oggi",
-            value: formatEUR(displayImpactToday, currencySymbol, { sign: "auto" }),
-          },
-          { label: "Movimenti", value: displayEntriesToday },
-        ]}
+    <div ref={rootRef} className="nlc-glass-home nlc-palette-sage relative isolate -mx-4 sm:-mx-6 lg:-mx-8">
+      <div
+        aria-hidden="true"
+        className="nlc-dash-aura pointer-events-none absolute inset-x-0 bottom-0 -z-10"
+        style={{ top: "calc(-1 * (var(--nlc-chrome-top, 4rem) + 1.5rem))" }}
       />
-      <Rule soft />
-
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <SectionHeader eyebrow="In coda" title="Prossimo pagamento" action="Abitudini →" href="/habits" />
-        {nextHabitPayment ? (
-          <NextHabitPaymentCard
-            habit={nextHabitPayment}
-            currencySymbol={currencySymbol}
-          />
-        ) : (
-          <div className="rounded-[var(--r-card)] border border-line bg-surface-muted p-4">
-            <Serif className="block text-sm text-ink-3">
-              Nessuna ricorrente attiva con un pagamento previsto.
-            </Serif>
-          </div>
-        )}
-      </section>
-      <Rule soft />
-
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <SectionHeader eyebrow="Ritmo oggi" title="Confronto di giornata" />
-        <div className="grid grid-cols-2 gap-3">
-          <DailyComparisonCard
-            label={`Giorno ${dailyPaceComparison.dayOfMonth || "—"}`}
-            todaySpent={dailyPaceComparison.todaySpent}
-            reference={dailyPaceComparison.averageSameDay}
-            referenceLabel="medi"
-            emptyLabel="Serve almeno un mese precedente con questo giorno."
-            currencySymbol={currencySymbol}
-          />
-          <DailyComparisonCard
-            label="Mese scorso"
-            todaySpent={dailyPaceComparison.todaySpent}
-            reference={dailyPaceComparison.previousMonthSpent}
-            referenceLabel="il mese scorso"
-            emptyLabel="Nessun movimento nello stesso giorno del mese scorso."
-            currencySymbol={currencySymbol}
-          />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none sticky top-0 -z-10 -mb-[100svh] h-[100svh] overflow-hidden"
+      >
+        <span className="nlc-orb nlc-orb-1" data-sp="0.20" data-rot="0.018" />
+        <span className="nlc-orb nlc-orb-2" data-sp="0.40" data-rot="-0.026" />
+        <span className="nlc-orb nlc-orb-3" data-sp="0.13" data-rot="0.034" />
+        <span className="nlc-orb nlc-orb-4" data-sp="0.46" data-rot="0.03" />
+        <span className="nlc-orb nlc-orb-5" data-sp="0.08" data-rot="-0.014" />
+        <div className="nlc-waves">
+          <svg viewBox="0 0 1440 220" preserveAspectRatio="none">
+            <defs>
+              <path
+                id="nlc-waveband"
+                d="M0,110 C120,48 240,48 360,110 C480,172 600,172 720,110 C840,48 960,48 1080,110 C1200,172 1320,172 1440,110 C1560,48 1680,48 1800,110 C1920,172 2040,172 2160,110 C2280,48 2400,48 2520,110 C2640,172 2760,172 2880,110 L2880,220 L0,220 Z"
+              />
+            </defs>
+            <g className="nlc-wave-layer" data-sp="0.13">
+              <use href="#nlc-waveband" transform="translate(0,-30)" fill="rgba(209,249,117,0.09)" />
+            </g>
+            <g className="nlc-wave-layer" data-sp="-0.24">
+              <use href="#nlc-waveband" transform="translate(0,4)" fill="rgba(202,146,246,0.12)" />
+            </g>
+            <g className="nlc-wave-layer" data-sp="0.36">
+              <use href="#nlc-waveband" transform="translate(0,30)" fill="rgba(154,162,94,0.16)" />
+            </g>
+          </svg>
         </div>
-      </section>
-      <Rule soft />
+      </div>
 
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <QuickActionRow href="/entries/new" icon={PlusCircle} label="Registra spesa" />
-        <Rule soft />
-        <QuickActionRow href="/presets" icon={Layers3} label="Preset rapidi" />
-        <Rule soft />
-        <QuickActionRow href="/stats" icon={BarChart3} label="Statistiche" />
-      </section>
-      <Rule soft />
-
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <SectionHeader eyebrow="Bilancio coppia" title={`Con ${partner}`} />
-        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-          <div>
-            <p className="text-xs text-ink-3">Tu</p>
-            <Mono className="mt-1 block text-[18px] font-medium">
-              {formatEUR(coupleYou, currencySymbol)}
-            </Mono>
+      <div className="relative mx-4 sm:mx-6 lg:mx-8">
+        {/* Hero — lastra stabile e leggibile, ferma mentre lo sfondo si muove */}
+        <section className="nlc-glass-hero mb-3 rounded-[var(--r-sheet)] px-5 pb-5 pt-5">
+          <div className="flex items-start justify-between gap-4">
+            <Label className="pt-1">{t.dashboard.spentMonth}</Label>
+            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] border border-line px-2.5 py-1.5 text-[11px] text-muted-foreground">
+              {trendDown ? (
+                <TrendingDown className="size-3.5 text-success" aria-hidden="true" />
+              ) : (
+                <TrendingUp className="size-3.5 text-destructive" aria-hidden="true" />
+              )}
+              <Mono>{displayDeltaPct > 0 ? "+" : "−"}{Math.abs(displayDeltaPct).toLocaleString(locale)}%</Mono>
+            </span>
           </div>
-          <div className="h-8 w-px bg-line" aria-hidden="true" />
-          <div className="text-right">
-            <p className="text-xs text-ink-3">{partner}</p>
-            <Mono className="mt-1 block text-[18px] font-medium">
-              {formatEUR(coupleThem, currencySymbol)}
-            </Mono>
-          </div>
-        </div>
-        <div className="mt-4 flex min-h-10 items-center justify-between gap-3 rounded-[var(--r-control)] bg-surface-muted px-3 py-2">
-          <span className="text-[13px] text-muted-foreground">
-            {coupleIsTheyOwe ? `${partner} ti deve` : `Devi a ${partner}`}
-          </span>
-          <Mono className={coupleIsTheyOwe ? "text-accent" : "text-destructive"}>
-            {formatEUR(coupleAmount, currencySymbol, { sign: "auto" })}
+          <Mono className="nlc-num-legible mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">
+            {formatEUR(displayMonthSpent, currencySymbol)}
           </Mono>
-        </div>
-        <SettlementAction
-          canSettle={canSettleCoupleBalance}
-          label="Segna come regolato"
-        />
-      </section>
-      <Rule soft />
-
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <SectionHeader eyebrow="Categorie" title="Dove stai spendendo" />
-        <div className="mb-4 flex h-1.5 overflow-hidden rounded-full bg-line-soft">
-          {displayCategories.map((category, index) => (
-            <span
-              key={category.key}
-              className={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
-              style={{ width: `${category.pct}%` }}
-              aria-hidden="true"
-            />
-          ))}
-        </div>
-        {displayCategories.map((category, index) => (
-          <div key={category.key}>
-            <div className="flex min-h-14 items-center gap-3 py-2.5">
-              <IconBubble>
-                <CraftedIcon name={category.icon} size={17} />
-              </IconBubble>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-medium">{category.label}</p>
-                <p className="mt-0.5 text-xs text-ink-3">
-                  {category.count} movimenti · {category.pct}%
-                </p>
-              </div>
-              <Mono className="shrink-0 text-[14px] font-medium">
-                {formatEUR(category.amount, currencySymbol)}
+          <div className="mt-3 flex items-end justify-between gap-3">
+            <Serif className="text-[15px] text-muted-foreground">
+              {monthLabel.toLowerCase()} · {t.dashboard.netImpact}
+            </Serif>
+            <Mono
+              className={cn(
+                "shrink-0 text-[17px] font-medium",
+                displayMonthImpact >= 0 ? "text-success" : "text-destructive",
+              )}
+            >
+              {formatEUR(displayMonthImpact, currencySymbol, { sign: "auto" })}
+            </Mono>
+          </div>
+          <Sparkline values={sparkValues} />
+          <Serif className="mt-3 block text-[13px] text-ink-3">
+            {reflection?.text ??
+              (trendDown
+                ? "Il ritmo del mese sta scendendo, senza confondere spese e impatto."
+                : "Questo mese sta accelerando: tieni d'occhio budget e categorie.")}
+          </Serif>
+          <div className="mt-5 grid grid-cols-3 gap-2 border-t border-line pt-4">
+            <div>
+              <Label className="mb-2 block">{t.dashboard.spentToday}</Label>
+              <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
+                {formatEUR(displaySpentToday, currencySymbol)}
               </Mono>
             </div>
-            {index < displayCategories.length - 1 ? <Rule soft /> : null}
+            <div className="border-l border-line pl-3">
+              <Label className="mb-2 block">Impatto oggi</Label>
+              <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
+                {formatEUR(displayImpactToday, currencySymbol, { sign: "auto" })}
+              </Mono>
+            </div>
+            <div className="border-l border-line pl-3">
+              <Label className="mb-2 block">Movimenti</Label>
+              <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
+                {displayEntriesToday}
+              </Mono>
+            </div>
           </div>
-        ))}
-      </section>
-      <Rule soft />
+        </section>
 
-      <BudgetBlock
-        budget={budgetDashboardState.mainBudget}
-        currencySymbol={currencySymbol}
-      />
-      <Rule soft />
-
-      <section className="grid grid-cols-2 gap-3 px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <div className="rounded-[var(--r-card)] border border-line p-4">
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <Label>Streak</Label>
-            <CraftedIcon name="flame" size={17} className="text-accent" />
-          </div>
-          <div className="flex items-baseline gap-1.5">
-            <Mono className="text-[28px] font-semibold leading-none">
-              {currentStreak > 0 ? currentStreak : PREVIEW.streak.days}
-            </Mono>
-            <span className="text-xs text-muted-foreground">giorni</span>
-          </div>
-          <Serif className="mt-2 block text-xs text-ink-3">
-            {habitsNote ?? PREVIEW.streak.subject}
-          </Serif>
-        </div>
-        <Link
-          href="/habits"
-          className="nlc-press rounded-[var(--r-card)] border border-line p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          <div className="mb-3 flex items-center justify-between gap-2">
-            <Label>Ricorrenti oggi</Label>
-            <Mono className="text-[12px] text-muted-foreground">
-              {recurringDone}/{recurringTotal}
-            </Mono>
-          </div>
-          <Mono className="block text-[28px] font-semibold leading-none">
-            {Math.max(recurringTotal - recurringDone, 0)}
-          </Mono>
-          <ProgressLine
-            value={recurringTotal > 0 ? (recurringDone / recurringTotal) * 100 : 0}
-            className="mt-4 bg-line-soft"
-          />
-        </Link>
-      </section>
-      <Rule soft />
-
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <SectionHeader eyebrow="Obiettivi" title="Mete attive" />
-        {displayGoals.map((goal, index) => (
-          <div key={goal.id}>
-            <div className="flex items-center gap-3 py-2.5">
-              <IconBubble>
-                <CraftedIcon name={goal.icon} size={17} />
-              </IconBubble>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-[15px] font-medium">{goal.title}</p>
-                <Serif className="mt-0.5 block text-xs text-ink-3">
-                  {goal.note}
+        {/* Bento — card compatte a metà, liste a piena larghezza; parallax legato allo scroll */}
+        <div className="grid grid-cols-2 items-start gap-3">
+          <div className="nlc-parallax col-span-2" data-amt="16">
+            {nextHabitPayment ? (
+              <NextHabitPaymentCard
+                habit={nextHabitPayment}
+                currencySymbol={currencySymbol}
+              />
+            ) : (
+              <div className="nlc-glass-card rounded-[var(--r-card)] p-4">
+                <Label className="mb-2 block">Prossimo pagamento</Label>
+                <Serif className="block text-sm text-ink-3">
+                  Nessuna ricorrente attiva con un pagamento previsto.
                 </Serif>
               </div>
-              <Mono className="shrink-0 text-right text-xs text-muted-foreground">
-                {formatCraftedCompact(goal.current)}
-                <span className="text-ink-3"> / {formatCraftedCompact(goal.target)}</span>
-              </Mono>
-            </div>
-            <ProgressLine value={goal.pct} className="mb-3 bg-line-soft" />
-            {index < displayGoals.length - 1 ? <Rule soft /> : null}
+            )}
           </div>
-        ))}
-      </section>
-      <Rule soft />
 
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <SectionHeader eyebrow="Ultimi movimenti" title="Movimenti" action="Tutti →" href="/entries" />
-        {displayEntries.map((entry, index) => (
-          <div key={entry.id}>
-            <Link
-              href={entry.href}
-              className="nlc-press flex min-h-16 items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            >
-              <IconBubble>
-                <CraftedIcon name={entry.icon} size={17} />
-              </IconBubble>
-              <div className="min-w-0 flex-1">
-                <div className="flex min-w-0 items-center gap-2">
-                  <p className="min-w-0 truncate text-[15px] font-medium">{entry.title}</p>
-                  {entry.badge ? <EntryBadge kind={entry.badge} /> : null}
+          <div className="nlc-parallax" data-amt="24">
+            <DailyComparisonCard
+              label={`Giorno ${dailyPaceComparison.dayOfMonth || "—"}`}
+              todaySpent={dailyPaceComparison.todaySpent}
+              reference={dailyPaceComparison.averageSameDay}
+              referenceLabel="medi"
+              emptyLabel="Serve almeno un mese precedente con questo giorno."
+              currencySymbol={currencySymbol}
+            />
+          </div>
+
+          <div className="nlc-parallax" data-amt="28">
+            <DailyComparisonCard
+              label="Mese scorso"
+              todaySpent={dailyPaceComparison.todaySpent}
+              reference={dailyPaceComparison.previousMonthSpent}
+              referenceLabel="il mese scorso"
+              emptyLabel="Nessun movimento nello stesso giorno del mese scorso."
+              currencySymbol={currencySymbol}
+            />
+          </div>
+
+          <div className="nlc-parallax col-span-2" data-amt="20">
+            <section className="nlc-glass-card rounded-[var(--r-card)] px-4 py-3">
+              <Label className="mb-1 block">Azioni rapide</Label>
+              <QuickActionRow href="/entries/new" icon={PlusCircle} label="Registra spesa" />
+              <Rule soft />
+              <QuickActionRow href="/presets" icon={Layers3} label="Preset rapidi" />
+              <Rule soft />
+              <QuickActionRow href="/stats" icon={BarChart3} label="Statistiche" />
+            </section>
+          </div>
+
+          <div className="nlc-parallax col-span-2" data-amt="26">
+            <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+              <Label className="mb-3 block">Con {partner}</Label>
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
+                <div>
+                  <p className="text-xs text-ink-3">Tu</p>
+                  <Mono className="nlc-num-legible mt-1 block text-[18px] font-medium">
+                    {formatEUR(coupleYou, currencySymbol)}
+                  </Mono>
                 </div>
-                <p className="mt-1 truncate text-xs text-ink-3">
-                  {entry.cat} · <Mono>{entry.when}</Mono>
-                  {entry.saved ? (
-                    <> · risparmiati <Mono>{formatEUR(entry.saved, currencySymbol)}</Mono></>
-                  ) : null}
-                  {entry.avoided ? (
-                    <> · evitati <Mono>{formatEUR(entry.avoided, currencySymbol)}</Mono></>
-                  ) : null}
-                </p>
+                <div className="h-8 w-px bg-line" aria-hidden="true" />
+                <div className="text-right">
+                  <p className="text-xs text-ink-3">{partner}</p>
+                  <Mono className="nlc-num-legible mt-1 block text-[18px] font-medium">
+                    {formatEUR(coupleThem, currencySymbol)}
+                  </Mono>
+                </div>
               </div>
-              <Mono className="shrink-0 text-[15px] font-medium">
-                {entry.amount === 0 ? (
-                  <span className="text-ink-3">—</span>
-                ) : (
-                  formatEUR(entry.amount, currencySymbol)
-                )}
-              </Mono>
-            </Link>
-            {index < displayEntries.length - 1 ? <Rule soft /> : null}
+              <div className="nlc-glass-tile mt-4 flex min-h-10 items-center justify-between gap-3 rounded-[var(--r-control)] px-3 py-2">
+                <span className="text-[13px] text-muted-foreground">
+                  {coupleIsTheyOwe ? `${partner} ti deve` : `Devi a ${partner}`}
+                </span>
+                <Mono className={coupleIsTheyOwe ? "text-lilac" : "text-destructive"}>
+                  {formatEUR(coupleAmount, currencySymbol, { sign: "auto" })}
+                </Mono>
+              </div>
+              <SettlementAction
+                canSettle={canSettleCoupleBalance}
+                label="Segna come regolato"
+              />
+            </section>
           </div>
-        ))}
-      </section>
-      <Rule soft />
 
-      <section className="px-[var(--sp-page-x)] py-[var(--sp-section-y)]">
-        <Button
-          asChild
-          className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground hover:bg-accent-hover"
-        >
-          <Link href="/entries/new">
-            <Plus className="size-4" aria-hidden="true" />
-            {t.dashboard.addEntry}
-          </Link>
-        </Button>
-      </section>
-      <Rule soft />
-      <footer className="px-[var(--sp-page-x)] py-5 text-center">
-        <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-3">
-          Non l&apos;ho comprato · v1
-        </p>
-      </footer>
+          <div className="nlc-parallax col-span-2" data-amt="30">
+            <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+              <Label className="mb-3 block">Dove stai spendendo</Label>
+              <div className="mb-4 flex h-1.5 overflow-hidden rounded-full bg-line-soft">
+                {displayCategories.map((category, index) => (
+                  <span
+                    key={category.key}
+                    className={CATEGORY_COLORS[index % CATEGORY_COLORS.length]}
+                    style={{ width: `${category.pct}%` }}
+                    aria-hidden="true"
+                  />
+                ))}
+              </div>
+              {displayCategories.map((category, index) => (
+                <div key={category.key}>
+                  <div className="flex min-h-14 items-center gap-3 py-2.5">
+                    <IconBubble>
+                      <CraftedIcon name={category.icon} size={17} />
+                    </IconBubble>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-medium">{category.label}</p>
+                      <p className="mt-0.5 text-xs text-ink-3">
+                        {category.count} movimenti · {category.pct}%
+                      </p>
+                    </div>
+                    <Mono className="shrink-0 text-[14px] font-medium">
+                      {formatEUR(category.amount, currencySymbol)}
+                    </Mono>
+                  </div>
+                  {index < displayCategories.length - 1 ? <Rule soft /> : null}
+                </div>
+              ))}
+            </section>
+          </div>
+
+          <div className="nlc-parallax col-span-2" data-amt="22">
+            <BudgetBlock
+              budget={budgetDashboardState.mainBudget}
+              currencySymbol={currencySymbol}
+            />
+          </div>
+
+          <div className="nlc-parallax" data-amt="18">
+            <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <Label>Streak</Label>
+                <CraftedIcon name="flame" size={17} className="text-accent" />
+              </div>
+              <div className="flex items-baseline gap-1.5">
+                <Mono className="nlc-num-legible text-[28px] font-semibold leading-none">
+                  {currentStreak > 0 ? currentStreak : PREVIEW.streak.days}
+                </Mono>
+                <span className="text-xs text-muted-foreground">giorni</span>
+              </div>
+              <Serif className="mt-2 block text-xs text-ink-3">
+                {habitsNote ?? PREVIEW.streak.subject}
+              </Serif>
+            </section>
+          </div>
+
+          <div className="nlc-parallax" data-amt="34">
+            <Link
+              href="/habits"
+              className="nlc-press nlc-glass-card block rounded-[var(--r-card)] p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <Label>Ricorrenti oggi</Label>
+                <Mono className="text-[12px] text-muted-foreground">
+                  {recurringDone}/{recurringTotal}
+                </Mono>
+              </div>
+              <Mono className="nlc-num-legible block text-[28px] font-semibold leading-none">
+                {Math.max(recurringTotal - recurringDone, 0)}
+              </Mono>
+              <ProgressLine
+                value={recurringTotal > 0 ? (recurringDone / recurringTotal) * 100 : 0}
+                className="mt-4 bg-line-soft"
+              />
+            </Link>
+          </div>
+
+          <div className="nlc-parallax col-span-2" data-amt="22">
+            <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+              <Label className="mb-3 block">Mete attive</Label>
+              {displayGoals.map((goal, index) => (
+                <div key={goal.id}>
+                  <div className="flex items-center gap-3 py-2.5">
+                    <IconBubble>
+                      <CraftedIcon name={goal.icon} size={17} />
+                    </IconBubble>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[15px] font-medium">{goal.title}</p>
+                      <Serif className="mt-0.5 block text-xs text-ink-3">
+                        {goal.note}
+                      </Serif>
+                    </div>
+                    <Mono className="shrink-0 text-right text-xs text-muted-foreground">
+                      {formatCraftedCompact(goal.current)}
+                      <span className="text-ink-3"> / {formatCraftedCompact(goal.target)}</span>
+                    </Mono>
+                  </div>
+                  <ProgressLine value={goal.pct} className="mb-3 bg-line-soft" indicatorClassName="bg-lilac" />
+                  {index < displayGoals.length - 1 ? <Rule soft /> : null}
+                </div>
+              ))}
+            </section>
+          </div>
+
+          <div className="nlc-parallax col-span-2" data-amt="16">
+            <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+              <div className="mb-2 flex items-end justify-between gap-4">
+                <Label>Ultimi movimenti</Label>
+                <Link
+                  href="/entries"
+                  className="shrink-0 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                >
+                  Tutti →
+                </Link>
+              </div>
+              {displayEntries.map((entry, index) => (
+                <div key={entry.id}>
+                  <Link
+                    href={entry.href}
+                    className="nlc-press flex min-h-16 items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  >
+                    <IconBubble>
+                      <CraftedIcon name={entry.icon} size={17} />
+                    </IconBubble>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <p className="min-w-0 truncate text-[15px] font-medium">{entry.title}</p>
+                        {entry.badge ? <EntryBadge kind={entry.badge} /> : null}
+                      </div>
+                      <p className="mt-1 truncate text-xs text-ink-3">
+                        {entry.cat} · <Mono>{entry.when}</Mono>
+                        {entry.saved ? (
+                          <> · risparmiati <Mono>{formatEUR(entry.saved, currencySymbol)}</Mono></>
+                        ) : null}
+                        {entry.avoided ? (
+                          <> · evitati <Mono>{formatEUR(entry.avoided, currencySymbol)}</Mono></>
+                        ) : null}
+                      </p>
+                    </div>
+                    <Mono className="shrink-0 text-[15px] font-medium">
+                      {entry.amount === 0 ? (
+                        <span className="text-ink-3">—</span>
+                      ) : (
+                        formatEUR(entry.amount, currencySymbol)
+                      )}
+                    </Mono>
+                  </Link>
+                  {index < displayEntries.length - 1 ? <Rule soft /> : null}
+                </div>
+              ))}
+            </section>
+          </div>
+
+          <div className="nlc-parallax col-span-2" data-amt="12">
+            <Button
+              asChild
+              className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground shadow-[0_10px_26px_-8px_rgba(209,249,117,0.5)] hover:bg-accent-hover"
+            >
+              <Link href="/entries/new">
+                <Plus className="size-4" aria-hidden="true" />
+                {t.dashboard.addEntry}
+              </Link>
+            </Button>
+          </div>
+        </div>
+
+        <footer className="py-5 text-center">
+          <p className="text-[10.5px] uppercase tracking-[0.14em] text-ink-3">
+            Non l&apos;ho comprato · v1
+          </p>
+        </footer>
+      </div>
     </div>
   );
 }

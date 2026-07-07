@@ -128,10 +128,31 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const t = getTranslations(language);
+  const isHome = pathname === "/";
+  const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  // Publish the sticky header height so the dashboard can stretch its ambient
+  // background up behind the (translucent) chrome instead of leaving it black.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) {
+      return;
+    }
+    const updateChromeHeight = () => {
+      document.documentElement.style.setProperty(
+        "--nlc-chrome-top",
+        `${el.offsetHeight}px`,
+      );
+    };
+    updateChromeHeight();
+    const observer = new ResizeObserver(updateChromeHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const desktopNavItems = [
     { href: "/", label: t.nav.today },
@@ -204,7 +225,13 @@ export function AppShell({
     <CurrencyProvider currency={currency}>
     <ToastProvider>
       <div className="min-h-[100dvh] bg-background text-foreground">
-        <header className="sticky top-0 z-30 bg-background">
+        <header
+          ref={headerRef}
+          className={cn(
+            "nlc-glass-chrome sticky top-0 z-30",
+            isHome && "nlc-palette-sage",
+          )}
+        >
           <div className="mx-auto w-full max-w-5xl">
             <div className="flex items-center justify-between gap-3 px-5 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
               <div className="flex min-w-0 flex-1 items-center gap-2.5">
