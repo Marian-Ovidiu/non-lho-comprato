@@ -138,6 +138,18 @@
   --shadow-pop: 0 14px 40px rgba(0, 0, 0, 0.34);
   --state-press: 0.965;
   --state-hover: rgba(244, 241, 234, 0.04);
+
+  /* Glassmorphism dashboard (test) — dark-first */
+  --glass-sheet-bg: 26 22 18;
+  --glass-alpha: 0.12;
+  --sheet-blur: 6px;
+  --glass-edge: rgba(255, 255, 255, 0.11);
+  --glass-hair: rgba(242, 237, 228, 0.08);
+  --glass-tile-a: rgba(255, 255, 255, 0.08);
+  --glass-tile-b: rgba(255, 255, 255, 0.02);
+  --glass-tile-border: rgba(255, 255, 255, 0.11);
+  --glass-tile-blur: 16px;
+  --wave-opacity: 1;
 }
 
 .dark {
@@ -247,6 +259,15 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+
+  /* Glassmorphism dashboard (test) — light overrides */
+  --glass-sheet-bg: 255 250 242;
+  --glass-alpha: 0.32;
+  --glass-edge: rgba(255, 255, 255, 0.65);
+  --glass-hair: rgba(20, 18, 16, 0.09);
+  --glass-tile-a: rgba(255, 255, 255, 0.55);
+  --glass-tile-b: rgba(255, 255, 255, 0.22);
+  --glass-tile-border: rgba(255, 255, 255, 0.7);
 }
 
 @layer base {
@@ -732,5 +753,139 @@ html.nlc-splash-pending #nlc-splash-shell {
   .nlc-reveal {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* ---------- Dashboard glassmorphism (test) ---------- */
+.nlc-glass-tile {
+  background: linear-gradient(180deg, var(--glass-tile-a), var(--glass-tile-b));
+  -webkit-backdrop-filter: blur(var(--glass-tile-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-tile-blur)) saturate(150%);
+  border: 1px solid var(--glass-tile-border);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 10px 24px -14px rgba(0, 0, 0, 0.55);
+}
+
+.nlc-glass-blur {
+  -webkit-backdrop-filter: blur(var(--glass-tile-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-tile-blur)) saturate(150%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 24px -14px rgba(0, 0, 0, 0.5);
+}
+
+/* Keep hairlines/borders translucent inside the glass surfaces (unlayered → wins over Tailwind) */
+.nlc-glass-hero [role="separator"],
+.nlc-glass-hero .bg-line,
+.nlc-glass-hero .bg-line-soft,
+.nlc-glass-card [role="separator"],
+.nlc-glass-card .bg-line,
+.nlc-glass-card .bg-line-soft {
+  background-color: var(--glass-hair);
+}
+.nlc-glass-hero .border-line,
+.nlc-glass-card .border-line {
+  border-color: var(--glass-hair);
+}
+
+/* Legibility lift for the largest numerals over near-clear glass */
+.nlc-num-legible {
+  text-shadow: 0 1px 14px rgba(11, 10, 8, 0.6);
+}
+:root:not(.dark) .nlc-num-legible {
+  text-shadow: 0 1px 10px rgba(255, 255, 255, 0.65);
+}
+
+/* Ambient background behind the dashboard sheet (rendered dashboard-only) */
+.nlc-dash-aura {
+  background:
+    radial-gradient(130% 86% at 8% -16%, rgba(233, 176, 88, 0.66), transparent 54%),
+    radial-gradient(108% 78% at 110% 0%, rgba(222, 124, 42, 0.56), transparent 52%),
+    radial-gradient(100% 70% at 44% 118%, rgba(127, 176, 105, 0.34), transparent 55%),
+    radial-gradient(78% 56% at 92% 56%, rgba(214, 94, 58, 0.34), transparent 60%),
+    var(--background);
+}
+:root:not(.dark) .nlc-dash-aura {
+  background:
+    radial-gradient(130% 86% at 8% -16%, rgba(233, 176, 88, 0.5), transparent 56%),
+    radial-gradient(108% 78% at 110% 0%, rgba(222, 150, 90, 0.4), transparent 54%),
+    radial-gradient(100% 70% at 44% 118%, rgba(127, 176, 105, 0.26), transparent 56%),
+    var(--background);
+}
+
+/* Abstract 3D glass orbs — parallax driven by scroll (JS), never autoplay */
+.nlc-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform;
+  box-shadow:
+    inset -10px -14px 40px rgba(0, 0, 0, 0.55),
+    inset 10px 12px 30px rgba(255, 255, 255, 0.16),
+    0 40px 70px -20px rgba(0, 0, 0, 0.6);
+}
+.nlc-orb::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.1) 14%, transparent 42%),
+    radial-gradient(circle at 68% 74%, var(--orb-core, rgba(216, 168, 91, 0.6)), transparent 60%),
+    radial-gradient(circle at 50% 55%, rgba(38, 28, 18, 0.35), rgba(9, 7, 5, 0.6));
+}
+.nlc-orb-1 { width: 300px; height: 300px; top: -40px; left: -70px; --orb-core: rgba(230, 180, 96, 0.7); }
+.nlc-orb-2 { width: 220px; height: 220px; top: 32vh; right: -60px; --orb-core: rgba(214, 120, 50, 0.7); }
+.nlc-orb-3 { width: 140px; height: 140px; top: 58vh; left: 8%; --orb-core: rgba(127, 176, 105, 0.6); }
+.nlc-orb-4 { width: 96px; height: 96px; top: 20vh; left: 60%; --orb-core: rgba(214, 94, 58, 0.65); }
+.nlc-orb-5 { width: 170px; height: 170px; top: 76vh; right: 14%; --orb-core: rgba(233, 196, 137, 0.6); }
+
+/* Parallax wrapper — carries the scroll-linked transform so the inner card keeps its press feedback */
+.nlc-parallax {
+  will-change: transform;
+}
+
+.nlc-glass-hero,
+.nlc-glass-card {
+  position: relative;
+  background: rgb(var(--glass-sheet-bg) / calc(var(--glass-alpha) + 0.16));
+  border: 1px solid var(--glass-edge);
+  box-shadow:
+    0 26px 60px -24px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.nlc-glass-hero {
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+  backdrop-filter: blur(10px) saturate(160%);
+}
+.nlc-glass-card {
+  -webkit-backdrop-filter: blur(var(--glass-tile-blur)) saturate(150%);
+  backdrop-filter: blur(var(--glass-tile-blur)) saturate(150%);
+}
+
+.nlc-waves {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 66vh;
+  overflow: hidden;
+  opacity: var(--wave-opacity);
+}
+.nlc-waves svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.nlc-wave-layer {
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nlc-orb,
+  .nlc-wave-layer,
+  .nlc-parallax {
+    will-change: auto;
   }
 }
