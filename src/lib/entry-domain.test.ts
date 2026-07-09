@@ -194,6 +194,13 @@ describe("parseEntryMoneyInput", () => {
     });
   });
 
+  it("parses thousands-separated amounts in both locale formats", () => {
+    // Previously the naive replace(",", ".") turned these into NaN; now they
+    // parse like the rest of the app (search, goal target).
+    assert.deepEqual(parseEntryMoneyInput("1.234,56"), { ok: true, value: 1234.56 });
+    assert.deepEqual(parseEntryMoneyInput("1,234.56"), { ok: true, value: 1234.56 });
+  });
+
   it("accepts the Decimal(10,2) ceiling and rejects anything above it", () => {
     assert.deepEqual(parseEntryMoneyInput("99999999.99"), {
       ok: true,

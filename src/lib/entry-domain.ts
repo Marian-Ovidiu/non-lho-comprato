@@ -1,4 +1,4 @@
-import { round2 } from "@/src/lib/money-number";
+import { normalizeMoneyInputString, round2 } from "@/src/lib/money-number";
 export type EntryMode = "spent" | "avoided";
 export type EntrySavingContext = "none" | "comparison";
 
@@ -52,14 +52,15 @@ function toFiniteNumber(value: unknown): number {
     return Number.isFinite(value) ? value : Number.NaN;
   }
 
-  if (typeof value === "string") {
-    const parsed = Number(value.replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : Number.NaN;
-  }
-
-  if (value && typeof value === "object" && "toString" in value) {
-    const parsed = Number(String(value).replace(",", "."));
-    return Number.isFinite(parsed) ? parsed : Number.NaN;
+  if (
+    typeof value === "string" ||
+    (value !== null && typeof value === "object" && "toString" in value)
+  ) {
+    // Reuse the shared money parser so this path accepts the same locale
+    // formats as the rest of the app (e.g. "1.234,56"), not just a lone comma.
+    // Prisma.Decimal.toString() is plain dot-decimal, so it passes through.
+    const normalized = normalizeMoneyInputString(String(value));
+    return normalized === null ? Number.NaN : Number(normalized);
   }
 
   return Number.NaN;
