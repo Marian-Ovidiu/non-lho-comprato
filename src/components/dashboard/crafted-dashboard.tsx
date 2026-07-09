@@ -44,6 +44,7 @@ import {
   createWorkspaceSettlementAction,
   type SettlementActionResult,
 } from "@/src/actions/dashboard";
+import { CraftedDashboardEmptyState } from "@/src/components/dashboard/crafted-dashboard-empty-state";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
 import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import type { WorkspaceBalanceStatus } from "@/src/lib/workspace-balance";
@@ -157,48 +158,6 @@ const CATEGORY_COLORS = [
 const INITIAL_SETTLEMENT_STATE: SettlementActionResult = {
   success: false,
   message: "",
-};
-
-const PREVIEW = {
-  month: {
-    spent: 842.4,
-    impact: 186.2,
-    deltaPct: -12.4,
-    spark: [520, 610, 480, 720, 905, 842],
-  },
-  today: { spent: 14.5, impact: 9, count: 3 },
-  couple: { partner: "Marta", you: 432.1, them: 410.3, balance: 21.8 },
-  categories: [
-    { key: "caffe", label: "Caffè", amount: 92.4, count: 18, pct: 11 },
-    { key: "delivery", label: "Delivery", amount: 214, count: 9, pct: 25 },
-    { key: "shopping", label: "Shopping", amount: 318.5, count: 6, pct: 38 },
-    { key: "trasporti", label: "Trasporti", amount: 87.2, count: 11, pct: 10 },
-    { key: "svago", label: "Svago", amount: 130.3, count: 4, pct: 16 },
-  ],
-  budget: { label: "Budget mensile", used: 842.4, total: 1100, daysLeft: 6 },
-  streak: { days: 12, subject: "sotto budget caffè" },
-  recurring: { doneToday: 2, totalToday: 4 },
-  goals: [{ title: "Volo Lisbona", current: 218, target: 380 }],
-  entries: [
-    { title: "Cappuccino al bar", cat: "Caffè", amount: 1.5, when: "Oggi · 08:14" },
-    {
-      title: "Sushi delivery",
-      cat: "Delivery",
-      amount: 28.5,
-      when: "Ieri · 20:42",
-      badge: "confronto",
-      saved: 6.5,
-    },
-    {
-      title: "Felpa vintage",
-      cat: "Shopping",
-      amount: 0,
-      when: "Ieri · 17:03",
-      badge: "evitata",
-      avoided: 65,
-    },
-    { title: "Spesa COOP", cat: "Shopping", amount: 42.18, when: "27 giu · 11:08" },
-  ],
 };
 
 function toFiniteNumber(value: unknown) {
@@ -675,7 +634,6 @@ export function CraftedDashboard({
   spentToday,
   netImpactToday,
   entriesTodayCount,
-  entriesCountMonth,
   categories,
   currentStreak,
   habitsTotal,
@@ -686,6 +644,7 @@ export function CraftedDashboard({
   goals,
   recentEntries,
   reflection,
+  emptyState,
   coupleBalance,
   budgetDashboardState,
 }: CraftedDashboardProps) {
@@ -695,12 +654,9 @@ export function CraftedDashboard({
   const language = useWorkspaceLanguage();
   const locale = languageToLocale(language);
   const t = useTranslations();
-  const usePreview = entriesCountMonth === 0 && recentEntries.length === 0;
   const rootRef = useRef<HTMLDivElement>(null);
   useScrollLinkedParallax(rootRef);
 
-  const displayMonthSpent = usePreview ? PREVIEW.month.spent : monthRealSpent;
-  const displayMonthImpact = usePreview ? PREVIEW.month.impact : monthSaved;
   // A trend needs a previous month to compare against. With no baseline there is
   // no delta to show: an invented percentage next to real money reads as real.
   const displayDeltaPct =
@@ -708,9 +664,6 @@ export function CraftedDashboard({
       ? Math.round((monthDelta / Math.max(monthRealSpent - monthDelta, 1)) * 1000) / 10
       : null;
   const trendDown = displayDeltaPct !== null && displayDeltaPct <= 0;
-  const displaySpentToday = usePreview ? PREVIEW.today.spent : spentToday;
-  const displayImpactToday = usePreview ? PREVIEW.today.impact : netImpactToday;
-  const displayEntriesToday = usePreview ? PREVIEW.today.count : entriesTodayCount;
   const displayCategories = categories.map((category) => ({
     key: category.slug,
     label: getLocalizedCategoryName(category.slug, language) ?? category.name,
@@ -820,7 +773,7 @@ export function CraftedDashboard({
             ) : null}
           </div>
           <Mono className="nlc-num-legible mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">
-            {formatEUR(displayMonthSpent, currencySymbol)}
+            {formatEUR(monthRealSpent, currencySymbol)}
           </Mono>
           <div className="mt-3 flex items-end justify-between gap-3">
             <Serif className="text-[15px] text-muted-foreground">
@@ -829,10 +782,10 @@ export function CraftedDashboard({
             <Mono
               className={cn(
                 "shrink-0 text-[17px] font-medium",
-                displayMonthImpact >= 0 ? "text-success" : "text-destructive",
+                monthSaved >= 0 ? "text-success" : "text-destructive",
               )}
             >
-              {formatEUR(displayMonthImpact, currencySymbol, { sign: "auto" })}
+              {formatEUR(monthSaved, currencySymbol, { sign: "auto" })}
             </Mono>
           </div>
           <Sparkline values={monthTrend} />
@@ -849,19 +802,19 @@ export function CraftedDashboard({
             <div>
               <Label className="mb-2 block">{t.dashboard.spentToday}</Label>
               <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
-                {formatEUR(displaySpentToday, currencySymbol)}
+                {formatEUR(spentToday, currencySymbol)}
               </Mono>
             </div>
             <div className="border-l border-line pl-3">
               <Label className="mb-2 block">Impatto oggi</Label>
               <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
-                {formatEUR(displayImpactToday, currencySymbol, { sign: "auto" })}
+                {formatEUR(netImpactToday, currencySymbol, { sign: "auto" })}
               </Mono>
             </div>
             <div className="border-l border-line pl-3">
               <Label className="mb-2 block">Movimenti</Label>
               <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
-                {displayEntriesToday}
+                {entriesTodayCount}
               </Mono>
             </div>
           </div>
@@ -1122,17 +1075,21 @@ export function CraftedDashboard({
           </div>
           ) : null}
 
-          <div className="nlc-parallax col-span-2" data-amt="12">
-            <Button
-              asChild
-              className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground shadow-[0_10px_26px_-8px_rgba(209,249,117,0.5)] hover:bg-accent-hover"
-            >
-              <Link href="/entries/new">
-                <Plus className="size-4" aria-hidden="true" />
-                {t.dashboard.addEntry}
-              </Link>
-            </Button>
-          </div>
+          {/* The empty state renders its own fixed call to action, which would
+              sit on top of this one. */}
+          {emptyState ? null : (
+            <div className="nlc-parallax col-span-2" data-amt="12">
+              <Button
+                asChild
+                className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground shadow-[0_10px_26px_-8px_rgba(209,249,117,0.5)] hover:bg-accent-hover"
+              >
+                <Link href="/entries/new">
+                  <Plus className="size-4" aria-hidden="true" />
+                  {t.dashboard.addEntry}
+                </Link>
+              </Button>
+            </div>
+          )}
         </div>
 
         <footer className="py-5 text-center">
@@ -1141,6 +1098,14 @@ export function CraftedDashboard({
           </p>
         </footer>
       </div>
+
+      {emptyState ? (
+        <CraftedDashboardEmptyState
+          title={emptyState.title}
+          description={emptyState.description}
+          actionLabel={emptyState.actionLabel}
+        />
+      ) : null}
     </div>
   );
 }
