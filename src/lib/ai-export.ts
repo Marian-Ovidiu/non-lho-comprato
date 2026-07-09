@@ -52,6 +52,7 @@ export const AI_EXPENSE_EXPORT_COLUMNS = [
   "beneficiaryNames",
   "beneficiaryCount",
   "sharePerBeneficiary",
+  "beneficiaryShares",
   "isShared",
 ] as const;
 
@@ -136,6 +137,7 @@ export type AiExpenseExportRow = {
   beneficiaryNames: string;
   beneficiaryCount: number;
   sharePerBeneficiary: string;
+  beneficiaryShares: string;
   isShared: boolean;
 };
 
@@ -342,6 +344,9 @@ export function buildAiExpenseExportRow(
     beneficiaryNames,
     beneficiaryCount: entryMetrics.beneficiaryCount,
     sharePerBeneficiary: formatMoneyValue(entryMetrics.sharePerBeneficiary),
+    beneficiaryShares: entryMetrics.beneficiaryShares
+      .map(formatMoneyValue)
+      .join("|"),
     isShared: entryMetrics.isShared,
   };
 }
@@ -416,6 +421,7 @@ export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
     row.beneficiaryNames,
     row.beneficiaryCount,
     row.sharePerBeneficiary,
+    row.beneficiaryShares,
     row.isShared,
   ]);
 }

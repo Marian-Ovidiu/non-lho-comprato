@@ -1,4 +1,4 @@
-import { round2 } from "@/src/lib/money-number";
+import { round2, splitAmount } from "@/src/lib/money-number";
 import {
   toEntryMoneyView,
   type EntryMoneyLike,
@@ -26,6 +26,8 @@ export type EntryMetrics = {
   paidByUserId: string | null;
   beneficiaryUserIds: string[];
   beneficiaryCount: number;
+  /** Exact per-beneficiary shares, index-aligned to beneficiaryUserIds, summing to spentReal. */
+  beneficiaryShares: number[];
   sharePerBeneficiary: number;
   isShared: boolean;
 };
@@ -80,8 +82,10 @@ export function calculateEntryMetrics(entry: EntryMetricsInput): EntryMetrics {
 
   const beneficiaryUserIds = normalizeBeneficiaryUserIds(entry.beneficiaries);
   const beneficiaryCount = beneficiaryUserIds.length;
-  const sharePerBeneficiary =
-    beneficiaryCount > 0 ? round2(realCost / beneficiaryCount) : 0;
+  // Exact split so the shares reconcile to spentReal to the cent (largest
+  // remainder), instead of round2(realCost / count) which drifts (10/3 → 9.99).
+  const beneficiaryShares = splitAmount(realCost, beneficiaryCount);
+  const sharePerBeneficiary = beneficiaryShares[0] ?? 0;
   const isShared = beneficiaryCount > 1;
 
   return {
@@ -99,6 +103,7 @@ export function calculateEntryMetrics(entry: EntryMetricsInput): EntryMetrics {
     paidByUserId: entry.paidByUserId ?? null,
     beneficiaryUserIds,
     beneficiaryCount,
+    beneficiaryShares,
     sharePerBeneficiary,
     isShared,
   };

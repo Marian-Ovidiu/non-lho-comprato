@@ -44,6 +44,30 @@ export function round2(value: number): number {
 }
 
 /**
+ * Splits a money total into `parts` shares that each carry 2 decimals and sum
+ * back exactly to round2(total). A leftover cent from an uneven division is
+ * allocated deterministically to the first shares (largest-remainder), so
+ * 10.00 across 3 people becomes [3.34, 3.33, 3.33] and never 9.99. Returns an
+ * empty array when `parts` is not a positive integer.
+ */
+export function splitAmount(total: number, parts: number): number[] {
+  if (!Number.isFinite(total) || !Number.isInteger(parts) || parts <= 0) {
+    return [];
+  }
+
+  const totalCents = Math.round(round2(total) * 100);
+  const sign = totalCents < 0 ? -1 : 1;
+  const absCents = Math.abs(totalCents);
+  const base = Math.floor(absCents / parts);
+  const remainder = absCents - base * parts;
+
+  return Array.from({ length: parts }, (_, index) => {
+    const cents = base + (index < remainder ? 1 : 0);
+    return round2((sign * cents) / 100);
+  });
+}
+
+/**
  * Converts a decimal-like value (number, bigint, numeric string with "." or
  * ",", Prisma.Decimal) to a finite number, falling back to 0. For validation
  * paths that must distinguish invalid input, use a NaN-returning parser

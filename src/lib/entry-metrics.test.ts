@@ -6,6 +6,7 @@ import {
   calculateEntryMetrics,
   LARGE_COMPARISON_THRESHOLD,
 } from "@/src/lib/entry-metrics";
+import { round2 } from "@/src/lib/money-number";
 
 // ─── golden fixtures ─────────────────────────────────────────────────────────
 
@@ -149,8 +150,29 @@ describe("calculateEntryMetrics", () => {
       assert.equal(m.paidByUserId, "user-martina");
       assert.equal(m.beneficiaryCount, 2);
       assert.equal(m.sharePerBeneficiary, 10);
+      assert.deepEqual(m.beneficiaryShares, [10, 10]);
       assert.equal(m.isShared, true);
       assert.deepEqual(m.beneficiaryUserIds, ["user-marian", "user-martina"]);
+    });
+
+    it("8b. uneven 3-way split reconciles to the cent (10 / 3)", () => {
+      const m = calculateEntryMetrics({
+        realCost: 10,
+        alternativeCost: 10,
+        paidByUserId: "user-a",
+        beneficiaries: [
+          { userId: "user-a" },
+          { userId: "user-b" },
+          { userId: "user-c" },
+        ],
+      });
+      assert.equal(m.beneficiaryCount, 3);
+      assert.deepEqual(m.beneficiaryShares, [3.34, 3.33, 3.33]);
+      // The whole point: shares add up to spentReal, never 9.99.
+      assert.equal(
+        round2(m.beneficiaryShares.reduce((a, b) => a + b, 0)),
+        m.spentReal,
+      );
     });
 
     it("9. personal expense Marian: single beneficiary, full share", () => {

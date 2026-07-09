@@ -170,8 +170,34 @@ describe("buildAiExpenseExportRow", () => {
     assert.equal(row.beneficiaryCount, 2);
     assert.equal(row.isShared, true);
     assert.equal(row.sharePerBeneficiary, "20.00");
+    assert.equal(row.beneficiaryShares, "20.00|20.00");
     assert.equal(row.beneficiaryUserIds, "user-1|user-2");
     assert.equal(row.beneficiaryNames, "Marian|Martina");
+  });
+
+  it("emits exact per-beneficiary shares that reconcile to spentReal (10 / 3)", () => {
+    const row = buildAiExpenseExportRow(
+      createEntry({
+        realCost: 10,
+        alternativeCost: 10,
+        savedAmount: 0,
+        paidByUserId: "user-1",
+        beneficiaries: [
+          { userId: "user-1" },
+          { userId: "user-2" },
+          { userId: "user-3" },
+        ],
+      }),
+      "Workspace",
+      "Europe/Rome",
+    );
+
+    assert.equal(row.beneficiaryCount, 3);
+    assert.equal(row.beneficiaryShares, "3.34|3.33|3.33");
+    const sharesTotal = row.beneficiaryShares
+      .split("|")
+      .reduce((total, share) => total + Number(share), 0);
+    assert.equal(Math.round(sharesTotal * 100) / 100, Number(row.spentReal));
   });
 
   it("exports a personal entry with a single beneficiary", () => {
