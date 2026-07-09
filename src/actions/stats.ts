@@ -45,6 +45,12 @@ import {
   type EntryMetricDateRange,
 } from "@/src/lib/entry-metrics-query";
 import {
+  buildHabitStatsFromRows,
+  buildHabitStatsQuery,
+  type HabitStatsItem,
+  type HabitStatsRow,
+} from "@/src/features/stats/habit-stats";
+import {
   getCurrentStatsMonthKey,
   getStatsMonthLabel,
   getStatsYearFromMonthKey,
@@ -62,20 +68,6 @@ export type TopSavingsItem = {
   alternativeCost: number;
   savedAmount: number;
   source: EntrySource;
-};
-
-type HabitStatsItem = {
-  habitId: string;
-  habitName: string;
-  categoryName: string;
-  amount: number;
-  totalOccurrences: number;
-  spentCount: number;
-  avoidedCount: number;
-  skippedCount: number;
-  pendingCount: number;
-  totalSaved: number;
-  disciplineRatePercent: number;
 };
 
 export type WorkspaceMemberSpendingStatsItem = {
@@ -148,31 +140,6 @@ async function buildEntryWhere(
   };
 }
 
-async function buildHabitOccurrenceWhere(
-  memberUserId: string | undefined,
-): Promise<Prisma.HabitOccurrenceWhereInput> {
-  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
-
-  if (!memberUserId) {
-    return {
-      habit: {
-        is: workspaceWhere,
-      },
-    };
-  }
-
-  return {
-    habit: {
-      is: workspaceWhere,
-    },
-    entry: {
-      is: await getCurrentWorkspaceScopedWhere(
-        buildWorkspaceMemberEntryWhere(memberUserId),
-      ),
-    },
-  };
-}
-
 function formatMonthLabel(year: number, monthIndex: number): string {
   const raw = new Intl.DateTimeFormat("it-IT", {
     month: "short",
@@ -195,31 +162,6 @@ function getMonthLabelFromKey(monthKey: string): string {
   return formatMonthLabel(year, monthIndex);
 }
 
-
-async function buildStatsHabitOccurrenceWhere(
-  memberUserId: string | undefined,
-): Promise<Prisma.HabitOccurrenceWhereInput> {
-  const workspaceWhere = await getCurrentWorkspaceScopedWhere();
-
-  if (!memberUserId) {
-    return {
-      habit: {
-        is: workspaceWhere,
-      },
-    };
-  }
-
-  return {
-    habit: {
-      is: workspaceWhere,
-    },
-    entry: {
-      is: await getCurrentWorkspaceScopedWhere(
-        buildWorkspaceMemberEntryWhere(memberUserId),
-      ),
-    },
-  };
-}
 
 function buildStatsMonthOptionsFromMonthlyStats(
   monthlyStats: MonthlyStatsItem[],
@@ -511,107 +453,22 @@ async function getDailySpendingRowsForWorkspace(
   `);
 }
 
+async function getHabitStatsForWorkspace(
+  workspaceId: string,
+  memberUserId: string | undefined,
+): Promise<HabitStatsItem[]> {
+  const rows = await prisma.$queryRaw<HabitStatsRow[]>(
+    buildHabitStatsQuery(workspaceId, memberUserId),
+  );
+  return buildHabitStatsFromRows(rows);
+}
+
 async function getHabitStatsFromMembers(
   memberUserId: string | undefined,
 ): Promise<HabitStatsItem[]> {
   try {
-    const occurrences = await prisma.habitOccurrence.findMany({
-      where: await buildStatsHabitOccurrenceWhere(memberUserId),
-      select: {
-        status: true,
-        habit: {
-          select: {
-            id: true,
-            name: true,
-            amount: true,
-            category: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (occurrences.length === 0) {
-      return [];
-    }
-
-    const grouped = new Map<
-      string,
-      {
-        habitName: string;
-        categoryName: string;
-        amount: number;
-        totalOccurrences: number;
-        spentCount: number;
-        avoidedCount: number;
-        skippedCount: number;
-        pendingCount: number;
-        totalSaved: number;
-      }
-    >();
-
-    for (const occurrence of occurrences) {
-      const habitId = occurrence.habit.id;
-      const current = grouped.get(habitId) ?? {
-        habitName: occurrence.habit.name,
-        categoryName: occurrence.habit.category.name,
-        amount: toNumber(occurrence.habit.amount),
-        totalOccurrences: 0,
-        spentCount: 0,
-        avoidedCount: 0,
-        skippedCount: 0,
-        pendingCount: 0,
-        totalSaved: 0,
-      };
-
-      current.totalOccurrences += 1;
-
-      switch (occurrence.status) {
-        case "spent":
-          current.spentCount += 1;
-          break;
-        case "avoided":
-          current.avoidedCount += 1;
-          break;
-        case "skipped":
-          current.skippedCount += 1;
-          break;
-        default:
-          current.pendingCount += 1;
-          break;
-      }
-
-      if (occurrence.status === "avoided") {
-        current.totalSaved = round2(current.totalSaved + current.amount);
-      }
-
-      grouped.set(habitId, current);
-    }
-
-    return Array.from(grouped.entries())
-      .map(([habitId, totals]) => {
-        const considered = totals.avoidedCount + totals.spentCount;
-        return {
-          habitId,
-          habitName: totals.habitName,
-          categoryName: totals.categoryName,
-          amount: totals.amount,
-          totalOccurrences: totals.totalOccurrences,
-          spentCount: totals.spentCount,
-          avoidedCount: totals.avoidedCount,
-          skippedCount: totals.skippedCount,
-          pendingCount: totals.pendingCount,
-          totalSaved: totals.totalSaved,
-          disciplineRatePercent:
-            considered === 0
-              ? 0
-              : round2((totals.avoidedCount / considered) * 100),
-        };
-      })
-      .sort((left, right) => right.totalSaved - left.totalSaved);
+    const workspaceId = await getCurrentWorkspaceId();
+    return await getHabitStatsForWorkspace(workspaceId, memberUserId);
   } catch (error) {
     logAndRethrowDataLoadError("Failed to load habit stats", error);
   }
@@ -872,103 +729,8 @@ export async function getHabitStats(
   memberUserId?: string,
 ): Promise<HabitStatsItem[]> {
   try {
-    const occurrences = await prisma.habitOccurrence.findMany({
-      where: await buildHabitOccurrenceWhere(memberUserId),
-      select: {
-        status: true,
-        habit: {
-          select: {
-            id: true,
-            name: true,
-            amount: true,
-            category: {
-              select: {
-                name: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (occurrences.length === 0) {
-      return [];
-    }
-
-    const grouped = new Map<
-      string,
-      {
-        habitName: string;
-        categoryName: string;
-        amount: number;
-        totalOccurrences: number;
-        spentCount: number;
-        avoidedCount: number;
-        skippedCount: number;
-        pendingCount: number;
-        totalSaved: number;
-      }
-    >();
-
-    for (const occurrence of occurrences) {
-      const habitId = occurrence.habit.id;
-      const current = grouped.get(habitId) ?? {
-        habitName: occurrence.habit.name,
-        categoryName: occurrence.habit.category.name,
-        amount: toNumber(occurrence.habit.amount),
-        totalOccurrences: 0,
-        spentCount: 0,
-        avoidedCount: 0,
-        skippedCount: 0,
-        pendingCount: 0,
-        totalSaved: 0,
-      };
-
-      current.totalOccurrences += 1;
-
-      switch (occurrence.status) {
-        case "spent":
-          current.spentCount += 1;
-          break;
-        case "avoided":
-          current.avoidedCount += 1;
-          break;
-        case "skipped":
-          current.skippedCount += 1;
-          break;
-        default:
-          current.pendingCount += 1;
-          break;
-      }
-
-      if (occurrence.status === "avoided") {
-        current.totalSaved = round2(current.totalSaved + current.amount);
-      }
-
-      grouped.set(habitId, current);
-    }
-
-    return Array.from(grouped.entries())
-      .map(([habitId, totals]) => {
-        const considered = totals.avoidedCount + totals.spentCount;
-        return {
-          habitId,
-          habitName: totals.habitName,
-          categoryName: totals.categoryName,
-          amount: totals.amount,
-          totalOccurrences: totals.totalOccurrences,
-          spentCount: totals.spentCount,
-          avoidedCount: totals.avoidedCount,
-          skippedCount: totals.skippedCount,
-          pendingCount: totals.pendingCount,
-          totalSaved: totals.totalSaved,
-          disciplineRatePercent:
-            considered === 0
-              ? 0
-              : round2((totals.avoidedCount / considered) * 100),
-        };
-      })
-      .sort((left, right) => right.totalSaved - left.totalSaved);
+    const workspaceId = await getCurrentWorkspaceId();
+    return await getHabitStatsForWorkspace(workspaceId, memberUserId);
   } catch (error) {
     logAndRethrowDataLoadError("Failed to load habit stats", error);
   }
