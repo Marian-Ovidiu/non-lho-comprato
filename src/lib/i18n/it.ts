@@ -104,6 +104,7 @@ export const it: Translations = {
     selectValidContext: "Seleziona un contesto valido",
     selectValidMode: "Seleziona una modalita valida",
     amountPositive: "L'importo deve essere maggiore di 0",
+    amountTooLarge: "L'importo è troppo grande",
     updateError: "Si è verificato un errore durante l'aggiornamento",
     deleteError: "Si è verificato un errore durante l'eliminazione",
     tooManyAttempts: "Troppi tentativi ravvicinati. Riprova tra poco.",

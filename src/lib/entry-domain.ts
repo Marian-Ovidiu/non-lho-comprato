@@ -2,6 +2,13 @@ import { round2 } from "@/src/lib/money-number";
 export type EntryMode = "spent" | "avoided";
 export type EntrySavingContext = "none" | "comparison";
 
+/**
+ * Upper bound for a single money field. Entry money columns are Decimal(10, 2),
+ * so anything at or above 100 million overflows the column and would surface as
+ * a generic "save failed" instead of a field-level validation error.
+ */
+export const MAX_ENTRY_AMOUNT = 99_999_999.99;
+
 export type EntryMoneyParseResult =
   | {
       ok: true;
@@ -9,7 +16,7 @@ export type EntryMoneyParseResult =
     }
   | {
       ok: false;
-      reason: "empty" | "invalid" | "negative";
+      reason: "empty" | "invalid" | "negative" | "too_large";
     };
 
 export type EntryMoneyLike = {
@@ -75,6 +82,10 @@ export function parseEntryMoneyInput(value: unknown): EntryMoneyParseResult {
 
   if (amount < 0) {
     return { ok: false, reason: "negative" };
+  }
+
+  if (round2(amount) > MAX_ENTRY_AMOUNT) {
+    return { ok: false, reason: "too_large" };
   }
 
   return { ok: true, value: round2(amount) };

@@ -56,6 +56,13 @@ function getMoney(
     };
   }
 
+  if (parsed.reason === "too_large") {
+    return {
+      value: Number.NaN,
+      error: v.amountTooLarge,
+    };
+  }
+
   return { value: Number.NaN, error: v.invalidNumber };
 }
 
@@ -93,6 +100,14 @@ function getOptionalMoney(
       value: Number.NaN,
       provided: true,
       error: v.nonNegative,
+    };
+  }
+
+  if (parsed.reason === "too_large") {
+    return {
+      value: Number.NaN,
+      provided: true,
+      error: v.amountTooLarge,
     };
   }
 

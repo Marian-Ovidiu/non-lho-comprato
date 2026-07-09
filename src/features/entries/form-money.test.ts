@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { resolveEntryMoneyFromForm } from "@/src/features/entries/form-money";
+import { it as itDict } from "@/src/lib/i18n/it";
 
 function formData(values: Record<string, string>) {
   const data = new FormData();
@@ -27,6 +28,17 @@ describe("resolveEntryMoneyFromForm", () => {
     assert.equal(result.money?.realCost, 28);
     assert.equal(result.money?.alternativeCost, 45);
     assert.equal(result.money?.savedAmount, 17);
+  });
+
+  it("rejects an amount above the Decimal(10,2) ceiling with a field error", () => {
+    const result = resolveEntryMoneyFromForm(
+      formData({
+        realCost: "100000000",
+      }),
+    );
+
+    assert.equal(result.money, undefined);
+    assert.equal(result.errors.realCost, itDict.validation.amountTooLarge);
   });
 
   it("defaults legacy alternative cost to real cost", () => {

@@ -193,6 +193,21 @@ describe("parseEntryMoneyInput", () => {
       reason: "negative",
     });
   });
+
+  it("accepts the Decimal(10,2) ceiling and rejects anything above it", () => {
+    assert.deepEqual(parseEntryMoneyInput("99999999.99"), {
+      ok: true,
+      value: 99999999.99,
+    });
+    assert.deepEqual(parseEntryMoneyInput("100000000"), {
+      ok: false,
+      reason: "too_large",
+    });
+    assert.deepEqual(parseEntryMoneyInput("1000000000000"), {
+      ok: false,
+      reason: "too_large",
+    });
+  });
 });
 
 describe("calculateEntrySavedAmount", () => {

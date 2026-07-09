@@ -102,6 +102,7 @@ export type Translations = {
     selectValidContext: string;
     selectValidMode: string;
     amountPositive: string;
+    amountTooLarge: string;
     updateError: string;
     deleteError: string;
     tooManyAttempts: string;
