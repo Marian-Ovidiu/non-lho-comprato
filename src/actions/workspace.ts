@@ -2,7 +2,7 @@
 
 import { getActionTranslations } from "@/src/lib/i18n/server";
 import type { Translations } from "@/src/lib/i18n";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { cookies } from "next/headers";
 import { unstable_rethrow } from "next/navigation";
 
@@ -23,6 +23,11 @@ import {
 import { isSupportedCurrency } from "@/src/lib/workspace-currency";
 import { isSupportedLanguage } from "@/src/lib/workspace-language";
 import { isSupportedTimezone } from "@/src/lib/workspace-timezone";
+import { DEFAULT_WORKSPACE_TIMEZONE } from "@/src/lib/workspace-dates";
+import {
+  reanchorEntryDatesSql,
+  reanchorHabitOccurrenceDatesSql,
+} from "@/src/features/workspaces/timezone-reanchor";
 import {
   buildAbsoluteAppUrl,
   generateInviteToken,
@@ -491,12 +496,36 @@ export async function updateWorkspaceTimezoneAction(
 
   try {
     const workspaceId = await getCurrentWorkspaceId();
-
-    await prisma.workspace.update({
+    const existing = await prisma.workspace.findUnique({
       where: { id: workspaceId },
-      data: { timezone },
+      select: { timezone: true },
     });
+    const previousTimezone = existing?.timezone ?? DEFAULT_WORKSPACE_TIMEZONE;
 
+    if (previousTimezone === timezone) {
+      return { success: true, message: "Fuso orario aggiornato." };
+    }
+
+    // Entry.date/HabitOccurrence.date store midnight of the calendar day in the
+    // workspace timezone. Changing the timezone without re-anchoring would shift
+    // every existing row to a different day (and legacy UTC-midnight rows would
+    // land a day off in negative-offset zones). Rewrite them to preserve the day
+    // and update the timezone atomically.
+    await prisma.$transaction([
+      prisma.$executeRaw(
+        reanchorEntryDatesSql(workspaceId, previousTimezone, timezone),
+      ),
+      prisma.$executeRaw(
+        reanchorHabitOccurrenceDatesSql(workspaceId, previousTimezone, timezone),
+      ),
+      prisma.workspace.update({
+        where: { id: workspaceId },
+        data: { timezone },
+      }),
+    ]);
+
+    updateTag(`entries:${workspaceId}`);
+    updateTag(`goals:${workspaceId}`);
     revalidatePath("/", "layout");
 
     return { success: true, message: "Fuso orario aggiornato." };

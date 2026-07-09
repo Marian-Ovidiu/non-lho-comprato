@@ -7,7 +7,41 @@ import {
   getDateKey,
   isDateKey,
   parseWorkspaceDateKey,
+  reanchorDateToTimezone,
 } from "@/src/lib/workspace-dates";
+
+const ROME = "Europe/Rome";
+const NEW_YORK = "America/New_York";
+
+describe("reanchorDateToTimezone", () => {
+  const canonicalRome = parseWorkspaceDateKey("2026-01-15", ROME)!;
+  // Legacy rows (pre-normalization) stored UTC midnight instead of local.
+  const legacyUtcMidnight = new Date("2026-01-15T00:00:00.000Z");
+
+  it("is a no-op for a canonical value that stays in the same timezone", () => {
+    const result = reanchorDateToTimezone(canonicalRome, ROME, ROME);
+    assert.equal(result?.getTime(), canonicalRome.getTime());
+  });
+
+  it("canonicalizes a legacy UTC-midnight row to the same local day", () => {
+    const result = reanchorDateToTimezone(legacyUtcMidnight, ROME, ROME);
+    assert.equal(getDateKey(result!, ROME), "2026-01-15");
+    assert.equal(result?.getTime(), canonicalRome.getTime());
+  });
+
+  it("preserves the calendar day when moving to a negative-offset timezone", () => {
+    const canonical = reanchorDateToTimezone(canonicalRome, ROME, NEW_YORK);
+    const legacy = reanchorDateToTimezone(legacyUtcMidnight, ROME, NEW_YORK);
+
+    // Both must still read as Jan 15 in New York (a naive re-bucket would push
+    // the legacy row back to Jan 14).
+    assert.equal(getDateKey(canonical!, NEW_YORK), "2026-01-15");
+    assert.equal(getDateKey(legacy!, NEW_YORK), "2026-01-15");
+    // And the result is the canonical New York midnight of that day.
+    assert.equal(canonical?.getTime(), parseWorkspaceDateKey("2026-01-15", NEW_YORK)!.getTime());
+    assert.equal(legacy?.getTime(), parseWorkspaceDateKey("2026-01-15", NEW_YORK)!.getTime());
+  });
+});
 
 describe("isDateKey", () => {
   it("accepts calendar-day keys as sent by <input type=\"date\">", () => {

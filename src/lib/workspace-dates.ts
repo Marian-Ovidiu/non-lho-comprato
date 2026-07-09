@@ -146,6 +146,28 @@ export function parseWorkspaceDateKey(
   return getMidnightUtc(parts, timeZone);
 }
 
+/**
+ * Re-anchors a midnight-convention date to a new workspace timezone, preserving
+ * the calendar day it represented under `fromTimeZone`. Used when a workspace
+ * changes timezone so Entry/HabitOccurrence dates keep landing on the same day
+ * (and legacy UTC-midnight rows are canonicalized in the process). Returns null
+ * when the stored value has no resolvable day. This is the JS reference the SQL
+ * re-anchor in features/workspaces/timezone-reanchor mirrors.
+ */
+export function reanchorDateToTimezone(
+  date: Date,
+  fromTimeZone: string,
+  toTimeZone: string,
+): Date | null {
+  const dayKey = getDateKey(date, fromTimeZone);
+
+  if (!dayKey) {
+    return null;
+  }
+
+  return parseWorkspaceDateKey(dayKey, toTimeZone);
+}
+
 export function getDateParts(date: Date, timeZone: string): DateParts {
   const parts = getTimeZoneParts(date, timeZone);
 
