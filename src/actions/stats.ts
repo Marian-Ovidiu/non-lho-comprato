@@ -463,32 +463,35 @@ async function getHabitStatsForWorkspace(
   return buildHabitStatsFromRows(rows);
 }
 
-async function getHabitStatsFromMembers(
-  memberUserId: string | undefined,
-): Promise<HabitStatsItem[]> {
-  try {
-    const workspaceId = await getCurrentWorkspaceId();
-    return await getHabitStatsForWorkspace(workspaceId, memberUserId);
-  } catch (error) {
-    logAndRethrowDataLoadError("Failed to load habit stats", error);
-  }
-}
+type StatsQueryResults = {
+  allTimeOverview: StatsOverview;
+  periodOverview: StatsOverview;
+  allTimeMonthlyStats: MonthlyStatsItem[];
+  periodMonthlyStats: MonthlyStatsItem[];
+  categoryStats: CategoryStatsItem[];
+  monthlyCategoryRows: Array<StatsCategoryMetricRow & { month: string }>;
+  topSavings: TopSavingsItem[];
+  dailyRows: StatsDailySpendingMetricRow[];
+  habitStats: HabitStatsItem[];
+};
 
-export async function getStatsPageData(
-  memberUserId?: string,
-  options: StatsPageDataOptions = {},
-): Promise<StatsPageData> {
-  const now = options.now ?? new Date();
-  const selectedPeriod = options.period ?? "month";
-  const [timeZone, workspaceId, language] = await Promise.all([
-    getCurrentWorkspaceTimezone(),
-    getCurrentWorkspaceId(),
-    getCurrentWorkspaceLanguage(),
-  ]);
-  const translations = getTranslations(language);
-  const selectedMonthKey = normalizeStatsMonthKey(timeZone, options.selectedMonthKey, now);
-  const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
-  const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
+// The nine aggregation queries behind the stats page, keyed by everything that
+// changes their result. Cached and invalidated by the `entries:<id>` tag that
+// entry mutations already bump, so opening /stats — with or without a ?person
+// filter — no longer re-runs a workspace-wide scan on every render. The
+// `now`-dependent assembly (month options, "so far" daily comparison, translated
+// insights) stays in getStatsPageData: it must not be cached across day/locale.
+async function _cachedStatsQueries(
+  workspaceId: string,
+  memberUserId: string | undefined,
+  timeZone: string,
+  selectedPeriod: StatsPeriod,
+  selectedMonthKey: string,
+): Promise<StatsQueryResults> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
   const periodRange = getStatsPeriodDateRange(
     selectedPeriod,
     selectedMonthKey,
@@ -523,8 +526,54 @@ export async function getStatsPageData(
       timeZone,
       selectedMonthKey,
     ),
-    getHabitStatsFromMembers(memberUserId),
+    getHabitStatsForWorkspace(workspaceId, memberUserId),
   ]);
+
+  return {
+    allTimeOverview,
+    periodOverview,
+    allTimeMonthlyStats,
+    periodMonthlyStats,
+    categoryStats,
+    monthlyCategoryRows,
+    topSavings,
+    dailyRows,
+    habitStats,
+  };
+}
+
+export async function getStatsPageData(
+  memberUserId?: string,
+  options: StatsPageDataOptions = {},
+): Promise<StatsPageData> {
+  const now = options.now ?? new Date();
+  const selectedPeriod = options.period ?? "month";
+  const [timeZone, workspaceId, language] = await Promise.all([
+    getCurrentWorkspaceTimezone(),
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceLanguage(),
+  ]);
+  const translations = getTranslations(language);
+  const selectedMonthKey = normalizeStatsMonthKey(timeZone, options.selectedMonthKey, now);
+  const selectedMonthLabel = getStatsMonthLabel(selectedMonthKey);
+  const selectedYear = getStatsYearFromMonthKey(selectedMonthKey);
+  const {
+    allTimeOverview,
+    periodOverview,
+    allTimeMonthlyStats,
+    periodMonthlyStats,
+    categoryStats,
+    monthlyCategoryRows,
+    topSavings,
+    dailyRows,
+    habitStats,
+  } = await _cachedStatsQueries(
+    workspaceId,
+    memberUserId,
+    timeZone,
+    selectedPeriod,
+    selectedMonthKey,
+  );
   const monthlyCategoryGrouped =
     buildMonthlyCategoryGroupedFromRows(monthlyCategoryRows);
   const insights = [
