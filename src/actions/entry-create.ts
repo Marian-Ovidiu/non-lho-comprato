@@ -16,6 +16,7 @@ import {
   getCurrentWorkspaceScopedWhere,
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
+import { revalidateEntryDependentViews } from "@/src/features/entries/revalidation";
 
 export type CreateEntryResult = {
   success: boolean;
@@ -97,29 +98,8 @@ export type EntryCreateDependencies = {
   getTranslations?: () => Promise<Translations>;
 };
 
-const DEFAULT_INVALIDATION_PATHS = [
-  "/",
-  "/entries",
-  "/stats",
-  "/insights",
-  "/budget",
-  "/workspace/budgets",
-  "/more",
-];
-
 function toDecimalString(value: number): string {
   return value.toFixed(2);
-}
-
-function tryRevalidatePath(
-  path: string,
-  revalidate: (path: string) => unknown,
-): void {
-  try {
-    revalidate(path);
-  } catch (error) {
-    console.warn(`Failed to revalidate ${path}:`, error);
-  }
 }
 
 export async function createEntryFromNormalizedInput(
@@ -247,12 +227,10 @@ export async function createEntryFromNormalizedInput(
       return created;
     });
 
-    for (const path of DEFAULT_INVALIDATION_PATHS) {
-      tryRevalidatePath(path, revalidate);
-    }
-
-    updateCacheTag(`entries:${input.workspaceId}`);
-    updateCacheTag(`goals:${input.workspaceId}`);
+    revalidateEntryDependentViews(input.workspaceId, {
+      revalidatePath: revalidate,
+      updateTag: updateCacheTag,
+    });
 
     return {
       success: true,

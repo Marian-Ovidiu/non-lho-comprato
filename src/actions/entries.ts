@@ -55,6 +55,7 @@ import {
 import { resolveEntryCategory } from "@/src/features/entries/repository";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
+import { revalidateEntryDependentViews } from "@/src/features/entries/revalidation";
 import { prisma } from "@/src/lib/prisma";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import {
@@ -149,14 +150,6 @@ function toDecimalString(value: number): string {
 function toFiniteNumber(value: unknown) {
   const amount = Number(value);
   return Number.isFinite(amount) ? amount : 0;
-}
-
-function tryRevalidatePath(path: string) {
-  try {
-    revalidatePath(path);
-  } catch (error) {
-    console.warn(`Failed to revalidate ${path}:`, error);
-  }
 }
 
 function logEntryLoadError(
@@ -731,7 +724,7 @@ export async function createEntry(
       },
       {
         prisma,
-        revalidatePath: tryRevalidatePath,
+        revalidatePath,
         updateTag,
       },
     );
@@ -895,18 +888,7 @@ export async function updateEntry(
       });
     });
 
-    tryRevalidatePath("/");
-    tryRevalidatePath("/entries");
-    tryRevalidatePath("/stats");
-    tryRevalidatePath("/insights");
-    tryRevalidatePath("/habits");
-    tryRevalidatePath("/goals");
-    tryRevalidatePath("/reports/monthly");
-    tryRevalidatePath("/budget");
-    tryRevalidatePath("/workspace/budgets");
-    tryRevalidatePath("/more");
-    updateTag(`entries:${workspaceId}`);
-    updateTag(`goals:${workspaceId}`);
+    revalidateEntryDependentViews(workspaceId, { revalidatePath, updateTag });
 
     return {
       success: true,
@@ -994,18 +976,7 @@ export async function deleteEntry(entryId: string): Promise<DeleteEntryResult> {
       });
     }
 
-    tryRevalidatePath("/");
-    tryRevalidatePath("/entries");
-    tryRevalidatePath("/stats");
-    tryRevalidatePath("/insights");
-    tryRevalidatePath("/habits");
-    tryRevalidatePath("/goals");
-    tryRevalidatePath("/reports/monthly");
-    tryRevalidatePath("/budget");
-    tryRevalidatePath("/workspace/budgets");
-    tryRevalidatePath("/more");
-    updateTag(`entries:${workspaceId}`);
-    updateTag(`goals:${workspaceId}`);
+    revalidateEntryDependentViews(workspaceId, { revalidatePath, updateTag });
 
     return {
       success: true,
