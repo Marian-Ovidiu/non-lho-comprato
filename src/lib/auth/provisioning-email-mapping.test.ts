@@ -292,6 +292,56 @@ describe("email-based auth provisioning for Supabase project migration", () => {
     assert.equal(state.createdUsers.length, 0);
   });
 
+  it("keeps the stored email when a matching auth id logs in without one", async () => {
+    resetState({
+      users: [
+        {
+          id: "same-auth-and-app-id",
+          email: "keep@example.com",
+          name: "Name",
+          image: null,
+        },
+      ],
+    });
+
+    const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
+      id: "same-auth-and-app-id",
+      email: null,
+      name: "Name",
+      image: null,
+    });
+
+    // A provider that stops returning the address must not null out identity.
+    assert.equal(user.email, "keep@example.com");
+    assert.equal(state.users[0].email, "keep@example.com");
+  });
+
+  it("normalizes the email on the by-id update path", async () => {
+    resetState({
+      users: [
+        {
+          id: "same-auth-and-app-id",
+          email: "old@example.com",
+          name: "Name",
+          image: null,
+        },
+      ],
+    });
+
+    const user = await ensureAppUserForAuthUser({
+      emailVerified: true,
+      id: "same-auth-and-app-id",
+      email: "  Mixed@Example.COM  ",
+      name: "Name",
+      image: null,
+    });
+
+    // Stored lowercased/trimmed so the case-sensitive email lookups match later.
+    assert.equal(user.email, "mixed@example.com");
+    assert.equal(state.users[0].email, "mixed@example.com");
+  });
+
   it("creates a new User only when neither auth id nor email matches an existing app user", async () => {
     resetState({
       users: [

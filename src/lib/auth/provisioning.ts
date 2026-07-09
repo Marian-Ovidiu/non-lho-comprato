@@ -4,7 +4,8 @@ import { logWorkspaceResolutionSnapshot } from "@/src/lib/workspace-debug";
 const shouldLogPerformance = process.env.NODE_ENV !== "production";
 
 function normalizeEmail(email: string | null | undefined) {
-  return email?.trim().toLowerCase() ?? null;
+  const normalized = email?.trim().toLowerCase();
+  return normalized ? normalized : null;
 }
 
 function logPerformance(label: string, startedAt: number) {
@@ -97,7 +98,10 @@ export async function ensureAppUserForAuthUser(authUser: AuthUserLike) {
         id: authUser.id,
       },
       data: {
-        email: authUser.email,
+        // Normalize the incoming address (the email lookups below are
+        // case-sensitive) and keep the stored one when a later login carries no
+        // email, so a provider that stops returning it can't null out identity.
+        email: normalizeEmail(authUser.email) ?? existingById.email,
         name: authUser.name ?? existingById.name,
         image: authUser.image ?? existingById.image,
       },
