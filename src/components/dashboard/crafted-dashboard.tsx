@@ -520,22 +520,23 @@ function BudgetBlock({
   budget,
   currencySymbol,
 }: {
-  budget: BudgetDashboardSelection["mainBudget"];
+  budget: NonNullable<BudgetDashboardSelection["mainBudget"]>;
   currencySymbol: string;
 }) {
   const formatEUR = useBoundLocale(formatEURBase);
-  const used = budget?.spentAmount ?? PREVIEW.budget.used;
-  const total = budget?.budgetAmount ?? PREVIEW.budget.total;
+  const used = budget.spentAmount;
+  const total = budget.budgetAmount;
   const pct = total > 0 ? Math.round((used / total) * 100) : 0;
-  const remaining = budget?.remainingAmount ?? PREVIEW.budget.total - PREVIEW.budget.used;
-  const daysLeft = budget
-    ? Math.max(0, Math.ceil(((100 - budget.timeProgressPercentage) / 100) * 30))
-    : PREVIEW.budget.daysLeft;
+  const remaining = budget.remainingAmount;
+  const daysLeft = Math.max(
+    0,
+    Math.ceil(((100 - budget.timeProgressPercentage) / 100) * 30),
+  );
   const tone = pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-accent" : "bg-success";
 
   return (
     <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
-      <CardHeader title={budget?.title ?? PREVIEW.budget.label} action="Gestisci" href="/budget#gestione-budget" />
+      <CardHeader title={budget.title} action="Gestisci" href="/budget#gestione-budget" />
       <div className="flex items-end gap-2">
         <Mono className="nlc-num-legible text-[26px] font-semibold leading-none">
           {formatEUR(used, currencySymbol, { decimals: false })}
@@ -700,103 +701,66 @@ export function CraftedDashboard({
 
   const displayMonthSpent = usePreview ? PREVIEW.month.spent : monthRealSpent;
   const displayMonthImpact = usePreview ? PREVIEW.month.impact : monthSaved;
+  // A trend needs a previous month to compare against. With no baseline there is
+  // no delta to show: an invented percentage next to real money reads as real.
   const displayDeltaPct =
     monthDelta !== null && monthRealSpent > 0
       ? Math.round((monthDelta / Math.max(monthRealSpent - monthDelta, 1)) * 1000) / 10
-      : PREVIEW.month.deltaPct;
-  const trendDown = displayDeltaPct <= 0;
-  const sparkValues = monthTrend.length >= 2 ? monthTrend : PREVIEW.month.spark;
+      : null;
+  const trendDown = displayDeltaPct !== null && displayDeltaPct <= 0;
   const displaySpentToday = usePreview ? PREVIEW.today.spent : spentToday;
   const displayImpactToday = usePreview ? PREVIEW.today.impact : netImpactToday;
   const displayEntriesToday = usePreview ? PREVIEW.today.count : entriesTodayCount;
-  const displayCategories =
-    categories.length > 0
-      ? categories.map((category) => ({
-          key: category.slug,
-          label: getLocalizedCategoryName(category.slug, language) ?? category.name,
-          amount: category.spent,
-          count: category.count,
-          pct: category.pct,
-          icon: getCategoryCraftedIcon({ slug: category.slug, name: category.name }),
-        }))
-      : PREVIEW.categories.map((category) => ({
-          ...category,
-          icon: getCategoryCraftedIcon({ slug: category.key, name: category.label }),
-        }));
-  const displayGoals =
-    goals.length > 0
-      ? goals.map((goal) => ({
-          id: goal.id,
-          title: goal.title,
-          current: goal.progressAmount,
-          target: goal.targetAmount,
-          pct: goal.progressPercent,
-          icon: goal.icon,
-          note: goal.note,
-        }))
-      : PREVIEW.goals.map((goal, index) => ({
-          id: `preview-goal-${index}`,
-          title: goal.title,
-          current: goal.current,
-          target: goal.target,
-          pct: Math.round((goal.current / goal.target) * 100),
-          icon: "plane" as CraftedIconName,
-          note: "finanziato dagli evitati",
-        }));
-  const displayEntries: DisplayEntry[] =
-    recentEntries.length > 0
-      ? recentEntries.map((entry) => {
-          const realCost = toFiniteNumber(entry.realCost);
-          const alternativeCost = toFiniteNumber(entry.alternativeCost);
-          const savedAmount = toFiniteNumber(entry.savedAmount);
-          const isAvoided = realCost === 0 && alternativeCost > 0 && savedAmount > 0;
-          const isComparison = !isAvoided && savedAmount !== 0;
+  const displayCategories = categories.map((category) => ({
+    key: category.slug,
+    label: getLocalizedCategoryName(category.slug, language) ?? category.name,
+    amount: category.spent,
+    count: category.count,
+    pct: category.pct,
+    icon: getCategoryCraftedIcon({ slug: category.slug, name: category.name }),
+  }));
+  const displayGoals = goals.map((goal) => ({
+    id: goal.id,
+    title: goal.title,
+    current: goal.progressAmount,
+    target: goal.targetAmount,
+    pct: goal.progressPercent,
+    icon: goal.icon,
+    note: goal.note,
+  }));
+  const displayEntries: DisplayEntry[] = recentEntries.map((entry) => {
+    const realCost = toFiniteNumber(entry.realCost);
+    const alternativeCost = toFiniteNumber(entry.alternativeCost);
+    const savedAmount = toFiniteNumber(entry.savedAmount);
+    const isAvoided = realCost === 0 && alternativeCost > 0 && savedAmount > 0;
+    const isComparison = !isAvoided && savedAmount !== 0;
 
-          return {
-            id: entry.id,
-            title: entry.title,
-            cat:
-              getLocalizedCategoryName(entry.category.slug ?? "", language) ??
-              entry.category.name,
-            amount: realCost,
-            when: formatEntryWhen(entry.date, locale),
-            badge: isAvoided
-              ? ("evitata" as const)
-              : isComparison
-                ? ("confronto" as const)
-                : null,
-            saved: isComparison ? Math.abs(savedAmount) : null,
-            avoided: isAvoided ? Math.abs(savedAmount) : null,
-            icon: getCategoryCraftedIcon(entry.category),
-            href: `/entries/${entry.id}/edit`,
-          };
-        })
-      : PREVIEW.entries.map((entry, index) => ({
-          id: `preview-entry-${index}`,
-          title: entry.title,
-          cat: entry.cat,
-          amount: entry.amount,
-          when: entry.when,
-          badge:
-            entry.badge === "evitata" || entry.badge === "confronto"
-              ? entry.badge
-              : null,
-          saved: entry.saved ?? null,
-          avoided: entry.avoided ?? null,
-          icon: getCategoryCraftedIcon({ slug: entry.cat.toLowerCase(), name: entry.cat }),
-          href: "/entries/new",
-        }));
-  const partner = coupleBalance.counterpartLabel ?? PREVIEW.couple.partner;
-  const coupleAmount = coupleBalance.supported ? coupleBalance.amount : PREVIEW.couple.balance;
-  const coupleIsTheyOwe = coupleBalance.supported
-    ? coupleBalance.status !== "you-owe"
-    : true;
-  const coupleYou = coupleBalance.supported
-    ? Math.max(coupleAmount, 0)
-    : PREVIEW.couple.you;
-  const coupleThem = coupleBalance.supported ? 0 : PREVIEW.couple.them;
-  const recurringTotal = habitsTotal > 0 ? habitsTotal : PREVIEW.recurring.totalToday;
-  const recurringDone = habitsTotal > 0 ? habitsAvoided : PREVIEW.recurring.doneToday;
+    return {
+      id: entry.id,
+      title: entry.title,
+      cat:
+        getLocalizedCategoryName(entry.category.slug ?? "", language) ??
+        entry.category.name,
+      amount: realCost,
+      when: formatEntryWhen(entry.date, locale),
+      badge: isAvoided
+        ? ("evitata" as const)
+        : isComparison
+          ? ("confronto" as const)
+          : null,
+      saved: isComparison ? Math.abs(savedAmount) : null,
+      avoided: isAvoided ? Math.abs(savedAmount) : null,
+      icon: getCategoryCraftedIcon(entry.category),
+      href: `/entries/${entry.id}/edit`,
+    };
+  });
+  // Always set alongside `supported: true` in getHomeDashboardMetrics; the card
+  // below only renders when the balance is supported, so "" is never displayed.
+  const partner = coupleBalance.counterpartLabel ?? "";
+  const coupleAmount = coupleBalance.amount;
+  const coupleIsTheyOwe = coupleBalance.status !== "you-owe";
+  const coupleYou = Math.max(coupleAmount, 0);
+  const coupleThem = 0;
   const canSettleCoupleBalance =
     coupleBalance.supported &&
     coupleBalance.status !== "balanced" &&
@@ -844,14 +808,16 @@ export function CraftedDashboard({
         <section className="nlc-glass-hero mb-3 rounded-[var(--r-sheet)] px-5 pb-5 pt-5">
           <div className="flex items-start justify-between gap-4">
             <Label className="pt-1">{t.dashboard.spentMonth}</Label>
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] border border-line px-2.5 py-1.5 text-[11px] text-muted-foreground">
-              {trendDown ? (
-                <TrendingDown className="size-3.5 text-success" aria-hidden="true" />
-              ) : (
-                <TrendingUp className="size-3.5 text-destructive" aria-hidden="true" />
-              )}
-              <Mono>{displayDeltaPct > 0 ? "+" : "−"}{Math.abs(displayDeltaPct).toLocaleString(locale)}%</Mono>
-            </span>
+            {displayDeltaPct !== null ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] border border-line px-2.5 py-1.5 text-[11px] text-muted-foreground">
+                {trendDown ? (
+                  <TrendingDown className="size-3.5 text-success" aria-hidden="true" />
+                ) : (
+                  <TrendingUp className="size-3.5 text-destructive" aria-hidden="true" />
+                )}
+                <Mono>{displayDeltaPct > 0 ? "+" : "−"}{Math.abs(displayDeltaPct).toLocaleString(locale)}%</Mono>
+              </span>
+            ) : null}
           </div>
           <Mono className="nlc-num-legible mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">
             {formatEUR(displayMonthSpent, currencySymbol)}
@@ -869,13 +835,16 @@ export function CraftedDashboard({
               {formatEUR(displayMonthImpact, currencySymbol, { sign: "auto" })}
             </Mono>
           </div>
-          <Sparkline values={sparkValues} />
-          <Serif className="mt-3 block text-[13px] text-ink-3">
-            {reflection?.text ??
-              (trendDown
+          <Sparkline values={monthTrend} />
+          {reflection?.text ? (
+            <Serif className="mt-3 block text-[13px] text-ink-3">{reflection.text}</Serif>
+          ) : displayDeltaPct !== null ? (
+            <Serif className="mt-3 block text-[13px] text-ink-3">
+              {trendDown
                 ? "Il ritmo del mese sta scendendo, senza confondere spese e impatto."
-                : "Questo mese sta accelerando: tieni d'occhio budget e categorie.")}
-          </Serif>
+                : "Questo mese sta accelerando: tieni d'occhio budget e categorie."}
+            </Serif>
+          ) : null}
           <div className="mt-5 grid grid-cols-3 gap-2 border-t border-line pt-4">
             <div>
               <Label className="mb-2 block">{t.dashboard.spentToday}</Label>
@@ -949,6 +918,7 @@ export function CraftedDashboard({
             </section>
           </div>
 
+          {coupleBalance.supported ? (
           <div className="nlc-parallax col-span-2" data-amt="26">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <Label className="mb-3 block">Con {partner}</Label>
@@ -981,7 +951,9 @@ export function CraftedDashboard({
               />
             </section>
           </div>
+          ) : null}
 
+          {displayCategories.length > 0 ? (
           <div className="nlc-parallax col-span-2" data-amt="30">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <Label className="mb-3 block">Dove stai spendendo</Label>
@@ -1016,14 +988,18 @@ export function CraftedDashboard({
               ))}
             </section>
           </div>
+          ) : null}
 
+          {budgetDashboardState.mainBudget ? (
           <div className="nlc-parallax col-span-2" data-amt="22">
             <BudgetBlock
               budget={budgetDashboardState.mainBudget}
               currencySymbol={currencySymbol}
             />
           </div>
+          ) : null}
 
+          {currentStreak > 0 ? (
           <div className="nlc-parallax" data-amt="18">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
@@ -1032,16 +1008,18 @@ export function CraftedDashboard({
               </div>
               <div className="flex items-baseline gap-1.5">
                 <Mono className="nlc-num-legible text-[28px] font-semibold leading-none">
-                  {currentStreak > 0 ? currentStreak : PREVIEW.streak.days}
+                  {currentStreak}
                 </Mono>
                 <span className="text-xs text-muted-foreground">giorni</span>
               </div>
-              <Serif className="mt-2 block text-xs text-ink-3">
-                {habitsNote ?? PREVIEW.streak.subject}
-              </Serif>
+              {habitsNote ? (
+                <Serif className="mt-2 block text-xs text-ink-3">{habitsNote}</Serif>
+              ) : null}
             </section>
           </div>
+          ) : null}
 
+          {habitsTotal > 0 ? (
           <div className="nlc-parallax" data-amt="34">
             <Link
               href="/habits"
@@ -1050,19 +1028,21 @@ export function CraftedDashboard({
               <div className="mb-3 flex items-center justify-between gap-2">
                 <Label>Ricorrenti oggi</Label>
                 <Mono className="text-[12px] text-muted-foreground">
-                  {recurringDone}/{recurringTotal}
+                  {habitsAvoided}/{habitsTotal}
                 </Mono>
               </div>
               <Mono className="nlc-num-legible block text-[28px] font-semibold leading-none">
-                {Math.max(recurringTotal - recurringDone, 0)}
+                {Math.max(habitsTotal - habitsAvoided, 0)}
               </Mono>
               <ProgressLine
-                value={recurringTotal > 0 ? (recurringDone / recurringTotal) * 100 : 0}
+                value={(habitsAvoided / habitsTotal) * 100}
                 className="mt-4 bg-line-soft"
               />
             </Link>
           </div>
+          ) : null}
 
+          {displayGoals.length > 0 ? (
           <div className="nlc-parallax col-span-2" data-amt="22">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <Label className="mb-3 block">Mete attive</Label>
@@ -1089,7 +1069,9 @@ export function CraftedDashboard({
               ))}
             </section>
           </div>
+          ) : null}
 
+          {displayEntries.length > 0 ? (
           <div className="nlc-parallax col-span-2" data-amt="16">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <div className="mb-2 flex items-end justify-between gap-4">
@@ -1138,6 +1120,7 @@ export function CraftedDashboard({
               ))}
             </section>
           </div>
+          ) : null}
 
           <div className="nlc-parallax col-span-2" data-amt="12">
             <Button
