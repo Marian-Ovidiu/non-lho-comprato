@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useCallback, useEffect, useRef, useState } from "react";
-import { CircleOff, Loader2, Receipt } from "lucide-react";
+import { Loader2, Receipt } from "lucide-react";
 import { useRouter } from "next/navigation";
 
 import { Label } from "@/components/crafted";
@@ -33,7 +33,7 @@ export type CraftedPresetFormInitialValue = {
   note: string;
 };
 
-type PresetIntent = "spent" | "comparison" | "avoided";
+type PresetIntent = "spent" | "comparison";
 
 const initialState: FormState = { success: false, message: "", errors: {} };
 
@@ -53,8 +53,8 @@ function getComparisonFieldError(errors?: Record<string, string>) {
 function getInitialFormValue(
   initialPreset?: CraftedPresetFormInitialValue,
 ): CraftedPresetFormInitialValue {
-  return (
-    initialPreset ?? {
+  if (!initialPreset) {
+    return {
       title: "",
       categoryId: "",
       mode: "spent",
@@ -62,25 +62,30 @@ function getInitialFormValue(
       amountSpent: "",
       comparisonAmount: "",
       note: "",
-    }
-  );
-}
-
-function shouldShowComparison(initialPreset?: CraftedPresetFormInitialValue) {
-  return (
-    initialPreset?.mode === "spent" &&
-    initialPreset.savingContext === "comparison"
-  );
-}
-
-function getPresetIntent(
-  mode: EntryMode,
-  showComparison: boolean,
-): PresetIntent {
-  if (mode === "avoided") {
-    return "avoided";
+    };
   }
 
+  // Presets stored before the real-spend-only rule carry a zero real cost. Reopen
+  // them as a comparison with the spent amount blank: the alternative is still
+  // useful, but saving now requires a real cost the user has actually paid. The
+  // stored preset is left untouched until the user saves.
+  if (initialPreset.mode === "avoided") {
+    return {
+      ...initialPreset,
+      mode: "spent",
+      savingContext: "comparison",
+      amountSpent: "",
+    };
+  }
+
+  return initialPreset;
+}
+
+function shouldShowComparison(initialValue: CraftedPresetFormInitialValue) {
+  return initialValue.savingContext === "comparison";
+}
+
+function getPresetIntent(showComparison: boolean): PresetIntent {
   return showComparison ? "comparison" : "spent";
 }
 
@@ -109,9 +114,8 @@ export function CraftedPresetForm({
   const refresh = useCallback(() => router.refresh(), [router]);
   const initialValue = getInitialFormValue(initialPreset);
   const isEditing = Boolean(initialPreset?.id);
-  const [mode, setMode] = useState<EntryMode>(initialValue.mode);
   const [showComparison, setShowComparison] = useState(
-    shouldShowComparison(initialPreset),
+    shouldShowComparison(initialValue),
   );
   const [title, setTitle] = useState(initialValue.title);
   const [categoryId, setCategoryId] = useState(initialValue.categoryId);
@@ -142,7 +146,6 @@ export function CraftedPresetForm({
     if (!isEditing) {
       frameId = window.requestAnimationFrame(() => {
         formRef.current?.reset();
-        setMode("spent");
         setShowComparison(false);
         setTitle("");
         setCategoryId("");
@@ -161,32 +164,23 @@ export function CraftedPresetForm({
     };
   }, [isEditing, refresh, state]);
 
-  const savingContext: EntrySavingContext =
-    mode === "avoided" ? "comparison" : showComparison ? "comparison" : "none";
-  const presetIntent = getPresetIntent(mode, showComparison);
-  const hiddenAmountSpent =
-    mode === "spent" ? toHiddenMoneyValue(amountSpent) : "";
-  const hiddenComparisonAmount =
-    mode === "avoided" || showComparison ? toHiddenMoneyValue(comparisonAmount) : "";
+  const savingContext: EntrySavingContext = showComparison
+    ? "comparison"
+    : "none";
+  const presetIntent = getPresetIntent(showComparison);
+  const hiddenAmountSpent = toHiddenMoneyValue(amountSpent);
+  const hiddenComparisonAmount = showComparison
+    ? toHiddenMoneyValue(comparisonAmount)
+    : "";
   const primaryFieldError = getPrimaryFieldError(state.errors);
   const comparisonFieldError = getComparisonFieldError(state.errors);
   const comparisonDelta = getMoneyDelta(amountSpent, comparisonAmount);
   const showLargeComparisonWarning =
-    mode === "spent" &&
     showComparison &&
     comparisonAmount.trim().length > 0 &&
     Math.abs(comparisonDelta) >= 100;
 
   function handleIntentChange(nextIntent: PresetIntent) {
-    if (nextIntent === "avoided") {
-      setMode("avoided");
-      setShowComparison(false);
-      setComparisonAmount((current) => current || amountSpent);
-      return;
-    }
-
-    setMode("spent");
-    setAmountSpent((current) => current || comparisonAmount);
     setShowComparison(nextIntent === "comparison");
 
     if (nextIntent === "comparison") {
@@ -196,7 +190,7 @@ export function CraftedPresetForm({
 
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
-      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="mode" value="spent" />
       <input type="hidden" name="savingContext" value={savingContext} />
       {hiddenAmountSpent ? (
         <input type="hidden" name="amountSpent" value={hiddenAmountSpent} />
@@ -226,7 +220,7 @@ export function CraftedPresetForm({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-3 gap-2 border-y border-line py-3">
+      <div className="grid grid-cols-2 gap-2 border-y border-line py-3">
         <button
           type="button"
           onClick={() => handleIntentChange("spent")}
@@ -256,27 +250,11 @@ export function CraftedPresetForm({
           <span className="font-num text-sm" aria-hidden="true">↘</span>
           {t.preset.intentComparison}
         </button>
-        <button
-          type="button"
-          onClick={() => handleIntentChange("avoided")}
-          className={cn(
-            "flex min-h-11 items-center justify-center gap-1.5 border-b px-2 py-2 text-center text-[12.5px] leading-4 transition-colors sm:text-sm",
-            presetIntent === "avoided"
-              ? "border-accent text-foreground"
-              : "border-transparent text-ink-3 hover:text-foreground",
-          )}
-          aria-pressed={presetIntent === "avoided"}
-        >
-          <CircleOff className="size-4" aria-hidden="true" />
-          {t.preset.intentAvoided}
-        </button>
       </div>
       <p className="-mt-2 text-xs leading-5 text-ink-3">
         {presetIntent === "spent"
           ? t.preset.intentSpentDesc
-          : presetIntent === "comparison"
-            ? t.preset.intentComparisonDesc
-            : t.preset.intentAvoidedDesc}
+          : t.preset.intentComparisonDesc}
       </p>
 
       <div className="border-y border-line py-3">
@@ -286,7 +264,7 @@ export function CraftedPresetForm({
             name="title"
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            placeholder={mode === "avoided" ? t.preset.titlePlaceholderAvoided : t.preset.titlePlaceholderSpent}
+            placeholder={t.preset.titlePlaceholderSpent}
             className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
           />
           <Label>{t.preset.titleLabel}</Label>
@@ -325,76 +303,62 @@ export function CraftedPresetForm({
             inputMode="decimal"
             min="0"
             step="0.01"
-            value={mode === "avoided" ? comparisonAmount : amountSpent}
-            onChange={(event) => {
-              if (mode === "avoided") {
-                setComparisonAmount(event.target.value);
-                return;
-              }
-
-              setAmountSpent(event.target.value);
-            }}
-            placeholder={mode === "avoided" ? t.preset.amountPlaceholderAvoided : t.preset.amountPlaceholderSpent}
+            value={amountSpent}
+            onChange={(event) => setAmountSpent(event.target.value)}
+            placeholder={t.preset.amountPlaceholderSpent}
             className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
           />
-          <Label>{mode === "avoided" ? t.preset.wouldHaveSpent : t.preset.amountSpentLabel}</Label>
+          <Label>{t.preset.amountSpentLabel}</Label>
         </label>
-        <FieldError message={mode === "avoided" ? comparisonFieldError : primaryFieldError} />
-        {mode === "avoided" ? (
-          <p className="mt-2 text-xs leading-5 text-ink-3">
-            {t.preset.intentAvoidedDesc}
-          </p>
-        ) : null}
+        <FieldError message={primaryFieldError} />
       </div>
 
-      {mode === "spent" ? (
-        <div className="border-y border-line py-3">
-          <button
-            type="button"
-            onClick={() => {
-              setShowComparison((current) => {
-                if (current) {
-                  return false;
-                }
+      <div className="border-y border-line py-3">
+        <button
+          type="button"
+          onClick={() => {
+            setShowComparison((current) => {
+              if (current) {
+                return false;
+              }
 
-                setComparisonAmount((prev) => prev || amountSpent);
-                return true;
-              });
-            }}
-            className="w-full text-left text-[13px] text-ink-3 transition-colors hover:text-foreground"
-          >
-            {showComparison ? t.preset.hideComparison : t.preset.showComparison}
-          </button>
+              setComparisonAmount((prev) => prev || amountSpent);
+              return true;
+            });
+          }}
+          className="w-full text-left text-[13px] text-ink-3 transition-colors hover:text-foreground"
+        >
+          {showComparison ? t.preset.hideComparison : t.preset.showComparison}
+        </button>
 
-          {showComparison ? (
-            <>
-              <label htmlFor="preset-comparison-amount" className="mt-3 flex items-center justify-between gap-4">
-                <input
-                  id="preset-comparison-amount"
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={comparisonAmount}
-                  onChange={(event) => setComparisonAmount(event.target.value)}
-                  placeholder={t.preset.comparisonPlaceholder}
-                  className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
-                />
-                <Label>{t.preset.comparisonLabel}</Label>
-              </label>
-              <p className="mt-2 text-xs leading-5 text-ink-3">
-                {t.preset.intentComparisonDesc}
+        {showComparison ? (
+          <>
+            <label htmlFor="preset-comparison-amount" className="mt-3 flex items-center justify-between gap-4">
+              <input
+                id="preset-comparison-amount"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                value={comparisonAmount}
+                onChange={(event) => setComparisonAmount(event.target.value)}
+                placeholder={t.preset.comparisonPlaceholder}
+                className="min-w-0 flex-1 bg-transparent font-num text-sm outline-none"
+              />
+              <Label>{t.preset.comparisonLabel}</Label>
+            </label>
+            <p className="mt-2 text-xs leading-5 text-ink-3">
+              {t.preset.intentComparisonDesc}
+            </p>
+            {showLargeComparisonWarning ? (
+              <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
+                {t.preset.largeComparisonWarning}
               </p>
-              {showLargeComparisonWarning ? (
-                <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
-                  {t.preset.largeComparisonWarning}
-                </p>
-              ) : null}
-              <FieldError message={comparisonFieldError} />
-            </>
-          ) : null}
-        </div>
-      ) : null}
+            ) : null}
+            <FieldError message={comparisonFieldError} />
+          </>
+        ) : null}
+      </div>
 
       <div className="border-y border-line py-3">
         <textarea
