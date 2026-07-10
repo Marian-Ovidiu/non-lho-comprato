@@ -22,6 +22,20 @@ export type ResolvedEntryMoney = {
   errors: Record<string, string>;
 };
 
+export type ResolveEntryMoneyOptions = {
+  /**
+   * NLC only records real spending: a saving exists when a real cost is lower
+   * than a concrete alternative. New entries must therefore have realCost > 0,
+   * which makes "avoided" unreachable by construction.
+   *
+   * Entries already stored as avoided predate that rule — habits still generate
+   * them — so updating one must keep working. Callers pass this flag only after
+   * reading `mode` from the stored row, never from the submitted form, so a
+   * "spent" entry can never be converted into an avoided one.
+   */
+  allowExistingAvoided?: boolean;
+};
+
 export function getEntryFormText(formData: FormData, name: string): string {
   const value = formData.get(name);
   return typeof value === "string" ? value.trim() : "";
@@ -145,6 +159,7 @@ function hasTrackerFirstMoneyFields(formData: FormData): boolean {
 function resolveLegacyEntryMoney(
   formData: FormData,
   tr: Translations = it,
+  options: ResolveEntryMoneyOptions = {},
 ): ResolvedEntryMoney {
   const errors: Record<string, string> = {};
   const realCost = getMoney(formData, "realCost", tr.validation);
@@ -152,6 +167,10 @@ function resolveLegacyEntryMoney(
 
   if (realCost.error) {
     errors.realCost = realCost.error;
+  } else if (!options.allowExistingAvoided && realCost.value <= 0) {
+    // Without this guard `toEntryMoneyView` would infer mode "avoided" from a
+    // zero real cost paired with a positive alternative.
+    errors.realCost = tr.validation.amountPositive;
   }
 
   if (alternativeCost.error) {
@@ -184,6 +203,7 @@ function resolveLegacyEntryMoney(
 function resolveTrackerFirstEntryMoney(
   formData: FormData,
   tr: Translations = it,
+  options: ResolveEntryMoneyOptions = {},
 ): ResolvedEntryMoney {
   const errors: Record<string, string> = {};
   const rawMode = getEntryFormText(formData, "mode");
@@ -205,6 +225,15 @@ function resolveTrackerFirstEntryMoney(
     errors.mode = tr.validation.selectValidMode;
   }
 
+  // A new movement always has a real cost. Only an entry already stored as
+  // avoided may be re-saved as such, so history stays editable.
+  const keepsExistingAvoided =
+    mode === "avoided" && options.allowExistingAvoided === true;
+
+  if (mode === "avoided" && !keepsExistingAvoided) {
+    errors.mode = tr.validation.selectValidMode;
+  }
+
   let savingContext: EntrySavingContext =
     rawSavingContext === "comparison" ? "comparison" : "none";
 
@@ -220,15 +249,15 @@ function resolveTrackerFirstEntryMoney(
     errors.savingContext = tr.validation.selectValidContext;
   }
 
-  if (mode === "avoided") {
-    // An avoided entry spends nothing: the only money field is the amount
+  if (keepsExistingAvoided) {
+    // A stored avoided entry spends nothing: the only money field is the amount
     // the user would have spent (comparisonAmount).
     if (!comparisonAmount.provided) {
       errors.comparisonAmount = tr.validation.required;
     } else if (comparisonAmount.value <= 0) {
       errors.comparisonAmount = tr.validation.amountPositive;
     }
-  } else {
+  } else if (mode === "spent") {
     if (!amountSpent.provided) {
       errors.amountSpent = tr.validation.required;
     } else if (amountSpent.value <= 0) {
@@ -264,10 +293,11 @@ function resolveTrackerFirstEntryMoney(
 export function resolveEntryMoneyFromForm(
   formData: FormData,
   tr: Translations = it,
+  options: ResolveEntryMoneyOptions = {},
 ): ResolvedEntryMoney {
   if (hasTrackerFirstMoneyFields(formData)) {
-    return resolveTrackerFirstEntryMoney(formData, tr);
+    return resolveTrackerFirstEntryMoney(formData, tr, options);
   }
 
-  return resolveLegacyEntryMoney(formData, tr);
+  return resolveLegacyEntryMoney(formData, tr, options);
 }

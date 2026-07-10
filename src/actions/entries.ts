@@ -755,7 +755,29 @@ export async function updateEntry(
   const categoryId = getText(formData, "categoryId");
   const note = getText(formData, "note");
   const dateValue = getText(formData, "date");
-  const entryMoney = resolveEntryMoneyFromForm(formData, t);
+
+  // Read the stored mode, never the submitted one: an entry already saved as
+  // avoided stays editable, while a "spent" entry can never be converted into
+  // one. New avoided entries are rejected in resolveEntryMoneyFromForm.
+  let allowExistingAvoided = false;
+
+  if (id) {
+    try {
+      const workspaceId = await getCurrentWorkspaceId();
+      const storedEntry = await prisma.entry.findUnique({
+        where: { id, workspaceId },
+        select: { mode: true },
+      });
+      allowExistingAvoided = storedEntry?.mode === "avoided";
+    } catch (error) {
+      unstable_rethrow(error);
+      allowExistingAvoided = false;
+    }
+  }
+
+  const entryMoney = resolveEntryMoneyFromForm(formData, t, {
+    allowExistingAvoided,
+  });
   let members: WorkspaceMemberOption[] = [];
 
   try {

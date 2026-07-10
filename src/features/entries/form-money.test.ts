@@ -108,9 +108,9 @@ describe("resolveEntryMoneyFromForm", () => {
     assert.equal(result.money?.savedAmount, 7);
   });
 
-  // The create form no longer offers the avoided intent, but habit-generated
-  // avoided entries still exist and must survive the edit form.
-  it("resolves an avoided entry without requiring amountSpent", () => {
+  // NLC only records real spending. "avoided" is no longer creatable from any
+  // user path; it survives only for rows written before this rule.
+  it("rejects a new avoided entry", () => {
     const result = resolveEntryMoneyFromForm(
       formData({
         mode: "avoided",
@@ -120,37 +120,132 @@ describe("resolveEntryMoneyFromForm", () => {
     );
 
     assert.equal(result.usesTrackerFields, true);
-    assert.deepEqual(result.errors, {});
-    assert.equal(result.money?.mode, "avoided");
-    assert.equal(result.money?.savingContext, "comparison");
-    assert.equal(result.money?.realCost, 0);
-    assert.equal(result.money?.alternativeCost, 18);
-    assert.equal(result.money?.savedAmount, 18);
+    assert.equal(result.money, undefined);
+    assert.equal(result.errors.mode, "Seleziona una modalita valida");
   });
 
-  it("requires a positive comparison amount for avoided entries", () => {
-    const missing = resolveEntryMoneyFromForm(
+  it("rejects a zero real cost on the legacy path instead of inferring avoided", () => {
+    const result = resolveEntryMoneyFromForm(
       formData({
-        mode: "avoided",
+        realCost: "0",
+        alternativeCost: "65",
       }),
     );
 
-    assert.equal(missing.money, undefined);
-    assert.equal(missing.errors.comparisonAmount, "Questo campo è obbligatorio");
-    assert.equal(missing.errors.amountSpent, undefined);
+    assert.equal(result.usesTrackerFields, false);
+    assert.equal(result.money, undefined);
+    assert.equal(result.errors.realCost, "L'importo deve essere maggiore di 0");
+  });
 
-    const zero = resolveEntryMoneyFromForm(
+  it("rejects a comparison whose amountSpent is zero", () => {
+    const result = resolveEntryMoneyFromForm(
       formData({
-        mode: "avoided",
-        comparisonAmount: "0",
+        mode: "spent",
+        savingContext: "comparison",
+        amountSpent: "0",
+        comparisonAmount: "28",
       }),
     );
 
-    assert.equal(zero.money, undefined);
-    assert.equal(
-      zero.errors.comparisonAmount,
-      "L'importo deve essere maggiore di 0",
+    assert.equal(result.money, undefined);
+    assert.equal(result.errors.amountSpent, "L'importo deve essere maggiore di 0");
+  });
+
+  it("resolves a comparison where the real cost is lower than the alternative", () => {
+    const result = resolveEntryMoneyFromForm(
+      formData({
+        mode: "spent",
+        savingContext: "comparison",
+        amountSpent: "0.30",
+        comparisonAmount: "1.50",
+      }),
     );
+
+    assert.deepEqual(result.errors, {});
+    assert.equal(result.money?.mode, "spent");
+    assert.equal(result.money?.savingContext, "comparison");
+    assert.equal(result.money?.realCost, 0.3);
+    assert.equal(result.money?.alternativeCost, 1.5);
+    assert.equal(result.money?.savedAmount, 1.2);
+  });
+
+  it("resolves a plain expense with a positive amount", () => {
+    const result = resolveEntryMoneyFromForm(
+      formData({
+        mode: "spent",
+        savingContext: "none",
+        amountSpent: "12.40",
+      }),
+    );
+
+    assert.deepEqual(result.errors, {});
+    assert.equal(result.money?.mode, "spent");
+    assert.equal(result.money?.realCost, 12.4);
+    assert.equal(result.money?.savedAmount, 0);
+  });
+
+  // Habit-generated avoided entries predate the rule and must stay editable.
+  describe("with allowExistingAvoided", () => {
+    it("still resolves an avoided entry without requiring amountSpent", () => {
+      const result = resolveEntryMoneyFromForm(
+        formData({
+          mode: "avoided",
+          savingContext: "comparison",
+          comparisonAmount: "18",
+        }),
+        itDict,
+        { allowExistingAvoided: true },
+      );
+
+      assert.equal(result.usesTrackerFields, true);
+      assert.deepEqual(result.errors, {});
+      assert.equal(result.money?.mode, "avoided");
+      assert.equal(result.money?.savingContext, "comparison");
+      assert.equal(result.money?.realCost, 0);
+      assert.equal(result.money?.alternativeCost, 18);
+      assert.equal(result.money?.savedAmount, 18);
+    });
+
+    it("still requires a positive comparison amount", () => {
+      const missing = resolveEntryMoneyFromForm(
+        formData({ mode: "avoided" }),
+        itDict,
+        { allowExistingAvoided: true },
+      );
+
+      assert.equal(missing.money, undefined);
+      assert.equal(missing.errors.comparisonAmount, "Questo campo è obbligatorio");
+      assert.equal(missing.errors.amountSpent, undefined);
+
+      const zero = resolveEntryMoneyFromForm(
+        formData({ mode: "avoided", comparisonAmount: "0" }),
+        itDict,
+        { allowExistingAvoided: true },
+      );
+
+      assert.equal(zero.money, undefined);
+      assert.equal(
+        zero.errors.comparisonAmount,
+        "L'importo deve essere maggiore di 0",
+      );
+    });
+
+    it("does not let a spent submission become avoided", () => {
+      // The flag mirrors the stored row, so a "spent" entry never passes it.
+      const result = resolveEntryMoneyFromForm(
+        formData({
+          mode: "spent",
+          savingContext: "none",
+          amountSpent: "9",
+        }),
+        itDict,
+        { allowExistingAvoided: true },
+      );
+
+      assert.deepEqual(result.errors, {});
+      assert.equal(result.money?.mode, "spent");
+      assert.equal(result.money?.realCost, 9);
+    });
   });
 
   it("rejects unknown modes", () => {

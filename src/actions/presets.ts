@@ -227,6 +227,10 @@ function resolveLegacyPresetMoney(
 
   if (realCost.error) {
     errors.realCost = realCost.error;
+  } else if (realCost.value <= 0) {
+    // Without this guard `toEntryMoneyView` would infer mode "avoided" from a
+    // zero real cost paired with a positive alternative.
+    errors.realCost = tr.validation.amountPositive;
   }
 
   if (alternativeCost.error) {
@@ -287,13 +291,9 @@ function resolveTrackerFirstPresetMoney(
   }
 
   if (mode === "avoided") {
-    savingContext = "comparison";
-
-    if (!comparisonAmount.provided) {
-      errors.comparisonAmount = tr.validation.required;
-    } else if (comparisonAmount.value <= 0) {
-      errors.comparisonAmount = "L'importo deve essere maggiore di 0";
-    }
+    // A preset seeds a real movement, and a real movement always has a real
+    // cost. Avoided presets can no longer be created nor re-saved.
+    errors.mode = tr.presetActions.selectValidMode;
   } else {
     if (!amountSpent.provided) {
       errors.amountSpent = tr.validation.required;
@@ -720,6 +720,16 @@ export async function createEntryFromPreset(
       return {
         success: false,
         message: t.presetActions.notFound,
+      };
+    }
+
+    // Presets saved before the real-spend-only rule may still carry a zero real
+    // cost. Refuse them here with a message about the amount, instead of letting
+    // createEntry fail later with a generic "check the fields".
+    if (toNumber(preset.realCost) <= 0) {
+      return {
+        success: false,
+        message: t.validation.amountPositive,
       };
     }
 
