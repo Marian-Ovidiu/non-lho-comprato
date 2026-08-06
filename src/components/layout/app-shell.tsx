@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CraftedIcon, Rule } from "@/components/crafted";
+import { CraftedIcon } from "@/components/crafted";
 import { PullToRefresh, ToastProvider } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -225,10 +225,13 @@ export function AppShell({
     <CurrencyProvider currency={currency}>
     <ToastProvider>
       <div className="min-h-[100dvh] bg-background text-foreground">
+        {/* L'header non è una lastra: solo gli elementi, fermi sulla pagina.
+            La leggibilità in scroll la fa .nlc-chrome-veil (scrim nel colore
+            del fondo + blur progressivo mascherato), senza bordi né barra. */}
         <header
           ref={headerRef}
           className={cn(
-            "nlc-glass-chrome sticky top-0 z-30",
+            "nlc-chrome-veil sticky top-0 z-30",
             isHome && "nlc-palette-sage",
           )}
         >
@@ -271,8 +274,6 @@ export function AppShell({
                 />
               ))}
             </nav>
-
-            <Rule />
           </div>
         </header>
 

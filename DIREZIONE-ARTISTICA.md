@@ -84,6 +84,70 @@ delle card scende da 3,2° a 2,1° — oltre i 2 gradi il testo sfoca durante lo
 scroll su mobile e il movimento smette di spiegare la profondità e inizia a
 esibirla. `prefers-reduced-motion` continua a spegnere tutto alla radice.
 
+## L'header: elementi, non barra
+
+L'header è stato l'ultima zona ferma, ed era giusto che lo fosse: il chrome si
+tocca per ultimo perché sbagliarlo si paga su ogni pagina. Ora è cambiato di
+natura: **non è più una lastra, è un gruppo di elementi fermi sulla pagina**.
+Niente vetro, niente riempimento, niente `Rule` di confine — fondersi significa
+nessun confine, e una riga da un pixel sotto un header trasparente è solo il
+fantasma della barra che abbiamo tolto.
+
+### Come si legge in scroll, e perché così
+
+Il problema vero di un header senza sfondo è uno solo: resta fisso, il
+contenuto gli passa dietro, e testo su testo non si legge. Le due strade
+canoniche erano lo scrim in gradiente e il blur progressivo. **Ho preso
+entrambe, perché fanno due lavori diversi e nessuna delle due basta da sola:**
+
+- **Lo scrim è il garante.** Un gradiente che parte dal colore che la pagina
+  ha già (`var(--background)`, quindi giusto su ogni rotta e in ogni tema) e
+  sfuma a zero con una curva a più fermate, senza mai un bordo. Poiché è il
+  colore del fondo, l'occhio non lo registra come sfondo: registra la pagina
+  che continua. Ma è lui che tiene il contrasto AA — con lo scrim all'88% nel
+  tratto dove stanno le scritte, anche il caso peggiore (la CTA lime che
+  scorre sotto il testo chiaro, in scuro) resta sopra la soglia con margine.
+  Il blur da solo questo non lo garantisce: una campitura accesa sfocata
+  resta una campitura accesa.
+- **Il blur è il materiale.** Un `backdrop-filter` mascherato con
+  `mask-image` che sfuma a zero: scioglie il dettaglio del contenuto prima
+  che arrivi sotto le scritte, così lo scrim può restare leggero. Ha una
+  proprietà preziosa: su un fondo liscio — l'aura della dashboard, la carta
+  piatta delle altre pagine — sfocare non cambia nulla. Il velo esiste solo
+  quando serve, che è la definizione di "percettivamente nessuno sfondo".
+  Costo: zero netto. È lo stesso `backdrop-filter` che la vecchia barra
+  usava già; ho solo tolto il suo e messo questo.
+
+Un raffinamento dove il browser lo consente (`animation-timeline: scroll()`,
+spento con `prefers-reduced-motion`): **in cima alla pagina lo scrim è a
+opacità zero** — dietro l'header non passa niente, quindi l'header è
+letteralmente solo elementi, e sulla dashboard la stanza sale fin dentro la
+status bar — e si materializza nei primi 96px di scroll. È il movimento che
+spiega: il velo appare esattamente quando compare la cosa da velare. Dove i
+timeline di scroll non esistono, lo scrim resta semplicemente visibile: la
+base regge da sola.
+
+Entrambi gli strati sporgono di 16px sotto il box dell'header, così le
+sfumature si chiudono fuori dal suo bordo: non c'è nessuna riga in cui
+l'header "finisce". Su ogni rotta funziona per costruzione: sulla dashboard i
+due strati mostrano la stanza, sulle altre pagine si appoggiano al fondo
+piatto e spariscono del tutto.
+
+La barra inferiore resta com'era, di vetro. Non è incoerenza: l'header sta
+*sopra* il contenuto che arriva, la bottom bar sta *sopra* il contenuto a
+metà — sotto di lei passano card intere, e lì una lastra con un bordo è
+sincerità, non decorazione.
+
+### Nota chiusa: il lime del chrome in tema chiaro
+
+Toccando il chrome ho chiuso la prima nota di "Dove vorrei un occhio umano".
+La regola era già scritta nella palette: il lime pieno resta dove il lime è
+campitura (la CTA, il fondo del "+aggiungi"), ma dove il lime è *tratto* —
+la fiamma del brand, la sottolineatura della voce attiva, il pallino della
+tab, l'anello del "+" — in chiaro passa a `--accent-ink`. Un tratto da uno o
+due pixel non ha massa per reggere un colore tenue su carta chiara;
+l'inchiostro sì, e il ruolo (lime = azione) non cambia, cambia solo il peso.
+
 ## Cosa ho deliberatamente non fatto
 
 - **Niente somma di correnti e fisse, da nessuna parte.** Il numero eroe è la
@@ -97,26 +161,30 @@ esibirla. `prefers-reduced-motion` continua a spegnere tutto alla radice.
   scorso" coloravano l'intera lastra (una verde e una arancione affiancate
   urlavano più dell'hero). Ora il materiale resta neutro e il colore va solo
   sul verdetto: etichetta e icona.
-- **Niente ritocco al chrome condiviso** (header, bottom bar): sul tema home
-  eredita la palette via token, ma il suo layout appartiene all'app, non alla
-  dashboard.
+- **Niente ritocco al layout del chrome condiviso** (header, bottom bar): il
+  loro layout appartiene all'app, non alla dashboard. L'header è poi stato
+  sbloccato e ha cambiato materiale (vedi la sezione dedicata), ma la
+  struttura — cosa c'è e in che ordine — non si è mossa.
 - **Nessuna libreria.** Tutto CSS, SVG inline e lucide.
 
 ## Dove vorrei un occhio umano
 
-1. **Il lime dell'attivo nella bottom bar in tema chiaro.** Il pallino e il
-   "+" centrali usano l'accento pieno, che su fondo chiaro è tenue. È chrome
-   condiviso e non l'ho toccato: se dà fastidio, la strada è usare
-   `--accent-ink` anche lì.
-2. **L'ambiente in tema chiaro.** L'ho dimezzato, non spento: sotto la CTA
+1. ~~**Il lime dell'attivo nella bottom bar in tema chiaro.**~~ Chiusa con il
+   lavoro sull'header: in chiaro il lime-tratto del chrome passa a
+   `--accent-ink` (vedi "Nota chiusa" nella sezione dell'header).
+2. **L'ambiente in chiaro sotto il velo dell'header.** Con lo scrim a zero in
+   cima, la status bar in chiaro poggia direttamente sull'aura: a me il
+   contrasto dell'ora e della batteria sembra reggere, ma è da guardare su
+   un telefono vero con la notch.
+3. **L'ambiente in tema chiaro.** L'ho dimezzato, non spento: sotto la CTA
    finale gli orb si vedono come dischi grigi molto tenui. A me sembrano
    carta, a un altro occhio potrebbero sembrare macchie. Il dial è
    `--env-strength` (0.5): un numero solo da girare.
-3. **I centesimi rimpiccioliti** (`,79` a metà corpo). Sono convinto della
+4. **I centesimi rimpiccioliti** (`,79` a metà corpo). Sono convinto della
    gerarchia, ma è il tipo di scelta che un utente può leggere come "sta
    nascondendo i centesimi". Se in uso reale disturba, il componente `Amount`
    ha un solo posto da cui tornare indietro.
-4. **La soglia d'ambra dei budget** (70% globale, 80% categoria): l'ho
+5. **La soglia d'ambra dei budget** (70% globale, 80% categoria): l'ho
    ereditata dalle soglie esistenti, ma ora che l'ambra è un colore dedicato
    la soglia è più visibile di prima. Da tarare sull'uso vero.
 
@@ -128,3 +196,9 @@ colore di un'eyebrow non si usa `text-*` ma la variabile `--eyebrow-ink`
 (vedi le card di confronto). I token del materiale (`--sheet-*`, `--plate-*`,
 `--track`, `--env-strength`) vivono dentro `.nlc-palette-sage` con la loro
 variante chiara: un tema nuovo si fa lì, senza toccare i componenti.
+
+Il velo dell'header è `.nlc-chrome-veil` (sempre in `globals.css`, fuori dai
+layer): due pseudo-elementi in `z-index: -1`, scrim su `::after` e blur
+mascherato su `::before`. Prende il colore da `var(--background)`, quindi
+segue rotta e tema da solo; non dargli mai un `background` diretto, o torna
+una barra.
