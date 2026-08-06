@@ -42,6 +42,27 @@ function normalizeBaseUrl(value: string | null | undefined) {
   }
 }
 
+const LOOPBACK_HOSTNAMES = new Set([
+  "localhost",
+  "127.0.0.1",
+  "0.0.0.0",
+  "::1",
+  "[::1]",
+]);
+
+/// Un base URL locale è legittimo in sviluppo e mortale in produzione: i link
+/// di invito vengono condivisi fuori dal dispositivo che li genera, quindi un
+/// host di loopback produce link che non si apriranno mai per il destinatario.
+export function isLoopbackBaseUrl(value: string | null | undefined) {
+  const normalized = normalizeBaseUrl(value);
+  if (!normalized) {
+    return false;
+  }
+
+  const hostname = new URL(normalized).hostname.toLowerCase();
+  return LOOPBACK_HOSTNAMES.has(hostname) || hostname.endsWith(".local");
+}
+
 export function resolveAppBaseUrl({
   appUrl,
   origin,
@@ -53,16 +74,45 @@ export function resolveAppBaseUrl({
   forwardedOrigin?: string | null;
   nodeEnv?: string;
 }) {
+  const isProduction = nodeEnv === "production";
   const canonicalUrl = normalizeBaseUrl(appUrl);
-  if (canonicalUrl) {
+
+  // In produzione il canonical resta l'unica fonte accettata (le intestazioni
+  // di richiesta sono manipolabili), ma un canonical di loopback va trattato
+  // come assente: meglio un errore visibile che un link morto condiviso.
+  if (canonicalUrl && !(isProduction && isLoopbackBaseUrl(canonicalUrl))) {
     return canonicalUrl;
   }
 
-  if (nodeEnv === "production") {
+  if (isProduction) {
     return null;
   }
 
   return normalizeBaseUrl(origin) ?? normalizeBaseUrl(forwardedOrigin);
+}
+
+/// Spiega perché il link non è costruibile, per non lasciare l'utente davanti
+/// a un errore generico su un problema che è solo di configurazione.
+export function describeAppBaseUrlProblem({
+  appUrl,
+  nodeEnv = process.env.NODE_ENV,
+}: {
+  appUrl?: string | null;
+  nodeEnv?: string;
+}) {
+  if (nodeEnv !== "production") {
+    return null;
+  }
+
+  if (!normalizeBaseUrl(appUrl)) {
+    return "NEXT_PUBLIC_APP_URL non è configurato: senza indirizzo pubblico il link di invito non può essere creato.";
+  }
+
+  if (isLoopbackBaseUrl(appUrl)) {
+    return "NEXT_PUBLIC_APP_URL punta a un indirizzo locale: i link generati non si aprirebbero su nessun altro dispositivo.";
+  }
+
+  return null;
 }
 
 export function getInviteExpiresAt(now = new Date()) {

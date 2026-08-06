@@ -32,6 +32,7 @@ import {
   buildAbsoluteAppUrl,
   generateInviteToken,
   getInviteExpiresAt,
+  getInviteLinkConfigProblem,
   getWorkspaceInviteUnavailableMessage,
   getWorkspaceInvitePath,
   hashInviteToken,
@@ -187,7 +188,11 @@ export async function generateOpenInviteAction(): Promise<GenerateOpenInviteResu
     const inviteUrl = await buildAbsoluteAppUrl(invitePath);
 
     if (!inviteUrl) {
-      return { success: false, message: t.workspaceActions.linkBuildFailed };
+      const problem = await getInviteLinkConfigProblem();
+      return {
+        success: false,
+        message: problem ?? t.workspaceActions.linkBuildFailed,
+      };
     }
 
     await prisma.workspaceInvite.create({

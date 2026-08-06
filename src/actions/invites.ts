@@ -13,6 +13,7 @@ import {
   buildAbsoluteAppUrl,
   generateInviteToken,
   getInviteExpiresAt,
+  getInviteLinkConfigProblem,
   getWorkspaceInviteUnavailableMessage,
   getWorkspaceInviteByTokenHash,
   getWorkspaceInvitePath,
@@ -181,10 +182,10 @@ export async function createWorkspaceInviteAction(
     const inviteUrl = await buildAbsoluteAppUrl(invitePath);
 
     if (!inviteUrl) {
+      const problem = await getInviteLinkConfigProblem();
       return {
         success: false,
-        message:
-          t.inviteActions.linkBuildFailed,
+        message: problem ?? t.inviteActions.linkBuildFailed,
       };
     }
 

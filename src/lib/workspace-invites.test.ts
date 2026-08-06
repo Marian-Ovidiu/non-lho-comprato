@@ -2,7 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
+  describeAppBaseUrlProblem,
   getWorkspaceInviteUnavailableMessage,
+  isLoopbackBaseUrl,
   resolveAppBaseUrl,
 } from "@/src/lib/workspace-invite-policy";
 
@@ -39,6 +41,89 @@ describe("resolveAppBaseUrl", () => {
         nodeEnv: "development",
       }),
       "http://localhost:3000",
+    );
+  });
+
+  it("rejects a loopback canonical URL in production", () => {
+    // Un link di invito verso localhost è morto per chiunque lo riceva:
+    // meglio non produrlo affatto che condividerlo senza accorgersene.
+    assert.equal(
+      resolveAppBaseUrl({
+        appUrl: "http://localhost:3000",
+        nodeEnv: "production",
+      }),
+      null,
+    );
+    assert.equal(
+      resolveAppBaseUrl({
+        appUrl: "http://127.0.0.1:3000",
+        nodeEnv: "production",
+      }),
+      null,
+    );
+  });
+
+  it("keeps accepting a loopback canonical URL outside production", () => {
+    assert.equal(
+      resolveAppBaseUrl({
+        appUrl: "http://localhost:3000",
+        nodeEnv: "development",
+      }),
+      "http://localhost:3000",
+    );
+  });
+
+  it("still prefers a valid canonical URL in production", () => {
+    assert.equal(
+      resolveAppBaseUrl({
+        appUrl: "https://app.example.com",
+        origin: "https://attacker.example",
+        nodeEnv: "production",
+      }),
+      "https://app.example.com",
+    );
+  });
+});
+
+describe("isLoopbackBaseUrl", () => {
+  it("recognises loopback and .local hosts", () => {
+    assert.equal(isLoopbackBaseUrl("http://localhost:3000"), true);
+    assert.equal(isLoopbackBaseUrl("http://127.0.0.1"), true);
+    assert.equal(isLoopbackBaseUrl("http://mac-di-marian.local:3000"), true);
+    assert.equal(isLoopbackBaseUrl("https://app.example.com"), false);
+    assert.equal(isLoopbackBaseUrl(""), false);
+    assert.equal(isLoopbackBaseUrl(null), false);
+  });
+});
+
+describe("describeAppBaseUrlProblem", () => {
+  it("explains a missing canonical URL in production", () => {
+    const message = describeAppBaseUrlProblem({ appUrl: "", nodeEnv: "production" });
+    assert.match(String(message), /NEXT_PUBLIC_APP_URL/u);
+  });
+
+  it("explains a loopback canonical URL in production", () => {
+    const message = describeAppBaseUrlProblem({
+      appUrl: "http://localhost:3000",
+      nodeEnv: "production",
+    });
+    assert.match(String(message), /indirizzo locale/u);
+  });
+
+  it("stays quiet outside production", () => {
+    assert.equal(
+      describeAppBaseUrlProblem({ appUrl: "", nodeEnv: "development" }),
+      null,
+    );
+  });
+
+  it("stays quiet when the canonical URL is fine", () => {
+    assert.equal(
+      describeAppBaseUrlProblem({
+        appUrl: "https://app.example.com",
+        nodeEnv: "production",
+      }),
+      null,
     );
   });
 });
