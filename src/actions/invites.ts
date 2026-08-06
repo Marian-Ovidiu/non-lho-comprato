@@ -26,6 +26,7 @@ import {
   requireWorkspaceRole,
   WorkspaceRbacError,
 } from "@/src/features/workspaces/rbac";
+import { resolveInviteTargetWorkspace } from "@/src/features/workspaces/pairing";
 import {
   WORKSPACE_SELECTION_COOKIE,
   getWorkspaceSelectionCookieOptions,
@@ -428,7 +429,7 @@ export async function acceptWorkspaceInviteAction(
     }
 
     const acceptedAt = new Date();
-    await prisma.$transaction(async (tx) => {
+    const target = await prisma.$transaction(async (tx) => {
       const claimedInvite = await tx.workspaceInvite.updateMany({
         where: {
           id: invite.id,
@@ -451,21 +452,42 @@ export async function acceptWorkspaceInviteAction(
         );
       }
 
+      // L'invito nasce dallo spazio privato di chi invita: la coppia si forma
+      // adesso, altrimenti chi accetta finirebbe dentro uno spazio privato
+      // altrui e nessuno dei due avrebbe uno spazio condiviso.
+      const resolved = await resolveInviteTargetWorkspace(tx, {
+        inviteId: invite.id,
+        workspace: invite.workspace!,
+        inviter: {
+          id: invite.createdByUserId,
+          name: invite.createdBy?.name,
+          email: invite.createdBy?.email,
+        },
+        accepter: {
+          id: currentUser.id,
+          name: currentUser.name,
+          email: currentUser.email,
+        },
+        now: acceptedAt,
+      });
+
       await tx.workspaceMember.create({
         data: {
-          workspaceId: invite.workspaceId,
+          workspaceId: resolved.id,
           userId: currentUser.id,
-          role: invite.role,
+          role: resolved.created ? "member" : invite.role,
           lastSelectedAt: acceptedAt,
         },
       });
+
+      return resolved;
     });
 
     const cookieStore = await cookies();
-    await markWorkspaceSelectedForUser(currentUser.id, invite.workspaceId);
+    await markWorkspaceSelectedForUser(currentUser.id, target.id);
     cookieStore.set(
       WORKSPACE_SELECTION_COOKIE,
-      invite.workspaceId,
+      target.id,
       getWorkspaceSelectionCookieOptions(),
     );
 
@@ -477,9 +499,9 @@ export async function acceptWorkspaceInviteAction(
       message: t.inviteActions.accepted,
       status: "accepted",
       workspace: {
-        id: invite.workspace.id,
-        name: invite.workspace.name,
-        kind: invite.workspace.kind,
+        id: target.id,
+        name: target.name,
+        kind: target.kind as InviteWorkspace["kind"],
       },
     };
   } catch (error) {

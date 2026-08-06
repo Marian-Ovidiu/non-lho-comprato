@@ -45,6 +45,7 @@ import {
   requireWorkspaceRole,
   WorkspaceRbacError,
 } from "@/src/features/workspaces/rbac";
+import { resolveInviteTargetWorkspace } from "@/src/features/workspaces/pairing";
 import {
   checkRateLimit,
   getClientIpFromRequestHeaders,
@@ -281,7 +282,12 @@ export async function joinByLinkAction(
 
     const invite = await prisma.workspaceInvite.findUnique({
       where: { tokenHash },
-      include: { workspace: { select: { id: true, name: true, kind: true } } },
+      include: {
+        workspace: {
+          select: { id: true, name: true, kind: true, ownerUserId: true },
+        },
+        createdBy: { select: { id: true, name: true, email: true } },
+      },
     });
 
     if (!invite || !invite.workspace) {
@@ -308,9 +314,14 @@ export async function joinByLinkAction(
       select: { id: true },
     });
 
+    let targetWorkspace = {
+      id: invite.workspace.id,
+      name: invite.workspace.name,
+    };
+
     if (!existing) {
       const acceptedAt = new Date();
-      await prisma.$transaction(async (tx) => {
+      targetWorkspace = await prisma.$transaction(async (tx) => {
         const claimedInvite = await tx.workspaceInvite.updateMany({
           where: {
             id: invite.id,
@@ -333,29 +344,43 @@ export async function joinByLinkAction(
           );
         }
 
+        const resolved = await resolveInviteTargetWorkspace(tx, {
+          inviteId: invite.id,
+          workspace: invite.workspace!,
+          inviter: {
+            id: invite.createdByUserId,
+            name: invite.createdBy?.name,
+            email: invite.createdBy?.email,
+          },
+          accepter: { id: user.id, name: user.name, email: user.email },
+          now: acceptedAt,
+        });
+
         await tx.workspaceMember.create({
           data: {
-            workspaceId: invite.workspaceId,
+            workspaceId: resolved.id,
             userId: user.id,
-            role: invite.role,
-            lastSelectedAt: new Date(),
+            role: resolved.created ? "member" : invite.role,
+            lastSelectedAt: acceptedAt,
           },
         });
+
+        return { id: resolved.id, name: resolved.name };
       });
     }
 
-    await markWorkspaceSelectedForUser(user.id, invite.workspaceId);
+    await markWorkspaceSelectedForUser(user.id, targetWorkspace.id);
 
     const cookieStore = await cookies();
     cookieStore.set(
       WORKSPACE_SELECTION_COOKIE,
-      invite.workspaceId,
+      targetWorkspace.id,
       getWorkspaceSelectionCookieOptions(),
     );
 
     revalidatePath("/", "layout");
 
-    return { success: true, message: t.workspaceActions.joined, workspaceName: invite.workspace.name };
+    return { success: true, message: t.workspaceActions.joined, workspaceName: targetWorkspace.name };
   } catch (error) {
     unstable_rethrow(error);
     if (error instanceof WorkspaceRbacError) {
