@@ -108,12 +108,16 @@ export type CraftedDashboardProps = {
   budgetDashboardState: BudgetDashboardSelection;
 };
 
+/**
+ * Scala categorica dei grafici: la distribuzione per categoria è un dato, non
+ * un giudizio, quindi non tocca né il lime (azione) né i colori sotto/sforato.
+ */
 const CATEGORY_COLORS = [
-  "bg-accent",
-  "bg-destructive",
-  "bg-success",
-  "bg-foreground/60",
-  "bg-ink-3",
+  "bg-chart-1",
+  "bg-chart-2",
+  "bg-chart-3",
+  "bg-chart-4",
+  "bg-chart-5",
 ] as const;
 
 const INITIAL_SETTLEMENT_STATE: SettlementActionResult = {
@@ -136,6 +140,64 @@ function formatEURBase(
   return `${sign}${currencySymbol}${formatted}`;
 }
 
+/**
+ * Etichetta di sezione della dashboard: stessa Label dell'app, ma con la
+ * variante `.nlc-eyebrow` — corpo 11px, tracking più stretto e colore un
+ * gradino sopra, perché il maiuscoletto originale su vetro non reggeva.
+ */
+function Eyebrow({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return <Label className={cn("nlc-eyebrow", className)}>{children}</Label>;
+}
+
+/**
+ * Importo con gerarchia interna: simbolo di valuta e centesimi arretrano,
+ * gli euro comandano. I centesimi sono contesto, non decisione — ma restano,
+ * perché su un'app di soldi "circa" non è una risposta.
+ */
+function Amount({
+  value,
+  currencySymbol,
+  decimals = true,
+  className,
+}: {
+  value: number;
+  currencySymbol: string;
+  decimals?: boolean;
+  className?: string;
+}) {
+  const language = useWorkspaceLanguage();
+  const locale = languageToLocale(language);
+  const parts = new Intl.NumberFormat(locale, {
+    minimumFractionDigits: decimals ? 2 : 0,
+    maximumFractionDigits: decimals ? 2 : 0,
+  }).formatToParts(Math.abs(value));
+  const integer = parts
+    .filter((part) => part.type !== "decimal" && part.type !== "fraction")
+    .map((part) => part.value)
+    .join("");
+  const decimalSeparator = parts.find((part) => part.type === "decimal")?.value;
+  const fraction = parts.find((part) => part.type === "fraction")?.value;
+
+  return (
+    <span className={cn("nlc-amount font-num", className)}>
+      <span className="nlc-currency">{currencySymbol}</span>
+      {integer}
+      {fraction ? (
+        <span className="nlc-cents">
+          {decimalSeparator}
+          {fraction}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 function CardHeader({
   title,
   action,
@@ -147,7 +209,7 @@ function CardHeader({
 }) {
   return (
     <div className="mb-3 flex items-center justify-between gap-3">
-      <Label>{title}</Label>
+      <Eyebrow>{title}</Eyebrow>
       {action && href ? (
         <Link
           href={href}
@@ -235,7 +297,7 @@ function IconBubble({
   children?: React.ReactNode;
 }) {
   return (
-    <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-white/10 bg-white/[0.06] text-muted-foreground">
+    <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-line-soft bg-foreground/[0.045] text-muted-foreground">
       {Icon ? <Icon className="size-4" aria-hidden="true" /> : children}
     </span>
   );
@@ -318,24 +380,29 @@ function compareSpending(todaySpent: number, reference: number | null) {
 
   const diff = todaySpent - reference;
   if (Math.abs(diff) < 0.01) {
-    return "accent" as const;
+    return "even" as const;
   }
 
-  return diff < 0 ? ("success" as const) : ("destructive" as const);
+  return diff < 0 ? ("under" as const) : ("over" as const);
 }
 
 function ComparisonIcon({ tone }: { tone: ReturnType<typeof compareSpending> }) {
-  if (tone === "muted" || tone === "accent") {
+  if (tone === "muted" || tone === "even") {
     return <Minus className="size-3.5" aria-hidden="true" />;
   }
 
-  return tone === "success" ? (
+  return tone === "under" ? (
     <TrendingDown className="size-3.5" aria-hidden="true" />
   ) : (
     <TrendingUp className="size-3.5" aria-hidden="true" />
   );
 }
 
+/**
+ * Il materiale resta neutro e il colore va solo sul verdetto (icona +
+ * etichetta): prima l'intera card si tingeva, e due lastre affiancate una
+ * verde e una arancione urlavano più dell'hero.
+ */
 function DailyComparisonCard({
   label,
   todaySpent,
@@ -351,44 +418,42 @@ function DailyComparisonCard({
   emptyLabel: string;
   currencySymbol: string;
 }) {
-  const formatEUR = useBoundLocale(formatEURBase);
   const tone = compareSpending(todaySpent, reference);
 
   return (
-    <div
-      className={cn(
-        "nlc-glass-blur min-h-[118px] rounded-[var(--r-card)] border p-3.5",
-        tone === "success" && "border-success/35 bg-success/[0.14]",
-        tone === "accent" && "border-accent/40 bg-accent/[0.14]",
-        tone === "destructive" && "border-destructive/35 bg-destructive/[0.14]",
-        tone === "muted" && "border-white/10 bg-white/[0.05]",
-      )}
-    >
+    <div className="nlc-glass-card min-h-[118px] rounded-[var(--r-card)] p-4">
       <div
         className={cn(
           "mb-3 flex items-center justify-between gap-2",
-          tone === "success" && "text-success",
-          tone === "accent" && "text-accent",
-          tone === "destructive" && "text-destructive",
-          tone === "muted" && "text-ink-3",
+          tone === "under" && "text-success [--eyebrow-ink:var(--nlc-under)]",
+          tone === "over" && "text-destructive [--eyebrow-ink:var(--nlc-over)]",
+          (tone === "muted" || tone === "even") && "text-ink-3",
         )}
       >
-        <Label>{label}</Label>
+        <Eyebrow>{label}</Eyebrow>
         <ComparisonIcon tone={tone} />
       </div>
       {reference === null ? (
         <Serif className="block text-[13px] leading-4 text-ink-3">{emptyLabel}</Serif>
       ) : (
-        <p className="text-[13px] leading-5 text-muted-foreground">
-          <Mono className="text-foreground">
-            {formatEUR(todaySpent, currencySymbol, { decimals: false })}
-          </Mono>{" "}
-          spesi su{" "}
-          <Mono className="text-foreground">
-            {formatEUR(reference, currencySymbol, { decimals: false })}
-          </Mono>{" "}
-          {referenceLabel}
-        </p>
+        <>
+          <Amount
+            value={todaySpent}
+            currencySymbol={currencySymbol}
+            decimals={false}
+            className="block text-[length:var(--num-mid)] font-semibold"
+          />
+          <p className="mt-1.5 text-[13px] leading-5 text-muted-foreground">
+            su{" "}
+            <Amount
+              value={reference}
+              currencySymbol={currencySymbol}
+              decimals={false}
+              className="text-foreground/90"
+            />{" "}
+            {referenceLabel}
+          </p>
+        </>
       )}
     </div>
   );
@@ -405,14 +470,14 @@ function NextHabitPaymentCard({
   return (
     <Link
       href="/habits"
-      className="nlc-press nlc-glass-tile flex min-h-[88px] items-center gap-3 rounded-[var(--r-card)] p-3.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="nlc-press nlc-glass-card flex min-h-[88px] items-center gap-3 rounded-[var(--r-card)] p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-white/10 bg-white/[0.06] text-muted-foreground">
+      <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-line-soft bg-foreground/[0.045] text-muted-foreground">
         <CraftedIcon name={habit.icon} size={18} />
       </span>
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-center gap-2">
-          <Label>{habit.relativeLabel}</Label>
+          <Eyebrow>{habit.relativeLabel}</Eyebrow>
           <span className="text-[11px] text-ink-3">{habit.shortDate}</span>
         </div>
         <p className="truncate text-[15px] font-medium">{habit.name}</p>
@@ -447,7 +512,14 @@ function BudgetBlock({
   const daysLeft = budget.remainingDays;
   const perDay = budget.dailyRemainingAmount;
   const overspent = remaining < 0;
-  const tone = pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-accent" : "bg-success";
+  // Scala di giudizio dedicata: sotto / in tensione / sforato. Il lime non
+  // compare mai qui — "va bene" e "premi qui" non possono dirsi uguali.
+  const tone =
+    pct >= 90
+      ? "bg-[var(--nlc-over)]"
+      : pct >= 70
+        ? "bg-[var(--nlc-warn)]"
+        : "bg-[var(--nlc-under)]";
 
   return (
     <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
@@ -457,17 +529,18 @@ function BudgetBlock({
       <p className="text-[13px] text-muted-foreground">
         {overspent ? "Sforato di" : "Ti restano"}
       </p>
-      <div className="mt-1 flex items-end gap-2">
-        <Mono
+      <div className="mt-1.5 flex items-baseline gap-2">
+        <Amount
+          value={Math.abs(remaining)}
+          currencySymbol={currencySymbol}
+          decimals={false}
           className={cn(
-            "nlc-num-legible text-[30px] font-semibold leading-none",
+            "text-[length:var(--num-lead)] font-semibold",
             overspent && "text-destructive",
           )}
-        >
-          {formatEUR(Math.abs(remaining), currencySymbol, { decimals: false })}
-        </Mono>
+        />
         {!overspent && daysLeft > 0 ? (
-          <span className="pb-0.5 text-[13px] text-ink-3">
+          <span className="text-[13px] text-ink-3">
             per {daysLeft} {daysLeft === 1 ? "giorno" : "giorni"}
           </span>
         ) : null}
@@ -477,7 +550,7 @@ function BudgetBlock({
           {formatEUR(perDay, currencySymbol, { decimals: false })} al giorno
         </Serif>
       ) : null}
-      <ProgressLine value={pct} className="mt-4 bg-line-soft" indicatorClassName={tone} />
+      <ProgressLine value={pct} className="mt-4 nlc-track" indicatorClassName={tone} />
       <div className="mt-3 flex items-center justify-between gap-3 text-xs">
         <Serif className="text-ink-3">
           {formatEUR(used, currencySymbol, { decimals: false })} di{" "}
@@ -511,7 +584,12 @@ function CategoryBudgetsBlock({
           budget.budgetAmount > 0
             ? Math.round((budget.spentAmount / budget.budgetAmount) * 100)
             : 0;
-        const tone = pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-accent" : "bg-success";
+        const tone =
+          pct >= 100
+            ? "bg-[var(--nlc-over)]"
+            : pct >= 80
+              ? "bg-[var(--nlc-warn)]"
+              : "bg-[var(--nlc-under)]";
 
         return (
           <div key={budget.id}>
@@ -529,7 +607,7 @@ function CategoryBudgetsBlock({
                 {formatEUR(budget.budgetAmount, currencySymbol, { decimals: false })}
               </Mono>
             </div>
-            <ProgressLine value={Math.min(pct, 100)} className="bg-line-soft" indicatorClassName={tone} />
+            <ProgressLine value={Math.min(pct, 100)} className="nlc-track" indicatorClassName={tone} />
             {index < Math.min(budgets.length, 3) - 1 ? <Rule soft /> : null}
           </div>
         );
@@ -581,7 +659,7 @@ function SettlementAction({
         disabled={pending}
         className={cn(
           "nlc-press flex h-11 w-full items-center justify-center gap-2 rounded-[var(--r-cta)]",
-          "border border-accent/35 bg-accent/10 px-4 text-[14px] font-semibold text-accent",
+          "border border-accent/35 bg-accent/10 px-4 text-[14px] font-semibold text-[var(--accent-ink)]",
           "transition-colors hover:bg-accent/15 disabled:pointer-events-none disabled:opacity-60",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         )}
@@ -703,7 +781,7 @@ export function CraftedDashboard({
         {/* Hero — lastra stabile e leggibile, ferma mentre lo sfondo si muove */}
         <section className="nlc-glass-hero mb-3 rounded-[var(--r-sheet)] px-5 pb-5 pt-5">
           <div className="flex items-start justify-between gap-4">
-            <Label className="pt-1">Spesa corrente</Label>
+            <Eyebrow className="pt-1">Spesa corrente</Eyebrow>
             {displayDeltaPct !== null ? (
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] border border-line px-2.5 py-1.5 text-[11px] text-muted-foreground">
                 {trendDown ? (
@@ -715,9 +793,11 @@ export function CraftedDashboard({
               </span>
             ) : null}
           </div>
-          <Mono className="nlc-num-legible mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">
-            {formatEUR(monthCurrentSpent, currencySymbol)}
-          </Mono>
+          <Amount
+            value={monthCurrentSpent}
+            currencySymbol={currencySymbol}
+            className="mt-4 block whitespace-nowrap text-[length:var(--num-hero)] font-semibold"
+          />
           <Serif className="mt-3 block text-[15px] text-muted-foreground">
             {monthLabel.toLowerCase()}
           </Serif>
@@ -735,7 +815,7 @@ export function CraftedDashboard({
                   </p>
                 ) : null}
               </div>
-              <Mono className="nlc-num-legible shrink-0 text-[15px] font-medium text-muted-foreground">
+              <Mono className="nlc-amount shrink-0 text-[15px] font-medium text-muted-foreground">
                 {formatEUR(monthFixedSpent, currencySymbol)}
               </Mono>
             </div>
@@ -757,14 +837,16 @@ export function CraftedDashboard({
           ) : null}
           <div className="mt-5 grid grid-cols-2 gap-2 border-t border-line pt-4">
             <div>
-              <Label className="mb-2 block">{t.dashboard.spentToday}</Label>
-              <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
-                {formatEUR(spentToday, currencySymbol)}
-              </Mono>
+              <Eyebrow className="mb-2 block">{t.dashboard.spentToday}</Eyebrow>
+              <Amount
+                value={spentToday}
+                currencySymbol={currencySymbol}
+                className="block text-[length:var(--num-mid)] font-semibold"
+              />
             </div>
             <div className="border-l border-line pl-3">
-              <Label className="mb-2 block">Movimenti oggi</Label>
-              <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
+              <Eyebrow className="mb-2 block">Movimenti oggi</Eyebrow>
+              <Mono className="nlc-amount block text-[length:var(--num-mid)] font-semibold leading-none">
                 {entriesTodayCount}
               </Mono>
             </div>
@@ -814,7 +896,7 @@ export function CraftedDashboard({
               />
             ) : (
               <div className="nlc-glass-card rounded-[var(--r-card)] p-4">
-                <Label className="mb-2 block">Prossimo pagamento</Label>
+                <Eyebrow className="mb-2 block">Prossimo pagamento</Eyebrow>
                 <Serif className="block text-sm text-ink-3">
                   Nessuna ricorrente attiva con un pagamento previsto.
                 </Serif>
@@ -825,7 +907,7 @@ export function CraftedDashboard({
           {coupleBalance.supported ? (
           <div className="nlc-parallax col-span-2" data-amt="26">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
-              <Label className="mb-3 block">Con {partner}</Label>
+              <Eyebrow className="mb-3 block">Con {partner}</Eyebrow>
               {/* Il saldo è un solo numero con una direzione. La vecchia coppia
                   di colonne "Tu / partner" mostrava sempre 0 per il partner. */}
               <p className="text-[13px] text-muted-foreground">
@@ -835,18 +917,18 @@ export function CraftedDashboard({
                     ? `${partner} ti deve`
                     : `Devi a ${partner}`}
               </p>
-              <Mono
+              <Amount
+                value={coupleYou}
+                currencySymbol={currencySymbol}
                 className={cn(
-                  "nlc-num-legible mt-1 block text-[26px] font-medium leading-none",
+                  "mt-1.5 block text-[length:var(--num-lead)] font-semibold",
                   coupleBalance.status === "balanced"
                     ? "text-muted-foreground"
                     : coupleIsTheyOwe
-                      ? "text-lilac"
+                      ? "text-[var(--lilac-ink)]"
                       : "text-destructive",
                 )}
-              >
-                {formatEUR(coupleYou, currencySymbol)}
-              </Mono>
+              />
               <SettlementAction
                 canSettle={canSettleCoupleBalance}
                 label="Segna come regolato"
@@ -858,7 +940,7 @@ export function CraftedDashboard({
           {displayCategories.length > 0 ? (
           <div className="nlc-parallax col-span-2" data-amt="30">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
-              <Label className="mb-3 block">Dove stai spendendo</Label>
+              <Eyebrow className="mb-3 block">Dove stai spendendo</Eyebrow>
               <div className="mb-4 flex h-1.5 overflow-hidden rounded-full bg-line-soft">
                 {displayCategories.map((category, index) => (
                   <span
@@ -905,7 +987,7 @@ export function CraftedDashboard({
               ancora storico abbastanza, restano le voci di navigazione. */}
           <div className="nlc-parallax col-span-2" data-amt="20">
             <section className="nlc-glass-card rounded-[var(--r-card)] px-4 py-3">
-              <Label className="mb-1 block">Azioni rapide</Label>
+              <Eyebrow className="mb-1 block">Azioni rapide</Eyebrow>
               {shortcuts.length > 0 ? (
                 <>
                   {shortcuts.map((shortcut) => (
@@ -930,11 +1012,11 @@ export function CraftedDashboard({
           <div className="nlc-parallax" data-amt="18">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
-                <Label>Streak</Label>
+                <Eyebrow>Streak</Eyebrow>
                 <CraftedIcon name="flame" size={17} className="text-accent" />
               </div>
               <div className="flex items-baseline gap-1.5">
-                <Mono className="nlc-num-legible text-[28px] font-semibold leading-none">
+                <Mono className="nlc-amount text-[length:var(--num-lead)] font-semibold leading-none">
                   {currentStreak}
                 </Mono>
                 <span className="text-xs text-muted-foreground">giorni</span>
@@ -950,17 +1032,18 @@ export function CraftedDashboard({
               className="nlc-press nlc-glass-card block rounded-[var(--r-card)] p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <div className="mb-3 flex items-center justify-between gap-2">
-                <Label>Ricorrenti oggi</Label>
+                <Eyebrow>Ricorrenti oggi</Eyebrow>
                 <Mono className="text-[12px] text-muted-foreground">
                   {habitsAvoided}/{habitsTotal}
                 </Mono>
               </div>
-              <Mono className="nlc-num-legible block text-[28px] font-semibold leading-none">
+              <Mono className="nlc-amount block text-[length:var(--num-lead)] font-semibold leading-none">
                 {Math.max(habitsTotal - habitsAvoided, 0)}
               </Mono>
               <ProgressLine
                 value={(habitsAvoided / habitsTotal) * 100}
-                className="mt-4 bg-line-soft"
+                className="mt-4 nlc-track"
+                indicatorClassName="bg-[var(--nlc-under)]"
               />
             </Link>
           </div>
@@ -972,7 +1055,7 @@ export function CraftedDashboard({
             <div className="nlc-parallax col-span-2" data-amt="12">
               <Button
                 asChild
-                className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground shadow-[0_10px_26px_-8px_rgba(209,249,117,0.5)] hover:bg-accent-hover"
+                className="nlc-press h-[54px] w-full rounded-[var(--r-cta)] bg-accent text-accent-foreground shadow-[0_12px_28px_-10px_rgba(209,249,117,0.38)] hover:bg-accent-hover"
               >
                 <Link href="/entries/new">
                   <Plus className="size-4" aria-hidden="true" />
