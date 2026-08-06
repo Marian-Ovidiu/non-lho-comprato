@@ -855,8 +855,10 @@ html.nlc-splash-pending #nlc-splash-shell {
   --chart-4: #8a6b1f;
   --chart-5: #6d7a6c;
 
-  --sheet-fill: color-mix(in srgb, #ffffff 84%, transparent);
-  --plate-fill: color-mix(in srgb, #ffffff 74%, transparent);
+  /* Stessa trasparenza del tema scuro (82/70): il vetro deve sembrare lo
+     stesso materiale nei due temi, cambia solo la luce della stanza. */
+  --sheet-fill: color-mix(in srgb, #ffffff 82%, transparent);
+  --plate-fill: color-mix(in srgb, #ffffff 70%, transparent);
   --plate-sheen: linear-gradient(
     177deg,
     rgba(255, 255, 255, 0.5),
