@@ -742,7 +742,14 @@ export function CraftedDashboard({
     coupleAmount > 0;
 
   return (
-    <div ref={rootRef} className="nlc-glass-home nlc-palette-sage relative isolate -mx-4 sm:-mx-6 lg:-mx-8">
+    // I margini negativi annullano il padding del guscio dell'app su tutti e
+    // quattro i lati, così la stanza (aura, orb, onde) corre dalla navbar alla
+    // bottom bar senza tagli; lo stesso spazio rientra come padding, dentro il
+    // vetro, perché l'hero e la CTA conservino il respiro dai bordi.
+    <div
+      ref={rootRef}
+      className="nlc-glass-home nlc-palette-sage relative isolate -mx-4 -mt-4 -mb-[calc(env(safe-area-inset-bottom)+6.5rem)] pt-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:-mx-6 sm:-mt-6 sm:-mb-[calc(env(safe-area-inset-bottom)+2rem)] sm:pt-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:-mx-8"
+    >
       <div
         aria-hidden="true"
         className="nlc-dash-aura pointer-events-none absolute inset-x-0 bottom-0 -z-10"

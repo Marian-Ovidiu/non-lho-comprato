@@ -855,10 +855,11 @@ html.nlc-splash-pending #nlc-splash-shell {
   --chart-4: #8a6b1f;
   --chart-5: #6d7a6c;
 
-  /* Stessa trasparenza del tema scuro (82/70): il vetro deve sembrare lo
-     stesso materiale nei due temi, cambia solo la luce della stanza. */
-  --sheet-fill: color-mix(in srgb, #ffffff 82%, transparent);
-  --plate-fill: color-mix(in srgb, #ffffff 70%, transparent);
+  /* Un gradino più trasparente del tema scuro (77/64 contro 82/70): il vetro
+     bianco su fondo chiaro mostra meno di quello scuro sugli orb accesi, e per
+     sembrare lo stesso materiale deve scoprire di più. */
+  --sheet-fill: color-mix(in srgb, #ffffff 77%, transparent);
+  --plate-fill: color-mix(in srgb, #ffffff 64%, transparent);
   --plate-sheen: linear-gradient(
     177deg,
     rgba(255, 255, 255, 0.5),
