@@ -265,7 +265,8 @@ function useScrollLinkedParallax(
         let progress = (viewport / 2 - center) / viewport;
         progress = Math.max(-1, Math.min(1, progress));
         const amount = Number(card.dataset.amt) || 16;
-        card.style.transform = `perspective(1000px) translateY(${(progress * amount).toFixed(1)}px) rotateX(${(progress * -3.2).toFixed(2)}deg)`;
+        // Tilt contenuto: oltre ~2° il testo sfoca durante lo scroll su mobile.
+        card.style.transform = `perspective(1000px) translateY(${(progress * amount).toFixed(1)}px) rotateX(${(progress * -2.1).toFixed(2)}deg)`;
       }
     };
 
@@ -806,7 +807,7 @@ export function CraftedDashboard({
               perché un affitto segnato il 5 invece che l'11 lo sposta di
               centinaia di euro senza che sia cambiato nulla nei consumi. */}
           {monthFixedSpent > 0 ? (
-            <div className="mt-4 flex items-baseline justify-between gap-3 rounded-[var(--r-control)] border border-line-soft px-3 py-2">
+            <div className="mt-4 flex items-baseline justify-between gap-3 rounded-[var(--r-control)] border border-line-soft bg-foreground/[0.03] px-3 py-2">
               <div className="min-w-0">
                 <p className="text-[13px] text-muted-foreground">Spese fisse</p>
                 {monthFixedItems.length > 0 ? (
@@ -1013,7 +1014,7 @@ export function CraftedDashboard({
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <div className="mb-3 flex items-center justify-between gap-2">
                 <Eyebrow>Streak</Eyebrow>
-                <CraftedIcon name="flame" size={17} className="text-accent" />
+                <CraftedIcon name="flame" size={17} className="text-[var(--accent-ink)]" />
               </div>
               <div className="flex items-baseline gap-1.5">
                 <Mono className="nlc-amount text-[length:var(--num-lead)] font-semibold leading-none">
