@@ -19,6 +19,13 @@ import { cn } from "@/lib/utils";
 import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
 import { languageToLocale } from "@/src/lib/i18n";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
+import {
+  clampRestoredCount,
+  entryAnchorId,
+  isSnapshotUsable,
+  readSnapshot,
+  writeSnapshot,
+} from "@/src/features/entries/list-position";
 
 type EntryItem = {
   id: string;
@@ -302,7 +309,6 @@ export function CraftedEntryList({
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [highlightedRecentEntryIds, setHighlightedRecentEntryIds] = useState<string[]>([]);
-  const initialSearchHandledRef = useRef(false);
   const requestIdRef = useRef(0);
 
   const groups = useMemo(
@@ -326,6 +332,14 @@ export function CraftedEntryList({
     () => [...selectedCategoryIds].sort().join(","),
     [selectedCategoryIds],
   );
+  /**
+   * Firma della vista attualmente a schermo. Confrontarla con quella dei
+   * filtri dice se serve una nuova query, senza dipendere dall'ordine in cui
+   * gli effetti vengono eseguiti: è quello che permette al ripristino di
+   * applicare filtri ed elenco insieme senza farsi sovrascrivere.
+   */
+  const queryKey = `${debouncedSearchValue}|${activeFilterId}|${categoryFilterKey}`;
+  const loadedQueryKeyRef = useRef(queryKey);
 
   useEffect(() => {
     const highlight = getRecentEntryHighlight(entries);
@@ -360,11 +374,14 @@ export function CraftedEntryList({
   }, [searchValue]);
 
   useEffect(() => {
-    if (!initialSearchHandledRef.current) {
-      initialSearchHandledRef.current = true;
+    // L'elenco a schermo corrisponde già a questi filtri: è il primo montaggio,
+    // oppure un ripristino appena concluso. In entrambi i casi rifare la query
+    // servirebbe solo a buttare via quello che c'è.
+    if (loadedQueryKeyRef.current === queryKey) {
       return;
     }
 
+    loadedQueryKeyRef.current = queryKey;
     const currentRequestId = ++requestIdRef.current;
 
     async function runSearch() {
@@ -406,16 +423,9 @@ export function CraftedEntryList({
     }
 
     void runSearch();
-    // selectedCategoryIds è tracciato tramite categoryFilterKey per non
-    // rilanciare la ricerca quando cambia solo l'identità dell'array.
+    // I filtri entrano tramite queryKey, che li riassume tutti in una stringa.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    activeFilterId,
-    categoryFilterKey,
-    debouncedSearchValue,
-    monthKey,
-    t.entries.searchError,
-  ]);
+  }, [monthKey, queryKey, t.entries.searchError]);
 
   async function loadMore() {
     if (!hasMore || !nextCursor) {
@@ -455,6 +465,71 @@ export function CraftedEntryList({
         setIsLoading(false);
       }
     }
+  }
+
+  // Ritorno da un movimento aperto: si rimettono i filtri di prima, si
+  // ricaricano tutte le pagine che erano state caricate e si torna sulla riga
+  // da cui si era usciti.
+  useEffect(() => {
+    const storage = typeof window === "undefined" ? null : window.sessionStorage;
+    const snapshot = readSnapshot(storage);
+
+    if (!isSnapshotUsable(snapshot, monthKey, Date.now())) {
+      return;
+    }
+
+    const currentRequestId = ++requestIdRef.current;
+    const restoredKey = `${snapshot.query}|${snapshot.kind}|${[...snapshot.categoryIds].sort().join(",")}`;
+
+    void (async () => {
+      try {
+        const result = await getEntriesPage({
+          q: snapshot.query,
+          limit: clampRestoredCount(snapshot.loadedCount, PAGE_SIZE),
+          monthKey,
+          kind: snapshot.kind,
+          categoryIds: snapshot.categoryIds,
+        });
+
+        if (requestIdRef.current !== currentRequestId) {
+          return;
+        }
+
+        // Filtri ed elenco vanno applicati nello stesso aggiornamento: separarli
+        // farebbe vedere per un istante i filtri di prima sui movimenti nuovi.
+        loadedQueryKeyRef.current = restoredKey;
+        setSearchValue(snapshot.query);
+        setDebouncedSearchValue(snapshot.query);
+        setActiveFilterId(snapshot.kind);
+        setSelectedCategoryIds(snapshot.categoryIds);
+        setEntries(result.entries);
+        setNextCursor(result.nextCursor);
+        setHasMore(result.hasMore);
+      } catch (error) {
+        // Il ripristino è un miglioramento, non un requisito: se fallisce
+        // resta l'elenco renderizzato dal server.
+        console.error("Failed to restore entries list:", error);
+        return;
+      }
+
+      requestAnimationFrame(() => {
+        document
+          .getElementById(entryAnchorId(snapshot.anchorEntryId))
+          ?.scrollIntoView({ block: "center" });
+      });
+    })();
+  }, [monthKey]);
+
+  function rememberPosition(entryId: string) {
+    writeSnapshot(typeof window === "undefined" ? null : window.sessionStorage, {
+      monthKey,
+      query: debouncedSearchValue,
+      kind: activeFilterId,
+      categoryIds: selectedCategoryIds,
+      loadedCount: entries.length,
+      anchorEntryId: entryId,
+      savedAt: Date.now(),
+    });
   }
 
   function handleSearchChange(value: string) {
@@ -617,6 +692,7 @@ export function CraftedEntryList({
                 <CraftedEntryRow
                   key={entry.id}
                   entry={entry}
+                  onOpen={rememberPosition}
                   className={cn(
                     highlightedRecentEntryIds.includes(entry.id) &&
                       "nlc-row-in nlc-flash",

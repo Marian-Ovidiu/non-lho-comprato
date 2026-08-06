@@ -6,6 +6,7 @@ import Link from "next/link";
 
 import { CraftedIcon, Mono, Rule, Serif, type CraftedIconName } from "@/components/crafted";
 import { cn } from "@/lib/utils";
+import { entryAnchorId } from "@/src/features/entries/list-position";
 
 export type EntryKind = "spesa" | "evitata" | "confronto";
 
@@ -26,6 +27,8 @@ type CraftedEntryRowProps = {
   entry: CraftedEntryRowItem;
   className?: string;
   showDivider?: boolean;
+  /** Chiamato all'apertura, per ricordare da quale riga si è usciti. */
+  onOpen?: (entryId: string) => void;
 };
 
 function formatEUR(
@@ -67,15 +70,17 @@ export function CraftedEntryRow({
   entry,
   className,
   showDivider = true,
+  onOpen,
 }: CraftedEntryRowProps) {
   const locale = languageToLocale(useWorkspaceLanguage());
   const isAvoided = entry.kind === "evitata";
   const isComparison = entry.kind === "confronto";
 
   return (
-    <div className={className}>
+    <div className={className} id={entryAnchorId(entry.id)}>
       <Link
         href={`/entries/${entry.id}/edit`}
+        onClick={() => onOpen?.(entry.id)}
         className="nlc-press grid min-h-16 grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-3 outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <span
