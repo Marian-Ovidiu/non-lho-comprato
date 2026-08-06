@@ -5,9 +5,11 @@ process.env.DATABASE_URL ??=
   "postgresql://user:pass@localhost:5432/non_lho_comprato_test";
 
 import {
+  buildEntriesCategoryWhere,
   buildEntriesKindWhere,
   buildEntriesSearchWhere,
   isLikelyImportedNoise,
+  normalizeCategoryIds,
   normalizeSearchQuery,
   parseSimpleAmountQuery,
 } from "@/src/features/entries/search";
@@ -71,6 +73,35 @@ describe("buildEntriesKindWhere", () => {
     assert.deepEqual(buildEntriesKindWhere("spesa"), {
       mode: "spent",
       savingContext: "none",
+    });
+  });
+});
+
+describe("normalizeCategoryIds", () => {
+  it("drops empty values and duplicates", () => {
+    assert.deepEqual(normalizeCategoryIds(), []);
+    assert.deepEqual(normalizeCategoryIds([]), []);
+    assert.deepEqual(normalizeCategoryIds(["  ", ""]), []);
+    assert.deepEqual(normalizeCategoryIds([" cat-1 ", "cat-1", "cat-2"]), [
+      "cat-1",
+      "cat-2",
+    ]);
+  });
+});
+
+describe("buildEntriesCategoryWhere", () => {
+  it("returns an empty filter when nothing is selected", () => {
+    assert.deepEqual(buildEntriesCategoryWhere(), {});
+    assert.deepEqual(buildEntriesCategoryWhere([]), {});
+    assert.deepEqual(buildEntriesCategoryWhere(["  "]), {});
+  });
+
+  it("matches any of the selected categories", () => {
+    assert.deepEqual(buildEntriesCategoryWhere(["cat-1"]), {
+      categoryId: { in: ["cat-1"] },
+    });
+    assert.deepEqual(buildEntriesCategoryWhere(["cat-1", "cat-2", "cat-1"]), {
+      categoryId: { in: ["cat-1", "cat-2"] },
     });
   });
 });

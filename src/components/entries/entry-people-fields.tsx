@@ -69,12 +69,6 @@ export function EntryPeopleFields({
     () => new Set(selectedBeneficiaryUserIds),
     [selectedBeneficiaryUserIds],
   );
-  const expenseHelperText =
-    selectedBeneficiaryUserIds.length === 1
-      ? t.entryForm.appliesToSingle
-      : selectedBeneficiaryUserIds.length > 1
-        ? t.entryForm.appliesToMultiple(selectedBeneficiaryUserIds.length)
-        : null;
   const gridClass = getMemberGridClass(sortedMembers.length);
 
   useEffect(() => {
@@ -109,9 +103,6 @@ export function EntryPeopleFields({
 
       <div className="space-y-2">
         <Label htmlFor="paidByUserId">{t.entryForm.paidByLabel}</Label>
-        <p className="text-xs leading-5 text-muted-text">
-          {t.entryForm.paidByHelp}
-        </p>
         <Select
           name="paidByUserId"
           value={selectedPaidBy}
@@ -140,17 +131,6 @@ export function EntryPeopleFields({
         <legend className="text-sm font-medium text-foreground">
           {t.entryForm.appliesToLabel}
         </legend>
-        <p className="text-xs leading-5 text-muted-text">
-          {t.entryForm.appliesToHelp}
-        </p>
-        {expenseHelperText ? (
-          <p
-            className="text-xs font-medium leading-5 text-foreground"
-            aria-live="polite"
-          >
-            {expenseHelperText}
-          </p>
-        ) : null}
         <div className={cn("grid gap-2", gridClass)}>
           {sortedMembers.map((member) => {
             const id = `beneficiary-${member.userId}`;

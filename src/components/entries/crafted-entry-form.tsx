@@ -459,13 +459,11 @@ function CraftedEntryFormFields({
               </button>
             ) : null}
           </div>
-          <p className="mt-3 text-center text-xs leading-5 text-ink-3">
-            {entryIntent === "spent"
-              ? t.entryForm.spentDesc
-              : entryIntent === "comparison"
-                ? t.entryForm.comparisonDesc
-                : t.entryForm.jointDesc}
-          </p>
+          {entryIntent === "joint" ? (
+            <p className="mt-3 text-center text-xs leading-5 text-ink-3">
+              {t.entryForm.jointDesc}
+            </p>
+          ) : null}
         </div>
 
         <section className="px-5 pb-5 pt-2 text-center">
@@ -487,13 +485,13 @@ function CraftedEntryFormFields({
             </div>
           ) : (
             <>
-              <Serif className="mb-3 text-[16px] text-muted-foreground">
-                {entryIntent === "joint"
-                  ? t.entryForm.registeredJoint
-                  : entryIntent === "comparison"
-                    ? t.entryForm.registeredComparison
-                    : t.entryForm.registeredExpense}
-              </Serif>
+              {entryIntent !== "spent" ? (
+                <Serif className="mb-3 text-[16px] text-muted-foreground">
+                  {entryIntent === "joint"
+                    ? t.entryForm.registeredJoint
+                    : t.entryForm.registeredComparison}
+                </Serif>
+              ) : null}
               <div className="flex items-baseline justify-center gap-2">
                 <Mono className="text-[clamp(3rem,16vw,5rem)] font-semibold leading-[0.9] text-accent">
                   {getSummaryAmount(amountSpentInput)}
@@ -514,7 +512,6 @@ function CraftedEntryFormFields({
         </section>
 
         <div className="px-5 pb-2">
-          <Label className="mb-3 block">{t.entryForm.categoryLabel}</Label>
           <div className="flex gap-5 overflow-x-auto pb-1" role="group" aria-label={t.entryForm.categoryLabel}>
             {categories.map((cat) => {
               const selected = categoryId === cat.id;
@@ -625,9 +622,6 @@ function CraftedEntryFormFields({
                   />
                   <Label>{t.entryForm.comparisonAmountLabel}</Label>
                 </label>
-                <p className="mt-2 text-xs text-ink-3">
-                  {t.entryForm.comparisonHelp}
-                </p>
                 {showLargeComparisonWarning ? (
                   <p className="mt-2 rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
                     {t.entryForm.largeComparisonWarning}

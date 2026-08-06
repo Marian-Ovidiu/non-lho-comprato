@@ -17,7 +17,6 @@ export type CraftedEntryRowItem = {
   icon: CraftedIconName;
   amount: number;
   kind: EntryKind;
-  time: string;
   who?: string | null;
   saved?: number;
   original?: number;
@@ -99,7 +98,7 @@ export function CraftedEntryRow({
             {isComparison ? <KindBadge tone="accent">Confronto</KindBadge> : null}
           </div>
           <p className="mt-1 truncate text-[11px] leading-4 text-ink-3">
-            {entry.cat} · <Mono>{entry.time}</Mono>
+            {entry.cat}
             {entry.who ? <> · {entry.who}</> : null}
           </p>
           {entry.note ? (

@@ -11,6 +11,7 @@ import {
 } from "@/src/features/entries/serialize";
 
 import {
+  buildEntriesCategoryWhere,
   buildEntriesKindWhere,
   buildEntriesSearchWhere,
   isLikelyImportedNoise,
@@ -141,6 +142,7 @@ type EntriesPageOptions = {
   members?: WorkspaceMemberOption[] | Promise<WorkspaceMemberOption[]>;
   monthKey?: string;
   kind?: EntriesKindFilter;
+  categoryIds?: string[];
 };
 
 function toDecimalString(value: number): string {
@@ -288,13 +290,14 @@ export async function getEntriesPage(
         },
       ],
     };
-    const searchWhere = buildEntriesSearchWhere(searchQuery, members);
-    const kindWhere = buildEntriesKindWhere(options?.kind);
+    const extraFilters = [
+      buildEntriesSearchWhere(searchQuery, members),
+      buildEntriesKindWhere(options?.kind),
+      buildEntriesCategoryWhere(options?.categoryIds),
+    ].filter((filter) => Object.keys(filter).length > 0);
     const combinedWhere =
-      Object.keys(searchWhere).length > 0 || Object.keys(kindWhere).length > 0
-        ? {
-            AND: [monthWhere, searchWhere, kindWhere],
-          }
+      extraFilters.length > 0
+        ? { AND: [monthWhere, ...extraFilters] }
         : monthWhere;
 
     const entries = await findEntriesPage(combinedWhere, {

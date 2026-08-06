@@ -49,6 +49,12 @@ type KindFilter = {
   label: string;
 };
 
+type CategoryOption = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
 type CraftedEntryListProps = {
   initialEntries: EntryItem[];
   initialNextCursor: string | null;
@@ -56,6 +62,7 @@ type CraftedEntryListProps = {
   newEntryHref: string;
   monthLabel: string;
   monthKey: string;
+  categories?: CategoryOption[];
   previousMonthSummary?: {
     label: string;
     totalRealSpent: number;
@@ -86,13 +93,6 @@ function formatEUR(value: number, locale: string) {
   return `€${formatted}`;
 }
 
-function formatTime(date: string, locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(date));
-}
-
 function getEntryKind(entry: EntryItem): EntryKind {
   const metrics = calculateEntryMetrics(entry);
 
@@ -121,7 +121,6 @@ function toRowEntry(entry: EntryItem, locale: string, language: string): Crafted
     icon: getCategoryCraftedIcon(entry.category),
     amount: kind === "evitata" ? metrics.avoidedAmount : metrics.spentReal,
     kind,
-    time: formatTime(entry.date, locale),
     who: entry.paidByLabel,
     saved: metrics.comparisonSaved,
     original: metrics.wouldHaveSpent,
@@ -237,13 +236,14 @@ function getRecentEntryHighlight(
 }
 
 function EmptyState({
-  hasSearchTerm,
+  hasActiveFilters,
   newEntryHref,
 }: {
-  hasSearchTerm: boolean;
+  hasActiveFilters: boolean;
   newEntryHref: string;
 }) {
   const t = useTranslations();
+  const hasSearchTerm = hasActiveFilters;
 
   return (
     <div className="px-[var(--sp-page-x)] py-8">
@@ -276,6 +276,7 @@ export function CraftedEntryList({
   newEntryHref,
   monthLabel,
   monthKey,
+  categories = [],
 }: CraftedEntryListProps) {
   const t = useTranslations();
   const language = useWorkspaceLanguage();
@@ -294,6 +295,8 @@ export function CraftedEntryList({
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
   const [activeFilterId, setActiveFilterId] = useState<KindFilter["id"]>("all");
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
+  const [showCategoryFilters, setShowCategoryFilters] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
@@ -307,6 +310,22 @@ export function CraftedEntryList({
     [entries, locale, language],
   );
   const hasSearchTerm = searchValue.trim().length > 0;
+  const hasActiveFilters = hasSearchTerm || selectedCategoryIds.length > 0;
+  const categoryOptions = useMemo(
+    () =>
+      categories
+        .map((category) => ({
+          id: category.id,
+          label: getLocalizedCategoryName(category.slug, language) ?? category.name,
+        }))
+        .sort((left, right) => left.label.localeCompare(right.label, locale)),
+    [categories, language, locale],
+  );
+  // La query si rifà solo quando cambia l'insieme, non l'ordine di selezione.
+  const categoryFilterKey = useMemo(
+    () => [...selectedCategoryIds].sort().join(","),
+    [selectedCategoryIds],
+  );
 
   useEffect(() => {
     const highlight = getRecentEntryHighlight(entries);
@@ -359,6 +378,7 @@ export function CraftedEntryList({
           limit: PAGE_SIZE,
           monthKey,
           kind: activeFilterId,
+          categoryIds: selectedCategoryIds,
         });
 
         if (requestIdRef.current !== currentRequestId) {
@@ -386,7 +406,16 @@ export function CraftedEntryList({
     }
 
     void runSearch();
-  }, [activeFilterId, debouncedSearchValue, monthKey, t.entries.searchError]);
+    // selectedCategoryIds è tracciato tramite categoryFilterKey per non
+    // rilanciare la ricerca quando cambia solo l'identità dell'array.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeFilterId,
+    categoryFilterKey,
+    debouncedSearchValue,
+    monthKey,
+    t.entries.searchError,
+  ]);
 
   async function loadMore() {
     if (!hasMore || !nextCursor) {
@@ -404,6 +433,7 @@ export function CraftedEntryList({
         q: debouncedSearchValue,
         monthKey,
         kind: activeFilterId,
+        categoryIds: selectedCategoryIds,
       });
 
       if (requestIdRef.current !== currentRequestId) {
@@ -435,6 +465,14 @@ export function CraftedEntryList({
     }
   }
 
+  function toggleCategory(categoryId: string) {
+    setSelectedCategoryIds((current) =>
+      current.includes(categoryId)
+        ? current.filter((id) => id !== categoryId)
+        : [...current, categoryId],
+    );
+  }
+
   return (
     <div className="-mx-4 sm:-mx-6 lg:-mx-8">
       <div className="sticky top-14 z-30 border-b border-line bg-background/95 px-[var(--sp-page-x)] py-3 backdrop-blur-md">
@@ -462,14 +500,68 @@ export function CraftedEntryList({
               </button>
             ) : null}
           </div>
-          <button
-            type="button"
-            className="nlc-press flex size-11 shrink-0 items-center justify-center rounded-[var(--r-control)] border border-line text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            aria-label="Filtri"
-          >
-            <SlidersHorizontal className="size-4" aria-hidden="true" />
-          </button>
+          {categoryOptions.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setShowCategoryFilters((current) => !current)}
+              className={cn(
+                "nlc-press relative flex size-11 shrink-0 items-center justify-center rounded-[var(--r-control)] border outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                selectedCategoryIds.length > 0 || showCategoryFilters
+                  ? "border-accent/40 bg-accent/10 text-foreground"
+                  : "border-line text-muted-foreground",
+              )}
+              aria-label="Filtra per categoria"
+              aria-expanded={showCategoryFilters}
+              aria-controls="entries-category-filters"
+            >
+              <SlidersHorizontal className="size-4" aria-hidden="true" />
+              {selectedCategoryIds.length > 0 ? (
+                <Mono className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold leading-none text-background">
+                  {selectedCategoryIds.length}
+                </Mono>
+              ) : null}
+            </button>
+          ) : null}
         </div>
+
+        {showCategoryFilters && categoryOptions.length > 0 ? (
+          <div id="entries-category-filters" className="mt-3">
+            <div className="mb-2 flex items-center justify-between gap-3">
+              <Label>Categorie</Label>
+              {selectedCategoryIds.length > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategoryIds([])}
+                  className="nlc-press rounded-[var(--r-chip)] px-1 text-[12px] font-medium text-ink-3 transition-colors hover:text-foreground"
+                >
+                  Azzera
+                </button>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {categoryOptions.map((category) => {
+                const selected = selectedCategoryIds.includes(category.id);
+
+                return (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => toggleCategory(category.id)}
+                    aria-pressed={selected}
+                    className={cn(
+                      "nlc-press min-h-9 rounded-[var(--r-chip)] border px-3 text-[13px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      selected
+                        ? "border-accent/40 bg-accent/10 text-foreground"
+                        : "border-line bg-transparent text-ink-3 hover:text-foreground",
+                    )}
+                  >
+                    {category.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
 
         <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-0.5">
           {KIND_FILTERS.map((filter) => {
@@ -501,7 +593,7 @@ export function CraftedEntryList({
       ) : null}
 
       {entries.length === 0 ? (
-        <EmptyState hasSearchTerm={hasSearchTerm} newEntryHref={newEntryHref} />
+        <EmptyState hasActiveFilters={hasActiveFilters} newEntryHref={newEntryHref} />
       ) : (
         groups.map((group) => (
           <section key={group.dateKey}>

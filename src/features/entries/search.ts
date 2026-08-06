@@ -139,6 +139,30 @@ export function buildEntriesSearchWhere(
   };
 }
 
+export function normalizeCategoryIds(categoryIds?: string[]): string[] {
+  if (!categoryIds || categoryIds.length === 0) {
+    return [];
+  }
+
+  return [
+    ...new Set(categoryIds.map((id) => id.trim()).filter((id) => id.length > 0)),
+  ];
+}
+
+/// Più categorie selezionate si sommano (OR): l'elenco mostra i movimenti che
+/// appartengono a una qualsiasi di quelle scelte.
+export function buildEntriesCategoryWhere(
+  categoryIds?: string[],
+): Prisma.EntryWhereInput {
+  const ids = normalizeCategoryIds(categoryIds);
+
+  if (ids.length === 0) {
+    return {};
+  }
+
+  return { categoryId: { in: ids } };
+}
+
 export function buildEntriesKindWhere(
   kind?: EntriesKindFilter,
 ): Prisma.EntryWhereInput {

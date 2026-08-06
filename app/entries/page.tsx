@@ -1,5 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 
+import { getWorkspaceCategories } from "@/src/actions/categories";
 import { getDashboardSummary, getEntriesPage } from "@/src/actions/entries";
 import { getMonthlyStats } from "@/src/actions/stats";
 import { CraftedEntryList } from "@/src/components/entries/crafted-entry-list";
@@ -71,13 +72,15 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
   let entriesPage: Awaited<ReturnType<typeof getEntriesPage>> | null = null;
   let monthSummary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
   let monthlyStats: Awaited<ReturnType<typeof getMonthlyStats>> = [];
+  let categories: Awaited<ReturnType<typeof getWorkspaceCategories>> = [];
   let loadError: string | null = null;
 
   try {
-    [entriesPage, monthSummary, monthlyStats] = await Promise.all([
+    [entriesPage, monthSummary, monthlyStats, categories] = await Promise.all([
       getEntriesPage({ limit: 20, members: membersPromise, monthKey: selectedMonthKey }),
       getDashboardSummary(selectedMonthKey),
       getMonthlyStats(),
+      getWorkspaceCategories(),
     ]);
   } catch (error) {
     unstable_rethrow(error);
@@ -137,6 +140,13 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
         newEntryHref={newEntryHref}
         monthLabel={monthLabel}
         monthKey={selectedMonthKey}
+        categories={categories
+          .filter((category) => category.archivedAt == null)
+          .map((category) => ({
+            id: category.id,
+            name: category.name,
+            slug: category.slug,
+          }))}
         previousMonthSummary={
           previousMonth
             ? {
