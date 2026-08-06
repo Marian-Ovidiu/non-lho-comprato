@@ -11,6 +11,11 @@ import {
 } from "@/src/features/entries/serialize";
 
 import {
+  detectFixedExpenses,
+  isFixedExpense,
+  normalizeRecurringTitle,
+} from "@/src/features/entries/fixed-expenses";
+import {
   buildEntriesCategoryWhere,
   buildEntriesKindWhere,
   buildEntriesSearchWhere,
@@ -19,7 +24,7 @@ import {
   type EntriesKindFilter,
 } from "@/src/features/entries/search";
 
-import { toMoneyNumber as toNumber } from "@/src/lib/money-number";
+import { round2, toMoneyNumber as toNumber } from "@/src/lib/money-number";
 
 import { subDays } from "date-fns";
 import { Prisma } from "@/src/lib/generated/prisma/client";
@@ -38,6 +43,7 @@ import {
   type EntryMetricAggregateRow,
 } from "@/src/lib/entry-metrics-query";
 import {
+  getMonthKey,
   getMonthRangeForMonthKey,
   isDateKey,
   normalizeMonthKey,
@@ -87,7 +93,7 @@ type MonthlySummary = {
   totalSaved: number;   // = netImpact (was: raw sum of savedAmount)
   entriesCount: number;
   // Unified metric breakdown
-  ordinarySpent: number;
+  realSpent: number;
   avoidedAmount: number;
   comparisonSaved: number;
   comparisonOverspent: number;
@@ -98,20 +104,6 @@ type MonthlySummary = {
 };
 
 type ExpenseSuggestionRequest = ExpenseSuggestionInput;
-
-type DashboardEntryPreview = {
-  id: string;
-  title: string;
-  category: {
-    name: string;
-    slug: string;
-  };
-  date: Date;
-  realCost: number;
-  savedAmount: number;
-  alternativeCost: number;
-  note: string | null;
-};
 
 type DashboardReflectionEntry = {
   category: {
@@ -125,7 +117,6 @@ type DashboardReflectionEntry = {
 export type DashboardEntrySnapshot = {
   entryCount: number;
   firstEntryDate: Date | null;
-  recentEntries: DashboardEntryPreview[];
   weekEntries: DashboardReflectionEntry[];
 };
 
@@ -387,16 +378,18 @@ async function _cachedDashboardSummary(
       AND e."date" < ${end}
   `);
   const agg = normalizeEntryMetricAggregate(rows[0]);
-  const ordinarySpentRows = await prisma.$queryRaw<Array<{ total: unknown }>>(Prisma.sql`
+  // Soldi realmente usciti nel mese. I movimenti con confronto restano dentro:
+  // segnare che una spesa era più conveniente dell'alternativa non la rende
+  // meno pagata, e escluderli faceva sottostimare il budget.
+  const realSpentRows = await prisma.$queryRaw<Array<{ total: unknown }>>(Prisma.sql`
     SELECT COALESCE(SUM(e."realCost"), 0)::text AS "total"
     FROM "Entry" e
     WHERE e."workspaceId" = ${workspaceId}
       AND e."date" >= ${start}
       AND e."date" < ${end}
       AND e."mode"::text <> 'avoided'
-      AND e."savingContext"::text <> 'comparison'
   `);
-  const ordinarySpent = Number(ordinarySpentRows[0]?.total ?? 0);
+  const realSpent = Number(realSpentRows[0]?.total ?? 0);
 
   if (isWorkspaceDebugEnabled()) {
     const allTimeCount = await prisma.entry.count({ where: { workspaceId } });
@@ -414,7 +407,7 @@ async function _cachedDashboardSummary(
     totalAlternativeCost: agg.totalWouldHaveSpent,
     totalSaved: agg.totalNetImpact,
     entriesCount: agg.entriesCount,
-    ordinarySpent: Number.isFinite(ordinarySpent) ? ordinarySpent : 0,
+    realSpent: Number.isFinite(realSpent) ? realSpent : 0,
     avoidedAmount: agg.totalAvoidedAmount,
     comparisonSaved: agg.totalComparisonSaved,
     comparisonOverspent: agg.totalComparisonOverspent,
@@ -423,6 +416,329 @@ async function _cachedDashboardSummary(
     largeComparisonImpact: agg.largeComparisonImpact,
     ordinaryImpact: agg.ordinaryImpact,
   };
+}
+
+/** Mesi di storico letti per riconoscere le ricorrenti. */
+const FIXED_DETECTION_MONTHS = 7;
+
+export type MonthSpendBreakdown = {
+  /** Soldi realmente usciti nel mese (esclude solo le spese evitate). */
+  realSpent: number;
+  /** Quota già impegnata: affitto, tasse, abbonamenti riconosciuti. */
+  fixedSpent: number;
+  /** Spesa corrente: quella che si decide giorno per giorno. */
+  currentSpent: number;
+  /** Voci fisse riconosciute, per spiegare il numero all'utente. */
+  fixedItems: Array<{ label: string; amount: number }>;
+  /**
+   * Spesa corrente del mese precedente, sullo stesso criterio: è l'unico
+   * confronto onesto, perché il totale si muove col giorno in cui capita
+   * l'affitto invece che con i consumi.
+   */
+  previousCurrentSpent: number | null;
+};
+
+function shiftMonthKey(monthKey: string, months: number): string {
+  const [year, month] = monthKey.split("-").map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(month)) {
+    return monthKey;
+  }
+
+  const shifted = new Date(Date.UTC(year!, month! - 1 + months, 1));
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, "0")}`;
+}
+
+export async function getMonthSpendBreakdown(
+  monthKey?: string,
+): Promise<MonthSpendBreakdown> {
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+
+  return _cachedMonthSpendBreakdown(
+    workspaceId,
+    timeZone,
+    normalizeMonthKey(timeZone, monthKey),
+  );
+}
+
+async function _cachedMonthSpendBreakdown(
+  workspaceId: string,
+  timeZone: string,
+  monthKey: string,
+): Promise<MonthSpendBreakdown> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
+  const { start, end } = getMonthRangeForMonthKey(monthKey, timeZone);
+  const historyStart = new Date(start);
+  historyStart.setUTCMonth(historyStart.getUTCMonth() - FIXED_DETECTION_MONTHS);
+
+  // Una sola lettura copre sia il riconoscimento (serve lo storico) sia il
+  // mese da spezzare, così la home non paga due query.
+  const entries = await prisma.entry.findMany({
+    where: {
+      workspaceId,
+      mode: { not: "avoided" },
+      date: { gte: historyStart, lt: end },
+    },
+    select: {
+      title: true,
+      realCost: true,
+      date: true,
+      categoryId: true,
+      paidByUserId: true,
+    },
+  });
+
+  const samples = entries.map((entry) => ({
+    title: entry.title,
+    amount: toNumber(entry.realCost),
+    monthKey: getMonthKey(entry.date, timeZone),
+    categoryId: entry.categoryId,
+    payerId: entry.paidByUserId,
+  }));
+
+  const detection = detectFixedExpenses(samples, { currentMonthKey: monthKey });
+
+  const previousMonthKey = shiftMonthKey(monthKey, -1);
+  let realSpent = 0;
+  let fixedSpent = 0;
+  let previousCurrent = 0;
+  let previousSeen = false;
+  const fixedTotals = new Map<string, number>();
+
+  for (const sample of samples) {
+    const isFixed = isFixedExpense(sample, detection);
+
+    if (sample.monthKey === previousMonthKey) {
+      previousSeen = true;
+      if (!isFixed) {
+        previousCurrent += sample.amount;
+      }
+      continue;
+    }
+
+    if (sample.monthKey !== monthKey) {
+      continue;
+    }
+
+    realSpent += sample.amount;
+
+    if (isFixed) {
+      fixedSpent += sample.amount;
+      const label = sample.title.trim();
+      fixedTotals.set(label, (fixedTotals.get(label) ?? 0) + sample.amount);
+    }
+  }
+
+  return {
+    realSpent: round2(realSpent),
+    fixedSpent: round2(fixedSpent),
+    currentSpent: round2(realSpent - fixedSpent),
+    fixedItems: [...fixedTotals.entries()]
+      .map(([label, amount]) => ({ label, amount: round2(amount) }))
+      .sort((left, right) => right.amount - left.amount),
+    previousCurrentSpent: previousSeen ? round2(previousCurrent) : null,
+  };
+}
+
+/**
+ * Titoli grezzi che appartengono a una ricorrente fissa riconosciuta. Serve a
+ * chi aggrega in SQL e non può applicare la normalizzazione dei titoli.
+ */
+export async function getFixedExpenseTitles(): Promise<string[]> {
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+
+  return _cachedFixedExpenseTitles(
+    workspaceId,
+    timeZone,
+    normalizeMonthKey(timeZone, undefined),
+  );
+}
+
+async function _cachedFixedExpenseTitles(
+  workspaceId: string,
+  timeZone: string,
+  monthKey: string,
+): Promise<string[]> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
+  const { end } = getMonthRangeForMonthKey(monthKey, timeZone);
+  const historyStart = new Date(end);
+  historyStart.setUTCMonth(historyStart.getUTCMonth() - FIXED_DETECTION_MONTHS - 1);
+
+  const entries = await prisma.entry.findMany({
+    where: {
+      workspaceId,
+      mode: { not: "avoided" },
+      date: { gte: historyStart, lt: end },
+    },
+    select: {
+      title: true,
+      realCost: true,
+      date: true,
+      categoryId: true,
+      paidByUserId: true,
+    },
+  });
+
+  const samples = entries.map((entry) => ({
+    title: entry.title,
+    amount: toNumber(entry.realCost),
+    monthKey: getMonthKey(entry.date, timeZone),
+    categoryId: entry.categoryId,
+    payerId: entry.paidByUserId,
+  }));
+  const detection = detectFixedExpenses(samples, { currentMonthKey: monthKey });
+
+  // Chi aggrega in SQL può filtrare solo per titolo: le voci riconosciute per
+  // firma vengono riportate ai titoli con cui sono state scritte. Basta finché
+  // lo stesso titolo non viene usato anche per una spesa non fissa.
+  return [
+    ...new Set(
+      samples
+        .filter((sample) => isFixedExpense(sample, detection))
+        .map((sample) => sample.title.trim().toLowerCase()),
+    ),
+  ];
+}
+
+export type FrequentEntryShortcut = {
+  title: string;
+  categoryId: string;
+  categoryName: string;
+  categorySlug: string;
+  amount: number;
+  count: number;
+};
+
+const SHORTCUT_WINDOW_DAYS = 90;
+
+/**
+ * Scorciatoie ricavate da ciò che si registra davvero, invece che da preset da
+ * configurare a mano: chiedere all'utente di preparare le proprie scorciatoie
+ * è già chiedergli troppo, e infatti i preset restano vuoti.
+ *
+ * Le fisse sono escluse di proposito: l'affitto non è una spesa che si decide,
+ * e una scorciatoia per registrarlo non serve a nessuno.
+ */
+export async function getFrequentEntryShortcuts(
+  limit = 3,
+): Promise<FrequentEntryShortcut[]> {
+  const [workspaceId, timeZone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+
+  return _cachedFrequentEntryShortcuts(workspaceId, timeZone, limit);
+}
+
+async function _cachedFrequentEntryShortcuts(
+  workspaceId: string,
+  timeZone: string,
+  limit: number,
+): Promise<FrequentEntryShortcut[]> {
+  "use cache";
+  cacheTag(`entries:${workspaceId}`);
+  cacheLife("hours");
+
+  const entries = await prisma.entry.findMany({
+    where: {
+      workspaceId,
+      mode: { not: "avoided" },
+      date: { gte: subDays(new Date(), SHORTCUT_WINDOW_DAYS) },
+    },
+    select: {
+      title: true,
+      realCost: true,
+      date: true,
+      categoryId: true,
+      paidByUserId: true,
+      category: { select: { name: true, slug: true } },
+    },
+  });
+
+  const samples = entries.map((entry) => ({
+    title: entry.title,
+    amount: toNumber(entry.realCost),
+    monthKey: getMonthKey(entry.date, timeZone),
+    categoryId: entry.categoryId,
+    payerId: entry.paidByUserId,
+  }));
+  const detection = detectFixedExpenses(samples, {
+    currentMonthKey: normalizeMonthKey(timeZone, undefined),
+  });
+
+  const groups = new Map<
+    string,
+    {
+      amounts: number[];
+      titles: Map<string, number>;
+      categories: Map<string, { id: string; name: string; slug: string; count: number }>;
+    }
+  >();
+
+  for (const [index, entry] of entries.entries()) {
+    if (isFixedExpense(samples[index]!, detection)) {
+      continue;
+    }
+
+    const key = normalizeRecurringTitle(entry.title);
+    if (!key) {
+      continue;
+    }
+
+    const group = groups.get(key) ?? {
+      amounts: [],
+      titles: new Map<string, number>(),
+      categories: new Map<string, { id: string; name: string; slug: string; count: number }>(),
+    };
+
+    const label = entry.title.trim();
+    group.amounts.push(toNumber(entry.realCost));
+    group.titles.set(label, (group.titles.get(label) ?? 0) + 1);
+
+    const category = group.categories.get(entry.categoryId) ?? {
+      id: entry.categoryId,
+      name: entry.category.name,
+      slug: entry.category.slug,
+      count: 0,
+    };
+    category.count += 1;
+    group.categories.set(entry.categoryId, category);
+    groups.set(key, group);
+  }
+
+  return [...groups.values()]
+    .filter((group) => group.amounts.length >= 3)
+    .map((group) => {
+      const sorted = [...group.amounts].sort((left, right) => left - right);
+      const category = [...group.categories.values()].sort(
+        (left, right) => right.count - left.count,
+      )[0]!;
+      const title = [...group.titles.entries()].sort(
+        (left, right) => right[1] - left[1] || left[0].localeCompare(right[0]),
+      )[0]![0];
+
+      return {
+        title,
+        categoryId: category.id,
+        categoryName: category.name,
+        categorySlug: category.slug,
+        amount: round2(sorted[Math.floor(sorted.length / 2)]!),
+        count: group.amounts.length,
+      };
+    })
+    .sort((left, right) => right.count - left.count || right.amount - left.amount)
+    .slice(0, limit);
 }
 
 export async function getDashboardEntrySnapshot(): Promise<DashboardEntrySnapshot> {
@@ -438,7 +754,7 @@ async function _cachedDashboardEntrySnapshot(workspaceId: string): Promise<Dashb
   const weekStart = subDays(new Date(), 7);
 
   try {
-    const [entryCount, firstEntry, recentEntries, weekEntries] =
+    const [entryCount, firstEntry, weekEntries] =
       await withDatabaseRetry(
         () =>
           Promise.all([
@@ -451,30 +767,6 @@ async function _cachedDashboardEntrySnapshot(workspaceId: string): Promise<Dashb
             { id: "asc" },
           ],
           select: { date: true },
-        }),
-        prisma.entry.findMany({
-          where: { workspaceId },
-          orderBy: [
-            { date: "desc" },
-            { createdAt: "desc" },
-            { id: "desc" },
-          ],
-          take: 3,
-          select: {
-            id: true,
-            title: true,
-            date: true,
-            realCost: true,
-            savedAmount: true,
-            alternativeCost: true,
-            note: true,
-            category: {
-              select: {
-                name: true,
-                slug: true,
-              },
-            },
-          },
         }),
         prisma.entry.findMany({
           where: { workspaceId, date: { gte: weekStart } },
@@ -501,13 +793,6 @@ async function _cachedDashboardEntrySnapshot(workspaceId: string): Promise<Dashb
     return {
       entryCount,
       firstEntryDate: firstEntry?.date ?? null,
-      recentEntries: recentEntries.map((entry) => ({
-        ...entry,
-        note: decryptOptionalText(entry.note),
-        realCost: toFiniteNumber(entry.realCost),
-        savedAmount: toFiniteNumber(entry.savedAmount),
-        alternativeCost: toFiniteNumber(entry.alternativeCost),
-      })),
       weekEntries: weekEntries.map((entry) => ({
         ...entry,
         savedAmount: toFiniteNumber(entry.savedAmount),

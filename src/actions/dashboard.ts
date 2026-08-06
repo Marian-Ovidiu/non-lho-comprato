@@ -4,9 +4,8 @@ import { getDaysInMonth, parseDateKey } from "@/src/lib/workspace-dates";
 import { round2 } from "@/src/lib/money-number";
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 
-import { getDashboardSummary } from "@/src/actions/entries";
+import { getDashboardSummary, getFixedExpenseTitles } from "@/src/actions/entries";
 import { getWorkspaceBudgetsAction } from "@/src/actions/budgets";
-import { getGoalsWithProgress } from "@/src/actions/goals";
 import { getTodayHabitOccurrences } from "@/src/actions/habits";
 import { getCategoryStats, getMonthlyStats } from "@/src/actions/stats";
 import { getGlobalStreak } from "@/src/actions/streaks";
@@ -133,7 +132,6 @@ export async function getHomeDashboardMetrics() {
     loadedSummary,
     loadedTodaySummary,
     loadedWorkspaceBalance,
-    loadedGoals,
     loadedTodayHabits,
     globalStreak,
     loadedMonthlyStats,
@@ -145,7 +143,6 @@ export async function getHomeDashboardMetrics() {
     getDashboardSummary(),
     getTodayDashboardSummary(),
     getWorkspaceBalance(),
-    getGoalsWithProgress(),
     getTodayHabitOccurrences(),
     getGlobalStreak(),
     getMonthlyStats(),
@@ -159,16 +156,10 @@ export async function getHomeDashboardMetrics() {
     summary: loadedSummary,
     todaySummary: loadedTodaySummary,
     workspaceBalance: loadedWorkspaceBalance,
-    goals: loadedGoals.goals.filter((goal) => goal.isActive),
     todayHabits: loadedTodayHabits,
-    pendingHabitsCount: loadedTodayHabits.filter(
-      (occurrence) => occurrence.status === "pending",
-    ).length,
     currentStreak: globalStreak.currentStreak,
-    streakDates: globalStreak.streakDates,
     monthlyStats: loadedMonthlyStats,
     categoryStats: loadedCategoryStats,
-    budgetAlertSelection: loadedBudgetData.alertSelection,
     budgetData: loadedBudgetData,
     nextHabitPayment: loadedNextHabitPayment,
     dailyPaceComparison: loadedDailyPaceComparison,
@@ -239,7 +230,8 @@ export async function getDailyPaceComparison(): Promise<DashboardDailyPaceCompar
     getCurrentWorkspaceTimezone(),
   ]);
   const todayKey = getTodayDateKey(timeZone);
-  return _cachedDailyPaceComparison(workspaceId, timeZone, todayKey);
+  const fixedTitles = await getFixedExpenseTitles();
+  return _cachedDailyPaceComparison(workspaceId, timeZone, todayKey, fixedTitles);
 }
 
 function getDailyPaceWindowStartKey(todayParts: {
@@ -259,10 +251,18 @@ async function _cachedDailyPaceComparison(
   workspaceId: string,
   timeZone: string,
   todayKey: string,
+  fixedTitles: string[],
 ): Promise<DashboardDailyPaceComparison> {
   "use cache";
   cacheTag(`entries:${workspaceId}`);
   cacheLife("hours");
+
+  // Il confronto guarda la spesa corrente: le ricorrenti fisse restano fuori,
+  // altrimenti il giorno in cui capita l'affitto domina il paragone.
+  const excludeFixed =
+    fixedTitles.length > 0
+      ? Prisma.sql`AND lower(btrim(e."title")) NOT IN (${Prisma.join(fixedTitles)})`
+      : Prisma.empty;
 
   const todayParts = parseDateKey(todayKey);
 
@@ -284,6 +284,7 @@ async function _cachedDailyPaceComparison(
     WHERE e."workspaceId" = ${workspaceId}
       AND e."date" >= ${todayRange.start}
       AND e."date" < ${todayRange.end}
+      ${excludeFixed}
   `);
   const todaySpent = round2(toMetricNumber(todayRows[0]?.spent));
 
@@ -323,6 +324,7 @@ async function _cachedDailyPaceComparison(
           AND e."date" >= ${effectiveStart}
           AND e."date" < ${todayRange.start}
           AND EXTRACT(DAY FROM ${entryLocalTimestampSql(timeZone)}) = ${todayParts.day}
+          ${excludeFixed}
       `);
 
       averageSameDay = round2(
@@ -341,6 +343,7 @@ async function _cachedDailyPaceComparison(
       WHERE e."workspaceId" = ${workspaceId}
         AND e."date" >= ${previousRange.start}
         AND e."date" < ${previousRange.end}
+        ${excludeFixed}
     `);
     previousMonthSpent = round2(toMetricNumber(previousRows[0]?.spent));
   }

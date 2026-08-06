@@ -117,7 +117,7 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
         selectedMonthKey={selectedMonthKey}
         monthOptions={monthOptions}
         entriesCount={monthSummary?.entriesCount ?? 0}
-        totalRealSpent={monthSummary?.ordinarySpent ?? monthSummary?.totalRealSpent ?? 0}
+        totalRealSpent={monthSummary?.realSpent ?? monthSummary?.totalRealSpent ?? 0}
         totalAvoided={monthSummary?.avoidedAmount ?? 0}
         totalSaved={monthSummary?.comparisonSaved ?? 0}
         newEntryHref={newEntryHref}

@@ -47,6 +47,7 @@ export type BudgetSummaryView = Omit<BudgetSummarySource, "amount"> & {
   spentPercentage: number;
   timeProgressPercentage: number;
   dailyRemainingAmount: number;
+  remainingDays: number;
   projectedSpendAtPeriodEnd: number;
   wouldHaveSpentAmount: number;
   status: BudgetStatus;
@@ -149,6 +150,7 @@ export function summarizeBudget(
     spentPercentage: round2(progress.spentPercentage),
     timeProgressPercentage: round2(progress.timeProgressPercentage),
     dailyRemainingAmount: round2(progress.dailyRemainingAmount),
+    remainingDays: progress.remainingDays,
     projectedSpendAtPeriodEnd: round2(progress.projectedSpendAtPeriodEnd),
     wouldHaveSpentAmount: round2(progress.wouldHaveSpentAmount ?? totals.wouldHaveSpentAmount),
     status: progress.status,

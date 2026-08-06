@@ -10,21 +10,25 @@ import {
 } from "@/src/lib/workspace-context";
 import { SetupWizard } from "@/src/components/onboarding/setup-wizard";
 import { PublicAccessGate } from "@/src/components/public/public-access-gate";
-import { DailyCheckinOverlay } from "@/src/components/dashboard/daily-checkin-overlay";
 import { CraftedDashboard } from "@/src/components/dashboard/crafted-dashboard";
 import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
 import {
   ensureTodayHabitOccurrences,
   finalizeOldPendingOccurrences,
 } from "@/src/actions/habits";
-import { getDashboardEntrySnapshot } from "@/src/actions/entries";
+import {
+  getDashboardEntrySnapshot,
+  getFrequentEntryShortcuts,
+  getMonthSpendBreakdown,
+  type FrequentEntryShortcut,
+  type MonthSpendBreakdown,
+} from "@/src/actions/entries";
 import { getHomeDashboardMetrics } from "@/src/actions/dashboard";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { buildCraftedDashboardProps } from "@/src/lib/crafted-dashboard-build";
 import { getTranslations } from "@/src/lib/i18n";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
-import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import type { HomeReflectionNoteProps } from "@/src/lib/home-reflection";
 
 
@@ -165,74 +169,32 @@ function getHomeReflection({
   return null;
 }
 
+/// Chiamata solo con `entryCount === 0`: restano i due soli casi possibili,
+/// workspace senza nulla e workspace con ricorrenti attive ma nessun movimento.
 function getDashboardEmptyStateCopy({
-  phase,
   arrivedFromOnboarding,
-  monthRealSpent,
-  activeGoalsCount,
   todayHabitsCount,
   language,
 }: {
-  phase: HomePhase;
   arrivedFromOnboarding: boolean;
-  monthRealSpent: number;
-  activeGoalsCount: number;
   todayHabitsCount: number;
   language: string;
 }) {
   const t = getTranslations(language);
 
-  if (phase === "empty" && monthRealSpent === 0 && activeGoalsCount === 0 && todayHabitsCount === 0) {
+  if (todayHabitsCount === 0) {
     return {
       title: arrivedFromOnboarding ? t.home.phaseEmptyOnboardingTitle : t.home.phaseEmptyTitle,
       description: arrivedFromOnboarding
         ? t.home.phaseEmptyOnboardingDesc
         : t.home.phaseEmptyDesc,
-      note: t.home.phaseEmptyNote,
       actionLabel: t.dashboard.addEntry,
-    };
-  }
-
-  if (phase === "first-entry") {
-    return {
-      title: t.home.phaseFirstEntryTitle,
-      description: t.home.phaseFirstEntryDesc,
-      note: t.home.phaseFirstEntryNote,
-      actionLabel: t.entryForm.newTitle,
-    };
-  }
-
-  if (phase === "early-usage") {
-    return {
-      title: t.home.phaseEarlyTitle,
-      description: t.home.phaseEarlyDesc,
-      note: t.home.phaseEarlyNote,
-      actionLabel: t.entryForm.newTitle,
-    };
-  }
-
-  if (phase === "first-week") {
-    return {
-      title: t.home.phaseFirstWeekTitle,
-      description: t.home.phaseFirstWeekDesc,
-      note: t.home.phaseFirstWeekNote,
-      actionLabel: t.entryForm.newTitle,
-    };
-  }
-
-  if (monthRealSpent > 0) {
-    return {
-      title: t.home.phaseTodayTitle,
-      description: t.home.phaseTodayDesc,
-      note: t.home.phaseTodayNote,
-      actionLabel: t.entryForm.newTitle,
     };
   }
 
   return {
     title: t.home.phaseLightTitle,
     description: t.home.phaseLightDesc,
-    note: t.home.phaseLightNote,
     actionLabel: t.dashboardQuickActions.registerExpense,
   };
 }
@@ -258,10 +220,8 @@ export default async function Home({ searchParams }: HomePageProps) {
     console.error("Failed to sync habit occurrences on home:", error);
   }
 
-  let monthSaved = 0;
   let monthRealSpent = 0;
-  let entriesCountMonth = 0;
-  let todaySummary = {
+  let todaySummary: HomeDashboardMetrics["todaySummary"] = {
     totalSavedToday: 0,
     totalRealSpentToday: 0,
     entriesTodayCount: 0,
@@ -271,19 +231,6 @@ export default async function Home({ searchParams }: HomePageProps) {
   };
   let entryCount = 0;
   let firstEntryDate: Date | null = null;
-  let recentEntries: Array<{
-    id: string;
-    title: string;
-    category: {
-      name: string;
-      slug: string | null;
-    };
-    date: Date;
-    realCost: unknown;
-    savedAmount: unknown;
-    alternativeCost: unknown;
-    note: string | null;
-  }> = [];
   let weekEntries: Array<{
     category: {
       id: string;
@@ -292,7 +239,6 @@ export default async function Home({ searchParams }: HomePageProps) {
     savedAmount: unknown;
     date: Date;
   }> = [];
-  let activeGoals: HomeDashboardMetrics["goals"] = [];
   let todayHabits: HomeDashboardMetrics["todayHabits"] = [];
   let nextHabitPayment: HomeDashboardMetrics["nextHabitPayment"] = null;
   let dailyPaceComparison: HomeDashboardMetrics["dailyPaceComparison"] = {
@@ -303,20 +249,13 @@ export default async function Home({ searchParams }: HomePageProps) {
     previousMonthSpent: null,
     previousMonthDateKey: null,
   };
-  let pendingHabitsCount = 0;
   let currentStreak = 0;
-  let streakDates: string[] = [];
   let monthlyStats: HomeDashboardMetrics["monthlyStats"] = [];
   let categoryStats: HomeDashboardMetrics["categoryStats"] = [];
   let budgetDashboardState: BudgetDashboardSelection = {
     mainBudget: null,
     categoryBudgets: [],
     hasAnyBudget: false,
-  };
-  let budgetAlertSelection: BudgetAlertSelection = {
-    primaryAlerts: [],
-    pageAlerts: [],
-    hasAlerts: false,
   };
   let workspaceBalance: HomeDashboardMetrics["workspaceBalance"] = {
     supported: false,
@@ -325,10 +264,19 @@ export default async function Home({ searchParams }: HomePageProps) {
     counterpartUserId: null,
     counterpartLabel: null,
   };
+  let spendBreakdown: MonthSpendBreakdown = {
+    realSpent: 0,
+    fixedSpent: 0,
+    currentSpent: 0,
+    fixedItems: [],
+    previousCurrentSpent: null,
+  };
   const [
     [timeZone, currency, language, needsSetup],
     snapshotResult,
     metricsResult,
+    shortcuts,
+    breakdownResult,
   ] = await Promise.all([
     Promise.all([
       getCurrentWorkspaceTimezone(),
@@ -350,34 +298,41 @@ export default async function Home({ searchParams }: HomePageProps) {
         console.error("Failed to load dashboard summary:", error);
         return { metrics: null, error: formatEntryLoadError(error) };
       }),
+    getFrequentEntryShortcuts().catch((error) => {
+      unstable_rethrow(error);
+      console.error("Failed to load entry shortcuts:", error);
+      return [] as FrequentEntryShortcut[];
+    }),
+    getMonthSpendBreakdown().catch((error) => {
+      unstable_rethrow(error);
+      console.error("Failed to load month spend breakdown:", error);
+      return null;
+    }),
   ]);
   const { snapshot, error: entriesLoadError } = snapshotResult;
   const { metrics, error: dashboardLoadError } = metricsResult;
 
+  if (breakdownResult) {
+    spendBreakdown = breakdownResult;
+  }
+
   if (snapshot) {
     entryCount = snapshot.entryCount;
     firstEntryDate = snapshot.firstEntryDate;
-    recentEntries = snapshot.recentEntries;
     weekEntries = snapshot.weekEntries;
   }
 
   if (metrics) {
-    monthSaved = metrics.summary.totalSaved;
-    monthRealSpent = metrics.summary.totalRealSpent;
-    entriesCountMonth = metrics.summary.entriesCount;
+    monthRealSpent = metrics.summary.realSpent;
     todaySummary = metrics.todaySummary;
     workspaceBalance = metrics.workspaceBalance;
     currentStreak = metrics.currentStreak;
-    streakDates = metrics.streakDates;
     monthlyStats = metrics.monthlyStats;
     categoryStats = metrics.categoryStats;
     budgetDashboardState = metrics.budgetData.dashboardBudgetState;
-    budgetAlertSelection = metrics.budgetAlertSelection;
-    activeGoals = metrics.goals;
     todayHabits = metrics.todayHabits;
     nextHabitPayment = metrics.nextHabitPayment;
     dailyPaceComparison = metrics.dailyPaceComparison;
-    pendingHabitsCount = metrics.pendingHabitsCount;
   }
 
   const homePhase = getHomePhase({
@@ -392,12 +347,9 @@ export default async function Home({ searchParams }: HomePageProps) {
   });
 
   const dashboardEmptyState =
-    recentEntries.length === 0
+    entryCount === 0
       ? getDashboardEmptyStateCopy({
-          phase: homePhase,
           arrivedFromOnboarding,
-          monthRealSpent,
-          activeGoalsCount: activeGoals.length,
           todayHabitsCount: todayHabits.length,
           language,
         })
@@ -405,20 +357,19 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   const craftedProps = buildCraftedDashboardProps({
     monthRealSpent,
-    monthSaved,
+    monthFixedSpent: spendBreakdown.fixedSpent,
+    monthCurrentSpent: spendBreakdown.currentSpent,
+    monthFixedItems: spendBreakdown.fixedItems,
+    monthPreviousCurrentSpent: spendBreakdown.previousCurrentSpent,
+    shortcuts,
     spentToday: todaySummary.totalRealSpentToday,
-    netImpactToday: todaySummary.netImpactToday,
-    entriesCountMonth,
     entriesTodayCount: todaySummary.entriesTodayCount,
     monthlyStats,
     categoryStats,
     currentStreak,
-    streakDates,
     todayHabits,
     nextHabitPayment,
     dailyPaceComparison,
-    goals: activeGoals,
-    recentEntries,
     reflection: homeReflection,
     emptyState: dashboardEmptyState,
     coupleBalance: {
@@ -428,7 +379,6 @@ export default async function Home({ searchParams }: HomePageProps) {
       counterpartLabel: workspaceBalance.counterpartLabel,
     },
     budgetDashboardState,
-    budgetAlertSelection,
     timeZone,
     currency,
     language,
@@ -447,17 +397,6 @@ export default async function Home({ searchParams }: HomePageProps) {
       {arrivedFromOnboarding ? (
         <PostHogEventOnMount eventName="onboarding_completed" />
       ) : null}
-
-      <DailyCheckinOverlay
-        spentToday={todaySummary.totalRealSpentToday}
-        savedToday={todaySummary.totalSavedToday}
-        pendingHabitsCount={pendingHabitsCount}
-        isVisible={
-          todaySummary.totalRealSpentToday > 0 ||
-          todaySummary.totalSavedToday > 0 ||
-          pendingHabitsCount > 0
-        }
-      />
 
       {entriesLoadError ? (
         <div className="px-5 pb-4">

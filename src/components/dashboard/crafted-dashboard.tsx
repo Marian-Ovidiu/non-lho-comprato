@@ -7,7 +7,6 @@ import {
   BarChart3,
   ChevronRight,
   CalendarDays,
-  Layers3,
   Loader2,
   Minus,
   Plus,
@@ -29,10 +28,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
-import {
-  useBoundLocale,
-  useLocaleFormatters,
-} from "@/src/components/language/use-locale-formatters";
+import { useBoundLocale } from "@/src/components/language/use-locale-formatters";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import { languageToLocale } from "@/src/lib/i18n";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
@@ -46,7 +42,6 @@ import {
 } from "@/src/actions/dashboard";
 import { CraftedDashboardEmptyState } from "@/src/components/dashboard/crafted-dashboard-empty-state";
 import type { BudgetDashboardSelection } from "@/src/lib/budget-summary";
-import type { BudgetAlertSelection } from "@/src/lib/budget-alerts";
 import type { WorkspaceBalanceStatus } from "@/src/lib/workspace-balance";
 
 type CraftedCategoryRow = {
@@ -59,57 +54,27 @@ type CraftedCategoryRow = {
   tone: "accent" | "foreground" | "green" | "muted";
 };
 
-type CraftedGoalRow = {
-  id: string;
-  title: string;
-  progressAmount: number;
-  targetAmount: number;
-  progressPercent: number;
-  note: string;
-  icon: CraftedIconName;
-};
-
-type CraftedRecentEntry = {
-  id: string;
-  title: string;
-  category: { name: string; slug?: string | null };
-  date: Date;
-  realCost: unknown;
-  alternativeCost: unknown;
-  savedAmount: unknown;
-};
-
-type EntryBadgeKind = "evitata" | "confronto";
-
-type DisplayEntry = {
-  id: string;
-  title: string;
-  cat: string;
-  amount: number;
-  when: string;
-  badge: EntryBadgeKind | null;
-  saved: number | null;
-  avoided: number | null;
-  icon: CraftedIconName;
-  href: string;
-};
-
 export type CraftedDashboardProps = {
   monthLabel: string;
   monthRealSpent: number;
-  monthSaved: number;
+  monthFixedSpent: number;
+  monthCurrentSpent: number;
+  monthFixedItems: Array<{ label: string; amount: number }>;
+  shortcuts: Array<{
+    title: string;
+    categoryId: string;
+    categoryName: string;
+    categorySlug: string;
+    amount: number;
+    count: number;
+  }>;
   monthDelta: number | null;
-  monthTrend: number[];
   spentToday: number;
-  netImpactToday: number;
   entriesTodayCount: number;
-  entriesCountMonth: number;
   categories: CraftedCategoryRow[];
   currentStreak: number;
-  streakWeek: boolean[];
   habitsTotal: number;
   habitsAvoided: number;
-  habitsNote: string | null;
   nextHabitPayment: {
     id: string;
     name: string;
@@ -128,13 +93,10 @@ export type CraftedDashboardProps = {
     previousMonthSpent: number | null;
     previousMonthDateKey: string | null;
   };
-  goals: CraftedGoalRow[];
-  recentEntries: CraftedRecentEntry[];
   reflection: { label: string; text: string } | null;
   emptyState: {
     title: string;
     description: string;
-    note: string;
     actionLabel: string;
   } | null;
   coupleBalance: {
@@ -144,7 +106,6 @@ export type CraftedDashboardProps = {
     counterpartLabel: string | null;
   };
   budgetDashboardState: BudgetDashboardSelection;
-  budgetAlertSelection: BudgetAlertSelection;
 };
 
 const CATEGORY_COLORS = [
@@ -159,11 +120,6 @@ const INITIAL_SETTLEMENT_STATE: SettlementActionResult = {
   success: false,
   message: "",
 };
-
-function toFiniteNumber(value: unknown) {
-  const amount = Number(value);
-  return Number.isFinite(amount) ? amount : 0;
-}
 
 function formatEURBase(
   locale: string,
@@ -285,53 +241,52 @@ function IconBubble({
   );
 }
 
-function Sparkline({ values }: { values: number[] }) {
-  if (values.length < 2) {
-    return null;
-  }
-
-  const min = Math.min(...values);
-  const max = Math.max(...values);
-  const range = Math.max(max - min, 1);
-  const coords = values.map((value, index) => ({
-    x: (index / (values.length - 1)) * 100,
-    y: 36 - ((value - min) / range) * 32,
-  }));
-  const points = coords.map((point) => `${point.x.toFixed(2)},${point.y.toFixed(2)}`).join(" ");
-  const last = coords[coords.length - 1]!;
+/**
+ * Scorciatoia su un movimento che l'utente registra spesso: apre il form già
+ * compilato con titolo, categoria e importo tipico, così restano solo da
+ * confermare.
+ */
+function ShortcutRow({
+  shortcut,
+  currencySymbol,
+}: {
+  shortcut: CraftedDashboardProps["shortcuts"][number];
+  currencySymbol: string;
+}) {
+  const formatEUR = useBoundLocale(formatEURBase);
+  const language = useWorkspaceLanguage();
+  const href = `/entries/new?${new URLSearchParams({
+    title: shortcut.title,
+    categoryId: shortcut.categoryId,
+    amountSpent: shortcut.amount.toFixed(2),
+  }).toString()}`;
 
   return (
-    <svg
-      viewBox="0 0 100 40"
-      preserveAspectRatio="none"
-      className="mt-5 h-10 w-full overflow-visible"
-      aria-hidden="true"
+    <Link
+      href={href}
+      className="nlc-press flex min-h-14 items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      <defs>
-        <linearGradient id="nlc-spark-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="var(--accent)" stopOpacity="0.28" />
-          <stop offset="1" stopColor="var(--accent)" stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={`0,40 ${points} 100,40`} fill="url(#nlc-spark-fill)" />
-      <polyline
-        points={points}
-        fill="none"
-        stroke="var(--accent)"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        strokeWidth="2"
-        vectorEffect="non-scaling-stroke"
-      />
-      <circle
-        cx={last.x}
-        cy={last.y}
-        r="2.4"
-        fill="var(--accent)"
-        stroke="var(--background)"
-        strokeWidth="1"
-      />
-    </svg>
+      <IconBubble>
+        <CraftedIcon
+          name={getCategoryCraftedIcon({
+            slug: shortcut.categorySlug,
+            name: shortcut.categoryName,
+          })}
+          size={17}
+        />
+      </IconBubble>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate text-[15px] font-medium">{shortcut.title}</span>
+        <span className="mt-0.5 block truncate text-[11px] text-ink-3">
+          {getLocalizedCategoryName(shortcut.categorySlug, language) ??
+            shortcut.categoryName}
+        </span>
+      </span>
+      <Mono className="shrink-0 text-[13px] text-muted-foreground">
+        {formatEUR(shortcut.amount, currencySymbol)}
+      </Mono>
+      <ChevronRight className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
+    </Link>
   );
 }
 
@@ -487,30 +442,98 @@ function BudgetBlock({
   const total = budget.budgetAmount;
   const pct = total > 0 ? Math.round((used / total) * 100) : 0;
   const remaining = budget.remainingAmount;
-  const daysLeft = Math.max(
-    0,
-    Math.ceil(((100 - budget.timeProgressPercentage) / 100) * 30),
-  );
+  // Giorni e quota giornaliera arrivano dal server. Prima erano stimati su 30
+  // giorni fissi, quindi sbagliati in ogni mese che non ne ha 30.
+  const daysLeft = budget.remainingDays;
+  const perDay = budget.dailyRemainingAmount;
+  const overspent = remaining < 0;
   const tone = pct >= 90 ? "bg-destructive" : pct >= 70 ? "bg-accent" : "bg-success";
 
   return (
     <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
       <CardHeader title={budget.title} action="Gestisci" href="/budget#gestione-budget" />
-      <div className="flex items-end gap-2">
-        <Mono className="nlc-num-legible text-[26px] font-semibold leading-none">
-          {formatEUR(used, currencySymbol, { decimals: false })}
+      {/* La domanda con cui si apre l'app è "posso spendere?": la risposta è
+          quanto resta e per quanti giorni, non quanto si è già speso. */}
+      <p className="text-[13px] text-muted-foreground">
+        {overspent ? "Sforato di" : "Ti restano"}
+      </p>
+      <div className="mt-1 flex items-end gap-2">
+        <Mono
+          className={cn(
+            "nlc-num-legible text-[30px] font-semibold leading-none",
+            overspent && "text-destructive",
+          )}
+        >
+          {formatEUR(Math.abs(remaining), currencySymbol, { decimals: false })}
         </Mono>
-        <span className="pb-0.5 text-[13px] text-ink-3">
-          di <Mono>{formatEUR(total, currencySymbol, { decimals: false })}</Mono>
-        </span>
+        {!overspent && daysLeft > 0 ? (
+          <span className="pb-0.5 text-[13px] text-ink-3">
+            per {daysLeft} {daysLeft === 1 ? "giorno" : "giorni"}
+          </span>
+        ) : null}
       </div>
+      {!overspent && daysLeft > 0 ? (
+        <Serif className="mt-2 block text-[13px] text-ink-3">
+          {formatEUR(perDay, currencySymbol, { decimals: false })} al giorno
+        </Serif>
+      ) : null}
       <ProgressLine value={pct} className="mt-4 bg-line-soft" indicatorClassName={tone} />
       <div className="mt-3 flex items-center justify-between gap-3 text-xs">
-        <Serif className={cn("text-ink-3", remaining < 0 && "text-destructive")}>
-          Restano {formatEUR(remaining, currencySymbol, { sign: "auto", decimals: false })} · {daysLeft} giorni
+        <Serif className="text-ink-3">
+          {formatEUR(used, currencySymbol, { decimals: false })} di{" "}
+          {formatEUR(total, currencySymbol, { decimals: false })}
         </Serif>
         <Mono className="text-muted-foreground">{pct}%</Mono>
       </div>
+    </section>
+  );
+}
+
+/**
+ * I budget di categoria esistevano ma non arrivavano mai in home: si vedevano
+ * solo aprendo /budget, ed è il motivo per cui restavano impostati e mai
+ * ritoccati anche quando venivano sforati ogni mese.
+ */
+function CategoryBudgetsBlock({
+  budgets,
+  currencySymbol,
+}: {
+  budgets: BudgetDashboardSelection["categoryBudgets"];
+  currencySymbol: string;
+}) {
+  const formatEUR = useBoundLocale(formatEURBase);
+
+  return (
+    <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+      <CardHeader title="Budget per categoria" action="Gestisci" href="/budget#gestione-budget" />
+      {budgets.slice(0, 3).map((budget, index) => {
+        const pct =
+          budget.budgetAmount > 0
+            ? Math.round((budget.spentAmount / budget.budgetAmount) * 100)
+            : 0;
+        const tone = pct >= 100 ? "bg-destructive" : pct >= 80 ? "bg-accent" : "bg-success";
+
+        return (
+          <div key={budget.id}>
+            <div className="flex items-baseline justify-between gap-3 py-2">
+              <p className="min-w-0 truncate text-[14px] font-medium">
+                {budget.scopeLabel}
+              </p>
+              <Mono
+                className={cn(
+                  "shrink-0 text-[12px]",
+                  pct >= 100 ? "text-destructive" : "text-muted-foreground",
+                )}
+              >
+                {formatEUR(budget.spentAmount, currencySymbol, { decimals: false })} /{" "}
+                {formatEUR(budget.budgetAmount, currencySymbol, { decimals: false })}
+              </Mono>
+            </div>
+            <ProgressLine value={Math.min(pct, 100)} className="bg-line-soft" indicatorClassName={tone} />
+            {index < Math.min(budgets.length, 3) - 1 ? <Rule soft /> : null}
+          </div>
+        );
+      })}
     </section>
   );
 }
@@ -584,72 +607,28 @@ function SettlementAction({
   );
 }
 
-function formatEntryWhen(date: Date, locale: string) {
-  const today = new Date();
-  const sameDay = date.toDateString() === today.toDateString();
-  const yesterday = new Date(today);
-  yesterday.setDate(today.getDate() - 1);
-
-  const time = new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-
-  if (sameDay) {
-    return `Oggi · ${time}`;
-  }
-
-  if (date.toDateString() === yesterday.toDateString()) {
-    return `Ieri · ${time}`;
-  }
-
-  const day = new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "short",
-  }).format(date);
-  return `${day} · ${time}`;
-}
-
-function EntryBadge({ kind }: { kind: EntryBadgeKind }) {
-  const isAvoided = kind === "evitata";
-
-  return (
-    <span
-      className={cn(
-        "shrink-0 rounded-[var(--r-chip)] border px-2 py-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em]",
-        isAvoided ? "border-success/45 text-success" : "border-lilac/45 text-lilac",
-      )}
-    >
-      {isAvoided ? "Evitata" : "Confronto"}
-    </span>
-  );
-}
-
 export function CraftedDashboard({
   monthLabel,
   monthRealSpent,
-  monthSaved,
+  monthFixedSpent,
+  monthCurrentSpent,
+  monthFixedItems,
+  shortcuts,
   monthDelta,
-  monthTrend,
   spentToday,
-  netImpactToday,
   entriesTodayCount,
   categories,
   currentStreak,
   habitsTotal,
   habitsAvoided,
-  habitsNote,
   nextHabitPayment,
   dailyPaceComparison,
-  goals,
-  recentEntries,
   reflection,
   emptyState,
   coupleBalance,
   budgetDashboardState,
 }: CraftedDashboardProps) {
   const formatEUR = useBoundLocale(formatEURBase);
-  const { formatCraftedCompact } = useLocaleFormatters();
   const currencySymbol = useCurrencySymbol();
   const language = useWorkspaceLanguage();
   const locale = languageToLocale(language);
@@ -660,8 +639,8 @@ export function CraftedDashboard({
   // A trend needs a previous month to compare against. With no baseline there is
   // no delta to show: an invented percentage next to real money reads as real.
   const displayDeltaPct =
-    monthDelta !== null && monthRealSpent > 0
-      ? Math.round((monthDelta / Math.max(monthRealSpent - monthDelta, 1)) * 1000) / 10
+    monthDelta !== null && monthCurrentSpent > 0
+      ? Math.round((monthDelta / Math.max(monthCurrentSpent - monthDelta, 1)) * 1000) / 10
       : null;
   const trendDown = displayDeltaPct !== null && displayDeltaPct <= 0;
   const displayCategories = categories.map((category) => ({
@@ -672,48 +651,12 @@ export function CraftedDashboard({
     pct: category.pct,
     icon: getCategoryCraftedIcon({ slug: category.slug, name: category.name }),
   }));
-  const displayGoals = goals.map((goal) => ({
-    id: goal.id,
-    title: goal.title,
-    current: goal.progressAmount,
-    target: goal.targetAmount,
-    pct: goal.progressPercent,
-    icon: goal.icon,
-    note: goal.note,
-  }));
-  const displayEntries: DisplayEntry[] = recentEntries.map((entry) => {
-    const realCost = toFiniteNumber(entry.realCost);
-    const alternativeCost = toFiniteNumber(entry.alternativeCost);
-    const savedAmount = toFiniteNumber(entry.savedAmount);
-    const isAvoided = realCost === 0 && alternativeCost > 0 && savedAmount > 0;
-    const isComparison = !isAvoided && savedAmount !== 0;
-
-    return {
-      id: entry.id,
-      title: entry.title,
-      cat:
-        getLocalizedCategoryName(entry.category.slug ?? "", language) ??
-        entry.category.name,
-      amount: realCost,
-      when: formatEntryWhen(entry.date, locale),
-      badge: isAvoided
-        ? ("evitata" as const)
-        : isComparison
-          ? ("confronto" as const)
-          : null,
-      saved: isComparison ? Math.abs(savedAmount) : null,
-      avoided: isAvoided ? Math.abs(savedAmount) : null,
-      icon: getCategoryCraftedIcon(entry.category),
-      href: `/entries/${entry.id}/edit`,
-    };
-  });
   // Always set alongside `supported: true` in getHomeDashboardMetrics; the card
   // below only renders when the balance is supported, so "" is never displayed.
   const partner = coupleBalance.counterpartLabel ?? "";
   const coupleAmount = coupleBalance.amount;
   const coupleIsTheyOwe = coupleBalance.status !== "you-owe";
   const coupleYou = Math.max(coupleAmount, 0);
-  const coupleThem = 0;
   const canSettleCoupleBalance =
     coupleBalance.supported &&
     coupleBalance.status !== "balanced" &&
@@ -760,7 +703,7 @@ export function CraftedDashboard({
         {/* Hero — lastra stabile e leggibile, ferma mentre lo sfondo si muove */}
         <section className="nlc-glass-hero mb-3 rounded-[var(--r-sheet)] px-5 pb-5 pt-5">
           <div className="flex items-start justify-between gap-4">
-            <Label className="pt-1">{t.dashboard.spentMonth}</Label>
+            <Label className="pt-1">Spesa corrente</Label>
             {displayDeltaPct !== null ? (
               <span className="inline-flex shrink-0 items-center gap-1.5 rounded-[var(--r-chip)] border border-line px-2.5 py-1.5 text-[11px] text-muted-foreground">
                 {trendDown ? (
@@ -773,22 +716,36 @@ export function CraftedDashboard({
             ) : null}
           </div>
           <Mono className="nlc-num-legible mt-4 block whitespace-nowrap text-[44px] font-semibold leading-none tracking-[-0.02em]">
-            {formatEUR(monthRealSpent, currencySymbol)}
+            {formatEUR(monthCurrentSpent, currencySymbol)}
           </Mono>
-          <div className="mt-3 flex items-end justify-between gap-3">
-            <Serif className="text-[15px] text-muted-foreground">
-              {monthLabel.toLowerCase()} · {t.dashboard.netImpact}
-            </Serif>
-            <Mono
-              className={cn(
-                "shrink-0 text-[17px] font-medium",
-                monthSaved >= 0 ? "text-success" : "text-destructive",
-              )}
-            >
-              {formatEUR(monthSaved, currencySymbol, { sign: "auto" })}
+          <Serif className="mt-3 block text-[15px] text-muted-foreground">
+            {monthLabel.toLowerCase()}
+          </Serif>
+          {/* Le fisse restano visibili ma fuori dal numero grande: sommarle alla
+              spesa di tutti i giorni rende il totale incomparabile tra mesi,
+              perché un affitto segnato il 5 invece che l'11 lo sposta di
+              centinaia di euro senza che sia cambiato nulla nei consumi. */}
+          {monthFixedSpent > 0 ? (
+            <div className="mt-4 flex items-baseline justify-between gap-3 rounded-[var(--r-control)] border border-line-soft px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-[13px] text-muted-foreground">Spese fisse</p>
+                {monthFixedItems.length > 0 ? (
+                  <p className="mt-0.5 truncate text-[11px] text-ink-3">
+                    {monthFixedItems.map((item) => item.label).join(" · ")}
+                  </p>
+                ) : null}
+              </div>
+              <Mono className="nlc-num-legible shrink-0 text-[15px] font-medium text-muted-foreground">
+                {formatEUR(monthFixedSpent, currencySymbol)}
+              </Mono>
+            </div>
+          ) : null}
+          <div className="mt-2 flex items-baseline justify-between gap-3 px-3">
+            <span className="text-[12px] text-ink-3">Totale del mese</span>
+            <Mono className="shrink-0 text-[12px] text-ink-3">
+              {formatEUR(monthRealSpent, currencySymbol)}
             </Mono>
           </div>
-          <Sparkline values={monthTrend} />
           {reflection?.text ? (
             <Serif className="mt-3 block text-[13px] text-ink-3">{reflection.text}</Serif>
           ) : displayDeltaPct !== null ? (
@@ -798,7 +755,7 @@ export function CraftedDashboard({
                 : "Questo mese sta accelerando: tieni d'occhio budget e categorie."}
             </Serif>
           ) : null}
-          <div className="mt-5 grid grid-cols-3 gap-2 border-t border-line pt-4">
+          <div className="mt-5 grid grid-cols-2 gap-2 border-t border-line pt-4">
             <div>
               <Label className="mb-2 block">{t.dashboard.spentToday}</Label>
               <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
@@ -806,13 +763,7 @@ export function CraftedDashboard({
               </Mono>
             </div>
             <div className="border-l border-line pl-3">
-              <Label className="mb-2 block">Impatto oggi</Label>
-              <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
-                {formatEUR(netImpactToday, currencySymbol, { sign: "auto" })}
-              </Mono>
-            </div>
-            <div className="border-l border-line pl-3">
-              <Label className="mb-2 block">Movimenti</Label>
+              <Label className="mb-2 block">Movimenti oggi</Label>
               <Mono className="nlc-num-legible block text-[19px] font-medium leading-none">
                 {entriesTodayCount}
               </Mono>
@@ -822,21 +773,16 @@ export function CraftedDashboard({
 
         {/* Bento — card compatte a metà, liste a piena larghezza; parallax legato allo scroll */}
         <div className="grid grid-cols-2 items-start gap-3">
-          <div className="nlc-parallax col-span-2" data-amt="16">
-            {nextHabitPayment ? (
-              <NextHabitPaymentCard
-                habit={nextHabitPayment}
-                currencySymbol={currencySymbol}
-              />
-            ) : (
-              <div className="nlc-glass-card rounded-[var(--r-card)] p-4">
-                <Label className="mb-2 block">Prossimo pagamento</Label>
-                <Serif className="block text-sm text-ink-3">
-                  Nessuna ricorrente attiva con un pagamento previsto.
-                </Serif>
-              </div>
-            )}
+          {/* Il budget globale apre la griglia: è l'unico blocco che risponde a
+              "posso spendere?", che è la domanda con cui si apre l'app. */}
+          {budgetDashboardState.mainBudget ? (
+          <div className="nlc-parallax col-span-2" data-amt="22">
+            <BudgetBlock
+              budget={budgetDashboardState.mainBudget}
+              currencySymbol={currencySymbol}
+            />
           </div>
+          ) : null}
 
           <div className="nlc-parallax" data-amt="24">
             <DailyComparisonCard
@@ -860,44 +806,47 @@ export function CraftedDashboard({
             />
           </div>
 
-          <div className="nlc-parallax col-span-2" data-amt="20">
-            <section className="nlc-glass-card rounded-[var(--r-card)] px-4 py-3">
-              <Label className="mb-1 block">Azioni rapide</Label>
-              <QuickActionRow href="/entries/new" icon={PlusCircle} label="Registra spesa" />
-              <Rule soft />
-              <QuickActionRow href="/presets" icon={Layers3} label="Preset rapidi" />
-              <Rule soft />
-              <QuickActionRow href="/stats" icon={BarChart3} label="Statistiche" />
-            </section>
+          <div className="nlc-parallax col-span-2" data-amt="16">
+            {nextHabitPayment ? (
+              <NextHabitPaymentCard
+                habit={nextHabitPayment}
+                currencySymbol={currencySymbol}
+              />
+            ) : (
+              <div className="nlc-glass-card rounded-[var(--r-card)] p-4">
+                <Label className="mb-2 block">Prossimo pagamento</Label>
+                <Serif className="block text-sm text-ink-3">
+                  Nessuna ricorrente attiva con un pagamento previsto.
+                </Serif>
+              </div>
+            )}
           </div>
 
           {coupleBalance.supported ? (
           <div className="nlc-parallax col-span-2" data-amt="26">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <Label className="mb-3 block">Con {partner}</Label>
-              <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-4">
-                <div>
-                  <p className="text-xs text-ink-3">Tu</p>
-                  <Mono className="nlc-num-legible mt-1 block text-[18px] font-medium">
-                    {formatEUR(coupleYou, currencySymbol)}
-                  </Mono>
-                </div>
-                <div className="h-8 w-px bg-line" aria-hidden="true" />
-                <div className="text-right">
-                  <p className="text-xs text-ink-3">{partner}</p>
-                  <Mono className="nlc-num-legible mt-1 block text-[18px] font-medium">
-                    {formatEUR(coupleThem, currencySymbol)}
-                  </Mono>
-                </div>
-              </div>
-              <div className="nlc-glass-tile mt-4 flex min-h-10 items-center justify-between gap-3 rounded-[var(--r-control)] px-3 py-2">
-                <span className="text-[13px] text-muted-foreground">
-                  {coupleIsTheyOwe ? `${partner} ti deve` : `Devi a ${partner}`}
-                </span>
-                <Mono className={coupleIsTheyOwe ? "text-lilac" : "text-destructive"}>
-                  {formatEUR(coupleAmount, currencySymbol, { sign: "auto" })}
-                </Mono>
-              </div>
+              {/* Il saldo è un solo numero con una direzione. La vecchia coppia
+                  di colonne "Tu / partner" mostrava sempre 0 per il partner. */}
+              <p className="text-[13px] text-muted-foreground">
+                {coupleBalance.status === "balanced"
+                  ? "Siete pari."
+                  : coupleIsTheyOwe
+                    ? `${partner} ti deve`
+                    : `Devi a ${partner}`}
+              </p>
+              <Mono
+                className={cn(
+                  "nlc-num-legible mt-1 block text-[26px] font-medium leading-none",
+                  coupleBalance.status === "balanced"
+                    ? "text-muted-foreground"
+                    : coupleIsTheyOwe
+                      ? "text-lilac"
+                      : "text-destructive",
+                )}
+              >
+                {formatEUR(coupleYou, currencySymbol)}
+              </Mono>
               <SettlementAction
                 canSettle={canSettleCoupleBalance}
                 label="Segna come regolato"
@@ -943,14 +892,39 @@ export function CraftedDashboard({
           </div>
           ) : null}
 
-          {budgetDashboardState.mainBudget ? (
+          {budgetDashboardState.categoryBudgets.length > 0 ? (
           <div className="nlc-parallax col-span-2" data-amt="22">
-            <BudgetBlock
-              budget={budgetDashboardState.mainBudget}
+            <CategoryBudgetsBlock
+              budgets={budgetDashboardState.categoryBudgets}
               currencySymbol={currencySymbol}
             />
           </div>
           ) : null}
+
+          {/* Scorciatoie ricavate da ciò che registrate davvero. Se non c'è
+              ancora storico abbastanza, restano le voci di navigazione. */}
+          <div className="nlc-parallax col-span-2" data-amt="20">
+            <section className="nlc-glass-card rounded-[var(--r-card)] px-4 py-3">
+              <Label className="mb-1 block">Azioni rapide</Label>
+              {shortcuts.length > 0 ? (
+                <>
+                  {shortcuts.map((shortcut) => (
+                    <div key={`${shortcut.title}-${shortcut.categoryId}`}>
+                      <ShortcutRow shortcut={shortcut} currencySymbol={currencySymbol} />
+                      <Rule soft />
+                    </div>
+                  ))}
+                  <QuickActionRow href="/entries/new" icon={PlusCircle} label="Altra spesa" />
+                </>
+              ) : (
+                <>
+                  <QuickActionRow href="/entries/new" icon={PlusCircle} label="Registra spesa" />
+                  <Rule soft />
+                  <QuickActionRow href="/stats" icon={BarChart3} label="Statistiche" />
+                </>
+              )}
+            </section>
+          </div>
 
           {currentStreak > 0 ? (
           <div className="nlc-parallax" data-amt="18">
@@ -965,9 +939,6 @@ export function CraftedDashboard({
                 </Mono>
                 <span className="text-xs text-muted-foreground">giorni</span>
               </div>
-              {habitsNote ? (
-                <Serif className="mt-2 block text-xs text-ink-3">{habitsNote}</Serif>
-              ) : null}
             </section>
           </div>
           ) : null}
@@ -992,86 +963,6 @@ export function CraftedDashboard({
                 className="mt-4 bg-line-soft"
               />
             </Link>
-          </div>
-          ) : null}
-
-          {displayGoals.length > 0 ? (
-          <div className="nlc-parallax col-span-2" data-amt="22">
-            <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
-              <Label className="mb-3 block">Mete attive</Label>
-              {displayGoals.map((goal, index) => (
-                <div key={goal.id}>
-                  <div className="flex items-center gap-3 py-2.5">
-                    <IconBubble>
-                      <CraftedIcon name={goal.icon} size={17} />
-                    </IconBubble>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-medium">{goal.title}</p>
-                      <Serif className="mt-0.5 block text-xs text-ink-3">
-                        {goal.note}
-                      </Serif>
-                    </div>
-                    <Mono className="shrink-0 text-right text-xs text-muted-foreground">
-                      {formatCraftedCompact(goal.current)}
-                      <span className="text-ink-3"> / {formatCraftedCompact(goal.target)}</span>
-                    </Mono>
-                  </div>
-                  <ProgressLine value={goal.pct} className="mb-3 bg-line-soft" indicatorClassName="bg-lilac" />
-                  {index < displayGoals.length - 1 ? <Rule soft /> : null}
-                </div>
-              ))}
-            </section>
-          </div>
-          ) : null}
-
-          {displayEntries.length > 0 ? (
-          <div className="nlc-parallax col-span-2" data-amt="16">
-            <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
-              <div className="mb-2 flex items-end justify-between gap-4">
-                <Label>Ultimi movimenti</Label>
-                <Link
-                  href="/entries"
-                  className="shrink-0 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  Tutti →
-                </Link>
-              </div>
-              {displayEntries.map((entry, index) => (
-                <div key={entry.id}>
-                  <Link
-                    href={entry.href}
-                    className="nlc-press flex min-h-16 items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                  >
-                    <IconBubble>
-                      <CraftedIcon name={entry.icon} size={17} />
-                    </IconBubble>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex min-w-0 items-center gap-2">
-                        <p className="min-w-0 truncate text-[15px] font-medium">{entry.title}</p>
-                        {entry.badge ? <EntryBadge kind={entry.badge} /> : null}
-                      </div>
-                      <p className="mt-1 truncate text-xs text-ink-3">
-                        {entry.cat} · <Mono>{entry.when}</Mono>
-                        {entry.saved ? (
-                          <> · risparmiati <Mono>{formatEUR(entry.saved, currencySymbol)}</Mono></>
-                        ) : null}
-                        {entry.avoided ? (
-                          <> · evitati <Mono>{formatEUR(entry.avoided, currencySymbol)}</Mono></>
-                        ) : null}
-                      </p>
-                    </div>
-                    <Mono className="shrink-0 text-[15px] font-medium">
-                      {entry.amount === 0 ? (
-                        <span className="text-ink-3">—</span>
-                      ) : (
-                        formatEUR(entry.amount, currencySymbol)
-                      )}
-                    </Mono>
-                  </Link>
-                  {index < displayEntries.length - 1 ? <Rule soft /> : null}
-                </div>
-              ))}
-            </section>
           </div>
           ) : null}
 

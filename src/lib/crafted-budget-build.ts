@@ -284,7 +284,7 @@ export async function buildCraftedBudgetProps(
     monthCode: formatMonthCode(monthDate, timeZone, locale),
     monthOptions: buildMonthOptions(monthKey, locale),
     totalBudget,
-    spent: monthTotals.ordinarySpent,
+    spent: monthTotals.realSpent,
     avoided: monthTotals.avoidedAmount,
     daysInMonth: getDaysInMonthFromKey(monthKey),
     dayOfMonth: getDayOfMonth(monthKey, timeZone),

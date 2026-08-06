@@ -32,6 +32,8 @@ export type BudgetProgress = {
   spentPercentage: number;
   timeProgressPercentage: number;
   dailyRemainingAmount: number;
+  /** Giorni interi che restano nel periodo, calcolati lato server. */
+  remainingDays: number;
   projectedSpendAtPeriodEnd: number;
   wouldHaveSpentAmount?: number;
   status: BudgetStatus;
@@ -157,6 +159,7 @@ export function calculateBudgetProgress(
     spentPercentage,
     timeProgressPercentage,
     dailyRemainingAmount,
+    remainingDays: Math.max(Math.ceil(remainingDays), 0),
     projectedSpendAtPeriodEnd,
     ...(wouldHaveSpentAmount === undefined
       ? {}

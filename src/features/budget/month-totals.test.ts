@@ -6,29 +6,30 @@ import { computeBudgetMonthTotals } from "@/src/features/budget/month-totals";
 describe("computeBudgetMonthTotals", () => {
   it("returns zeros for no entries", () => {
     assert.deepEqual(computeBudgetMonthTotals([]), {
-      ordinarySpent: 0,
+      realSpent: 0,
       avoidedAmount: 0,
     });
   });
 
-  it("sums realCost of ordinary expenses only", () => {
+  it("sums realCost of ordinary expenses", () => {
     const totals = computeBudgetMonthTotals([
       { realCost: 12.5, alternativeCost: 12.5, savedAmount: 0, mode: "spent", savingContext: "none" },
       { realCost: 7.25, alternativeCost: 7.25, savedAmount: 0, mode: "spent", savingContext: "none" },
     ]);
 
-    assert.equal(totals.ordinarySpent, 19.75);
+    assert.equal(totals.realSpent, 19.75);
     assert.equal(totals.avoidedAmount, 0);
   });
 
-  it("excludes comparison expenses from ordinarySpent", () => {
+  it("counts comparison purchases as real spending", () => {
     const totals = computeBudgetMonthTotals([
       { realCost: 20, alternativeCost: 30, savedAmount: 10, mode: "spent", savingContext: "comparison" },
       { realCost: 5, alternativeCost: 5, savedAmount: 0, mode: "spent", savingContext: "none" },
     ]);
 
-    // The comparison entry's realCost is not ordinary spending.
-    assert.equal(totals.ordinarySpent, 5);
+    // Tagging a purchase as cheaper than the alternative does not make the
+    // 20 EUR stop leaving the account.
+    assert.equal(totals.realSpent, 25);
     assert.equal(totals.avoidedAmount, 0);
   });
 
@@ -38,7 +39,7 @@ describe("computeBudgetMonthTotals", () => {
       { realCost: 0, alternativeCost: 4.5, savedAmount: 4.5, mode: "avoided", savingContext: "none" },
     ]);
 
-    assert.equal(totals.ordinarySpent, 0);
+    assert.equal(totals.realSpent, 0);
     assert.equal(totals.avoidedAmount, 8);
   });
 
@@ -49,7 +50,7 @@ describe("computeBudgetMonthTotals", () => {
       { realCost: 0, alternativeCost: 6, savedAmount: 6, mode: "avoided", savingContext: "none" },
     ]);
 
-    assert.equal(totals.ordinarySpent, 10);
+    assert.equal(totals.realSpent, 50);
     assert.equal(totals.avoidedAmount, 6);
   });
 
@@ -58,7 +59,7 @@ describe("computeBudgetMonthTotals", () => {
       { realCost: 0, alternativeCost: 9, savedAmount: 9 },
     ]);
 
-    assert.equal(totals.ordinarySpent, 0);
+    assert.equal(totals.realSpent, 0);
     assert.equal(totals.avoidedAmount, 9);
   });
 });
