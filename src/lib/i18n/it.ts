@@ -1204,4 +1204,34 @@ export const it: Translations = {
     comparedToPrevious: "rispetto allo stesso periodo del mese precedente.",
     viewMonthlyReport: "Vedi report mensile completo →",
   },
+
+  onboarding: {
+    // Passo 1 — cosa fa. Concreto: le frasi generiche sul "controllo delle
+    // finanze" non dicono niente che l'utente non abbia gia' sentito.
+    valueTitle: "Le spese di due persone, in un posto solo.",
+    valueLede: "Segnate quello che spendete, ognuno dal proprio telefono. Al resto pensa l'app.",
+    valuePointOne: "Vedete dove finiscono i soldi, per categoria e nel tempo",
+    valuePointTwo: "Sapete sempre chi ha pagato cosa, e quanto vi dovete",
+    valuePointThree: "Le spese fisse restano separate da quelle di tutti i giorni",
+    valueContinue: "Continua",
+
+    // Passo 2 — l'invito. E' il punto in cui il prodotto diventa quello che
+    // promette: da soli resta un registro di spese come tanti.
+    inviteTitle: "Usatelo in due.",
+    inviteLede: "Manda il link a chi divide le spese con te: vedrete gli stessi movimenti, ognuno dal proprio account.",
+    inviteButton: "Invita",
+    inviteGenerating: "Preparo il link…",
+    inviteCopied: "Link copiato. Mandalo a chi vuoi.",
+    inviteShareTitle: "Segniamo le spese insieme",
+    inviteSkip: "Lo faccio dopo",
+    inviteContinue: "Fatto, continua",
+
+    // Passo 3 — il primo movimento. Vale piu' di qualunque spiegazione.
+    firstEntryTitle: "Segna la prima spesa.",
+    firstEntryLede: "Bastano un titolo e un importo. Il resto — categoria, chi ha pagato — l'app lo propone da sola.",
+    firstEntryButton: "Registra una spesa",
+    firstEntrySkip: "Guardo prima in giro",
+
+    stepLabel: (current, total) => `Passo ${current} di ${total}`,
+  },
 };

@@ -1170,4 +1170,26 @@ export type Translations = {
     comparedToPrevious: string;
     viewMonthlyReport: string;
   };
+
+  onboarding: {
+    valueTitle: string;
+    valueLede: string;
+    valuePointOne: string;
+    valuePointTwo: string;
+    valuePointThree: string;
+    valueContinue: string;
+    inviteTitle: string;
+    inviteLede: string;
+    inviteButton: string;
+    inviteGenerating: string;
+    inviteCopied: string;
+    inviteShareTitle: string;
+    inviteSkip: string;
+    inviteContinue: string;
+    firstEntryTitle: string;
+    firstEntryLede: string;
+    firstEntryButton: string;
+    firstEntrySkip: string;
+    stepLabel: (current: number, total: number) => string;
+  };
 };

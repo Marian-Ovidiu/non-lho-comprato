@@ -33,20 +33,25 @@ export function PublicAccessGate() {
           </span>
         </div>
 
+        {/* La promessa era "traccia i soldi che non hai speso": in tre mesi di
+            uso reale quella funzione vale 19 euro su 320 movimenti. Qui va
+            quello che l'app fa davvero bene, cioè tenere insieme le spese di
+            due persone. */}
         <div className="mb-8 mt-auto">
           <p className="mb-3.5 font-serif italic text-[18px] text-muted-foreground">
-            traccia i soldi che
+            le spese di due persone,
           </p>
           <h1
             className="font-bold leading-[0.95] tracking-[-0.045em] text-foreground"
             style={{ fontSize: 64 }}
           >
-            <span className="text-accent">non</span> hai
+            in <span className="text-accent">un</span>
             <br />
-            speso.
+            posto solo.
           </h1>
-          <p className="mt-6 max-w-[280px] text-[16px] leading-[1.5] text-muted-foreground">
-            Accedi per ritrovare il tuo lavoro su ogni dispositivo.
+          <p className="mt-6 max-w-[290px] text-[16px] leading-[1.5] text-muted-foreground">
+            Segnate quello che spendete, ognuno dal proprio telefono. Vedrete
+            dove finiscono i soldi e chi ha pagato cosa.
           </p>
         </div>
 

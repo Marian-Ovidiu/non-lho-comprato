@@ -1187,4 +1187,29 @@ export const en: Translations = {
     comparedToPrevious: "compared to the same period last month.",
     viewMonthlyReport: "View full monthly report →",
   },
+
+  onboarding: {
+    valueTitle: "Two people's spending, in one place.",
+    valueLede: "Log what you spend, each from your own phone. The app does the rest.",
+    valuePointOne: "See where the money goes, by category and over time",
+    valuePointTwo: "Always know who paid for what, and who owes whom",
+    valuePointThree: "Fixed costs stay separate from everyday spending",
+    valueContinue: "Continue",
+
+    inviteTitle: "Use it together.",
+    inviteLede: "Send the link to whoever shares expenses with you: you'll see the same entries, each from your own account.",
+    inviteButton: "Invite",
+    inviteGenerating: "Preparing the link…",
+    inviteCopied: "Link copied. Send it to whoever you like.",
+    inviteShareTitle: "Let's track our spending together",
+    inviteSkip: "I'll do it later",
+    inviteContinue: "Done, continue",
+
+    firstEntryTitle: "Log your first expense.",
+    firstEntryLede: "A title and an amount are enough. The rest — category, who paid — the app suggests on its own.",
+    firstEntryButton: "Log an expense",
+    firstEntrySkip: "Let me look around first",
+
+    stepLabel: (current, total) => `Step ${current} of ${total}`,
+  },
 };
