@@ -825,6 +825,8 @@ export const it: Translations = {
       "Ho capito che questa azione è permanente e non potrà essere annullata.",
     deleteConfirmLabel: "Scrivi ELIMINA",
     deleteConfirmPlaceholder: "ELIMINA",
+    deleteConfirmRequired:
+      "Conferma l'azione e scrivi ELIMINA per procedere.",
     deleteButton: "Elimina account e dati",
     deletingButton: "Eliminazione…",
   },

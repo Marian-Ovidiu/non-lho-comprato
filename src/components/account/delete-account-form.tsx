@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
 
+import { isAccountDeletionConfirmed } from "@/src/features/account/deletion-confirmation";
 import {
   deleteAccountAction,
   type DeleteAccountState,
@@ -21,8 +22,8 @@ export function DeleteAccountForm() {
   const [understood, setUnderstood] = useState(false);
   const [confirmation, setConfirmation] = useState("");
   const canSubmit = useMemo(
-    () => understood && confirmation.trim() === t.account.deleteConfirmPlaceholder && !pending,
-    [confirmation, pending, understood, t.account.deleteConfirmPlaceholder],
+    () => understood && isAccountDeletionConfirmed(confirmation) && !pending,
+    [confirmation, pending, understood],
   );
 
   return (

@@ -796,6 +796,7 @@ export type Translations = {
     deleteConfirmHelp: string;
     deleteConfirmLabel: string;
     deleteConfirmPlaceholder: string;
+    deleteConfirmRequired: string;
     deleteButton: string;
     deletingButton: string;
   };

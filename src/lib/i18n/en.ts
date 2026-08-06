@@ -810,6 +810,8 @@ export const en: Translations = {
     deleteConfirmHelp: "I get it — this is permanent and can't be undone.",
     deleteConfirmLabel: "Type DELETE",
     deleteConfirmPlaceholder: "DELETE",
+    deleteConfirmRequired:
+      "Confirm the action and type DELETE to continue.",
     deleteButton: "Delete account and data",
     deletingButton: "Deleting…",
   },

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { unstable_rethrow } from "next/navigation";
 
 import { deleteAppAccountData } from "@/src/lib/account-deletion";
+import { isAccountDeletionConfirmed } from "@/src/features/account/deletion-confirmation";
 import { refreshSupabaseSessionForAction } from "@/src/lib/auth/action-session";
 import { getCurrentUser } from "@/src/lib/auth/session";
 import { prisma } from "@/src/lib/prisma";
@@ -34,10 +35,10 @@ export async function deleteAccountAction(
   const understood = formData.get("understood") === "on";
   const confirmation = String(formData.get("confirmation") ?? "").trim();
 
-  if (!understood || confirmation !== "ELIMINA") {
+  if (!understood || !isAccountDeletionConfirmed(confirmation)) {
     return {
       success: false,
-      message: "Conferma l'azione e scrivi ELIMINA per procedere.",
+      message: t.account.deleteConfirmRequired,
     };
   }
 
