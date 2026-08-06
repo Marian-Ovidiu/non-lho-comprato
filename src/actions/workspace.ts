@@ -47,6 +47,10 @@ import {
 } from "@/src/features/workspaces/rbac";
 import { resolveInviteTargetWorkspace } from "@/src/features/workspaces/pairing";
 import {
+  canDeleteWorkspace,
+  canLeaveWorkspace,
+} from "@/src/features/workspaces/membership-policy";
+import {
   checkRateLimit,
   getClientIpFromRequestHeaders,
 } from "@/src/lib/rate-limit";
@@ -646,5 +650,173 @@ export async function removeWorkspaceMemberAction(
 
     console.error("Failed to remove workspace member:", error);
     return { success: false, message: t.workspaceActions.removeMemberFailed };
+  }
+}
+
+/**
+ * Dopo l'uscita o l'eliminazione il cookie punterebbe a uno spazio a cui non
+ * si appartiene più: azzerandolo si torna a quello personale.
+ */
+async function clearWorkspaceSelection(userId: string, workspaceId: string) {
+  const cookieStore = await cookies();
+
+  if (cookieStore.get(WORKSPACE_SELECTION_COOKIE)?.value === workspaceId) {
+    cookieStore.delete(WORKSPACE_SELECTION_COOKIE);
+  }
+
+  const fallback = await prisma.workspace.findFirst({
+    where: { kind: "private", ownerUserId: userId },
+    select: { id: true },
+  });
+
+  if (fallback) {
+    await markWorkspaceSelectedForUser(userId, fallback.id);
+    cookieStore.set(
+      WORKSPACE_SELECTION_COOKIE,
+      fallback.id,
+      getWorkspaceSelectionCookieOptions(),
+    );
+  }
+}
+
+type LeaveWorkspaceResult = {
+  success: boolean;
+  message: string;
+};
+
+/**
+ * Uscire da uno spazio condiviso. I movimenti restano dove sono: se ne va la
+ * persona, non la contabilità.
+ */
+export async function leaveWorkspaceAction(
+  workspaceId: string,
+): Promise<LeaveWorkspaceResult> {
+  const t = await getActionTranslations();
+
+  try {
+    const user = await getCurrentUser();
+    const [workspace, memberCount, membership] = await Promise.all([
+      prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true, kind: true, ownerUserId: true },
+      }),
+      prisma.workspaceMember.count({ where: { workspaceId } }),
+      prisma.workspaceMember.findUnique({
+        where: { workspaceId_userId: { workspaceId, userId: user.id } },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!workspace) {
+      return { success: false, message: t.workspaceActions.noActiveWorkspace };
+    }
+
+    const decision = canLeaveWorkspace({
+      workspaceKind: workspace.kind,
+      isMember: membership != null,
+      memberCount,
+    });
+
+    if (!decision.allowed) {
+      return { success: false, message: decision.message };
+    }
+
+    await prisma.$transaction(async (tx) => {
+      await tx.workspaceMember.delete({
+        where: { workspaceId_userId: { workspaceId, userId: user.id } },
+      });
+
+      // Uno spazio senza proprietario non potrebbe più essere né gestito né
+      // eliminato: se se ne va chi l'ha creato, la proprietà passa a chi resta
+      // da più tempo.
+      if (workspace.ownerUserId === user.id) {
+        const heir = await tx.workspaceMember.findFirst({
+          where: { workspaceId },
+          orderBy: { createdAt: "asc" },
+          select: { userId: true },
+        });
+
+        if (heir) {
+          await tx.workspace.update({
+            where: { id: workspaceId },
+            data: { ownerUserId: heir.userId },
+          });
+          await tx.workspaceMember.update({
+            where: {
+              workspaceId_userId: { workspaceId, userId: heir.userId },
+            },
+            data: { role: "owner" },
+          });
+        }
+      }
+    });
+
+    await clearWorkspaceSelection(user.id, workspaceId);
+    revalidatePath("/", "layout");
+
+    return { success: true, message: "Sei uscito dallo spazio condiviso." };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to leave workspace:", error);
+    return { success: false, message: "Non sono riuscito a farti uscire dallo spazio." };
+  }
+}
+
+type DeleteWorkspaceResult = {
+  success: boolean;
+  message: string;
+};
+
+/**
+ * Eliminare uno spazio condiviso con tutto quello che contiene. Può farlo chi
+ * è rimasto solo, oppure — se dentro c'è ancora qualcuno — chi l'ha creato.
+ */
+export async function deleteWorkspaceAction(
+  workspaceId: string,
+): Promise<DeleteWorkspaceResult> {
+  const t = await getActionTranslations();
+
+  try {
+    const user = await getCurrentUser();
+    const [workspace, memberCount, membership] = await Promise.all([
+      prisma.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true, kind: true, ownerUserId: true },
+      }),
+      prisma.workspaceMember.count({ where: { workspaceId } }),
+      prisma.workspaceMember.findUnique({
+        where: { workspaceId_userId: { workspaceId, userId: user.id } },
+        select: { id: true },
+      }),
+    ]);
+
+    if (!workspace) {
+      return { success: false, message: t.workspaceActions.noActiveWorkspace };
+    }
+
+    const decision = canDeleteWorkspace({
+      workspaceKind: workspace.kind,
+      isMember: membership != null,
+      memberCount,
+      actorUserId: user.id,
+      workspaceOwnerUserId: workspace.ownerUserId,
+    });
+
+    if (!decision.allowed) {
+      return { success: false, message: decision.message };
+    }
+
+    // Movimenti, categorie, budget e inviti se ne vanno con lo spazio: il
+    // cascade è dichiarato nello schema.
+    await prisma.workspace.delete({ where: { id: workspaceId } });
+
+    await clearWorkspaceSelection(user.id, workspaceId);
+    revalidatePath("/", "layout");
+
+    return { success: true, message: "Spazio eliminato." };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to delete workspace:", error);
+    return { success: false, message: "Non sono riuscito a eliminare lo spazio." };
   }
 }

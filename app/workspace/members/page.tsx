@@ -4,6 +4,11 @@ import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-he
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { GenerateInviteButton } from "@/src/components/workspace/generate-invite-button";
 import { RemoveWorkspaceMemberButton } from "@/src/components/workspace/remove-workspace-member-button";
+import { WorkspaceExitActions } from "@/src/components/workspace/workspace-exit-actions";
+import {
+  canDeleteWorkspace,
+  canLeaveWorkspace,
+} from "@/src/features/workspaces/membership-policy";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import {
   getCurrentWorkspace,
@@ -57,6 +62,20 @@ export default async function WorkspaceMembersPage() {
       </main>
     );
   }
+
+  const currentUserId = members.find((member) => member.isCurrentUser)?.userId ?? null;
+  const leaveDecision = canLeaveWorkspace({
+    workspaceKind: workspace.kind,
+    isMember: currentUserId != null,
+    memberCount: members.length,
+  });
+  const deleteDecision = canDeleteWorkspace({
+    workspaceKind: workspace.kind,
+    isMember: currentUserId != null,
+    memberCount: members.length,
+    actorUserId: currentUserId ?? "",
+    workspaceOwnerUserId: workspace.ownerUserId,
+  });
 
   return (
     <main className="pb-6">
@@ -127,6 +146,18 @@ export default async function WorkspaceMembersPage() {
         </p>
         <GenerateInviteButton />
       </section>
+
+      <WorkspaceExitActions
+        workspaceId={workspace.id}
+        workspaceName={workspace.name}
+        canLeave={leaveDecision.allowed}
+        canDelete={deleteDecision.allowed}
+        deleteBlockedReason={
+          workspace.kind === "shared" && !deleteDecision.allowed
+            ? deleteDecision.message
+            : null
+        }
+      />
     </main>
   );
 }

@@ -29,6 +29,8 @@ type CraftedEntryRowProps = {
   showDivider?: boolean;
   /** Chiamato all'apertura, per ricordare da quale riga si è usciti. */
   onOpen?: (entryId: string) => void;
+  /** Percorso a cui il movimento deve riportare, mese selezionato incluso. */
+  returnTo?: string;
 };
 
 function formatEUR(
@@ -71,6 +73,7 @@ export function CraftedEntryRow({
   className,
   showDivider = true,
   onOpen,
+  returnTo,
 }: CraftedEntryRowProps) {
   const locale = languageToLocale(useWorkspaceLanguage());
   const isAvoided = entry.kind === "evitata";
@@ -79,7 +82,11 @@ export function CraftedEntryRow({
   return (
     <div className={className} id={entryAnchorId(entry.id)}>
       <Link
-        href={`/entries/${entry.id}/edit`}
+        href={
+          returnTo
+            ? `/entries/${entry.id}/edit?returnTo=${encodeURIComponent(returnTo)}`
+            : `/entries/${entry.id}/edit`
+        }
         onClick={() => onOpen?.(entry.id)}
         className="nlc-press grid min-h-16 grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-3 outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >

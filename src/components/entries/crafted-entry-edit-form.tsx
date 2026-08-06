@@ -143,10 +143,13 @@ export function CraftedEntryEditForm({
   entry,
   categories,
   members,
+  returnTo = "/entries",
 }: {
   entry: EntryToEdit;
   categories: CategoryOption[];
   members: WorkspaceMemberOption[];
+  /** Da dove si è arrivati: senza, il ritorno perde il mese selezionato. */
+  returnTo?: string;
 }) {
   const router = useRouter();
   const currencySymbol = useCurrencySymbol();
@@ -196,9 +199,9 @@ export function CraftedEntryEditForm({
     }
 
     didHandleSuccessRef.current = true;
-    const timeout = window.setTimeout(() => router.replace("/entries"), 800);
+    const timeout = window.setTimeout(() => router.replace(returnTo), 800);
     return () => window.clearTimeout(timeout);
-  }, [router, state.success]);
+  }, [returnTo, router, state.success]);
 
   const canUseJointPayment = members.length === 2;
   const effectivePaymentMode = canUseJointPayment ? paymentMode : "single_payer";
@@ -256,7 +259,7 @@ export function CraftedEntryEditForm({
       }
 
       setDeleteOpen(false);
-      router.replace("/entries");
+      router.replace(returnTo);
       router.refresh();
     });
   }
@@ -289,7 +292,7 @@ export function CraftedEntryEditForm({
         ) : null}
 
         <div className="flex items-center justify-between px-5 pb-1.5 pt-3">
-          <Link href="/entries" className="text-sm text-muted-foreground hover:opacity-80">
+          <Link href={returnTo} className="text-sm text-muted-foreground hover:opacity-80">
             {t.common.cancel}
           </Link>
           <Label>{t.entryForm.editTitle}</Label>

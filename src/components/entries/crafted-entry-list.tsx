@@ -693,6 +693,7 @@ export function CraftedEntryList({
                   key={entry.id}
                   entry={entry}
                   onOpen={rememberPosition}
+                  returnTo={`/entries?month=${monthKey}`}
                   className={cn(
                     highlightedRecentEntryIds.includes(entry.id) &&
                       "nlc-row-in nlc-flash",

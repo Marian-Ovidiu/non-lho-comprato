@@ -13,10 +13,28 @@ type EditEntryPageProps = {
   params: Promise<{
     id: string;
   }>;
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export default async function EditEntryPage({ params }: EditEntryPageProps) {
-  const { id } = await params;
+const DEFAULT_RETURN_TO = "/entries";
+
+/// Solo percorsi interni: un returnTo assoluto sarebbe un redirect aperto.
+function getSafeReturnTo(value?: string | string[]): string {
+  const raw = Array.isArray(value) ? value[0] : value;
+
+  if (raw && raw.startsWith("/") && !raw.startsWith("//")) {
+    return raw;
+  }
+
+  return DEFAULT_RETURN_TO;
+}
+
+export default async function EditEntryPage({
+  params,
+  searchParams,
+}: EditEntryPageProps) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  const returnTo = getSafeReturnTo(query.returnTo);
 
   let loadError: string | null = null;
   let entry: Awaited<ReturnType<typeof getEntryById>> = null;
@@ -70,7 +88,12 @@ export default async function EditEntryPage({ params }: EditEntryPageProps) {
 
   return (
     <main className="pb-6">
-      <EntryEditForm entry={entry} categories={resolvedCategories} members={members} />
+      <EntryEditForm
+        entry={entry}
+        categories={resolvedCategories}
+        members={members}
+        returnTo={returnTo}
+      />
     </main>
   );
 }
