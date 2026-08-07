@@ -1,11 +1,10 @@
 "use client";
 
-import { useWorkspaceLanguage } from "@/src/components/language/language-context";
-import { languageToLocale } from "@/src/lib/i18n";
 import Link from "next/link";
 
-import { CraftedIcon, Mono, Rule, Serif, type CraftedIconName } from "@/components/crafted";
+import { Amount, CraftedIcon, Serif, type CraftedIconName } from "@/components/crafted";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "@/src/components/language/language-context";
 import { entryAnchorId } from "@/src/features/entries/list-position";
 
 export type EntryKind = "spesa" | "evitata" | "confronto";
@@ -19,7 +18,7 @@ export type CraftedEntryRowItem = {
   amount: number;
   kind: EntryKind;
   who?: string | null;
-  saved?: number;
+  /** Quanto sarebbe costata l'alternativa, sui movimenti con confronto. */
   original?: number;
 };
 
@@ -33,34 +32,22 @@ type CraftedEntryRowProps = {
   returnTo?: string;
 };
 
-function formatEUR(
-  value: number,
-  locale: string,
-  options: { sign?: "plus" | "minus" | "none" } = {},
-) {
-  const formatted = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Math.abs(value));
-  const sign = options.sign === "plus" ? "+" : options.sign === "minus" ? "−" : "";
-
-  return `${sign}€${formatted}`;
-}
-
-function KindBadge({
-  tone,
-  children,
-}: {
-  tone: "success" | "accent";
-  children: React.ReactNode;
-}) {
+/**
+ * Marcatore di tipo. Non è più un chip con il bordo: a duecento righe, settanta
+ * riquadri colorati sono coriandoli. È una parola in maiuscoletto sulla riga
+ * dei dettagli — dove sta il resto di ciò che *qualifica* il movimento — e il
+ * colore ce l'ha solo "Evitata", perché è l'unica delle due che dice una cosa
+ * sui soldi (non sono usciti). "Confronto" dice una cosa sul modo in cui il
+ * movimento è stato registrato: è inchiostro, non colore.
+ */
+function KindMark({ tone, children }: { tone: "avoided" | "neutral"; children: React.ReactNode }) {
   return (
     <span
       className={cn(
-        "shrink-0 rounded-[var(--r-chip)] border px-2 py-1 text-[9.5px] font-semibold uppercase leading-none tracking-[0.12em]",
-        tone === "success"
-          ? "border-success/45 text-success"
-          : "border-accent/45 text-accent",
+        "nlc-eyebrow shrink-0 [--fs-label:10px]",
+        tone === "avoided"
+          ? "[--eyebrow-ink:var(--avoided-ink)]"
+          : "[--eyebrow-ink:var(--ink-3)]",
       )}
     >
       {children}
@@ -75,7 +62,7 @@ export function CraftedEntryRow({
   onOpen,
   returnTo,
 }: CraftedEntryRowProps) {
-  const locale = languageToLocale(useWorkspaceLanguage());
+  const t = useTranslations();
   const isAvoided = entry.kind === "evitata";
   const isComparison = entry.kind === "confronto";
 
@@ -88,61 +75,70 @@ export function CraftedEntryRow({
             : `/entries/${entry.id}/edit`
         }
         onClick={() => onOpen?.(entry.id)}
-        className="nlc-press grid min-h-16 grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-3 py-3 outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className={cn(
+          "nlc-press grid min-h-16 grid-cols-[38px_minmax(0,1fr)_auto] items-center gap-3 py-2.5 outline-none transition-opacity hover:opacity-85 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+          // Il filetto è un bordo della riga, non un elemento in più: su
+          // duecento movimenti sono duecento nodi risparmiati.
+          showDivider && "border-b border-line-soft",
+        )}
       >
         <span
           className={cn(
-            "flex size-10 items-center justify-center rounded-[var(--r-control)]",
-            entry.kind === "spesa" && "bg-surface-muted text-muted-foreground",
-            isAvoided && "bg-success/10 text-success",
-            isComparison && "bg-accent/10 text-accent",
+            "flex size-[38px] items-center justify-center rounded-[var(--r-control)] border",
+            isAvoided
+              ? "border-transparent bg-[color-mix(in_srgb,var(--avoided-ink)_16%,transparent)] text-[var(--avoided-ink)]"
+              : "border-line-soft bg-foreground/[0.045] text-muted-foreground",
           )}
         >
-          <CraftedIcon name={entry.icon} size={18} />
+          <CraftedIcon name={entry.icon} size={17} />
         </span>
 
         <div className="min-w-0">
-          <div className="flex min-w-0 items-center gap-2">
-            <p className="min-w-0 truncate text-[14.5px] font-medium tracking-[-0.01em]">
-              {entry.title}
-            </p>
-            {isAvoided ? <KindBadge tone="success">Evitata</KindBadge> : null}
-            {isComparison ? <KindBadge tone="accent">Confronto</KindBadge> : null}
-          </div>
-          <p className="mt-1 truncate text-[11px] leading-4 text-ink-3">
-            {entry.cat}
-            {entry.who ? <> · {entry.who}</> : null}
+          {/* Il titolo ha la riga tutta per sé: a 360px è la prima cosa che si
+              tronca, ed è la sola per cui l'utente sta scorrendo. */}
+          <p className="truncate text-[15px] font-medium leading-5 tracking-[-0.01em]">
+            {entry.title}
+          </p>
+          <p className="mt-0.5 flex min-w-0 items-baseline gap-1.5 text-[11px] leading-4 text-ink-3">
+            {isAvoided ? (
+              <KindMark tone="avoided">{t.entries.avoidedBadge}</KindMark>
+            ) : null}
+            {isComparison ? (
+              <KindMark tone="neutral">{t.entries.comparisonBadge}</KindMark>
+            ) : null}
+            <span className="min-w-0 truncate">
+              {entry.cat}
+              {entry.who ? <> · {entry.who}</> : null}
+            </span>
           </p>
           {entry.note ? (
-            <Serif className="mt-0.5 block truncate text-[13px] leading-4 text-muted-foreground">
+            <Serif className="mt-1 block truncate text-[13px] leading-4 text-muted-foreground">
               &quot;{entry.note}&quot;
             </Serif>
           ) : null}
         </div>
 
         <div className="shrink-0 text-right">
-          {isComparison ? (
-            <>
-              <Mono className="block text-[14px] font-semibold leading-none text-accent">
-                {formatEUR(entry.saved ?? 0, locale, { sign: "plus" })}
-              </Mono>
-              <Mono className="mt-1 block text-[10px] leading-none text-ink-3">
-                vs {formatEUR(entry.original ?? entry.amount, locale)}
-              </Mono>
-            </>
-          ) : (
-            <Mono
-              className={cn(
-                "block text-[15px] font-semibold leading-none",
-                isAvoided && "text-success",
-              )}
-            >
-              {formatEUR(entry.amount, locale, { sign: isAvoided ? "plus" : "minus" })}
-            </Mono>
-          )}
+          {/* La colonna dei soldi dice sempre la stessa cosa: quanto è successo
+              a questo movimento. Su un confronto è quanto è uscito davvero —
+              altrimenti la colonna non somma con il totale del giorno, e in un
+              registro una colonna che non somma è un errore. */}
+          <Amount
+            value={entry.amount}
+            sign={isAvoided ? "plus" : "none"}
+            className={cn(
+              "block text-[15px] font-semibold",
+              isAvoided && "text-[var(--avoided-ink)]",
+            )}
+          />
+          {isComparison && entry.original ? (
+            <span className="mt-1 block text-[11px] leading-none text-ink-3">
+              {t.entries.insteadOf}{" "}
+              <Amount value={entry.original} className="text-[11px]" />
+            </span>
+          ) : null}
         </div>
       </Link>
-      {showDivider ? <Rule soft /> : null}
     </div>
   );
 }

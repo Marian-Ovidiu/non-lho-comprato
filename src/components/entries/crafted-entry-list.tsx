@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Loader2, Receipt, Search, SlidersHorizontal, X } from "lucide-react";
+import { Check, Loader2, Receipt, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Label, Mono, Rule, Serif } from "@/components/crafted";
+import { Amount, Eyebrow, Rule, Serif } from "@/components/crafted";
 import { getEntriesPage } from "@/src/actions/entries";
 import {
   CraftedEntryRow,
@@ -81,7 +81,8 @@ type CraftedEntryListProps = {
 type DayGroupData = {
   dateKey: string;
   label: string;
-  relative: string | null;
+  shortLabel: string;
+  relative: "today" | "yesterday" | null;
   count: number;
   dayTotal: number;
   entries: CraftedEntryRowItem[];
@@ -90,15 +91,6 @@ type DayGroupData = {
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 250;
 const RECENT_ENTRY_HIGHLIGHT_MS = 2_000;
-
-function formatEUR(value: number, locale: string) {
-  const formatted = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(Math.abs(value));
-
-  return `€${formatted}`;
-}
 
 function getEntryKind(entry: EntryItem): EntryKind {
   const metrics = calculateEntryMetrics(entry);
@@ -114,7 +106,7 @@ function getEntryKind(entry: EntryItem): EntryKind {
   return "spesa";
 }
 
-function toRowEntry(entry: EntryItem, locale: string, language: string): CraftedEntryRowItem {
+function toRowEntry(entry: EntryItem, language: string): CraftedEntryRowItem {
   const metrics = calculateEntryMetrics(entry);
   const kind = getEntryKind(entry);
   const categoryName =
@@ -129,7 +121,6 @@ function toRowEntry(entry: EntryItem, locale: string, language: string): Crafted
     amount: kind === "evitata" ? metrics.avoidedAmount : metrics.spentReal,
     kind,
     who: entry.paidByLabel,
-    saved: metrics.comparisonSaved,
     original: metrics.wouldHaveSpent,
   };
 }
@@ -143,7 +134,11 @@ function parseDateKey(dateKey: string) {
   };
 }
 
-function getDayLabel(dateKey: string, locale: string) {
+function formatDayLabel(
+  dateKey: string,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+) {
   const { year, month, day } = parseDateKey(dateKey);
 
   if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
@@ -151,26 +146,24 @@ function getDayLabel(dateKey: string, locale: string) {
   }
 
   const formatted = new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
+    ...options,
     timeZone: "UTC",
   }).format(new Date(Date.UTC(year, month - 1, day)));
 
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
-function getRelativeLabel(dateKey: string) {
+function getRelativeLabel(dateKey: string): DayGroupData["relative"] {
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const todayKey = getDateKey(new Date(), browserTz);
   const yesterdayKey = shiftDateKey(todayKey, -1);
 
   if (dateKey === todayKey) {
-    return "oggi";
+    return "today";
   }
 
   if (dateKey === yesterdayKey) {
-    return "ieri";
+    return "yesterday";
   }
 
   return null;
@@ -186,9 +179,12 @@ function groupByDay(
 
   for (const entry of entries) {
     const dateKey = getDateKey(new Date(entry.date), browserTz);
-    const rowEntry = toRowEntry(entry, locale, language);
+    const rowEntry = toRowEntry(entry, language);
     const existing = groups.get(dateKey);
-    const dayTotal = rowEntry.kind === "spesa" ? rowEntry.amount : 0;
+    // Il totale del giorno è la stessa cosa del totale in testata: i soldi
+    // usciti davvero. Esclude la spesa evitata, e nient'altro — prima
+    // scartava anche i confronti, e la colonna degli importi non tornava.
+    const dayTotal = rowEntry.kind === "evitata" ? 0 : rowEntry.amount;
 
     if (existing) {
       existing.entries.push(rowEntry);
@@ -199,7 +195,15 @@ function groupByDay(
 
     groups.set(dateKey, {
       dateKey,
-      label: getDayLabel(dateKey, locale),
+      label: formatDayLabel(dateKey, locale, {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }),
+      shortLabel: formatDayLabel(dateKey, locale, {
+        day: "numeric",
+        month: "long",
+      }),
       relative: getRelativeLabel(dateKey),
       count: 1,
       dayTotal,
@@ -253,25 +257,23 @@ function EmptyState({
   const hasSearchTerm = hasActiveFilters;
 
   return (
-    <div className="px-[var(--sp-page-x)] py-8">
-      <div className="rounded-[var(--r-card)] border border-dashed border-line px-5 py-8 text-center">
-        <div className="mx-auto mb-4 flex size-10 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
-          <Receipt className="size-5" aria-hidden="true" />
-        </div>
-        <p className="text-[16px] font-semibold">
-          {hasSearchTerm ? t.entries.noResultsTitle : t.entries.emptyTitle}
-        </p>
-        <Serif className="mt-2 block text-sm text-ink-3">
-          {hasSearchTerm ? t.entries.noResultsDesc : t.entries.emptyDesc}
-        </Serif>
-        {!hasSearchTerm ? (
-          <div className="mt-5">
-            <Button asChild className="h-11 rounded-[var(--r-cta)] px-5">
-              <Link href={newEntryHref}>{t.entries.addFirst}</Link>
-            </Button>
-          </div>
-        ) : null}
+    <div className="px-[var(--sp-page-x)] py-10 text-center">
+      <div className="mx-auto mb-4 flex size-[38px] items-center justify-center rounded-[var(--r-control)] border border-line-soft bg-foreground/[0.045] text-muted-foreground">
+        <Receipt className="size-[17px]" aria-hidden="true" />
       </div>
+      <p className="text-[16px] font-semibold">
+        {hasSearchTerm ? t.entries.noResultsTitle : t.entries.emptyTitle}
+      </p>
+      <Serif className="mx-auto mt-2 block max-w-[26ch] text-[14px] text-ink-3">
+        {hasSearchTerm ? t.entries.noResultsDesc : t.entries.emptyDesc}
+      </Serif>
+      {!hasSearchTerm ? (
+        <div className="mt-6">
+          <Button asChild className="h-11 rounded-[var(--r-cta)] px-5">
+            <Link href={newEntryHref}>{t.entries.addFirst}</Link>
+          </Button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -290,10 +292,10 @@ export function CraftedEntryList({
   const locale = languageToLocale(language);
 
   const KIND_FILTERS: KindFilter[] = [
-    { id: "all", label: "Tutti" },
-    { id: "spesa", label: "Spese" },
-    { id: "evitata", label: "Evitate" },
-    { id: "confronto", label: "Confronti" },
+    { id: "all", label: t.entries.filterAll },
+    { id: "spesa", label: t.entries.filterExpenses },
+    { id: "evitata", label: t.entries.filterAvoided },
+    { id: "confronto", label: t.entries.filterComparisons },
   ];
 
   const [entries, setEntries] = useState(initialEntries);
@@ -548,11 +550,26 @@ export function CraftedEntryList({
     );
   }
 
+  const relativeLabels = {
+    today: t.entries.todayLabel,
+    yesterday: t.entries.yesterdayLabel,
+  };
+
   return (
-    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
-      <div className="sticky top-14 z-30 border-b border-line bg-background/95 px-[var(--sp-page-x)] py-3 backdrop-blur-md">
+    <div>
+      {/* I controlli restano a portata di pollice per tutta la lista, ma non
+          sono una seconda barra: portano lo stesso velo del chrome — scrim nel
+          colore del fondo e blur progressivo, nessun bordo, nessuna lastra —
+          con il profilo tarato sulla loro altezza (vedi .nlc-chrome-veil-list).
+          L'aggancio è `--nlc-chrome-top`, la misura vera dell'header pubblicata
+          dal guscio: il `top-14` di prima era un 56px scritto a mano che con la
+          safe area di un iPhone finiva *sotto* l'header. */}
+      <div
+        className="nlc-chrome-veil-list sticky z-20 px-[var(--sp-page-x)] pb-2.5 pt-2"
+        style={{ top: "var(--nlc-chrome-top, 3.5rem)" }}
+      >
         <div className="flex items-center gap-2">
-          <div className="flex min-h-11 flex-1 items-center gap-2.5 rounded-[var(--r-control)] border border-line bg-background px-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-offset-2">
+          <div className="flex min-h-11 flex-1 items-center gap-2.5 rounded-[var(--r-control)] bg-surface-muted px-3 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-ring has-[:focus-visible]:outline-offset-2">
             <Search className="size-4 shrink-0 text-ink-3" aria-hidden="true" />
             <input
               value={searchValue}
@@ -580,36 +597,69 @@ export function CraftedEntryList({
               type="button"
               onClick={() => setShowCategoryFilters((current) => !current)}
               className={cn(
-                "nlc-press relative flex size-11 shrink-0 items-center justify-center rounded-[var(--r-control)] border outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                "nlc-press relative flex size-11 shrink-0 items-center justify-center rounded-[var(--r-control)] outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                // Un filtro attivo è uno stato, non un'azione: si dice con il
+                // materiale (la cella piena) e non con il colore del brand.
                 selectedCategoryIds.length > 0 || showCategoryFilters
-                  ? "border-accent/40 bg-accent/10 text-foreground"
-                  : "border-line text-muted-foreground",
+                  ? "bg-surface-muted text-foreground"
+                  : "text-muted-foreground",
               )}
-              aria-label="Filtra per categoria"
+              aria-label={t.entries.categoryFilterToggle}
               aria-expanded={showCategoryFilters}
               aria-controls="entries-category-filters"
             >
               <SlidersHorizontal className="size-4" aria-hidden="true" />
               {selectedCategoryIds.length > 0 ? (
-                <Mono className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full bg-accent text-[10px] font-semibold leading-none text-background">
+                <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-foreground text-[10px] font-semibold leading-none tabular-nums text-background">
                   {selectedCategoryIds.length}
-                </Mono>
+                </span>
               ) : null}
             </button>
           ) : null}
         </div>
 
+        {/* Il tipo è una scelta sola fra quattro: un segmentato lo dice, quattro
+            chip identiche a quelle delle categorie dicevano il contrario —
+            là la selezione è multipla. Due modelli di scelta non possono avere
+            la stessa forma. */}
+        <div
+          role="group"
+          aria-label={t.entries.kindFilterLabel}
+          className="mt-2 grid grid-cols-4 gap-1 rounded-[var(--r-control)] border border-line-soft p-1"
+        >
+          {KIND_FILTERS.map((filter) => {
+            const active = filter.id === activeFilterId;
+
+            return (
+              <button
+                key={filter.id}
+                type="button"
+                onClick={() => setActiveFilterId(filter.id)}
+                aria-pressed={active}
+                className={cn(
+                  "nlc-press min-h-8 truncate rounded-[var(--r-chip)] px-1 text-[12.5px] transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                  active
+                    ? "bg-surface-muted font-semibold text-foreground"
+                    : "font-medium text-ink-3 hover:text-foreground",
+                )}
+              >
+                {filter.label}
+              </button>
+            );
+          })}
+        </div>
+
         {showCategoryFilters && categoryOptions.length > 0 ? (
           <div id="entries-category-filters" className="mt-3">
             <div className="mb-2 flex items-center justify-between gap-3">
-              <Label>Categorie</Label>
+              <Eyebrow>{t.entries.categoriesLabel}</Eyebrow>
               {selectedCategoryIds.length > 0 ? (
                 <button
                   type="button"
                   onClick={() => setSelectedCategoryIds([])}
                   className="nlc-press rounded-[var(--r-chip)] px-1 text-[12px] font-medium text-ink-3 transition-colors hover:text-foreground"
                 >
-                  Azzera
+                  {t.entries.clearCategories}
                 </button>
               ) : null}
             </div>
@@ -624,12 +674,18 @@ export function CraftedEntryList({
                     onClick={() => toggleCategory(category.id)}
                     aria-pressed={selected}
                     className={cn(
-                      "nlc-press min-h-9 rounded-[var(--r-chip)] border px-3 text-[13px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      "nlc-press inline-flex min-h-9 items-center gap-1.5 rounded-[var(--r-chip)] border px-3 text-[13px] font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                      // La selezione multipla si dice con il segno di spunta,
+                      // non con una tinta: dieci chip accese sarebbero dieci
+                      // campiture colorate sopra la lista.
                       selected
-                        ? "border-accent/40 bg-accent/10 text-foreground"
-                        : "border-line bg-transparent text-ink-3 hover:text-foreground",
+                        ? "border-transparent bg-surface-muted text-foreground"
+                        : "border-line-soft bg-transparent text-ink-3 hover:text-foreground",
                     )}
                   >
+                    {selected ? (
+                      <Check className="-ml-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                    ) : null}
                     {category.label}
                   </button>
                 );
@@ -637,28 +693,6 @@ export function CraftedEntryList({
             </div>
           </div>
         ) : null}
-
-        <div className="-mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-0.5">
-          {KIND_FILTERS.map((filter) => {
-            const active = filter.id === activeFilterId;
-
-            return (
-              <button
-                key={filter.id}
-                type="button"
-                onClick={() => setActiveFilterId(filter.id)}
-                className={cn(
-                  "nlc-press min-h-9 shrink-0 rounded-[var(--r-chip)] border px-3 text-[13px] font-medium whitespace-nowrap transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                  active
-                    ? "border-accent/40 bg-accent/10 text-foreground"
-                    : "border-line bg-transparent text-ink-3 hover:text-foreground",
-                )}
-              >
-                {filter.label}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {searchError ? (
@@ -672,20 +706,21 @@ export function CraftedEntryList({
       ) : (
         groups.map((group) => (
           <section key={group.dateKey}>
-            <div className="flex items-baseline justify-between gap-4 px-[var(--sp-page-x)] pb-1 pt-5">
-              <div className="min-w-0">
-                <h2 className="truncate text-[13px] font-semibold text-muted-foreground">
-                  {group.label}
-                </h2>
-                {group.relative ? (
-                  <Serif className="mt-1 block text-[13px] text-ink-3">
-                    {group.relative}
-                  </Serif>
-                ) : null}
-              </div>
-              <Mono className="shrink-0 text-right text-[11px] text-ink-3">
-                {group.count} mov · {formatEUR(group.dayTotal, locale)}
-              </Mono>
+            {/* Intestazione del giorno: un'etichetta di sezione e un totale.
+                Il conteggio dei movimenti è sparito — sotto ci sono le righe,
+                e si contano guardandole. */}
+            <div className="flex items-baseline justify-between gap-4 px-[var(--sp-page-x)] pb-1 pt-6">
+              <h2 className="min-w-0 truncate">
+                <Eyebrow>
+                  {group.relative
+                    ? `${relativeLabels[group.relative]} · ${group.shortLabel}`
+                    : group.label}
+                </Eyebrow>
+              </h2>
+              <Amount
+                value={group.dayTotal}
+                className="shrink-0 text-[13px] font-medium text-muted-foreground"
+              />
             </div>
             <div className="px-[var(--sp-page-x)]">
               {group.entries.map((entry, index) => (
@@ -702,20 +737,12 @@ export function CraftedEntryList({
                 />
               ))}
             </div>
-            <Rule />
           </section>
         ))
       )}
 
-      <div className="px-[var(--sp-page-x)] py-5 text-center">
-        <Rule soft />
-        <Label className="mt-5 block">Fine {monthLabel.toLowerCase()}</Label>
-      </div>
-
-      <div className="space-y-2 px-[var(--sp-page-x)] pb-6">
-        {loadError ? (
-          <p className="text-sm text-destructive">{loadError}</p>
-        ) : null}
+      <div className="space-y-3 px-[var(--sp-page-x)] pb-2 pt-8">
+        {loadError ? <p className="text-sm text-destructive">{loadError}</p> : null}
 
         {hasMore ? (
           <Button
@@ -735,12 +762,21 @@ export function CraftedEntryList({
             )}
           </Button>
         ) : entries.length > 0 ? (
-          <div className="rounded-[var(--r-control)] border border-line-soft px-4 py-3 text-center">
-            <Serif className="text-sm text-ink-3">
-              {activeFilterId === "all"
-                ? "Tutti i movimenti sono stati caricati."
-                : `Tutte le ${KIND_FILTERS.find((filter) => filter.id === activeFilterId)?.label.toLowerCase() ?? "spese"} sono state caricate.`}
-            </Serif>
+          // Un solo finale, e dice il vero: "fine agosto" quando si sono viste
+          // tutte le voci del mese, "hai visto tutto" quando la lista è filtrata
+          // e quindi non è il mese ad essere finito. Prima compariva comunque,
+          // anche con altre pagine da caricare.
+          <div className="pt-2 text-center">
+            <Rule soft />
+            {hasActiveFilters || activeFilterId !== "all" ? (
+              <Serif className="mt-5 block text-[13px] text-ink-3">
+                {t.entries.allLoaded}
+              </Serif>
+            ) : (
+              <Eyebrow className="mt-5 block">
+                {t.entries.endOfMonth(monthLabel.toLowerCase())}
+              </Eyebrow>
+            )}
           </div>
         ) : null}
       </div>
