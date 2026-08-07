@@ -1,4 +1,4 @@
-# Direzione artistica — dashboard
+# Direzione artistica
 
 ## Il principio guida
 
@@ -256,6 +256,223 @@ tab, l'anello del "+" — in chiaro passa a `--accent-ink`. Un tratto da uno o
 due pixel non ha massa per reggere un colore tenue su carta chiara;
 l'inchiostro sì, e il ruolo (lime = azione) non cambia, cambia solo il peso.
 
+## L'elenco movimenti: la stanza e la carta
+
+`/entries` è la seconda schermata dell'app per uso reale, ed è anche la più
+difficile: è l'unica dove il contenuto può arrivare a centinaia di elementi e
+dove ogni scelta tipografica viene moltiplicata per duecento. È il posto dove
+una direzione artistica o tiene o si vede che non teneva.
+
+### La tesi: il vetro non scende nell'elenco, e non è un compromesso
+
+La domanda ovvia era: porto la palette salvia e le lastre di vetro anche qui,
+così le due schermate si assomigliano? La risposta è no, e non per prudenza.
+
+La dashboard è **una stanza guardata attraverso il vetro**: c'è un ambiente
+dietro, e il vetro serve a metterci distanza. L'elenco è **il registro**, ed è
+stampato su carta: non c'è niente dietro da guardare, quindi non c'è niente da
+mettere a distanza. Una lastra traslucida sopra il nulla non è profondità, è
+una decorazione che costa. E costa davvero: `backdrop-filter` è l'effetto più
+caro del catalogo, e quello che regge su dodici card non regge su duecento
+righe. Su questa pagina non ce n'è **nessuno** legato a una riga; gli unici due
+sono nel chrome, e sono quelli che c'erano già.
+
+Quindi due superfici, con due nomi: **la stanza** e **la carta**. Non due
+linguaggi — due materiali dello stesso linguaggio. Quello che condividono è
+tutto il resto, ed è la parte che conta: la scala dei numeri, le etichette di
+sezione, il velo del chrome, la disciplina dei ruoli di colore, il serif
+corsivo come voce che commenta.
+
+### I soldi si scrivono in un modo solo
+
+La pagina aveva tre `formatEUR` locali (uno nell'elenco, uno nella riga, uno
+nella testata) che producevano una stringa piatta, mentre la dashboard aveva
+`Amount` con la gerarchia interna. Due modi di scrivere i soldi nella stessa
+app sono uno di troppo, e la ragione non è l'ordine: è che **la gerarchia
+dell'importo è un'affermazione** — gli euro decidono, i centesimi sono
+contesto — e un'app che la fa in una schermata e non nell'altra sta dicendo
+che non ci credeva.
+
+`Amount` ed `Eyebrow` sono usciti dalla dashboard e vivono in
+`components/crafted`. Con loro sono uscite dallo scope `.nlc-glass-home` le
+regole tipografiche: la scala numerica (hero/lead/mid) e il corpo delle
+etichette stanno in `:root`, perché erano la scala dei soldi, non la scala di
+una pagina. `.nlc-amount` porta con sé il carattere, così un importo è lo
+stesso oggetto ovunque compaia, senza dipendere da chi lo contiene.
+
+Portarlo su una lista ha rivelato un limite che sulla dashboard non si vedeva:
+la proporzione dei centesimi (0,46em) è tarata su numeri da 27–50px, ma in una
+riga d'elenco l'importo è 15px, e 0,46em fanno **sette pixel**. La gerarchia
+diventava illeggibilità. La regola ora è `min(1em, max(11px, 0.46em))`: un
+guinzaglio in tutte e due le direzioni. Sotto gli 11px un numero smette di
+essere un numero e diventa una texture; sopra 1em i centesimi diventerebbero
+più grandi degli euro su un importo scritto piccolo. Dove non c'è corpo per
+fare gerarchia, l'importo torna piatto da solo. Effetto collaterale sulla
+dashboard: gli importi a 19px avevano i centesimi a 8,7px, ora a 11 — e stanno
+meglio.
+
+### La testata: tre riquadri uguali per tre numeri che uguali non sono
+
+C'erano "Speso", "Evitato" e "Risparmiato" in tre riquadri identici, affiancati,
+stessa dimensione, stesso peso. Tre riquadri uguali dicono una cosa sola: *questi
+tre numeri contano allo stesso modo*. Ma il vincolo dice — giustamente — che il
+numero di questa pagina è uno: i soldi realmente usciti. E il terzo numero è lo
+stesso che sulla dashboard abbiamo tolto perché in tre mesi valeva 19,20 € su
+320 movimenti.
+
+Non li ho tolti: li ho **messi in gerarchia**. Il totale reale è l'unico scritto
+in grande, sotto il titolo del mese. Evitato e risparmiato scendono nella riga
+delle postille, insieme al conteggio dei movimenti, a 12px: lì 19,20 € possono
+stare senza fingere di pesare quanto 443. E compaiono solo se sono maggiori di
+zero, perché un riquadro che dice "€0,00" occupa esattamente lo spazio di uno
+che dice qualcosa.
+
+Questa è la differenza fra togliere una metrica e ridimensionarla, ed è una
+differenza che vale la pena tenere: la decisione di prodotto sul confronto non è
+stata presa, e la direzione artistica non è il posto da cui prenderla di
+straforo. Ma la gerarchia posso stabilirla adesso, ed è reversibile con una
+riga.
+
+### La striscia dei filtri: un mini-chrome dentro la pagina
+
+Era `sticky top-14` con bordo inferiore, fondo al 95% e blur: cioè una lastra,
+sotto un header che una lastra non è più. Due bordi in cascata — esattamente il
+fantasma della barra che avevo tolto in cima. Le tre strade erano: toglierle lo
+sticky (ma su una lista da centinaia di righe la ricerca deve restare a portata
+di pollice), dividere il lavoro fra i due (ma allora sono due chrome), oppure
+**farne lo stesso materiale**. Ho fatto la terza.
+
+Ora la striscia porta il velo del chrome: scrim nel colore che la pagina ha già
+e blur progressivo mascherato, nessun bordo, nessuna lastra. Ma con un **terzo
+profilo**, ed è la parte interessante. L'header apre e va a zero; la barra
+inferiore chiude e va al pieno; qui serviva una terza forma, perché il problema
+è diverso: nell'header le scritte stanno nel primo 52% del box, qui i controlli
+occupano **tutta** l'altezza — 110px, e più del doppio quando si apre il
+pannello delle categorie. Con la curva dell'header, sotto il segmentato lo
+scrim è già al 30%, e i movimenti si vedono passare attraverso i filtri. Il
+profilo giusto è: pieno per tutta la zona toccabile, dissolvenza solo
+sull'ultimo tratto. Le fermate sono in px misurati dal basso dello strato e non
+in percentuale, per la stessa ragione per cui quelle della barra inferiore sono
+misurate dall'alto: l'altezza del box cambia quando il pannello si apre, la
+distanza fra l'ultimo controllo e l'inizio della sfumatura no.
+
+C'è un dettaglio che sembra un cavillo e invece è quello che rende la cosa
+credibile: lo strato **sporge anche verso l'alto**, di 20px, dentro la coda
+della dissolvenza dell'header. Senza, resta una fascia di una decina di pixel
+in cui i movimenti si vedono passare, e quella fascia — attaccata sotto a una
+striscia opaca — non si legge come una dissolvenza: si legge come una giuntura
+sporca. I due veli si sovrappongono, e nella sovrapposizione vince il pieno.
+Costo: zero elementi nuovi, e un `backdrop-filter` che c'era già (era il blur
+della vecchia lastra).
+
+Nel farlo ho trovato un bug che non era mio: `top-14` sono 56px scritti a mano,
+mentre l'altezza vera dell'header dipende da `env(safe-area-inset-top)` ed è
+già pubblicata dal guscio come `--nlc-chrome-top`. Su un telefono con la notch
+la striscia si incastrava **sotto** l'header. È la terza volta in questo
+documento che una costante condivisa senza nome si sfasa; a un certo punto
+diventa una regola: se due elementi devono toccarsi, la misura la pubblica uno
+solo.
+
+### Due modelli di scelta non possono avere la stessa forma
+
+Filtro per tipo e filtro per categorie erano due file di chip identiche. Ma il
+tipo è **una scelta sola fra quattro**, le categorie sono una **selezione
+multipla**: dare la stessa forma a due comportamenti diversi è la definizione
+di interfaccia che mente. Il tipo diventa un segmentato — quattro celle in una
+cornice, si vede a colpo d'occhio che sono alternative e sparisce lo scroll
+orizzontale; le categorie restano chip e guadagnano il segno di spunta, che è
+il modo canonico di dire "ne puoi prendere quante vuoi".
+
+Nessuno dei due usa più il lime/oro per dire "selezionato". Un filtro attivo è
+uno **stato**, non un'azione, e il colore dell'accento nell'app significa
+azione. Lo stato si dice con il materiale: la cella piena. Vale anche per il
+contatore sul pulsante dei filtri, che era una pastiglia color brand e ora è
+neutra.
+
+Il pannello delle categorie, la sua logica e la combinabilità con ricerca e
+tipo non sono stati toccati.
+
+### La densità: cosa fa una riga
+
+È la superficie dove la gerarchia tipografica vale più che altrove, perché ogni
+scelta è moltiplicata per duecento. Cinque informazioni per riga, quattro
+gradini:
+
+1. **Il titolo ha la riga tutta per sé.** Prima divideva lo spazio con i badge,
+   e a 360px la prima cosa che si troncava era l'unica per cui l'utente sta
+   scorrendo.
+2. **Categoria, persona e tipo** stanno insieme sulla riga sotto, a 11px: sono
+   tutte e tre risposte alla stessa domanda ("che movimento è").
+3. **La nota** resta in serif corsivo. È la voce dell'utente dentro un elenco
+   di misure, ed è il posto dove il corsivo del linguaggio esistente lavora
+   meglio di ovunque.
+4. **L'importo** a destra, con la gerarchia interna dell'app.
+
+I **filetti** non sono più elementi separati ma un bordo della riga: duecento
+nodi in meno nel DOM, zero differenza visiva. L'**icona** prende il contenitore
+che la dashboard usa già per le sue righe, così una categoria ha lo stesso
+aspetto nelle due schermate.
+
+Il **segno meno** davanti alle spese è sparito. In una colonna dove ogni riga è
+denaro uscito, il meno è la cosa che tutte le righe hanno in comune: non
+informa. Il "+" davanti alle evitate resta, e adesso vuol dire qualcosa, perché
+è l'eccezione. Si marca la deroga, non la regola.
+
+### I badge: ridisegnati, e la ragione per cui non li ho tolti
+
+"Evitata" e "Confronto" erano due chip bordate accanto al titolo. A duecento
+righe con settantadue badge, due riquadri colorati per riga sono coriandoli, e
+in un registro i coriandoli costano attenzione che serve altrove. Ora sono una
+parola in maiuscoletto sulla riga dei dettagli — stesso vocabolario delle
+etichette di sezione, corpo 10px — e **il colore ce l'ha solo "Evitata"**.
+
+La distinzione non è estetica: "Evitata" dice una cosa sui soldi (non sono
+usciti), "Confronto" dice una cosa sul modo in cui il movimento è stato
+registrato. La prima è un fatto contabile e merita l'inchiostro verde; la
+seconda è un metadato e sta in grigio. Per la stessa ragione l'icona della riga
+si tinge solo sulle evitate: sono l'unico caso in cui la riga rappresenta denaro
+che non si è mosso.
+
+Non li ho tolti, come chiesto. Ma il mio parere su "Confronto", visto che è
+stato chiesto di scriverlo: **la funzione com'è oggi costa più di quanto rende.**
+Costa una riga di gerarchia su ogni movimento che la usa, un filtro su quattro
+nella barra, e un numero nella testata; rende 19,20 € in tre mesi. Se la
+decisione di prodotto si può ancora prendere, il criterio che proporrei è
+misurabile: **se in tre mesi nessuno usa il filtro "Confronti", la funzione non
+esiste già adesso** — esiste solo il suo costo. Se invece resta, la forma giusta
+è quella che ha ora: una proprietà del movimento, visibile aprendolo, non un
+secondo numero dentro il registro.
+
+### La colonna che non sommava
+
+Cercando la gerarchia della riga ho trovato una cosa che non è grafica: sui
+movimenti con confronto **il numero grande era il risparmio**, non la spesa. In
+un elenco raggruppato per giorno, con il totale del giorno in testa al gruppo,
+questo significa che la colonna degli importi non torna con i suoi totali: si
+legge "giovedì · €75,80" e sotto una riga che dice "+€20". In un registro una
+colonna che non somma è un errore, non uno stile.
+
+Ora la colonna dice sempre la stessa cosa — **quanto è successo a quel
+movimento** — e sui confronti è quanto è uscito davvero; l'alternativa scende
+sotto, piccola ("invece di €52,00"), che è anche il modo in cui la si racconta
+a voce. Il risparmio non è sparito: è la sottrazione fra due numeri che stanno
+uno sopra l'altro.
+
+Per la stessa ragione ho corretto il totale del giorno, che scartava i confronti
+insieme alle evitate. Il vincolo dice che il totale è `realSpent`, cioè i soldi
+usciti esclusa **solo** la spesa evitata: la testata lo rispettava, i totali dei
+giorni no. Non ho cambiato la definizione, ho fatto in modo che il codice la
+seguisse in tutte e due i posti.
+
+### Il finale della lista diceva una cosa falsa
+
+In fondo compariva sempre "Fine agosto", anche con altre pagine da caricare, e
+subito sotto un riquadro con scritto "Tutti i movimenti sono stati caricati".
+Due finali, di cui uno bugiardo. Ora ce n'è uno solo e cambia parola secondo
+quello che è vero: "fine agosto" quando si sono viste tutte le voci del mese,
+"hai visto tutto" quando la lista è filtrata — perché in quel caso non è il mese
+ad essere finito, sono i risultati.
+
 ## Cosa ho deliberatamente non fatto
 
 - **Niente somma di correnti e fisse, da nessuna parte.** Il numero eroe è la
@@ -275,6 +492,23 @@ l'inchiostro sì, e il ruolo (lime = azione) non cambia, cambia solo il peso.
   barra si è mossa una misura di layout — la riserva di spazio in fondo alle
   pagine — ma solo perché discende dalla geometria del velo: era un numero
   ripetuto a mano, ora è `--nlc-chrome-bottom`.
+- **Niente vetro sull'elenco movimenti**, e niente palette salvia: la stanza
+  resta alla home. Vedi la sezione dedicata — non è prudenza, è che una lastra
+  traslucida sopra il nulla non è profondità, e su duecento righe si paga.
+- **Niente nuovi blocchi, nuove metriche o nuovi filtri su `/entries`.** Non ho
+  aggiunto un riepilogo, un grafico o un ordinamento. Quello che c'era è
+  rimasto: quello che è cambiato è quanto pesa.
+- **Niente orario sulle righe**, niente ripescaggio dell'informazione tolta.
+  L'ho verificato: con il raggruppamento per giorno e la nota in corsivo, la
+  riga è già piena di cose vere.
+- **Nessun badge rimosso.** "Evitata" e "Confronto" sono stati ridisegnati, non
+  cancellati; il mio parere sul futuro della funzione è scritto sopra, che è il
+  posto dove va, non nel codice.
+- **Una cosa l'ho tolta, e la dichiaro**: il conteggio dei movimenti
+  nell'intestazione di ogni giorno ("3 mov · €48,20"). Sotto quell'intestazione
+  ci sono le righe, e sono da una a cinque: si contano guardandole. È la stessa
+  logica con cui era stato tolto l'orario, applicata al numero accanto. Se in
+  uso reale manca, è una riga di codice.
 - **Nessuna libreria.** Tutto CSS, SVG inline e lucide.
 
 ## Dove vorrei un occhio umano
@@ -310,15 +544,71 @@ l'inchiostro sì, e il ruolo (lime = azione) non cambia, cambia solo il peso.
    un'etichetta di navigazione è una decisione di copy, non di direzione
    artistica, e "Tu" è probabilmente voluto. Ma o è voluto in tutte e due le
    lingue, e allora va nell'i18n, o è una svista.
+8. **La giuntura del carattere, che ho spostato invece di chiudere.** La home
+   era in Instrument Sans e tutte le altre pagine nel sans di sistema — non per
+   scelta, per una variabile mai definita. Ho portato Instrument Sans anche
+   sull'elenco, perché due caratteri in due schermate contigue si leggono come
+   due app. Ma restano quattro rotte nel carattere di sistema, e adesso la
+   giuntura è fra `/entries` e `/habits` invece che fra `/` e tutto il resto.
+   Io la chiuderei portando il carattere in `:root` e togliendolo dalle due
+   classi di pagina: è una riga, ma tocca ogni schermata, e non è una cosa da
+   fare di straforo dentro un lavoro sull'elenco. **Questa è la prima cosa che
+   guarderei.**
+9. **Il verde delle evitate è più acceso della spesa vera, sulla stessa riga.**
+   È voluto — l'app si chiama "Non l'ho comprato" e quella riga è il suo
+   momento — ma su una schermata di venti righe con tre evitate, la cosa che
+   salta all'occhio è il denaro *non* uscito. Su un registro è una scelta
+   discutibile, e va guardata con dati veri, non con quelli di prova.
+10. **La fascia semi-velata sotto i controlli quando il pannello categorie è
+    aperto.** È lo stesso difetto della sporgenza inferiore già discusso per la
+    barra: una striscia alta più o meno una riga in cui un movimento è già mezzo
+    velato ma ancora toccabile. Con il pannello aperto quella striscia cade su
+    contenuto denso invece che sul bianco. È transitoria (si chiude il pannello
+    e passa), ma è da vedere su un telefono vero.
+11. **Il segmentato in tema chiaro.** La cella attiva è `--surface-muted` su
+    `--background`: due beige a un passo l'uno dall'altro. Con il peso
+    semibold si legge, e il contrasto del testo è largamente sopra soglia, ma
+    la separazione fra "acceso" e "spento" è più sicura in scuro che in chiaro.
+    Se non basta, il rimedio è un gradino di materiale in più, non un colore.
+12. **La riga delle postille in testata a 360px.** Con tre voci e importi a
+    quattro cifre va a capo. Va a capo bene (è un flex che avvolge), ma è il
+    genere di cosa che si giudica solo su un telefono con i propri numeri.
 
 ## Nota tecnica per chi tocca questo codice
 
 Le regole `.nlc-eyebrow`, `.nlc-amount`, `.nlc-track` in `globals.css` sono
 fuori dai layer Tailwind, quindi **vincono sulle utility**: per variare il
 colore di un'eyebrow non si usa `text-*` ma la variabile `--eyebrow-ink`
-(vedi le card di confronto). I token del materiale (`--sheet-*`, `--plate-*`,
+(vedi le card di confronto, e i marcatori delle righe dell'elenco); per il
+corpo si usa `--fs-label`. I token del materiale (`--sheet-*`, `--plate-*`,
 `--track`, `--env-strength`) vivono dentro `.nlc-palette-sage` con la loro
 variante chiara: un tema nuovo si fa lì, senza toccare i componenti.
+
+`Amount` ed `Eyebrow` stanno in `components/crafted` e sono di tutta l'app,
+non della dashboard. `Amount` prende la valuta dal contesto del workspace: il
+parametro esplicito serve solo dove è già stato risolto (la dashboard). Se un
+giorno la gerarchia dei centesimi va tolta, il posto è uno: `.nlc-cents` e
+`.nlc-currency`. Il `min(1em, max(11px, …))` di quelle due regole non è una
+finezza: è ciò che permette allo stesso componente di stare in un numero eroe
+da 50px e in una riga d'elenco da 15px senza due varianti.
+
+Il velo del chrome ha tre profili, tutti in `globals.css` e fuori dai layer,
+tutti fatti dei soliti due pseudo-elementi (scrim su `::after`, blur mascherato
+su `::before`, `z-index: -1`, colore da `var(--background)`):
+`.nlc-chrome-veil` (header: apre e va a zero), `.nlc-chrome-veil-up` (barra
+inferiore: chiude e va al pieno), `.nlc-chrome-veil-list` (striscia dei filtri:
+pieno sotto i controlli, dissolvenza sull'ultimo tratto). Il terzo sporge di
+20px in alto per sovrapporsi alla coda del primo: se si cambia il profilo
+dell'header, quella sporgenza va ricontrollata, altrimenti fra i due riappare
+una fascia in cui il contenuto traspare. La striscia si aggancia a
+`--nlc-chrome-top` (l'altezza vera dell'header, pubblicata da `app-shell`):
+mai rimettere un numero fisso, cambia con la safe area e con la nav desktop.
+
+`.nlc-ledger` è la superficie dell'elenco movimenti: per ora porta solo il
+carattere, ed è il gancio giusto se la carta dovrà prendere altri token propri.
+`--avoided-ink` è il verde della spesa evitata **quando fa da testo**, con la
+sua variante chiara, e sta accanto agli altri token d'app: stessa regola di
+`--accent-ink` e `--lilac-ink`.
 
 Il velo del chrome è `.nlc-chrome-veil` (header) e `.nlc-chrome-veil-up`
 (barra inferiore), sempre in `globals.css` e fuori dai layer: due
