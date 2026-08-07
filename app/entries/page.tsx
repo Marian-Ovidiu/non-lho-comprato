@@ -109,7 +109,9 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
   const previousMonth = monthlyStats.at(-2);
 
   return (
-    <>
+    // Il registro occupa la pagina da bordo a bordo: le righe sono la
+    // superficie, e una superficie con un margine intorno diventa una card.
+    <div className="nlc-ledger -mx-4 sm:-mx-6 lg:-mx-8">
       <CraftedEntriesHeader
         monthLabel={monthLabel}
         yearLabel={yearLabel}
@@ -124,7 +126,7 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
       />
 
       {loadError ? (
-        <div className="px-5 pb-4">
+        <div className="px-[var(--sp-page-x)] pb-4">
           <DataLoadErrorBanner
             title={t.entries.pageLoadError}
             message={loadError}
@@ -158,6 +160,6 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
             : null
         }
       />
-    </>
+    </div>
   );
 }

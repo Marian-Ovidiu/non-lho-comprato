@@ -741,6 +741,32 @@ html.nlc-splash-pending #nlc-splash-shell {
   }
 }
 
+/* ---------- L'elenco movimenti: la carta ----------
+   La dashboard è una stanza guardata attraverso il vetro; l'elenco è il
+   registro, ed è stampato su carta. Nessuna lastra, nessun ambiente, nessun
+   backdrop-filter per riga: quello che regge su dodici card non regge su
+   duecento righe. Quello che i due condividono è il resto — la scala dei
+   numeri, le etichette, il velo del chrome, la disciplina dei ruoli di colore.
+   Qui la carta prende la stessa voce tipografica della stanza: fino a ieri la
+   home era in Instrument Sans e tutte le altre pagine nel sans di sistema, e
+   due caratteri diversi in due schermate contigue si leggono come due app. */
+.nlc-ledger {
+  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+}
+
+/* Il verde della spesa evitata quando fa da *testo*. Stessa regola già scritta
+   per il lime e il lilla della dashboard: un colore che nasce come campitura,
+   quando diventa inchiostro, ha bisogno di una variante più scura — su carta
+   chiara il verde di `--success` si ferma a 4,4:1, cioè appena sotto la
+   soglia, ed è un numero che va letto. */
+:root {
+  --avoided-ink: #8fc47a;
+}
+
+:root:not(.dark) {
+  --avoided-ink: #2f6b41;
+}
+
 /* ---------- Dashboard: colore, materiale, profondità ---------- */
 /* La palette è confinata alla home (contenuto + chrome della rotta): il resto
    dell'app resta sui token caldi. */
@@ -942,12 +968,15 @@ html.nlc-splash-pending #nlc-splash-shell {
 
 /* I centesimi sono contesto, non decisione: restano leggibili ma smettono di
    competere con gli euro per la larghezza e per l'attenzione.
-   Il `max()` è il guinzaglio: la proporzione vale finché c'è corpo per
-   reggerla, ma sotto gli 11px un numero smette di essere un numero e diventa
-   una texture — e in una riga d'elenco da 15px la proporzione pura darebbe
-   sette pixel. */
+   Il `min(1em, max(11px, …))` è il guinzaglio, in tutte e due le direzioni: la
+   proporzione vale finché c'è corpo per reggerla, ma sotto gli 11px un numero
+   smette di essere un numero e diventa una texture (in una riga d'elenco da
+   15px la proporzione pura darebbe sette pixel), e sopra il pavimento non si
+   può passare, o su un importo scritto a 11px i centesimi finirebbero più
+   grandi degli euro. Dove non c'è gerarchia da fare, l'importo torna piatto da
+   solo. */
 .nlc-cents {
-  font-size: max(11px, 0.46em);
+  font-size: min(1em, max(11px, 0.46em));
   font-weight: 500;
   letter-spacing: 0;
   color: var(--ink-3);
@@ -955,7 +984,7 @@ html.nlc-splash-pending #nlc-splash-shell {
 }
 
 .nlc-currency {
-  font-size: max(12px, 0.56em);
+  font-size: min(1em, max(12px, 0.56em));
   font-weight: 500;
   letter-spacing: 0;
   color: var(--ink-3);
@@ -978,7 +1007,8 @@ html.nlc-splash-pending #nlc-splash-shell {
    chiude fuori e non esiste nessuna linea in cui il chrome comincia o finisce.
    `-up` è lo stesso velo rovesciato, per la barra inferiore. */
 .nlc-chrome-veil,
-.nlc-chrome-veil-up {
+.nlc-chrome-veil-up,
+.nlc-chrome-veil-list {
   isolation: isolate;
 }
 .nlc-chrome-veil::before,
@@ -1074,6 +1104,50 @@ html.nlc-splash-pending #nlc-splash-shell {
   );
 }
 
+/* ---- Terzo profilo: la striscia dei controlli dell'elenco ----
+   Stesso materiale e stessa regola (nessun bordo, nessuna lastra, il colore lo
+   prende da `var(--background)`), ma il profilo non poteva essere quello
+   dell'header: lì le scritte stanno nel primo 52% del box, qui i controlli
+   occupano tutta l'altezza — 110px, e di più quando si apre il pannello delle
+   categorie. Con la curva dell'header sotto il segmentato lo scrim è già al
+   30%, e i movimenti che scorrono si vedono passare attraverso i filtri.
+   Quindi: pieno per tutta la zona toccabile, dissolvenza solo sull'ultimo
+   tratto. Le fermate sono in px misurati dal *basso* dello strato e non in
+   percentuale, per la stessa ragione per cui quelle della barra inferiore sono
+   misurate dall'alto: l'altezza del box cambia (pannello aperto o chiuso), la
+   distanza fra l'ultimo controllo e l'inizio della sfumatura no. */
+.nlc-chrome-veil-list::before,
+.nlc-chrome-veil-list::after {
+  content: "";
+  position: absolute;
+  /* Sporge anche in alto, e non è simmetria: sopra c'è l'header, il cui velo
+     per definizione si dissolve verso il basso. Senza questa sporgenza resta
+     una fascia di una decina di pixel — l'ultimo tratto della dissolvenza
+     dell'header — in cui i movimenti si vedono passare, e attaccata a una
+     striscia opaca quella fascia non si legge come una dissolvenza: si legge
+     come una giuntura sporca. I due veli si sovrappongono, e nella
+     sovrapposizione vince il pieno. */
+  inset: -20px 0 -28px;
+  pointer-events: none;
+  z-index: -1;
+}
+.nlc-chrome-veil-list::before {
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-mask-image: linear-gradient(to top, transparent 0, #000 40px);
+  mask-image: linear-gradient(to top, transparent 0, #000 40px);
+}
+.nlc-chrome-veil-list::after {
+  background: linear-gradient(
+    to top,
+    transparent 0,
+    color-mix(in srgb, var(--background) 28%, transparent) 14px,
+    color-mix(in srgb, var(--background) 62%, transparent) 24px,
+    color-mix(in srgb, var(--background) 88%, transparent) 34px,
+    var(--background) 48px
+  );
+}
+
 /* Nota chiusa (era la 1 di "Dove vorrei un occhio umano"): in tema chiaro il
    lime sottile del chrome — fiamma, sottolineatura attiva, pallino della tab,
    anello del "+" — passa all'inchiostro. Il lime pieno resta dov'è campitura
@@ -1142,6 +1216,15 @@ html.nlc-splash-pending #nlc-splash-shell {
       transparent 0,
       color-mix(in srgb, var(--background) 55%, transparent) 26px,
       var(--background) 62px
+    );
+  }
+
+  .nlc-chrome-veil-list::after {
+    background: linear-gradient(
+      to top,
+      transparent 0,
+      color-mix(in srgb, var(--background) 55%, transparent) 20px,
+      var(--background) 44px
     );
   }
 }

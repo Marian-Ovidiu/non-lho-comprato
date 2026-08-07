@@ -385,6 +385,19 @@ export type Translations = {
     comparisonSaved: string;
     comparisonSpentMore: string;
     comparisonInline: string;
+    filterExpenses: string;
+    filterAvoided: string;
+    filterComparisons: string;
+    kindFilterLabel: string;
+    categoryFilterToggle: string;
+    categoriesLabel: string;
+    clearCategories: string;
+    monthSelectLabel: string;
+    avoidedTotalLabel: string;
+    savedTotalLabel: string;
+    insteadOf: string;
+    endOfMonth: (month: string) => string;
+    allLoaded: string;
   };
 
   entryForm: {
