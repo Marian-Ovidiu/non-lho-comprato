@@ -280,7 +280,13 @@ export function AppShell({
         <PullToRefresh onRefresh={handleShellRefresh}>
           <div
             className={cn(
-              "mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:px-6 sm:py-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8",
+              // La riserva in fondo segue --nlc-chrome-bottom (barra + velo) e
+              // cade a `md`, non a `sm`: la bottom bar è `md:hidden`, quindi
+              // fino a 767px lo spazio va lasciato libero comunque.
+              // `sm:pt-6` e non `sm:py-6`: la scorciatoia sta dentro una media
+              // query e vincerebbe sul `pb-` di base, che invece deve reggere
+              // fino a `md`.
+              "mx-auto w-full max-w-5xl px-4 py-4 pb-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] sm:px-6 sm:pt-6 md:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:px-8",
               "transition-[opacity,filter] duration-150 ease-out motion-reduce:transition-none",
               isWorkspaceSwitching && "pointer-events-none opacity-75 blur-[0.5px]",
             )}

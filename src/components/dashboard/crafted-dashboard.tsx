@@ -748,7 +748,7 @@ export function CraftedDashboard({
     // vetro, perché l'hero e la CTA conservino il respiro dai bordi.
     <div
       ref={rootRef}
-      className="nlc-glass-home nlc-palette-sage relative isolate -mx-4 -mt-4 -mb-[calc(env(safe-area-inset-bottom)+6.5rem)] pt-4 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] sm:-mx-6 sm:-mt-6 sm:-mb-[calc(env(safe-area-inset-bottom)+2rem)] sm:pt-6 sm:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:-mx-8"
+      className="nlc-glass-home nlc-palette-sage relative isolate -mx-4 -mt-4 -mb-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] pt-4 pb-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] sm:-mx-6 sm:-mt-6 sm:pt-6 md:-mb-[calc(env(safe-area-inset-bottom)+2rem)] md:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:-mx-8"
     >
       <div
         aria-hidden="true"

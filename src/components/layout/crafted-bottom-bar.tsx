@@ -97,10 +97,15 @@ export function CraftedBottomBar({
   ];
 
   return (
+    // Nessuna lastra e nessun bordo: la barra non è appiccicata sopra la
+    // pagina, è la pagina che si chiude nei controlli. Lo fa .nlc-chrome-veil-up
+    // — lo stesso velo dell'header rovesciato — che sale sfumando e, sotto le
+    // voci, diventa fondo pieno e ci resta per tutta la safe area. L'àncora non
+    // è la riga: è il terreno opaco sotto le dita.
     <nav
       aria-label={t.nav.mainNavLabel}
       className={cn(
-        "nlc-glass-chrome fixed inset-x-0 bottom-0 z-40 border-t border-line/60 md:hidden",
+        "nlc-chrome-veil-up fixed inset-x-0 bottom-0 z-40 md:hidden",
         isHome && "nlc-palette-sage",
       )}
     >

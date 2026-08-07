@@ -133,10 +133,118 @@ l'header "finisce". Su ogni rotta funziona per costruzione: sulla dashboard i
 due strati mostrano la stanza, sulle altre pagine si appoggiano al fondo
 piatto e spariscono del tutto.
 
-La barra inferiore resta com'era, di vetro. Non è incoerenza: l'header sta
-*sopra* il contenuto che arriva, la bottom bar sta *sopra* il contenuto a
-metà — sotto di lei passano card intere, e lì una lastra con un bordo è
-sincerità, non decorazione.
+## La barra inferiore: la pagina che si chiude nei controlli
+
+In questo documento avevo scritto che la barra inferiore restava di vetro, e
+che «una lastra con un bordo è sincerità, non decorazione». La prima metà della
+frase l'ho tenuta per il verso giusto; la seconda era sbagliata e la ritiro.
+Quel bordo — `border-t border-line/60` — era esattamente la cosa che avevo
+appena tolto dall'header: il fantasma della barra. Non si può eliminare una
+riga da un pixel in cima alla pagina perché è un residuo, e difenderla in
+fondo perché è onestà. O è un confine necessario, o non lo è.
+
+### Cosa non ho fatto, e perché resta valido
+
+La barra non si dissolve, e su questo non ho cambiato idea. È la navigazione
+primaria: iOS HIG e Material la trattano da àncora persistente, e hanno
+ragione. Sotto di lei passa contenuto in continuazione — non ogni tanto, come
+sotto l'header, ma per tutta la durata di ogni scroll — incluse card con CTA
+lime e importi tinti. E su iPhone si estende nella zona dell'home indicator,
+dove vedere scorrere qualcosa non legge come design, legge come rotto.
+
+### Il confine, risolto senza confine
+
+Quello che ho tolto è il bordo, e con lui la lastra. La barra ora porta lo
+**stesso velo dell'header, rovesciato**: uno scrim nel colore che la pagina ha
+già (`var(--background)`, quindi giusto su ogni rotta e in ogni tema) e un blur
+progressivo mascherato. Solo che il profilo della curva è opposto. L'header
+sfuma *verso il basso* fino a sparire; qui la sfumatura sale, e scendendo si
+chiude su `var(--background)` pieno — e ci resta, opaca al 100%, per tutta la
+safe area. Lo strato sporge 60px sopra il box della barra, così la sfumatura
+comincia fuori e non esiste nessuna riga in cui la barra comincia.
+
+**L'àncora non era la riga.** Era, e resta, il terreno: sotto le voci il fondo
+è opaco al 100%. Il vetro di prima era `--background` al 76% sopra un blur:
+significa che il contrasto delle etichette dipendeva da cosa stava passando
+sotto in quel momento. Ora non dipende più da niente. In salvia chiaro le voci
+inattive danno 4,61:1 sul fondo pieno, in scuro 7,09:1, e sono numeri fissi,
+non fortunati. **La barra senza bordo è più ancorata di quella con il bordo**,
+perché il bordo separava una zona semitrasparente da una trasparente, mentre
+adesso separa il pieno dal vuoto senza doverlo disegnare.
+
+Un dettaglio che sembra minuscolo e non lo è: le fermate del gradiente sono in
+px misurati **dall'alto** dello strato, non in percentuale. La distanza fra il
+bordo alto del velo e la riga dei tap è sempre la stessa (60 di sporgenza + 10
+di padding = 70px); la distanza dal basso dipende da `env(safe-area-inset-bottom)`,
+che va da 0 a 34 a seconda del telefono. Ancorare all'alto è ciò che mette il
+terreno pieno esattamente sotto le dita su un iPhone con la notch e su un
+Android senza, con un numero solo.
+
+### Punto 2 — la coerenza di materiale: allineata, e non per simmetria
+
+Ho allineato. Ma la ragione non è che due chrome debbano assomigliarsi: è che
+avevo due materiali per un problema solo. Header e barra fanno lo stesso
+lavoro — tenere leggibile un elemento fermo mentre sotto scorre roba viva — e
+la lastra di vetro quel lavoro lo faceva peggio, perché un vetro *mostra*: è
+la sua definizione. Un chrome che mostra è un chrome che non garantisce.
+
+La differenza fra i due non è sparita, ha solo smesso di essere una differenza
+di materiale ed è diventata una differenza di **profilo**, che è dove
+appartiene. Uno apre e va a zero; l'altro chiude e va al pieno. Stesso
+vocabolario, versi opposti, e il verso lo detta il lavoro: in cima la pagina
+deve poter salire fin dentro la status bar, in fondo deve fermarsi prima
+dell'home indicator. Con due materiali diversi quella differenza non si leggeva
+come intenzione, si leggeva come due decisioni prese in due giorni diversi.
+
+Effetto collaterale che vale la pena dire: `.nlc-glass-chrome` non esiste più.
+Era il quinto materiale sopravvissuto alla riduzione a due lastre, e lo usava
+un elemento solo.
+
+### Punto 3 — la barra nuda in fondo: no, e il motivo non è la frequenza
+
+L'osservazione che in cima ci si arriva sempre e in fondo quasi mai è giusta,
+ma è il mio terzo argomento, non il primo. I primi due sono più duri.
+
+**Il primo: in fondo alla pagina il velo non vela già niente**, e l'ho reso
+vero per costruzione. La riserva di spazio in fondo (`--nlc-chrome-bottom`,
+9rem) è calcolata sulla geometria del velo: 82px di barra più 60px di
+sporgenza. Significa che a scroll massimo l'ultimo elemento della pagina resta
+*sopra* il punto in cui la sfumatura comincia. Uno stato "nuda in fondo"
+scoprirebbe il fondo della pagina — cioè `var(--background)` — da sotto uno
+scrim fatto di `var(--background)`. Zero differenza visibile, su cinque rotte
+su sei. Questa parte del lavoro l'ho già fatta, ma con il layout invece che con
+un'animazione, ed è il posto giusto dove farla: un problema di spazio si
+risolve con lo spazio.
+
+**Il secondo: sulla sesta rotta la differenza ci sarebbe, ed è un cattivo
+affare.** Sulla dashboard le onde sono agganciate al fondo del viewport, quindi
+dietro la barra c'è sempre la stanza. Scoprirle vorrebbe dire mettere il
+livello più tenue dell'ambiente sotto le quattro voci della navigazione
+primaria e sotto l'home indicator — cioè rimettere in discussione i due numeri
+di contrasto qui sopra, e riaprire proprio la zona che il punto precedente
+diceva di non toccare, in cambio di una striscia di onde che sopra la barra si
+vedono già.
+
+C'è anche un costo tecnico, e non è banale: la barra non può sfumare a zero
+tutta intera, perché la safe area deve restare piena. Servirebbero due strati
+indipendenti, uno che si dissolve e uno che resta — cioè sommare strati, che è
+esattamente il vincolo di prestazione che ci siamo dati. L'header può
+permettersi lo stato nudo perché lì non c'è niente da tenere fermo.
+
+Quindi no. E lo scrivo per esteso perché uno stato che non c'è va difeso come
+uno che c'è.
+
+### Una cosa rotta che ho trovato mentre misuravo
+
+Per calcolare la riserva ho dovuto cercare quanto spazio le pagine lasciavano
+libero, e l'ho trovato scritto a mano — `6.5rem` — in cinque file diversi. Una
+costante condivisa senza un nome è una costante che prima o poi si sfasa, e
+infatti era già sfasata: la barra è `md:hidden`, ma la riserva scendeva a 2rem
+già da `sm`. Fra 640 e 767px di larghezza l'ultimo pezzo di ogni pagina finiva
+sotto la navigazione. Con la vecchia lastra opaca spariva e basta; con un velo
+sfumato sarebbe sparito più elegantemente, il che è peggio. Ora il numero ha un
+nome (`--nlc-chrome-bottom`), vive accanto alla geometria del velo da cui
+discende, e la soglia è `md` come la barra.
 
 ### Nota chiusa: il lime del chrome in tema chiaro
 
@@ -161,10 +269,12 @@ l'inchiostro sì, e il ruolo (lime = azione) non cambia, cambia solo il peso.
   scorso" coloravano l'intera lastra (una verde e una arancione affiancate
   urlavano più dell'hero). Ora il materiale resta neutro e il colore va solo
   sul verdetto: etichetta e icona.
-- **Niente ritocco al layout del chrome condiviso** (header, bottom bar): il
-  loro layout appartiene all'app, non alla dashboard. L'header è poi stato
-  sbloccato e ha cambiato materiale (vedi la sezione dedicata), ma la
-  struttura — cosa c'è e in che ordine — non si è mossa.
+- **Niente ritocco alla struttura del chrome condiviso** (header, bottom bar):
+  cosa c'è e in che ordine non si è mai mosso. Entrambi sono poi stati
+  sbloccati e hanno cambiato materiale (vedi le due sezioni dedicate), e con la
+  barra si è mossa una misura di layout — la riserva di spazio in fondo alle
+  pagine — ma solo perché discende dalla geometria del velo: era un numero
+  ripetuto a mano, ora è `--nlc-chrome-bottom`.
 - **Nessuna libreria.** Tutto CSS, SVG inline e lucide.
 
 ## Dove vorrei un occhio umano
@@ -187,6 +297,19 @@ l'inchiostro sì, e il ruolo (lime = azione) non cambia, cambia solo il peso.
 5. **La soglia d'ambra dei budget** (70% globale, 80% categoria): l'ho
    ereditata dalle soglie esistenti, ma ora che l'ambra è un colore dedicato
    la soglia è più visibile di prima. Da tarare sull'uso vero.
+6. **I 60px di sporgenza del velo inferiore.** È il numero su cui ho esitato di
+   più. Più corto e la sfumatura ricomincia a somigliare a un bordo morbido;
+   più lungo e la fascia in cui una card è ancora toccabile ma già mezza velata
+   si allunga, il che è la cosa spiacevole di questa tecnica (iOS la accetta,
+   ma è transitoria: scorri e passa). A 60px quella fascia è alta più o meno
+   una riga di testo. È da guardare scorrendo la lista dei movimenti su un
+   telefono vero, che è il posto dove il difetto verrebbe fuori.
+7. **"Tu" nella barra è scritto in chiaro nel componente** e non passa da
+   `src/lib/i18n` — quindi in inglese resta "Tu", mentre la chiave `nav.more`
+   esiste già ("Altro" / "More"). Non l'ho toccato perché cambiare
+   un'etichetta di navigazione è una decisione di copy, non di direzione
+   artistica, e "Tu" è probabilmente voluto. Ma o è voluto in tutte e due le
+   lingue, e allora va nell'i18n, o è una svista.
 
 ## Nota tecnica per chi tocca questo codice
 
@@ -197,8 +320,24 @@ colore di un'eyebrow non si usa `text-*` ma la variabile `--eyebrow-ink`
 `--track`, `--env-strength`) vivono dentro `.nlc-palette-sage` con la loro
 variante chiara: un tema nuovo si fa lì, senza toccare i componenti.
 
-Il velo dell'header è `.nlc-chrome-veil` (sempre in `globals.css`, fuori dai
-layer): due pseudo-elementi in `z-index: -1`, scrim su `::after` e blur
-mascherato su `::before`. Prende il colore da `var(--background)`, quindi
-segue rotta e tema da solo; non dargli mai un `background` diretto, o torna
-una barra.
+Il velo del chrome è `.nlc-chrome-veil` (header) e `.nlc-chrome-veil-up`
+(barra inferiore), sempre in `globals.css` e fuori dai layer: due
+pseudo-elementi in `z-index: -1`, scrim su `::after` e blur mascherato su
+`::before`. Prendono il colore da `var(--background)`, quindi seguono rotta e
+tema da soli; non dare mai a questi elementi un `background` diretto, o torna
+una barra. Uno solo `backdrop-filter` per velo, e sono gli stessi due che le
+vecchie lastre usavano già: il saldo è zero.
+
+Le tre misure del velo inferiore sono legate fra loro e vanno cambiate
+insieme: la sporgenza (`inset: -60px 0 0`), la fermata dove lo scrim diventa
+pieno (`70px`, cioè sporgenza + il `pt-2.5` della barra — deve cadere esatta
+sul bordo alto della riga dei tap) e `--nlc-chrome-bottom`, la riserva che le
+pagine lasciano in fondo, che è sporgenza + altezza della barra. Se si allunga
+la sfumatura senza allungare la riserva, a fondo pagina l'ultima card entra nel
+velo.
+
+`--nlc-chrome-bottom` è usato da `app-shell` (padding del `main`), dalla
+dashboard (il margine negativo accoppiato, che deve restare identico o la
+stanza non arriva più in fondo) e dal prompt delle notifiche, che galleggia
+sopra la barra. Il `6.5rem` rimasto nei due form dei movimenti è un'altra cosa:
+quelli non stanno sotto la barra.

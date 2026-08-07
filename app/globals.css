@@ -949,30 +949,28 @@ html.nlc-splash-pending #nlc-splash-shell {
   vertical-align: baseline;
 }
 
-/* Chrome smerigliato: oggi lo usa solo la barra inferiore. */
-.nlc-glass-chrome {
-  background: color-mix(in srgb, var(--background) 76%, transparent);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
-  backdrop-filter: blur(20px) saturate(140%);
-}
-
-/* ---- Il velo dell'header ----
-   L'header non è una lastra: sono elementi fermi sulla pagina. La leggibilità
-   in scroll la fanno due strati senza bordi:
+/* ---- Il velo del chrome ----
+   Né l'header né la barra inferiore sono lastre: sono elementi fermi sulla
+   pagina. La leggibilità in scroll la fanno due strati senza bordi:
    1. uno scrim nel colore del fondo (::after) che sfuma a zero con una curva
       morbida — è il colore che la pagina ha già, quindi percettivamente non è
       uno sfondo, ed è lui a garantire il contrasto AA;
    2. un blur progressivo mascherato (::before) che scioglie il dettaglio del
       contenuto prima che arrivi sotto le scritte. Su un fondo liscio (aura,
       carta piatta) un blur non cambia nulla: si manifesta solo quando serve.
-   Il backdrop-filter è a saldo zero: è quello che la vecchia barra usava già.
-   Entrambi gli strati sporgono sotto il bordo dell'header, così la sfumatura
-   si chiude fuori dal suo box e non esiste nessuna linea di confine. */
-.nlc-chrome-veil {
+   Il backdrop-filter è a saldo zero per entrambi: uno solo per elemento, ed è
+   quello che le vecchie lastre usavano già.
+   Gli strati sporgono sempre oltre il bordo del loro box, così la sfumatura si
+   chiude fuori e non esiste nessuna linea in cui il chrome comincia o finisce.
+   `-up` è lo stesso velo rovesciato, per la barra inferiore. */
+.nlc-chrome-veil,
+.nlc-chrome-veil-up {
   isolation: isolate;
 }
 .nlc-chrome-veil::before,
-.nlc-chrome-veil::after {
+.nlc-chrome-veil::after,
+.nlc-chrome-veil-up::before,
+.nlc-chrome-veil-up::after {
   content: "";
   position: absolute;
   inset: 0 0 -16px;
@@ -1017,19 +1015,64 @@ html.nlc-splash-pending #nlc-splash-shell {
   }
 }
 
+/* ---- Lo stesso velo, rovesciato: la barra inferiore ----
+   Stesso materiale dell'header — nessuna lastra, nessun bordo — ma profilo
+   opposto. L'header sfuma verso il basso fino a sparire; qui la sfumatura sale
+   e, andando in giù, si chiude su `var(--background)` pieno. È lì l'àncora: non
+   in una riga, ma nel fatto che sotto le voci il fondo è opaco al 100% e ci
+   resta per tutta la safe area. Più risolto della vecchia lastra al 76%.
+
+   Le fermate sono in px dall'alto dello strato, non in percentuale, e non è un
+   dettaglio: la distanza fra il bordo alto del velo e la riga dei tap è sempre
+   la stessa (60px di sporgenza + 10px di padding = 70px), mentre la distanza
+   dal basso dipende da env(safe-area-inset-bottom), che va da 0 a 34px. Ancorare
+   all'alto è ciò che mette il terreno pieno esattamente sotto le dita su ogni
+   telefono. Sotto i 70px il gradiente tiene l'ultimo colore fino in fondo. */
+/* Lo spazio che le pagine devono lasciare libero in fondo. Prima era un 6.5rem
+   ripetuto a mano in più file; ora è un numero solo, e discende dalla geometria
+   qui sopra: 82px di barra (10 + 56 + 16, safe area esclusa perché si somma a
+   parte) + 60px di sporgenza del velo = 142px, arrotondati a 9rem.
+   Serve a questo: a fondo pagina l'ultimo elemento resta *sopra* l'inizio della
+   sfumatura, quindi il velo non vela mai niente di leggibile da fermo. È il
+   motivo per cui non esiste (e non serve) uno stato "nuda in fondo". */
+:root {
+  --nlc-chrome-bottom: 9rem;
+}
+
+.nlc-chrome-veil-up::before,
+.nlc-chrome-veil-up::after {
+  inset: -60px 0 0;
+}
+.nlc-chrome-veil-up::before {
+  -webkit-backdrop-filter: blur(16px) saturate(130%);
+  backdrop-filter: blur(16px) saturate(130%);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 58px);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 58px);
+}
+.nlc-chrome-veil-up::after {
+  background: linear-gradient(
+    to bottom,
+    transparent 0,
+    color-mix(in srgb, var(--background) 28%, transparent) 16px,
+    color-mix(in srgb, var(--background) 62%, transparent) 34px,
+    color-mix(in srgb, var(--background) 88%, transparent) 52px,
+    var(--background) 70px
+  );
+}
+
 /* Nota chiusa (era la 1 di "Dove vorrei un occhio umano"): in tema chiaro il
    lime sottile del chrome — fiamma, sottolineatura attiva, pallino della tab,
    anello del "+" — passa all'inchiostro. Il lime pieno resta dov'è campitura
    (la CTA), l'ink arriva dove il lime è tratto. */
 :root:not(.dark) .nlc-palette-sage.nlc-chrome-veil .text-accent,
-:root:not(.dark) .nlc-palette-sage.nlc-glass-chrome .text-accent {
+:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil-up .text-accent {
   color: var(--accent-ink);
 }
 :root:not(.dark) .nlc-palette-sage.nlc-chrome-veil .border-accent,
-:root:not(.dark) .nlc-palette-sage.nlc-glass-chrome .border-accent {
+:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil-up .border-accent {
   border-color: var(--accent-ink);
 }
-:root:not(.dark) .nlc-palette-sage.nlc-glass-chrome .nlc-tab-dot {
+:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil-up .nlc-tab-dot {
   background-color: var(--accent-ink);
 }
 
@@ -1063,19 +1106,28 @@ html.nlc-splash-pending #nlc-splash-shell {
 /* Fallback: senza backdrop-filter la lastra diventa opaca invece che velina. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .nlc-glass-hero,
-  .nlc-glass-card,
-  .nlc-glass-chrome {
+  .nlc-glass-card {
     background: var(--surface);
   }
 
-  /* Senza blur il velo dell'header si affida al solo scrim: più pieno, ma
-     sempre sfumato — mai una barra. */
+  /* Senza blur il velo si affida al solo scrim: più pieno, ma sempre sfumato —
+     mai una barra. Sopra, l'header; sotto, la barra, che deve comunque
+     chiudersi su fondo pieno prima della riga delle voci. */
   .nlc-chrome-veil::after {
     background: linear-gradient(
       to bottom,
       var(--background) 58%,
       color-mix(in srgb, var(--background) 55%, transparent) 84%,
       transparent 100%
+    );
+  }
+
+  .nlc-chrome-veil-up::after {
+    background: linear-gradient(
+      to bottom,
+      transparent 0,
+      color-mix(in srgb, var(--background) 55%, transparent) 26px,
+      var(--background) 62px
     );
   }
 }

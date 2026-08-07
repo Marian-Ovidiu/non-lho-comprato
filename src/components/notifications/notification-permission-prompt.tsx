@@ -66,7 +66,8 @@ export function NotificationPermissionPrompt() {
       aria-label={t.notifications.permissionRegionLabel}
       className={cn(
         "fixed inset-x-0 z-50 flex justify-center px-4",
-        "bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] md:bottom-6",
+        // Sopra il velo della barra, non dentro la sua sfumatura.
+        "bottom-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] md:bottom-6",
       )}
     >
       <div className="flex w-full max-w-md items-center gap-3 rounded-2xl border border-border bg-surface px-3 py-2.5 shadow-lg dark:bg-surface-muted">
