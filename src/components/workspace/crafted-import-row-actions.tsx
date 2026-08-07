@@ -17,9 +17,12 @@ const STATUS_LABELS: Record<CraftedImportRowActionsProps["status"], string> = {
 
 const STATUS_CLASSES: Record<CraftedImportRowActionsProps["status"], string> = {
   pending: "border-line bg-surface-muted text-foreground",
-  confirmed: "border-border bg-emerald-500/10 text-emerald-700",
+  // Erano emerald-700 e amber-700 grezzi: su fondo scuro — che è il tema di
+  // default — un 700 è quasi invisibile. Passano alla scala del giudizio, che
+  // ha già la sua variante per ciascun tema.
+  confirmed: "border-nlc-under/20 bg-nlc-under/10 text-nlc-under",
   ignored: "border-border bg-muted text-muted-foreground",
-  duplicate: "border-border bg-amber-500/10 text-amber-700",
+  duplicate: "border-nlc-warn/20 bg-nlc-warn/10 text-nlc-warn",
   error: "border-destructive/20 bg-destructive/10 text-destructive",
 };
 

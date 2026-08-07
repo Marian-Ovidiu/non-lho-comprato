@@ -44,6 +44,14 @@
   --color-info: var(--info);
   --color-violet: var(--violet);
   --color-lilac: var(--lilac);
+  /* La scala a ruoli, esposta come utility: prima era raggiungibile solo dal
+     CSS grezzo, ed è il motivo per cui in giro per l'app il giudizio veniva
+     scritto con i colori del brand (o con quelli grezzi di Tailwind). */
+  --color-lilac-ink: var(--lilac-ink);
+  --color-accent-ink: var(--accent-ink);
+  --color-nlc-under: var(--nlc-under);
+  --color-nlc-warn: var(--nlc-warn);
+  --color-nlc-over: var(--nlc-over);
   /* `--font-sans: var(--font-sans)` era una variabile che puntava a se stessa e
      che nessuno definiva: `font-sans` (cioè l'html intero) cadeva nel sans di
      sistema, e le uniche schermate in Instrument Sans erano quelle dove una
@@ -104,14 +112,20 @@
   --line-soft: rgba(228, 242, 228, 0.075);
   --border: var(--line);
   --border-strong: var(--line);
+  /* Due token, non uno, e la distinzione è la cosa che tiene in piedi il tema
+     chiaro. `--accent` è l'accento quando fa da *tratto* (testo, bordo, icona,
+     anello di focus) e per definizione è leggibile sul fondo del suo tema.
+     `--accent-fill` è l'accento quando fa da *campitura* (la CTA), ed è il lime
+     del marchio. In scuro sono lo stesso colore; in chiaro non possono esserlo,
+     perché nessun colore è insieme lime acceso e leggibile su carta. */
   --accent: #d1f975;
+  --accent-fill: #d1f975;
   --accent-hover: #c2ec5f;
   --accent-dark: #16220e;
-  /* Lime come *testo*: in chiaro il lime pieno è illeggibile, quindi ogni
-     scritta accento passa da qui invece che da --accent. */
-  --accent-ink: #d1f975;
+  --accent-ink: var(--accent);
+  /* L'inchiostro che sta *sopra* la campitura. */
   --accent-foreground: #16220e;
-  --primary: #d1f975;
+  --primary: var(--accent-fill);
   --primary-hover: #c2ec5f;
   --primary-foreground: #16220e;
   --secondary: var(--surface-muted);
@@ -207,12 +221,19 @@
   --line-soft: rgba(19, 27, 22, 0.07);
   --border: var(--line);
   --border-strong: rgba(19, 27, 22, 0.22);
-  --accent: #cdf56d;
-  --accent-hover: #bfe95a;
+  /* Qui i due token divergono: il tratto va all'oliva scura (6,2:1 sul fondo
+     chiaro, 7:1 sulla carta bianca), la campitura resta il lime del marchio.
+     Prima `--accent` era il lime anche in chiaro e una regola rattoppava il
+     colore *solo dentro il chrome*: fuori di lì ogni `text-accent` era lime su
+     carta, cioè invisibile. Adesso è il token a dire la cosa giusta, e non
+     serve nessuna eccezione per ogni schermata. */
+  --accent: #46620d;
+  --accent-fill: #cdf56d;
+  --accent-hover: #3a5209;
   --accent-dark: #16220e;
-  --accent-ink: #46620d;
+  --accent-ink: var(--accent);
   --accent-foreground: #16220e;
-  --primary: #cdf56d;
+  --primary: var(--accent-fill);
   --primary-hover: #bfe95a;
   --primary-foreground: #16220e;
   --secondary: var(--surface-muted);
@@ -253,6 +274,18 @@
   --sidebar-accent-foreground: var(--foreground);
   --sidebar-border: var(--border);
   --sidebar-ring: var(--ring);
+}
+
+/* In chiaro `bg-accent` pieno è l'unica utility che deve tornare alla
+   campitura: è la CTA, e la CTA è lime. Tutto il resto che nasce da `--accent`
+   — `text-accent`, `border-accent`, l'anello di focus, e le loro varianti con
+   alpha — resta sul tratto scuro e quindi è leggibile per costruzione.
+   Le velature (`bg-accent/5`, `bg-accent/10`) restano di proposito sul tratto:
+   su carta chiara una velatura deve *scurire*, non schiarire.
+   La regola sta fuori dai layer, così vince sulle utility di Tailwind; il
+   selettore per attributo prende la classe esatta e non le sue varianti. */
+:root:not(.dark) [class~="bg-accent"] {
+  background-color: var(--accent-fill);
 }
 
 @layer base {
@@ -767,6 +800,54 @@ html.nlc-splash-pending #nlc-splash-shell {
   --avoided-ink: #2f6b41;
 }
 
+/* ---------- La scala categorica delle categorie ----------
+   Le categorie erano tinte con i colori grezzi di Tailwind: amber per cibo e
+   caffè, orange per delivery, rose per salute. Nella palette a ruoli quelli
+   sono colori occupati — l'ambra dice "in tensione", il corallo dice
+   "sforato" — quindi una piastrella "delivery" si leggeva come un allarme di
+   budget. Qui la categoria prende una scala sua, che non tocca nessun ruolo:
+   niente lime (azione), niente lilla (coppia), niente ambra o corallo
+   (giudizio).
+
+   Sei famiglie invece di quindici tinte a caso: le categorie imparentate
+   condividono la tinta, e la parentela si vede. Ogni tinta è già leggibile sul
+   fondo del suo tema — pastello in scuro, satura in chiaro — così la stessa
+   variabile fa sia la campitura (a bassa alpha) sia l'inchiostro.
+
+   Stanno in @layer components di proposito: le utility di Tailwind devono
+   poterle scavalcare, o lo stato attivo (`bg-accent/5`) perderebbe. */
+@layer components {
+  .nlc-cat-nutrimento { --cat: #6fc6c2; }
+  .nlc-cat-servizi { --cat: #7cc9e8; }
+  .nlc-cat-spostarsi { --cat: #8fb8ee; }
+  .nlc-cat-abitare { --cat: #93a8e8; }
+  .nlc-cat-desiderio { --cat: #e79ab8; }
+  .nlc-cat-neutro { --cat: #a3b0ab; }
+
+  :root:not(.dark) .nlc-cat-nutrimento { --cat: #1f7f85; }
+  :root:not(.dark) .nlc-cat-servizi { --cat: #1f6f95; }
+  :root:not(.dark) .nlc-cat-spostarsi { --cat: #2d5fa8; }
+  :root:not(.dark) .nlc-cat-abitare { --cat: #3f4f9e; }
+  :root:not(.dark) .nlc-cat-desiderio { --cat: #a33a68; }
+  :root:not(.dark) .nlc-cat-neutro { --cat: #5c6a5e; }
+
+  .nlc-cat-surface {
+    background-color: color-mix(in srgb, var(--cat) 9%, transparent);
+    border-color: color-mix(in srgb, var(--cat) 22%, transparent);
+  }
+
+  .nlc-cat-marker {
+    background-color: color-mix(in srgb, var(--cat) 17%, transparent);
+    color: var(--cat);
+  }
+
+  .nlc-cat-chip {
+    background-color: color-mix(in srgb, var(--cat) 9%, transparent);
+    border-color: color-mix(in srgb, var(--cat) 22%, transparent);
+    color: var(--cat);
+  }
+}
+
 /* ---------- Il materiale ----------
    Il colore è salito in :root; qui resta il materiale, che è un'altra cosa:
    come una superficie prende la luce della stanza. Sta a livello d'app perché
@@ -1073,19 +1154,15 @@ html.nlc-splash-pending #nlc-splash-shell {
    lime sottile del chrome — fiamma, sottolineatura attiva, pallino della tab,
    anello del "+" — passa all'inchiostro. Il lime pieno resta dov'è campitura
    (la CTA), l'ink arriva dove il lime è tratto. */
-/* Non è più agganciata a `.nlc-palette-sage` (che non esiste più: la palette è
-   dell'app): il chrome è il chrome su ogni rotta, e il lime sottile va portato
-   all'inchiostro ovunque compaia, non solo sulla home. */
-:root:not(.dark) .nlc-chrome-veil .text-accent,
-:root:not(.dark) .nlc-chrome-veil-up .text-accent {
-  color: var(--accent-ink);
-}
-:root:not(.dark) .nlc-chrome-veil .border-accent,
-:root:not(.dark) .nlc-chrome-veil-up .border-accent {
-  border-color: var(--accent-ink);
-}
-:root:not(.dark) .nlc-chrome-veil-up .nlc-tab-dot {
-  background-color: var(--accent-ink);
+/* Qui c'erano tre regole che in tema chiaro riportavano all'inchiostro il lime
+   sottile del chrome — fiamma, sottolineatura attiva, anello del "+". Non
+   servono più: `--accent` *è* l'inchiostro in chiaro, quindi ogni tratto nasce
+   già giusto, su ogni rotta e non solo dentro l'header.
+   Resta il pallino della tab, che è l'unico caso in cui una campitura piena
+   deve comunque leggersi come un segno: `bg-accent` lo manderebbe alla
+   campitura lime, che su chrome chiaro sparisce. */
+:root:not(.dark) .nlc-tab-dot {
+  background-color: var(--accent);
 }
 
 /* ---- Le due lastre ----

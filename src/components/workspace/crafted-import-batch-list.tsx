@@ -30,7 +30,7 @@ const STATUS_CLASSES: Record<ImportBatchListItem["status"], string> = {
   parsing: "border-line bg-surface-muted text-ink-3",
   ready: "border-line bg-background text-foreground",
   partial: "border-warm/20 bg-warm/10 text-warm",
-  completed: "border-emerald-500/20 bg-emerald-500/10 text-emerald-700",
+  completed: "border-nlc-under/20 bg-nlc-under/10 text-nlc-under",
   failed: "border-destructive/20 bg-destructive/10 text-destructive",
 };
 

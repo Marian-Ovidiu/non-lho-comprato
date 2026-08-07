@@ -351,7 +351,7 @@ export function CraftedPresetForm({
               {t.preset.intentComparisonDesc}
             </p>
             {showLargeComparisonWarning ? (
-              <p className="mt-2 text-xs font-medium leading-5 text-amber-700 dark:text-amber-300">
+              <p className="mt-2 text-xs font-medium leading-5 text-nlc-warn">
                 {t.preset.largeComparisonWarning}
               </p>
             ) : null}

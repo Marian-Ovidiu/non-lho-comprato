@@ -78,18 +78,21 @@ function ToastCard({
       className={cn(
         "pointer-events-auto flex w-full items-start gap-3 rounded-[1.35rem] border border-line bg-surface/95 p-3.5 text-sm shadow-[var(--shadow-pop)] backdrop-blur-xl",
         "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2",
-        toast.tone === "success" && "border-accent/35",
+        // Il lime non dice mai "va bene": un successo è la scala del giudizio
+        // (--nlc-under), non il colore dell'azione. E una celebrazione non è la
+        // coppia: il lilla torna a fare solo quello, la festa la fa la fiamma.
+        toast.tone === "success" && "border-nlc-under/35",
         toast.tone === "error" && "border-destructive/35",
-        toast.tone === "celebrate" && "border-premium-accent/40",
+        toast.tone === "celebrate" && "border-accent/40",
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
           "mt-1 size-2.5 shrink-0 rounded-full bg-ink-3",
-          toast.tone === "success" && "bg-accent",
+          toast.tone === "success" && "bg-nlc-under",
           toast.tone === "error" && "bg-destructive",
-          toast.tone === "celebrate" && "bg-premium-accent",
+          toast.tone === "celebrate" && "bg-accent",
         )}
       />
       <div className="min-w-0 flex-1">

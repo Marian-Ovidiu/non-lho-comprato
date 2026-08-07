@@ -791,7 +791,9 @@ export function QuickAddSheet({
                   {t.quickAdd.title}
                 </p>
                 <DialogTitle className="flex items-center gap-2 text-lg tracking-tight">
-                  <Sparkles className="size-4 text-premium-accent" aria-hidden="true" />
+                  {/* Non lilla: qui non c'è nessuna coppia, c'è una scorciatoia.
+                      Il lilla torna a dire una cosa sola. */}
+                  <Sparkles className="size-4 text-accent" aria-hidden="true" />
                   {t.quickAdd.dialogTitle}
                 </DialogTitle>
                 <DialogDescription className="max-w-md text-sm leading-5 text-muted-text">
