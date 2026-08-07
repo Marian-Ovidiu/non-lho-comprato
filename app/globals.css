@@ -881,16 +881,20 @@ html.nlc-splash-pending #nlc-splash-shell {
   --env-strength: 0.5;
 }
 
-.nlc-glass-home {
-  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
-
-  /* Scala tipografica: una sola voce numerica, tre gradini (hero, lead, mid).
-     Le cifre sono sempre tabulari, così le colonne di importi si allineano da
-     sole. L'hero è fluido: a 360px non va mai a capo, a 430px non urla. */
+/* Scala tipografica dei numeri: una sola voce, tre gradini (hero, lead, mid).
+   Le cifre sono sempre tabulari, così le colonne di importi si allineano da
+   sole. L'hero è fluido: a 360px non va mai a capo, a 430px non urla.
+   Vive in :root e non più dentro la dashboard: era la scala dei soldi, non la
+   scala di una pagina, e l'elenco movimenti la usa come la usa la home. */
+:root {
   --num-hero: clamp(38px, 12.2vw, 50px);
   --num-lead: 27px;
   --num-mid: 19px;
   --fs-label: 11px;
+}
+
+.nlc-glass-home {
+  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
 
   /* Raggi: il foglio è più morbido delle schede, le schede più dei controlli.
      Scoped qui per non toccare il resto dell'app. */
@@ -908,9 +912,11 @@ html.nlc-splash-pending #nlc-splash-shell {
 
 /* Etichette. Il maiuscoletto a 10,5px con 0,14em di spaziatura era illeggibile
    su vetro: sale a 11px, la spaziatura scende, il colore sale a --muted-text
-   per stare sopra il 4,5:1 anche sopra un orb. */
-.nlc-glass-home .nlc-eyebrow {
-  font-family: inherit;
+   per stare sopra il 4,5:1 anche sopra un orb.
+   Non è più agganciata alla dashboard: un'etichetta di sezione è un'etichetta
+   di sezione anche sulla carta dell'elenco movimenti. */
+.nlc-eyebrow {
+  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
   font-size: var(--fs-label);
   font-weight: 500;
   line-height: 1.1;
@@ -923,25 +929,33 @@ html.nlc-splash-pending #nlc-splash-shell {
   font-variant-numeric: normal;
 }
 
-/* Importi. Il tracking si stringe solo dove il corpo è grande. */
-.nlc-glass-home .nlc-amount {
+/* Importi. Un solo modo di scrivere i soldi in tutta l'app: proporzionale ma
+   tabulare (le colonne restano incolonnate, il numero non sembra uno
+   scontrino), tracking stretto solo dove il corpo è grande. La regola porta il
+   font con sé, così l'importo è lo stesso oggetto ovunque compaia. */
+.nlc-amount {
+  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1;
 }
 
 /* I centesimi sono contesto, non decisione: restano leggibili ma smettono di
-   competere con gli euro per la larghezza e per l'attenzione. */
-.nlc-glass-home .nlc-cents {
-  font-size: 0.46em;
+   competere con gli euro per la larghezza e per l'attenzione.
+   Il `max()` è il guinzaglio: la proporzione vale finché c'è corpo per
+   reggerla, ma sotto gli 11px un numero smette di essere un numero e diventa
+   una texture — e in una riga d'elenco da 15px la proporzione pura darebbe
+   sette pixel. */
+.nlc-cents {
+  font-size: max(11px, 0.46em);
   font-weight: 500;
   letter-spacing: 0;
   color: var(--ink-3);
   vertical-align: baseline;
 }
 
-.nlc-glass-home .nlc-currency {
-  font-size: 0.56em;
+.nlc-currency {
+  font-size: max(12px, 0.56em);
   font-weight: 500;
   letter-spacing: 0;
   color: var(--ink-3);

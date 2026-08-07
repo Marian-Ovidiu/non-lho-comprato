@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 
 import {
+  Amount,
   CraftedIcon,
-  Label,
+  Eyebrow,
   Mono,
   ProgressLine,
   Rule,
@@ -138,64 +139,6 @@ function formatEURBase(
   }).format(Math.abs(value));
 
   return `${sign}${currencySymbol}${formatted}`;
-}
-
-/**
- * Etichetta di sezione della dashboard: stessa Label dell'app, ma con la
- * variante `.nlc-eyebrow` — corpo 11px, tracking più stretto e colore un
- * gradino sopra, perché il maiuscoletto originale su vetro non reggeva.
- */
-function Eyebrow({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return <Label className={cn("nlc-eyebrow", className)}>{children}</Label>;
-}
-
-/**
- * Importo con gerarchia interna: simbolo di valuta e centesimi arretrano,
- * gli euro comandano. I centesimi sono contesto, non decisione — ma restano,
- * perché su un'app di soldi "circa" non è una risposta.
- */
-function Amount({
-  value,
-  currencySymbol,
-  decimals = true,
-  className,
-}: {
-  value: number;
-  currencySymbol: string;
-  decimals?: boolean;
-  className?: string;
-}) {
-  const language = useWorkspaceLanguage();
-  const locale = languageToLocale(language);
-  const parts = new Intl.NumberFormat(locale, {
-    minimumFractionDigits: decimals ? 2 : 0,
-    maximumFractionDigits: decimals ? 2 : 0,
-  }).formatToParts(Math.abs(value));
-  const integer = parts
-    .filter((part) => part.type !== "decimal" && part.type !== "fraction")
-    .map((part) => part.value)
-    .join("");
-  const decimalSeparator = parts.find((part) => part.type === "decimal")?.value;
-  const fraction = parts.find((part) => part.type === "fraction")?.value;
-
-  return (
-    <span className={cn("nlc-amount font-num", className)}>
-      <span className="nlc-currency">{currencySymbol}</span>
-      {integer}
-      {fraction ? (
-        <span className="nlc-cents">
-          {decimalSeparator}
-          {fraction}
-        </span>
-      ) : null}
-    </span>
-  );
 }
 
 function CardHeader({

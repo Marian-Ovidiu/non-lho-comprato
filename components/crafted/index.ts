@@ -1,5 +1,7 @@
 export { Rule } from "./rule";
 export { Label } from "./label";
+export { Eyebrow } from "./eyebrow";
+export { Amount } from "./amount";
 export { Mono } from "./mono";
 export { Serif } from "./serif";
 export { CraftedIcon, type CraftedIconName } from "./icon";
