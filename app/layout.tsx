@@ -57,9 +57,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Era #0E0D0B, il fondo della vecchia palette oro: la barra di stato del
+  // telefono restava calda mentre l'app sotto era salvia.
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#0E0D0B" },
-    { media: "(prefers-color-scheme: dark)", color: "#0E0D0B" },
+    { media: "(prefers-color-scheme: light)", color: "#0b1512" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b1512" },
   ],
   width: "device-width",
   initialScale: 1,

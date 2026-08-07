@@ -111,7 +111,7 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
   return (
     // Il registro occupa la pagina da bordo a bordo: le righe sono la
     // superficie, e una superficie con un margine intorno diventa una card.
-    <div className="nlc-ledger -mx-4 sm:-mx-6 lg:-mx-8">
+    <div className="-mx-4 sm:-mx-6 lg:-mx-8">
       <CraftedEntriesHeader
         monthLabel={monthLabel}
         yearLabel={yearLabel}

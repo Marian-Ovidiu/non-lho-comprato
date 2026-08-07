@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
-const PWA_THEME_COLOR = "#0a0a09";
+// Il nero della stanza, non più quello caldo della vecchia palette: è il colore
+// che il sistema operativo mette intorno all'app installata.
+const PWA_THEME_COLOR = "#0b1512";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
