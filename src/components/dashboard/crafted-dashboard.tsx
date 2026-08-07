@@ -757,7 +757,11 @@ export function CraftedDashboard({
       />
       <div
         aria-hidden="true"
-        className="pointer-events-none sticky top-0 -z-10 -mb-[100svh] h-[100svh] overflow-hidden"
+        // Clip solo orizzontale: orb-1 e orb-2 sporgono di lato (left/right
+        // negativi) e senza clip la pagina guadagna scroll laterale, ma in
+        // verticale devono poter salire sotto l'header trasparente — con
+        // `hidden` il taglio si vedeva contro la status bar.
+        className="pointer-events-none sticky top-0 -z-10 -mb-[100svh] h-[100svh] overflow-x-clip"
       >
         <span className="nlc-orb nlc-orb-1" data-sp="0.20" data-rot="0.018" />
         <span className="nlc-orb nlc-orb-2" data-sp="0.40" data-rot="-0.026" />
