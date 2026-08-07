@@ -520,10 +520,13 @@ ad essere finito, sono i risultati.
    cima, la status bar in chiaro poggia direttamente sull'aura: a me il
    contrasto dell'ora e della batteria sembra reggere, ma è da guardare su
    un telefono vero con la notch.
-3. **L'ambiente in tema chiaro.** L'ho dimezzato, non spento: sotto la CTA
-   finale gli orb si vedono come dischi grigi molto tenui. A me sembrano
-   carta, a un altro occhio potrebbero sembrare macchie. Il dial è
-   `--env-strength` (0.5): un numero solo da girare.
+3. **L'ambiente in tema chiaro, in dashboard.** L'ho dimezzato, non spento:
+   sotto la CTA finale gli orb si vedono come dischi grigi molto tenui. A me
+   sembrano carta, a un altro occhio potrebbero sembrare macchie. Il dial è
+   `--env-strength` (0.5): un numero solo da girare. *Aggiornamento:* fuori
+   dalla dashboard, in chiaro, il dubbio si è sciolto da solo guardando le
+   schermate — senza vetro davanti gli orb sono macchie, e lì li ho spenti.
+   Resta aperto solo per la home, dove il vetro li diffonde.
 4. **I centesimi rimpiccioliti** (`,79` a metà corpo). Sono convinto della
    gerarchia, ma è il tipo di scelta che un utente può leggere come "sta
    nascondendo i centesimi". Se in uso reale disturba, il componente `Amount`
@@ -544,7 +547,10 @@ ad essere finito, sono i risultati.
    un'etichetta di navigazione è una decisione di copy, non di direzione
    artistica, e "Tu" è probabilmente voluto. Ma o è voluto in tutte e due le
    lingue, e allora va nell'i18n, o è una svista.
-8. **La giuntura del carattere, che ho spostato invece di chiudere.** La home
+8. ~~**La giuntura del carattere, che ho spostato invece di chiudere.**~~
+   Chiusa: il carattere è in `:root` e vale su tutte le rotte (vedi la sezione
+   finale). Il testo originale resta qui sotto perché la diagnosi era giusta e
+   vale la pena ricordare com'era. La home
    era in Instrument Sans e tutte le altre pagine nel sans di sistema — non per
    scelta, per una variabile mai definita. Ho portato Instrument Sans anche
    sull'elenco, perché due caratteri in due schermate contigue si leggono come
@@ -581,8 +587,10 @@ fuori dai layer Tailwind, quindi **vincono sulle utility**: per variare il
 colore di un'eyebrow non si usa `text-*` ma la variabile `--eyebrow-ink`
 (vedi le card di confronto, e i marcatori delle righe dell'elenco); per il
 corpo si usa `--fs-label`. I token del materiale (`--sheet-*`, `--plate-*`,
-`--track`, `--env-strength`) vivono dentro `.nlc-palette-sage` con la loro
-variante chiara: un tema nuovo si fa lì, senza toccare i componenti.
+`--track`, `--env-strength`) vivono in `:root` con la loro variante chiara in
+`:root:not(.dark)`: un tema nuovo si fa lì, senza toccare i componenti.
+(Fino alla promozione dei fondamentali stavano dentro `.nlc-palette-sage`, che
+non esiste più — vedi la sezione finale.)
 
 `Amount` ed `Eyebrow` stanno in `components/crafted` e sono di tutta l'app,
 non della dashboard. `Amount` prende la valuta dal contesto del workspace: il
@@ -631,3 +639,281 @@ dashboard (il margine negativo accoppiato, che deve restare identico o la
 stanza non arriva più in fondo) e dal prompt delle notifiche, che galleggia
 sopra la barra. Il `6.5rem` rimasto nei due form dei movimenti è un'altra cosa:
 quelli non stanno sotto la barra.
+
+---
+
+# La promozione: da pagina ad app
+
+Il rilievo del fondatore era che passando dalla dashboard a `/entries`
+sembravano due app. Aveva ragione, e la causa non era una scelta di design: era
+che **la direzione artistica non era mai uscita dalla home.** Palette, carattere
+e stanza erano tutti scritti come proprietà di una pagina invece che
+dell'applicazione. Tre sintomi, una causa sola.
+
+Questo giro non ridisegna niente. Prende quello che c'era e lo mette dove
+doveva stare.
+
+## 1. La palette
+
+**Cos'era.** `.nlc-palette-sage` conteneva la palette nuova per intero, ma era
+una classe, e veniva applicata in tre punti: l'header e la barra inferiore
+quando `isHome` era vero, e la radice della dashboard. Tutto il resto dell'app
+girava sui token di `:root`, che erano ancora la vecchia palette oro
+(`--accent: #d8a85b`, `--warm: #d9a651`). Undici rotte su tredici erano
+letteralmente su un'altra direzione artistica.
+
+**Cos'è adesso.** La salvia *è* `:root`. Non c'è più nessuna classe di palette e
+non c'è più niente da applicare: una schermata nuova nasce nella palette giusta
+senza fare niente, che è l'unico modo perché una cosa del genere non ricapiti.
+
+Tre decisioni di meccanica, e ognuna ha una ragione:
+
+- **Il blocco `.dark` è sparito.** Ripeteva a mano i cinquanta valori scuri già
+  presenti in `:root`, ed è esattamente il meccanismo con cui le due palette
+  avevano potuto divergere: due copie, una si aggiorna, l'altra no. `.dark`
+  viene messa solo su `<html>` (`src/lib/theme.ts`), quindi `:root` *è* il tema
+  scuro e `:root:not(.dark)` è l'unico override. Una copia sola, e non resta
+  niente da tenere allineato a mano.
+
+- **L'accento si è sdoppiato, e questa è la cosa che ha salvato il tema
+  chiaro.** Promuovendo la palette così com'era, il tema chiaro si rompeva in
+  silenzio: in chiaro `--accent` era il lime pieno (`#cdf56d`), e una regola
+  ereditata lo riportava all'inchiostro **solo dentro il chrome**. Fuori di lì
+  c'erano 65 `text-accent` e 48 `border-accent` che sarebbero diventati lime su
+  carta, cioè invisibili — 1,2:1. Non è una cosa che si vede finché non si apre
+  il tema chiaro di una pagina che non si sta guardando.
+
+  Il rimedio non è una regola per schermata: è che il token diceva due cose
+  diverse. Adesso `--accent` è l'accento **quando fa da tratto** (testo, bordo,
+  icona, anello di focus) e per definizione è leggibile sul fondo del suo tema —
+  in chiaro è l'oliva `#46620d`, 6,2:1 sul fondo e 7:1 sulla carta bianca.
+  `--accent-fill` è l'accento **quando fa da campitura**, ed è il lime del
+  marchio. In scuro sono lo stesso colore, perché lì non c'è conflitto. Una
+  regola sola riporta `bg-accent` pieno alla campitura, perché quello è il caso
+  della CTA. Le velature (`bg-accent/5`, `bg-accent/10`) restano di proposito
+  sul tratto: su carta chiara una velatura deve *scurire*, non schiarire.
+
+- **La scala a ruoli è diventata utility** (`nlc-under`, `nlc-warn`,
+  `nlc-over`). Prima era raggiungibile solo dal CSS grezzo, ed è il motivo per
+  cui in giro per l'app il giudizio veniva scritto con i colori del brand o con
+  quelli grezzi di Tailwind.
+
+### Gli usi di colore che nella palette a ruoli erano diventati falsi
+
+Passando le rotte ho trovato quattro punti dove un colore diceva la cosa
+sbagliata. Corretti, perché è precisamente il caso previsto dal brief:
+
+1. **Il toast di successo era lime.** Regola 1: il lime è azione, non è mai "va
+   bene". Un toast che dice "fatto" in lime dice "premi qui". Passa alla scala
+   del giudizio (`--nlc-under`).
+2. **Il toast di festa era lilla.** Regola 2: il lilla è solo la coppia. Una
+   celebrazione non è due persone. La festa la fa la fiamma, che è lime — ed è
+   l'unico posto in cui il lime come "momento positivo" è coerente, perché la
+   fiamma è già dichiarata come lime dentro la regola stessa.
+3. **Le categorie erano tinte con i colori grezzi di Tailwind**: `amber` per
+   cibo e caffè, `orange` per delivery, `rose` per salute. Nella palette a ruoli
+   quelli sono colori occupati — l'ambra dice "in tensione", il corallo dice
+   "sforato" — quindi una piastrella "Delivery" si leggeva come un allarme di
+   budget. Adesso le categorie hanno una scala loro, che non tocca nessun ruolo.
+   Sei famiglie invece di quindici tinte scorrelate: le categorie imparentate
+   condividono la tinta, e la parentela diventa informazione invece che rumore.
+4. **Gli stati degli import erano `emerald-700` e `amber-700` grezzi**, cioè
+   quasi invisibili sul tema scuro, che è quello di default. Passano ai ruoli.
+
+Il lilla rimasto è quello del badge "condiviso" nel selettore di workspace: lì
+due persone ci sono davvero, ed è l'uso giusto.
+
+### La soglia
+
+Lo splash è la prima cosa che si vede dell'app, ed era rimasto interamente sulla
+vecchia palette: fondo `#0a0a09` (un nero caldo), cometa e alone `#d9a651`.
+Anche la `themeColor` del documento e quella del manifest erano il vecchio
+`#0E0D0B` — cioè la barra di stato del telefono restava calda mentre l'app sotto
+era salvia. Adesso la soglia è il nero della stanza e la fiamma è lime: entrare
+nell'app non è più un cambio di colore, è solo la fiamma che si toglie di mezzo.
+
+## 2. La stanza: sì, scende — ma non tutta intera
+
+**La decisione: la stanza va a livello d'app.** Il fondatore aveva ragione, e il
+mio argomento precedente era sbagliato per una ragione precisa: nel documento
+avevo trattato "il vetro" e "la stanza" come un blocco solo. Non lo sono. Il
+vetro è **per elemento** — duecento righe, duecento `backdrop-filter`, e lì
+l'argomento sul costo regge, e infatti il vetro non scende. La stanza è **un
+elemento solo agganciato al viewport**, a costo fisso: uno sfondo non diventa
+più caro perché la pagina sotto è più lunga. Avevo esteso una conclusione vera
+oltre il suo dominio.
+
+Adesso c'è `AppRoom`, una sola, resa dal guscio dell'app. Verificato in pagina e
+non a memoria: sulla home il DOM contiene **una** `.nlc-room`, in
+`position: fixed`, e nessuna rotta guadagna scroll orizzontale (gli orb
+sporgono di lato, il clip è solo orizzontale).
+
+Le due obiezioni vere le ho trattate come due manopole separate, perché sono due
+problemi diversi.
+
+### Leggibilità — provata su una lista vera
+
+Non volevo deciderlo su una lista di prova da un movimento, che è la condizione
+in cui l'elenco non dice niente. Ho seminato **160 movimenti** nel database e ho
+guardato l'elenco nella sua condizione reale: testo fitto, righe a decine,
+nessun vetro davanti.
+
+Risultato: **la stanza non va resa più opaca, va resa più bassa.** Con
+`--env-strength` a 0.4 in scuro, l'aura è un'inclinazione di tinta del fondo e
+gli orb sono variazioni di luminanza sotto il testo, non oggetti dietro le
+parole. Il contrasto non è mai in gioco per costruzione: le campiture dell'aura
+sono a bassa alpha *sopra* `--background`, quindi il fondo sotto una riga resta
+`--background` appena inclinato. Axe su `/entries` con 160 righe: **zero nodi in
+violazione di contrasto**, in tutti e due i temi.
+
+Quindi la domanda del brief — "se il foglio deve diventare così opaco che la
+stanza si vede solo ai bordi, vale ancora la pena?" — non si è posta: non ho
+dovuto opacizzare nessun foglio. L'elenco non ha una carta sopra la stanza. È la
+stanza stessa, tenuta bassa.
+
+**Una cosa l'ho invece scoperta guardando, e non l'avevo prevista.** In tema
+chiaro, senza vetro davanti, gli orb non diventano luce fioca: diventano aloni.
+Tre dischi grigi dietro una pagina di testo non sembrano profondità, sembrano
+sporco — la prima versione della schermata chiara aveva esattamente quell'aria.
+La regola che ne esce è più generale del caso: **gli orb sono oggetti, e per
+leggersi come luce hanno bisogno di una lente davanti**, che è il vetro. In
+dashboard ce l'hanno. Perciò in chiaro, fuori dalla dashboard, la stanza resta
+la sola aura — le velature agli angoli, che sono luce e basta. In scuro il
+problema non si pone, perché lì un disco più chiaro del fondo *è* una sorgente.
+
+### Velocità di scroll — la parallasse si ferma dove c'è una lista
+
+Questa obiezione era giusta e l'ho accolta senza attenuarla. Sulla dashboard si
+scorre piano fra dodici card e la parallasse spiega la distanza. In un elenco il
+dito lancia e passano duecento righe: a quella velocità un orb che scorre a 0,4x
+lo scroll non è profondità, è una strisciata.
+
+Quindi la parallasse è accesa **solo dove il contenuto sono card**. Sulla home
+gli orb si muovono (verificato: la trasformata cambia scorrendo). Su `/entries`
+la stanza sta ferma (verificato: la trasformata non cambia). C'è, dà profondità,
+ma non commenta lo scroll. `prefers-reduced-motion` la spegne del tutto come
+prima.
+
+Una nota di implementazione che è anche una decisione: quando la parallasse si
+spegne cambiando rotta, gli orb vengono riportati a zero esplicitamente. Il
+componente non si rimonta fra una rotta e l'altra, e senza quel reset una
+trasformata lasciata dalla dashboard resterebbe congelata sull'elenco.
+
+## 3. Il carattere
+
+La giuntura che avevo segnalato io stesso al punto 8, chiusa alla radice.
+
+`@theme inline` dichiarava `--font-sans: var(--font-sans)`: una variabile che
+puntava a se stessa e che nessuno definiva. Quindi `font-sans` — cioè l'`html`
+intero — cadeva nel sans di sistema, e le uniche schermate in Instrument Sans
+erano quelle dove una regola di pagina lo rimetteva a mano. Non era una scelta:
+era un refuso che si era fossilizzato in una convenzione.
+
+Adesso il carattere dell'app ha un nome vero (`--font-app-sans`), definito in
+`:root`, e vale su tutte le rotte. Di conseguenza sono sparite le regole che lo
+rimettevano a mano: `.nlc-ledger` non esiste più (era solo quello, e la classe è
+uscita anche dal markup), e `.nlc-glass-home` non dichiara più il font — restano
+solo i suoi raggi, che sono un'altra cosa.
+
+## 4. Le rotte che ho verificato
+
+Non le ho lette: le ho **aperte**, tutte, nei due temi, con contenuto vero,
+scattando la schermata e passando axe su ciascuna. La prima tornata era inutile
+e me ne sono accorto perché tutti i file pesavano uguale: stavo fotografando lo
+splash, che resta 1800ms + 450ms di dissolvenza a ogni mount. Rifatte aspettando
+che la fiamma se ne andasse.
+
+**17 rotte × 2 temi = 34 schermate. Zero nodi in violazione di contrasto,
+ovunque.**
+
+`/` · `/entries` · `/stats` · `/budget` · `/goals` · `/habits` · `/presets` ·
+`/insights` · `/reports/monthly` · `/more` · `/account` ·
+`/workspace/categories` · `/workspace/members` · `/workspace/imports` ·
+`/workspace/budgets` · `/onboarding` · `/login`
+
+In più, `e2e/a11y.spec.ts` passa 8/8.
+
+Due precisazioni oneste su quel test:
+
+- **Il test a11y di `/budget` non è rosso, né prima né dopo.** Il brief lo dava
+  per rosso su master e non mio. Ho controllato tornando sul commit base e
+  rilanciando la suite: 8/8 verdi anche lì. O dipende da dati che il seed e2e
+  non produce (per esempio un budget in stato "sforato"), o da un ambiente
+  diverso dal mio. Non l'ho toccato in nessun modo; segnalo solo che con questi
+  dati non si riproduce, quindi "non l'ho peggiorato" è vero ma non l'ho nemmeno
+  potuto osservare rotto.
+- **`/login` e `/onboarding` non hanno la stanza**, perché `AppShell` avvolge
+  solo gli utenti autenticati. Hanno la palette e il carattere, quindi non
+  stonano, ma sono piatte. Non l'ho forzato: metterci la stanza vuol dire
+  toccare la struttura del layout, e non è il lavoro di questo giro.
+
+## 5. Dove voglio un occhio umano
+
+13. **L'intensità della stanza fuori dalla dashboard** (`--env-strength` a 0.4
+    in scuro). È il numero su cui ho esitato di più in questo giro. Sulle mie
+    schermate con 160 righe regge bene, ma è tarato guardando uno schermo di
+    computer: su un telefono vero, di sera e con la luminosità bassa, potrebbe
+    risultare o troppo presente o del tutto invisibile. È un numero solo da
+    girare, in `globals.css`, sotto `.nlc-room[data-room="quiet"]`.
+14. **La stanza dietro i form** (`/entries/new`, `/goals/new`, i form di
+    workspace). Sono rotte "quiet" come tutte le altre, quindi la stanza c'è. Su
+    un form lungo, dove l'attenzione è su un campo, un fondo con un gradiente
+    può essere una distrazione che su una lista non è. Non le ho trattate
+    diversamente perché non volevo inventare una terza categoria senza averle
+    ridisegnate.
+15. **Le sei famiglie di categorie.** L'accorpamento (cibo/caffè/spesa/salute
+    insieme, casa/abbonamenti/tech insieme) è una scelta semantica mia, presa
+    per non sforare nei colori dei ruoli. "Salute" con il nutrimento è la più
+    tirata delle sei. Se le categorie devono restare distinguibili una per una,
+    la strada non è aggiungere tinte: è togliere il colore alle categorie e
+    lasciar fare all'icona.
+16. **Il pallino della tab in chiaro** è l'unico posto in cui ho dovuto scrivere
+    un'eccezione alla regola dell'accento (`bg-accent` andrebbe alla campitura,
+    ma su chrome chiaro il lime sparisce, quindi lì torna al tratto). Una
+    eccezione sola mi sembra un prezzo giusto; se ne servisse una seconda,
+    vorrebbe dire che la regola è sbagliata.
+
+## 6. Due cose rotte che ho trovato e non ho sistemato
+
+Non sono di direzione artistica, e il brief dice di annotarle invece di
+correggerle. Ma la prima è seria.
+
+- **`/workspace/imports` va in errore a runtime quando ci sono degli import.**
+  `src/components/workspace/crafted-import-batch-list.tsx` chiama
+  `useBoundLocale()` senza avere `"use client"` in cima: è un componente server
+  che invoca un hook client. Il server risponde *"Attempted to call
+  useBoundLocale() from the server"* e la pagina non rende. Verificato che
+  **precede il mio lavoro**: sul commit base il file è identico su questo punto.
+  La correzione è una riga (`"use client"`), ma è un bug di funzionamento, non
+  di colore, e preferisco che sia una decisione consapevole di chi mantiene
+  quella rotta.
+- **`/insights` ha una violazione a11y `aria-prohibited-attr`** (impatto
+  "serious"), in tutti e due i temi. Anche questa non c'entra con il colore ed è
+  precedente. `/insights` non è fra le rotte coperte da `a11y.spec.ts`, ed è
+  probabilmente il motivo per cui è passata inosservata.
+
+## 7. Il mio dissenso
+
+Uno solo, ed è sul brief.
+
+Il brief mi lasciava la porta aperta a dire che la stanza non deve scendere,
+purché portassi una ragione che non fosse il costo di calcolo. Non la uso: la
+stanza scende, e il fondatore aveva ragione. Ma la ragione per cui aveva ragione
+**non è quella che il brief dà per scontata.**
+
+Il brief tratta il problema delle due schermate come un problema di sfondo. Non
+lo era. Le due schermate sembravano due app soprattutto per il **colore** e per
+il **carattere**: due palette diverse e due caratteri diversi in due schermate
+contigue sono una frattura che nessuno sfondo condiviso avrebbe ricucito.
+Guardando le schermate dopo il punto 1 e il punto 3 — palette e carattere
+promossi, stanza ancora solo in home — `/entries` e `/` erano già chiaramente la
+stessa app.
+
+La stanza aggiunge una cosa vera ma più sottile: la dashboard ha *luce* dentro,
+e una pagina piatta accanto a una pagina illuminata sembra spenta anche quando i
+colori coincidono. Vale la pena portarla, e infatti l'ho portata. Ma se un
+giorno bisognasse rinunciare a qualcosa per una ragione di prestazioni su un
+telefono lento, l'ordine in cui difendere queste tre cose è: **prima il
+carattere, poi la palette, poi la stanza.** La stanza è la più visibile delle
+tre e la meno strutturale. È l'unica di cui l'app può fare a meno restando una
+sola app.
