@@ -166,10 +166,13 @@ function CardHeader({
 }
 
 /**
- * Scroll-linked parallax: orb, wave and card transforms are a pure function of
- * scroll position — motion stops when the scroll stops and reverses when the
- * user scrolls back up. No time-based autoplay, no one-time reveals. Bails out
- * entirely under prefers-reduced-motion.
+ * Scroll-linked parallax delle *card*: le trasformate sono una funzione pura
+ * della posizione di scroll — il movimento si ferma quando lo scroll si ferma e
+ * si inverte risalendo. Nessun autoplay a tempo, nessuna rivelazione una tantum.
+ * Si spegne del tutto con prefers-reduced-motion.
+ *
+ * Gli orb e le onde non sono più qui: la stanza è del guscio dell'app, e la sua
+ * parallasse la governa AppRoom (accesa solo dove il contenuto sono card).
  */
 function useScrollLinkedParallax(
   rootRef: React.RefObject<HTMLDivElement | null>,
@@ -183,25 +186,13 @@ function useScrollLinkedParallax(
       return;
     }
 
-    const orbs = Array.from(root.querySelectorAll<HTMLElement>(".nlc-orb"));
-    const waves = Array.from(root.querySelectorAll<SVGGElement>(".nlc-wave-layer"));
     const cards = Array.from(root.querySelectorAll<HTMLElement>(".nlc-parallax"));
     let frame = 0;
 
     const update = () => {
       frame = 0;
-      const scrollY = window.scrollY;
       const viewport = window.innerHeight || 1;
 
-      for (const orb of orbs) {
-        const speed = Number(orb.dataset.sp) || 0;
-        const spin = Number(orb.dataset.rot) || 0;
-        orb.style.transform = `translate3d(0, ${(scrollY * speed).toFixed(1)}px, 0) rotate(${(scrollY * spin).toFixed(2)}deg)`;
-      }
-      for (const wave of waves) {
-        const speed = Number(wave.dataset.sp) || 0;
-        wave.style.transform = `translateX(${(scrollY * speed).toFixed(1)}px)`;
-      }
       for (const card of cards) {
         const rect = card.getBoundingClientRect();
         const center = rect.top + rect.height / 2;
@@ -691,47 +682,10 @@ export function CraftedDashboard({
     // vetro, perché l'hero e la CTA conservino il respiro dai bordi.
     <div
       ref={rootRef}
-      className="nlc-glass-home nlc-palette-sage relative isolate -mx-4 -mt-4 -mb-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] pt-4 pb-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] sm:-mx-6 sm:-mt-6 sm:pt-6 md:-mb-[calc(env(safe-area-inset-bottom)+2rem)] md:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:-mx-8"
+      className="nlc-glass-home relative isolate -mx-4 -mt-4 -mb-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] pt-4 pb-[calc(env(safe-area-inset-bottom)+var(--nlc-chrome-bottom))] sm:-mx-6 sm:-mt-6 sm:pt-6 md:-mb-[calc(env(safe-area-inset-bottom)+2rem)] md:pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:-mx-8"
     >
-      <div
-        aria-hidden="true"
-        className="nlc-dash-aura pointer-events-none absolute inset-x-0 bottom-0 -z-10"
-        style={{ top: "calc(-1 * (var(--nlc-chrome-top, 4rem) + 1.5rem))" }}
-      />
-      <div
-        aria-hidden="true"
-        // Clip solo orizzontale: orb-1 e orb-2 sporgono di lato (left/right
-        // negativi) e senza clip la pagina guadagna scroll laterale, ma in
-        // verticale devono poter salire sotto l'header trasparente — con
-        // `hidden` il taglio si vedeva contro la status bar.
-        className="pointer-events-none sticky top-0 -z-10 -mb-[100svh] h-[100svh] overflow-x-clip"
-      >
-        <span className="nlc-orb nlc-orb-1" data-sp="0.20" data-rot="0.018" />
-        <span className="nlc-orb nlc-orb-2" data-sp="0.40" data-rot="-0.026" />
-        <span className="nlc-orb nlc-orb-3" data-sp="0.13" data-rot="0.034" />
-        <span className="nlc-orb nlc-orb-4" data-sp="0.46" data-rot="0.03" />
-        <span className="nlc-orb nlc-orb-5" data-sp="0.08" data-rot="-0.014" />
-        <div className="nlc-waves">
-          <svg viewBox="0 0 1440 220" preserveAspectRatio="none">
-            <defs>
-              <path
-                id="nlc-waveband"
-                d="M0,110 C120,48 240,48 360,110 C480,172 600,172 720,110 C840,48 960,48 1080,110 C1200,172 1320,172 1440,110 C1560,48 1680,48 1800,110 C1920,172 2040,172 2160,110 C2280,48 2400,48 2520,110 C2640,172 2760,172 2880,110 L2880,220 L0,220 Z"
-              />
-            </defs>
-            <g className="nlc-wave-layer" data-sp="0.13">
-              <use href="#nlc-waveband" transform="translate(0,-30)" fill="rgba(209,249,117,0.09)" />
-            </g>
-            <g className="nlc-wave-layer" data-sp="-0.24">
-              <use href="#nlc-waveband" transform="translate(0,4)" fill="rgba(202,146,246,0.12)" />
-            </g>
-            <g className="nlc-wave-layer" data-sp="0.36">
-              <use href="#nlc-waveband" transform="translate(0,30)" fill="rgba(154,162,94,0.16)" />
-            </g>
-          </svg>
-        </div>
-      </div>
-
+      {/* La stanza non è più qui: è una sola, nel guscio dell'app (AppRoom), e
+          la dashboard è la rotta che la guarda attraverso il vetro. */}
       <div className="relative mx-4 sm:mx-6 lg:mx-8">
         {/* Hero — lastra stabile e leggibile, ferma mentre lo sfondo si muove */}
         <section className="nlc-glass-hero mb-3 rounded-[var(--r-sheet)] px-5 pb-5 pt-5">

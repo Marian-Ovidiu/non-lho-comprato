@@ -7,6 +7,7 @@ import { CraftedIcon } from "@/components/crafted";
 import { PullToRefresh, ToastProvider } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AppRoom } from "@/src/components/layout/app-room";
 import { CraftedBottomBar } from "@/src/components/layout/crafted-bottom-bar";
 import { FeedbackButton } from "@/src/components/feedback/feedback-button";
 import { useDailyReminderOnOpen } from "@/src/lib/notifications/use-daily-reminder-on-open";
@@ -128,6 +129,10 @@ export function AppShell({
   const pathname = usePathname();
   const router = useRouter();
   const t = getTranslations(language);
+  // La dashboard è l'unica rotta guardata *attraverso* il vetro: lì la stanza
+  // va accesa piena e la parallasse ha senso (dodici card, scroll lento). Ogni
+  // altra rotta è carta appoggiata sulla stessa stanza, che resta accesa a un
+  // terzo e sta ferma. Vedi AppRoom per il ragionamento per esteso.
   const isHome = pathname === "/";
   const headerRef = useRef<HTMLElement>(null);
 
@@ -224,17 +229,15 @@ export function AppShell({
     <LanguageProvider language={language}>
     <CurrencyProvider currency={currency}>
     <ToastProvider>
-      <div className="min-h-[100dvh] bg-background text-foreground">
+      {/* `isolate` non è cosmetico: la stanza sta a z-index negativo, e senza
+          un contesto di impilamento qui finirebbe *dietro* lo sfondo di questo
+          div invece che davanti. */}
+      <div className="isolate min-h-[100dvh] bg-background text-foreground">
+        <AppRoom variant={isHome ? "full" : "quiet"} motion={isHome} />
         {/* L'header non è una lastra: solo gli elementi, fermi sulla pagina.
             La leggibilità in scroll la fa .nlc-chrome-veil (scrim nel colore
             del fondo + blur progressivo mascherato), senza bordi né barra. */}
-        <header
-          ref={headerRef}
-          className={cn(
-            "nlc-chrome-veil sticky top-0 z-30",
-            isHome && "nlc-palette-sage",
-          )}
-        >
+        <header ref={headerRef} className="nlc-chrome-veil sticky top-0 z-30">
           <div className="mx-auto w-full max-w-5xl">
             <div className="flex items-center justify-between gap-3 px-5 pb-2.5 pt-[calc(env(safe-area-inset-top)+0.5rem)]">
               <div className="flex min-w-0 flex-1 items-center gap-2.5">

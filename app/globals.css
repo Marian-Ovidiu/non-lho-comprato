@@ -44,10 +44,15 @@
   --color-info: var(--info);
   --color-violet: var(--violet);
   --color-lilac: var(--lilac);
-  --font-sans: var(--font-sans);
+  /* `--font-sans: var(--font-sans)` era una variabile che puntava a se stessa e
+     che nessuno definiva: `font-sans` (cioè l'html intero) cadeva nel sans di
+     sistema, e le uniche schermate in Instrument Sans erano quelle dove una
+     regola lo rimetteva a mano. Da qui in poi il carattere dell'app ha un nome
+     vero, definito in :root, e vale su tutte le rotte. */
+  --font-sans: var(--font-app-sans);
   --font-mono: var(--font-geist-mono);
   --font-serif: var(--font-instrument-serif);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-app-sans);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -68,51 +73,83 @@
   --radius-2xl: 28px;
 }
 
+/* ---------- La palette, a livello d'app ----------
+   Fino a ieri questi token erano la vecchia palette oro/ambra e la salvia viveva
+   in `.nlc-palette-sage`, applicata solo dove `isHome` era vero: la direzione
+   artistica non era mai uscita dalla home, e passando a /entries sembravano due
+   app. Adesso la salvia *è* la palette dell'app, e sta dove stanno le palette —
+   in `:root`. Le tre regole di colore valgono ovunque, non solo in dashboard:
+   1. il lime è SOLO azione (CTA, focus, fiamma). Non è mai "va bene";
+   2. il lilla è SOLO la coppia: è l'unico posto dove compaiono due persone;
+   3. il giudizio ha una scala sua — sotto / in tensione / sforato — che non
+      condivide colori con il brand, altrimenti "budget al 40%" e "premi qui"
+      si direbbero nello stesso modo. */
 :root {
-  /* Crafted dark-first — warm black, crema, oro, verde */
-  --background: #0e0d0b;
-  --foreground: #f2ede4;
-  --surface: #141210;
-  --surface-muted: #1b1815;
+  /* Una tipografia sola, su tutte le rotte. */
+  --font-app-sans: var(--font-instrument-sans), system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+
+  /* Salvia notturna */
+  --background: #0b1512;
+  --foreground: #edf1ea;
+  --surface: #16211d;
+  --surface-muted: #1f2c27;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--muted-text);
-  --line: #26221e;
-  --line-soft: #1e1b18;
+  --line: rgba(228, 242, 228, 0.14);
+  --line-soft: rgba(228, 242, 228, 0.075);
   --border: var(--line);
   --border-strong: var(--line);
-  --accent: #d8a85b;
-  --accent-hover: #c79a4f;
-  --accent-dark: #1a1206;
-  --premium-accent: #d9a651;
-  --premium-accent-muted: #94918a;
-  --accent-foreground: #1a1206;
-  --primary: #d9a651;
-  --primary-hover: #c99545;
-  --primary-foreground: #1a1206;
+  --accent: #d1f975;
+  --accent-hover: #c2ec5f;
+  --accent-dark: #16220e;
+  /* Lime come *testo*: in chiaro il lime pieno è illeggibile, quindi ogni
+     scritta accento passa da qui invece che da --accent. */
+  --accent-ink: #d1f975;
+  --accent-foreground: #16220e;
+  --primary: #d1f975;
+  --primary-hover: #c2ec5f;
+  --primary-foreground: #16220e;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --green: #7fb069;
-  --success: var(--green);
-  --success-bg: rgba(74, 144, 96, 0.12);
-  --destructive: #c85d4d;
-  --destructive-foreground: #f2ede4;
-  --muted-text: #b8b0a2;
-  --ink-3: #8c8478;
+
+  /* Il lilla: la coppia, e nient'altro. */
+  --lilac: #d0a2f8;
+  --lilac-ink: #d7b1fa;
+  --premium-accent: var(--lilac);
+  --premium-accent-muted: #a89bb4;
+  --violet: var(--lilac);
+
+  /* La scala del giudizio. Non condivide colori con il brand. */
+  --nlc-under: #8ad6ab;
+  --nlc-warn: #eeba62;
+  --nlc-over: #f2957a;
+  --green: var(--nlc-under);
+  --success: var(--nlc-under);
+  --success-bg: rgba(138, 214, 171, 0.12);
+  --warm: var(--nlc-warn);
+  --destructive: var(--nlc-over);
+  /* Il corallo è chiaro: quando fa da campitura l'inchiostro sopra va scuro. */
+  --destructive-foreground: #2a1109;
+
+  --muted-text: #c1ccc1;
+  --ink-3: #97a398;
   --text-3: var(--ink-3);
-  --warm: #d9a651;
-  --info: #94918a;
-  --violet: #94918a;
-  --input: #0f0e0d;
+  --info: #93a094;
+  --input: #16211d;
   --ring: var(--accent);
-  --chart-1: #d9a651;
-  --chart-2: #f4f1ea;
-  --chart-3: #3f7d52;
-  --chart-4: #94918a;
-  --chart-5: #56544d;
+
+  /* Scala categorica dei grafici: nessun lime (che resta azione) e nessun
+     arancio (che resta sforamento). */
+  --chart-1: #9ad9b0;
+  --chart-2: #6fc6c2;
+  --chart-3: #bb9cf2;
+  --chart-4: #e3c98f;
+  --chart-5: #93a094;
   --radius: 14px;
   --sidebar: var(--surface);
   --sidebar-foreground: var(--foreground);
@@ -146,105 +183,68 @@
   --lilac: #ca92f6;
 }
 
-.dark {
-  --background: #0e0d0b;
-  --foreground: #f2ede4;
-  --surface: #141210;
-  --surface-muted: #1b1815;
-  --card: var(--surface);
-  --card-foreground: var(--foreground);
-  --popover: var(--surface);
-  --popover-foreground: var(--foreground);
-  --muted: var(--surface-muted);
-  --muted-foreground: var(--muted-text);
-  --line: #26221e;
-  --line-soft: #1e1b18;
-  --border: var(--line);
-  --border-strong: var(--line);
-  --input: #141210;
-  --accent: #d8a85b;
-  --accent-hover: #c79a4f;
-  --accent-dark: #1a1206;
-  --premium-accent: #d9a651;
-  --premium-accent-muted: #94918a;
-  --accent-foreground: #1a1206;
-  --primary: #d9a651;
-  --primary-hover: #c99545;
-  --primary-foreground: #1a1206;
-  --secondary: var(--surface-muted);
-  --secondary-foreground: var(--foreground);
-  --green: #7fb069;
-  --success: var(--green);
-  --success-bg: rgba(74, 144, 96, 0.12);
-  --destructive: #c85d4d;
-  --destructive-foreground: #f2ede4;
-  --muted-text: #b8b0a2;
-  --ink-3: #8c8478;
-  --text-3: var(--ink-3);
-  --warm: #d9a651;
-  --info: #94918a;
-  --violet: #94918a;
-  --ring: var(--accent);
-  --chart-1: #d9a651;
-  --chart-2: #f4f1ea;
-  --chart-3: #3f7d52;
-  --chart-4: #94918a;
-  --chart-5: #56544d;
-  --sidebar: var(--surface);
-  --sidebar-foreground: var(--foreground);
-  --sidebar-primary: var(--accent);
-  --sidebar-primary-foreground: var(--accent-foreground);
-  --sidebar-accent: var(--surface-muted);
-  --sidebar-accent-foreground: var(--foreground);
-  --sidebar-border: var(--border);
-  --sidebar-ring: var(--ring);
-}
+/* Non esiste più un blocco `.dark` che ripete i valori scuri: `.dark` viene
+   messa solo su <html> (src/lib/theme.ts), quindi `:root` *è* il tema scuro e
+   `:root:not(.dark)` è l'unico override. Il blocco duplicato è esattamente il
+   meccanismo per cui le due palette avevano potuto divergere: una copia sola,
+   e non c'è niente da tenere allineato a mano. */
 
-/* Light — solo se l'utente sceglie esplicitamente tema chiaro */
+/* Chiaro. Non è il tema di default, ma deve reggere: ogni ruolo ha qui la sua
+   variante inchiostro, perché gli stessi colori che in scuro sono luce, su
+   carta chiara sono illeggibili. */
 :root:not(.dark) {
-  --background: #f7f3ec;
-  --foreground: #141210;
-  --surface: #fffaf2;
-  --surface-muted: #ede5d8;
+  --background: #eef2e9;
+  --foreground: #131b16;
+  --surface: #ffffff;
+  --surface-muted: #e6ece1;
   --card: var(--surface);
   --card-foreground: var(--foreground);
   --popover: var(--surface);
   --popover-foreground: var(--foreground);
   --muted: var(--surface-muted);
   --muted-foreground: var(--muted-text);
-  --line: #d9d0c2;
-  --line-soft: #e7dfd3;
+  --line: rgba(19, 27, 22, 0.13);
+  --line-soft: rgba(19, 27, 22, 0.07);
   --border: var(--line);
-  --border-strong: rgba(0, 0, 0, 0.12);
-  --accent: #b98232;
-  --accent-hover: #9f6f28;
-  --accent-dark: #1a1206;
-  --premium-accent: #d9a651;
-  --premium-accent-muted: #8f7a59;
-  --accent-foreground: #f4f1ea;
-  --primary: #1a1206;
-  --primary-hover: #2a2010;
-  --primary-foreground: #f4f1ea;
+  --border-strong: rgba(19, 27, 22, 0.22);
+  --accent: #cdf56d;
+  --accent-hover: #bfe95a;
+  --accent-dark: #16220e;
+  --accent-ink: #46620d;
+  --accent-foreground: #16220e;
+  --primary: #cdf56d;
+  --primary-hover: #bfe95a;
+  --primary-foreground: #16220e;
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--foreground);
-  --green: #3f7d52;
-  --success: var(--green);
-  --success-bg: #dff7e9;
-  --destructive: #d96a4a;
-  --destructive-foreground: #f4f1ea;
-  --muted-text: #5e574e;
-  --ink-3: #756d62;
+
+  --lilac: #7b4fb0;
+  --lilac-ink: #6c3fa3;
+  --premium-accent: var(--lilac);
+  --premium-accent-muted: #6f6480;
+  --violet: var(--lilac);
+
+  --nlc-under: #217a52;
+  --nlc-warn: #86600e;
+  --nlc-over: #b8462a;
+  --green: var(--nlc-under);
+  --success: var(--nlc-under);
+  --success-bg: rgba(33, 122, 82, 0.1);
+  --warm: var(--nlc-warn);
+  --destructive: var(--nlc-over);
+  --destructive-foreground: #ffffff;
+
+  --muted-text: #48544a;
+  --ink-3: #63705f;
   --text-3: var(--ink-3);
-  --warm: #d9a651;
-  --info: #6b6b70;
-  --violet: #8060b8;
-  --input: #e8e5de;
-  --ring: #1a1206;
-  --chart-1: #d9a651;
-  --chart-2: #3f7d52;
-  --chart-3: #d4b483;
-  --chart-4: #8f7a59;
-  --chart-5: #a1a1aa;
+  --info: #5c6a5e;
+  --input: #e8ede4;
+  --ring: #35520f;
+  --chart-1: #2f8b62;
+  --chart-2: #1f7f85;
+  --chart-3: #6f4bb5;
+  --chart-4: #8a6b1f;
+  --chart-5: #6d7a6c;
   --sidebar: var(--surface);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--accent);
@@ -767,58 +767,13 @@ html.nlc-splash-pending #nlc-splash-shell {
   --avoided-ink: #2f6b41;
 }
 
-/* ---------- Dashboard: colore, materiale, profondità ---------- */
-/* La palette è confinata alla home (contenuto + chrome della rotta): il resto
-   dell'app resta sui token caldi. */
-
-/* Salvia notturna.
-   Tre regole di colore, e valgono per entrambi i temi:
-   1. il lime è SOLO azione (CTA, focus, fiamma). Non è mai "va bene";
-   2. il lilla è SOLO la coppia: è l'unico posto dove compaiono due persone;
-   3. il giudizio ha una scala sua — sotto / in tensione / sforato — che non
-      condivide colori con il brand, altrimenti "budget al 40%" e "premi qui"
-      si direbbero nello stesso modo. */
-.nlc-palette-sage {
-  --background: #0b1512;
-  --foreground: #edf1ea;
-  --surface: #16211d;
-  --surface-muted: #1f2c27;
-  --muted-text: #c1ccc1;
-  --ink-3: #97a398;
-  --text-3: #97a398;
-
-  --accent: #d1f975;
-  --accent-hover: #c2ec5f;
-  --accent-foreground: #16220e;
-  /* Lime come *testo*: in chiaro il lime pieno è illeggibile, quindi ogni
-     scritta accento passa da qui invece che da --accent. */
-  --accent-ink: #d1f975;
-  --primary: #d1f975;
-  --primary-foreground: #16220e;
-
-  --lilac: #d0a2f8;
-  --lilac-ink: #d7b1fa;
-  --premium-accent: var(--lilac);
-
-  --nlc-under: #8ad6ab;
-  --nlc-warn: #eeba62;
-  --nlc-over: #f2957a;
-  --success: var(--nlc-under);
-  --destructive: var(--nlc-over);
-
-  --line: rgba(228, 242, 228, 0.14);
-  --line-soft: rgba(228, 242, 228, 0.075);
-  --ring: var(--accent);
-
-  /* Scala categorica dei grafici: nessun lime (che resta azione) e nessun
-     arancio (che resta sforamento). */
-  --chart-1: #9ad9b0;
-  --chart-2: #6fc6c2;
-  --chart-3: #bb9cf2;
-  --chart-4: #e3c98f;
-  --chart-5: #93a094;
-
-  /* Materiale. Due sole lastre: il foglio (hero) e la scheda.
+/* ---------- Il materiale ----------
+   Il colore è salito in :root; qui resta il materiale, che è un'altra cosa:
+   come una superficie prende la luce della stanza. Sta a livello d'app perché
+   la stanza adesso è a livello d'app — ogni pagina ci appoggia sopra il foglio
+   che le serve, il vetro in dashboard, la carta nell'elenco. */
+:root {
+  /* Due sole lastre: il foglio (hero) e la scheda.
      Nota: la lastra più vicina è la più opaca, non la più trasparente. Il
      vetro spesso diffonde, non svela. */
   --sheet-fill: color-mix(in srgb, var(--surface) 82%, transparent);
@@ -841,46 +796,13 @@ html.nlc-splash-pending #nlc-splash-shell {
     0 26px 58px -26px rgba(0, 0, 0, 0.8);
   --plate-inset: rgba(255, 255, 255, 0.055);
   --track: rgba(228, 242, 228, 0.13);
+  /* Quanto è forte la stanza. È una variabile e non una costante perché la
+     stessa stanza va tenuta a intensità diverse: piena dietro il vetro della
+     dashboard, molto più bassa dietro la carta di una lista fitta. */
   --env-strength: 1.15;
 }
 
-/* Chiaro. Non è il tema di default, ma deve reggere: la versione precedente
-   serviva i valori scuri anche in chiaro, quindi le etichette sparivano. */
-:root:not(.dark) .nlc-palette-sage {
-  --background: #eef2e9;
-  --foreground: #131b16;
-  --surface: #ffffff;
-  --surface-muted: #e6ece1;
-  --muted-text: #48544a;
-  --ink-3: #63705f;
-  --text-3: #63705f;
-
-  --accent: #cdf56d;
-  --accent-hover: #bfe95a;
-  --accent-foreground: #16220e;
-  --accent-ink: #46620d;
-  --primary: #cdf56d;
-  --primary-foreground: #16220e;
-
-  --lilac: #7b4fb0;
-  --lilac-ink: #6c3fa3;
-
-  --nlc-under: #217a52;
-  --nlc-warn: #86600e;
-  --nlc-over: #b8462a;
-  --success: var(--nlc-under);
-  --destructive: var(--nlc-over);
-
-  --line: rgba(19, 27, 22, 0.13);
-  --line-soft: rgba(19, 27, 22, 0.07);
-  --ring: #35520f;
-
-  --chart-1: #2f8b62;
-  --chart-2: #1f7f85;
-  --chart-3: #6f4bb5;
-  --chart-4: #8a6b1f;
-  --chart-5: #6d7a6c;
-
+:root:not(.dark) {
   /* Un gradino più trasparente del tema scuro (77/64 contro 82/70): il vetro
      bianco su fondo chiaro mostra meno di quello scuro sugli orb accesi, e per
      sembrare lo stesso materiale deve scoprire di più. */
@@ -920,10 +842,9 @@ html.nlc-splash-pending #nlc-splash-shell {
 }
 
 .nlc-glass-home {
-  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
-
-  /* Raggi: il foglio è più morbido delle schede, le schede più dei controlli.
-     Scoped qui per non toccare il resto dell'app. */
+  /* Il font non si dichiara più qui: lo porta l'html, per tutte le rotte.
+     Restano i raggi — il foglio è più morbido delle schede, le schede più dei
+     controlli. */
   --r-card: 18px;
   --r-sheet: 26px;
 }
@@ -931,7 +852,7 @@ html.nlc-splash-pending #nlc-splash-shell {
 /* I numeri lasciano il monospace per un sans proporzionale ma tabulare: le
    cifre restano incolonnate, il numero grande smette di sembrare uno scontrino. */
 .nlc-glass-home .font-num {
-  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-app-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.015em;
 }
@@ -942,7 +863,7 @@ html.nlc-splash-pending #nlc-splash-shell {
    Non è più agganciata alla dashboard: un'etichetta di sezione è un'etichetta
    di sezione anche sulla carta dell'elenco movimenti. */
 .nlc-eyebrow {
-  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-app-sans);
   font-size: var(--fs-label);
   font-weight: 500;
   line-height: 1.1;
@@ -960,7 +881,7 @@ html.nlc-splash-pending #nlc-splash-shell {
    scontrino), tracking stretto solo dove il corpo è grande. La regola porta il
    font con sé, così l'importo è lo stesso oggetto ovunque compaia. */
 .nlc-amount {
-  font-family: var(--font-instrument-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-app-sans);
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
   line-height: 1;
@@ -1152,15 +1073,18 @@ html.nlc-splash-pending #nlc-splash-shell {
    lime sottile del chrome — fiamma, sottolineatura attiva, pallino della tab,
    anello del "+" — passa all'inchiostro. Il lime pieno resta dov'è campitura
    (la CTA), l'ink arriva dove il lime è tratto. */
-:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil .text-accent,
-:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil-up .text-accent {
+/* Non è più agganciata a `.nlc-palette-sage` (che non esiste più: la palette è
+   dell'app): il chrome è il chrome su ogni rotta, e il lime sottile va portato
+   all'inchiostro ovunque compaia, non solo sulla home. */
+:root:not(.dark) .nlc-chrome-veil .text-accent,
+:root:not(.dark) .nlc-chrome-veil-up .text-accent {
   color: var(--accent-ink);
 }
-:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil .border-accent,
-:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil-up .border-accent {
+:root:not(.dark) .nlc-chrome-veil .border-accent,
+:root:not(.dark) .nlc-chrome-veil-up .border-accent {
   border-color: var(--accent-ink);
 }
-:root:not(.dark) .nlc-palette-sage.nlc-chrome-veil-up .nlc-tab-dot {
+:root:not(.dark) .nlc-chrome-veil-up .nlc-tab-dot {
   background-color: var(--accent-ink);
 }
 
@@ -1250,10 +1174,48 @@ html.nlc-splash-pending #nlc-splash-shell {
   background-color: var(--track);
 }
 
-/* ---- Ambiente ----
+/* ---- La stanza ----
    Sta dietro e ci resta. L'aura dà la luce, gli orb danno la distanza, le onde
-   danno il fondo. Nessuno dei tre deve mai finire dentro un numero. */
-.nlc-dash-aura {
+   danno il fondo. Nessuno dei tre deve mai finire dentro un numero.
+
+   È *una*, agganciata al viewport, e vale per tutta l'app: un elemento fisso a
+   costo costante, non una copia per pagina. Le pagine ci appoggiano sopra il
+   loro materiale — il vetro in dashboard, la carta altrove.
+
+   Il clip è solo orizzontale: orb-1 e orb-2 sporgono di lato e senza clip la
+   pagina guadagna scroll laterale; in verticale devono poter salire sotto
+   l'header trasparente. */
+.nlc-room {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  overflow-x: clip;
+}
+
+.nlc-room-aura {
+  position: absolute;
+  inset: 0;
+}
+
+/* Le due intensità. Piena dietro il vetro; a un terzo dietro il testo fitto,
+   dove la stanza deve leggersi come un'inclinazione del fondo e non come cinque
+   sfere dietro le parole. In chiaro entrambe scendono ancora, per la ragione
+   già scritta: gli stessi orb che in scuro sono luce, su carta sono sporco. */
+.nlc-room[data-room="full"] {
+  --env-strength: 1.15;
+}
+.nlc-room[data-room="quiet"] {
+  --env-strength: 0.4;
+}
+:root:not(.dark) .nlc-room[data-room="full"] {
+  --env-strength: 0.5;
+}
+:root:not(.dark) .nlc-room[data-room="quiet"] {
+  --env-strength: 0.2;
+}
+
+.nlc-room-aura {
   background:
     radial-gradient(126% 80% at 6% -14%, rgba(209, 249, 117, calc(0.16 * var(--env-strength))), transparent 56%),
     radial-gradient(104% 74% at 108% 2%, rgba(190, 140, 240, calc(0.2 * var(--env-strength))), transparent 54%),
