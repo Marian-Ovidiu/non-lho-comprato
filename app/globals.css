@@ -1288,7 +1288,9 @@ html.nlc-splash-pending #nlc-splash-shell {
   --env-strength: 0.5;
 }
 :root:not(.dark) .nlc-room[data-room="quiet"] {
-  --env-strength: 0.2;
+  /* Più alta di prima (0.2) perché l'orb chiaro è sfumato e senza guscio:
+     a 0.2 sparirebbe del tutto invece di leggersi come luce tenue. */
+  --env-strength: 0.42;
 }
 
 /* Gli orb e le onde sono *oggetti*: per leggersi come luce hanno bisogno di una
@@ -1298,7 +1300,31 @@ html.nlc-splash-pending #nlc-splash-shell {
    non c'è vetro, la stanza resta la sola aura: le velature agli angoli, che
    sono luce e basta. In scuro il problema non si pone, perché lì un disco più
    chiaro del fondo *è* una sorgente. */
-:root:not(.dark) .nlc-room[data-room="quiet"] .nlc-orb,
+/* In chiaro, e solo dove non c'è vetro davanti, l'orb smette di essere un
+   oggetto: perde il guscio scuro e il riflesso e resta il solo nucleo di
+   colore, sfumato. Un oggetto lucido su carta legge come macchia a qualunque
+   opacità — è il nero degli incassi a tradirlo, non la sua presenza. Come luce
+   colorata invece la carta lo accetta, e le bolle restano su tutte le
+   schermate come in tema scuro.
+
+   Sulla dashboard l'orb resta l'oggetto che è: lì la lente c'è, ed è il vetro
+   delle schede. Appiattirlo anche lì cancellava le forme dietro il foglio. */
+:root:not(.dark) .nlc-room[data-room="quiet"] .nlc-orb {
+  opacity: calc(0.9 * var(--env-strength));
+  box-shadow: none;
+  filter: blur(18px);
+}
+
+:root:not(.dark) .nlc-room[data-room="quiet"] .nlc-orb::before {
+  background: radial-gradient(
+    circle at 50% 50%,
+    var(--orb-core, rgba(202, 146, 246, 0.4)),
+    transparent 68%
+  );
+}
+
+/* Le onde restano fuori dalle pagine quiete: sono una firma della home, e
+   ripetute sotto un elenco diventano un motivo. */
 :root:not(.dark) .nlc-room[data-room="quiet"] .nlc-waves {
   display: none;
 }
