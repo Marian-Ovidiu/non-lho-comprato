@@ -850,6 +850,14 @@ export function CraftedDashboard({
           <div className="nlc-parallax col-span-2" data-amt="30">
             <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
               <Eyebrow className="mb-3 block">Dove stai spendendo</Eyebrow>
+              {/* Questa è l'unica barra dell'app in cui il colore fa un lavoro
+                  che nient'altro può fare: legare un segmento alla sua riga.
+                  Ma il legame non esisteva — i segmenti erano colorati e le
+                  righe sotto no, quindi le cinque tinte erano decorazione e
+                  l'unico appiglio era l'ordine. Ora ogni riga porta il suo
+                  segno di colore: il colore diventa ridondante con la posizione
+                  e con il nome, che è la sola condizione a cui è lecito
+                  affidargli qualcosa. */}
               <div className="mb-4 flex h-1.5 overflow-hidden rounded-full bg-line-soft">
                 {displayCategories.map((category, index) => (
                   <span
@@ -867,7 +875,16 @@ export function CraftedDashboard({
                       <CraftedIcon name={category.icon} size={17} />
                     </IconBubble>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[15px] font-medium">{category.label}</p>
+                      <p className="flex items-center gap-2 text-[15px] font-medium">
+                        <span
+                          className={cn(
+                            "size-2 shrink-0 rounded-[3px]",
+                            CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+                          )}
+                          aria-hidden="true"
+                        />
+                        <span className="truncate">{category.label}</span>
+                      </p>
                       <p className="mt-0.5 text-xs text-ink-3">
                         {category.count} movimenti · {category.pct}%
                       </p>
