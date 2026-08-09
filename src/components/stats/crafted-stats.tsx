@@ -317,7 +317,7 @@ export function CraftedStats({
                   className="flex w-full flex-1 items-end"
                   barClassName={cn(
                     "w-full min-h-[3px] rounded-[1px]",
-                    month.isActive ? "bg-foreground" : "bg-line",
+                    month.isActive ? "bg-foreground" : "bg-ink-3",
                   )}
                   style={{ height: `${Math.max(month.heightPct, month.totalRealSpent > 0 ? 4 : 0)}%` }}
                   title={t.stats.monthBarTitle(month.initial, formatMoney(month.totalRealSpent, currencyCode, locale))}

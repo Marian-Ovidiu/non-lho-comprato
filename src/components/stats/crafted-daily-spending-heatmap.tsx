@@ -175,6 +175,9 @@ function getMonthAbbrev(label: string): string {
   return label.split(" ")[0]?.slice(0, 3) ?? "";
 }
 
+/** Segnaposto del delta dentro il template tradotto del sottotitolo. */
+const DELTA_PLACEHOLDER = "@@delta@@";
+
 function hasHeatmapData(data: DailySpendingComparison): boolean {
   return (
     data.currentMonth.days.some((cell) => cell.entriesCount > 0) ||
@@ -182,7 +185,17 @@ function hasHeatmapData(data: DailySpendingComparison): boolean {
   );
 }
 
-function getSubtitle(data: DailySpendingComparison, currencyCode: string, locale: string, hs: HeatmapStrings): string {
+/**
+ * Il sottotitolo scriveva il delta con `formatMoney` ("-676,00 €") mentre due
+ * righe più sotto lo stesso numero era scritto da `Amount` ("−€676,00"): stessa
+ * cifra, due convenzioni, duecento pixel di distanza. Adesso il pezzo variabile
+ * è un `Amount` e all'i18n resta l'ordine delle parole, che è la sua parte.
+ */
+function getSubtitleParts(
+  data: DailySpendingComparison,
+  locale: string,
+  hs: HeatmapStrings,
+): { head: string; delta: number | null; tail: string } {
   const previousLabel =
     data.previousMonth?.label ??
     (() => {
@@ -194,14 +207,29 @@ function getSubtitle(data: DailySpendingComparison, currencyCode: string, locale
   const previousAbbrev = getMonthAbbrev(previousLabel).toLowerCase();
 
   if (data.monthToDateDelta === null) {
-    return hs.subtitleDayByDay(data.currentMonth.label, previousAbbrev);
+    return {
+      head: hs.subtitleDayByDay(data.currentMonth.label, previousAbbrev),
+      delta: null,
+      tail: "",
+    };
   }
 
   const scope = data.currentMonth.days.some((cell) => cell.isToday)
     ? hs.soFar
     : hs.monthTotalScope;
 
-  return hs.subtitleWithDelta(data.currentMonth.label, formatSignedMoney(data.monthToDateDelta, currencyCode, locale), scope, previousAbbrev);
+  // Il template resta quello dell'i18n: la frase si spezza attorno a un
+  // segnaposto, così l'ordine delle parole continua a deciderlo la lingua e non
+  // questo componente.
+  const [head, tail] = hs
+    .subtitleWithDelta(data.currentMonth.label, DELTA_PLACEHOLDER, scope, previousAbbrev)
+    .split(DELTA_PLACEHOLDER);
+
+  return {
+    head: head ?? "",
+    delta: data.monthToDateDelta,
+    tail: tail ?? "",
+  };
 }
 
 function getIntensityLevel(spent: number, maxDailySpent: number): number {
@@ -468,6 +496,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
     null,
   );
   const hasData = hasHeatmapData(data);
+  const subtitle = getSubtitleParts(data, locale, hs);
   const currentDays = useMemo(() => getCurrentMonthDays(data), [data]);
   const maxCurrentDailySpent = useMemo(
     () => getMaxCurrentDailySpent(currentDays),
@@ -562,7 +591,15 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
   return (
     <section ref={rootRef} className="px-5 py-5">
       <Eyebrow className="mb-2 block">{hs.dailySpendingLabel}</Eyebrow>
-      <Serif className="mb-4 block text-sm text-ink-3">{getSubtitle(data, currencyCode, locale, hs)}</Serif>
+      <Serif className="mb-4 block text-sm text-ink-3">
+        {subtitle.head}
+        {subtitle.delta !== null ? (
+          <>
+            <Amount value={subtitle.delta} sign="delta" className="text-sm" />
+            {subtitle.tail}
+          </>
+        ) : null}
+      </Serif>
 
       {!hasData ? (
         <p className="py-8 text-sm text-ink-3">
@@ -618,7 +655,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                            qualcosa; resta un anello, cioè un tratto. */
                         cell.isToday &&
                           "ring-2 ring-accent ring-offset-2 ring-offset-background",
-                        cell.isFuture && "nlc-heat-0 opacity-45",
+                        cell.isFuture && "nlc-heat-future",
                         isActive &&
                           "ring-2 ring-foreground ring-offset-2 ring-offset-background",
                       )}

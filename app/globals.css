@@ -806,6 +806,10 @@ html.nlc-splash-pending #nlc-splash-shell {
 
 :root:not(.dark) {
   --avoided-ink: #2f6b41;
+  /* In chiaro `--ink-3` sul fondo della cella vuota si ferma a 4,35:1 — sotto
+     soglia per un numero da 11px. Un gradino più scuro, e il giorno futuro
+     resta comunque un gradino più tenue del giorno senza spese. */
+  --heat-ink-future: #58644f;
 }
 
 /* ---------- La scala categorica delle categorie ----------
@@ -898,9 +902,21 @@ html.nlc-splash-pending #nlc-splash-shell {
    i temi, e il salto di ΔE 24 in quel punto rinforza la lettura invece di
    disturbarla. Ogni gradino sta a ΔE ≥ 9 dal precedente. */
 @layer components {
+  /* Il giorno senza spese e il giorno non ancora arrivato non stanno sulla
+     rampa: sono due assenze diverse, e nessuna delle due è "poco speso".
+     Si distinguono per inchiostro, non per opacità — la cella futura portava
+     `opacity-45` sull'intero bottone, e misurata dava 2,17:1 in scuro e 1,76:1
+     in chiaro sul numero del giorno. Axe non lo segnalava perché su un fondo
+     dichiarato in `color(srgb …)` e composto con l'opacità la regola di
+     contrasto esce "incomplete", non "violation": passa il test e resta
+     illeggibile. Adesso i due stati sono AA per costruzione. */
   .nlc-heat-0 {
     background-color: var(--surface-muted);
-    color: var(--ink-3);
+    color: var(--muted-text);
+  }
+  .nlc-heat-future {
+    background-color: var(--surface-muted);
+    color: var(--heat-ink-future, var(--ink-3));
   }
   .nlc-heat-1 {
     background-color: color-mix(in srgb, var(--foreground) 16%, var(--background));
