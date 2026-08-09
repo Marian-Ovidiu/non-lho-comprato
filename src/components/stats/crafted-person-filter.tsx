@@ -1,10 +1,19 @@
 import Link from "next/link";
 
-import { Label } from "@/components/crafted";
+import { Eyebrow } from "@/components/crafted";
 import { cn } from "@/lib/utils";
 import { getWorkspaceMemberFilterOptions } from "@/src/lib/workspace-member-filter";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 
+/**
+ * NOTA: questo componente non è montato da nessuna parte. Il filtro per persona
+ * che si vede su /stats è la `select` dentro `CraftedStatsPeriodFilter`; questa
+ * è una seconda implementazione della stessa scelta, in un'altra forma (tab
+ * sottolineate) e con l'etichetta scritta a mano invece che in `src/lib/i18n`.
+ * Non l'ho tolta — il brief dice che i filtri restano — ma la raccomandazione
+ * sta nel documento: due forme per la stessa scelta è la definizione di
+ * interfaccia che mente, e questa delle due non la vede nessuno.
+ */
 type CraftedPersonFilterProps = {
   members: WorkspaceMemberOption[];
   selectedMemberUserId?: string;
@@ -30,9 +39,9 @@ export function CraftedPersonFilter({
 
   return (
     <section aria-labelledby="crafted-person-filter" className="-mx-4 px-5 py-4 sm:-mx-6 lg:-mx-8">
-      <Label className="mb-3 block">
+      <Eyebrow className="mb-3 block">
         <span id="crafted-person-filter">Persona</span>
-      </Label>
+      </Eyebrow>
       <div className="flex gap-5 overflow-x-auto pb-1">
         {options.map((option) => {
           const isActive = selectedMemberUserId === option.value;

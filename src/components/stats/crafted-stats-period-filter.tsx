@@ -3,8 +3,7 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useTransition } from "react";
 
-import { Label, Mono } from "@/components/crafted";
-import { cn } from "@/lib/utils";
+import { Eyebrow, Mono } from "@/components/crafted";
 import { useTranslations } from "@/src/components/language/language-context";
 import type { StatsMonthOption, StatsPeriod } from "@/src/lib/stats-period";
 import { getWorkspaceMemberFilterOptions } from "@/src/lib/workspace-member-filter";
@@ -80,9 +79,9 @@ export function CraftedStatsPeriodFilter({
   return (
     <section aria-labelledby="stats-period-filter" className="px-5 pb-2 pt-3">
       <div className="mb-2 flex items-center justify-between gap-3">
-        <Label>
-          <span id="stats-period-filter">Filtri</span>
-        </Label>
+        <Eyebrow>
+          <span id="stats-period-filter">{t.stats.filtersLabel}</span>
+        </Eyebrow>
         {isPending ? (
           <Mono className="text-[10px] uppercase tracking-[0.18em] text-ink-3">
             {t.stats.updating}
@@ -90,11 +89,17 @@ export function CraftedStatsPeriodFilter({
         ) : null}
       </div>
 
-      <div className="grid grid-cols-[1fr_auto_1fr] gap-2">
+      {/* Era `grid-cols-[1fr_auto_1fr]`: la colonna centrale prendeva quanto le
+          serviva e le due laterali si dividevano il resto, così a 360px
+          "Tutti i movimenti" finiva sotto la freccia del select e "Agosto 2026"
+          usciva dal bordo. Tre controlli paritetici vogliono tre colonne
+          paritetiche — `minmax(0,1fr)` è ciò che permette al testo di
+          troncare invece di sfondare. */}
+      <div className="grid grid-cols-[repeat(3,minmax(0,1fr))] gap-2">
         {personOptions.length > 1 ? (
           <label className="min-w-0 rounded-[var(--r-control)] border border-line bg-surface px-2 py-1.5">
             <span className="block text-[8.5px] font-medium uppercase tracking-[0.14em] text-ink-3">
-              Persona
+              {t.stats.personLabel}
             </span>
             <select
               value={selectedMemberUserId ?? ""}
@@ -102,7 +107,7 @@ export function CraftedStatsPeriodFilter({
               onChange={(event) =>
                 replaceStatsParams({ person: event.currentTarget.value })
               }
-              className="h-6 w-full bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60"
+              className="h-6 w-full truncate bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60"
             >
               {personOptions.map((option) => (
                 <option key={option.value || "all"} value={option.value}>
@@ -115,20 +120,20 @@ export function CraftedStatsPeriodFilter({
           <div className="hidden" />
         )}
 
-        <label className="min-w-[94px] rounded-[var(--r-control)] border border-line bg-surface px-2 py-1.5">
+        <label className="min-w-0 rounded-[var(--r-control)] border border-line bg-surface px-2 py-1.5">
           <span className="block text-[8.5px] font-medium uppercase tracking-[0.14em] text-ink-3">
-            Periodo
+            {t.stats.periodLabel}
           </span>
+          {/* Il periodo "anno" tingeva il testo di lime. Un filtro attivo è uno
+              stato, non un'azione — la regola è già scritta per il segmentato
+              dell'elenco movimenti, e vale qui identica. */}
           <select
             value={selectedPeriod}
             disabled={isPending}
             onChange={(event) =>
               replaceStatsParams({ period: event.currentTarget.value as StatsPeriod })
             }
-            className={cn(
-              "h-6 w-full bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60",
-              selectedPeriod === "year" && "text-accent",
-            )}
+            className="h-6 w-full truncate bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60"
             aria-label={t.stats.periodFilterAriaLabel}
           >
             {periodTabs.map((tab) => (
@@ -154,7 +159,7 @@ export function CraftedStatsPeriodFilter({
                 month: event.currentTarget.value,
               })
             }
-            className="h-6 w-full bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60"
+            className="h-6 w-full truncate bg-transparent text-[12px] font-semibold text-foreground outline-none disabled:opacity-60"
           >
             {safeMonthOptions.map((option) => (
               <option key={option.month} value={option.month}>

@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 
-import { CraftedIcon, Label, Mono, Rule, Serif } from "@/components/crafted";
+import { Amount, CraftedIcon, Eyebrow, Mono, Rule, Serif } from "@/components/crafted";
 import { EntrySource } from "@/src/lib/generated/prisma/enums";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
+import { getCategoryIdentity } from "@/src/lib/category-identity";
 import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
-import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 
@@ -30,8 +30,7 @@ function toDate(value: string | Date) {
 }
 
 export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
-  const { formatCraftedCompact, formatDate } = useLocaleFormatters();
-  const currencySymbol = useCurrencySymbol();
+  const { formatDate } = useLocaleFormatters();
   const t = useTranslations();
   const sortedEntries = [...entries].sort(
     (left, right) => right.savedAmount - left.savedAmount,
@@ -39,7 +38,7 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
 
   return (
     <section className="px-5 py-5">
-      <Label className="mb-2 block">{t.topSavings.title}</Label>
+      <Eyebrow className="mb-2 block">{t.topSavings.title}</Eyebrow>
       <Serif className="mb-4 block text-sm text-ink-3">
         {t.topSavings.subtitle}
       </Serif>
@@ -59,7 +58,10 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
                 <CraftedIcon
                   name={getCategoryCraftedIcon({ name: item.categoryName })}
                   size={20}
-                  className="mt-0.5 shrink-0 text-muted-foreground"
+                  className={cn(
+                    "mt-0.5 shrink-0",
+                    getCategoryIdentity({ name: item.categoryName }).inkClassName,
+                  )}
                 />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[15px] font-[450]">{item.title}</p>
@@ -68,21 +70,20 @@ export function CraftedTopSavingsList({ entries }: CraftedTopSavingsListProps) {
                     {item.source === "habit" ? ` · ${t.topSavings.recurring}` : ""}
                   </Mono>
                   <Serif className="mt-1.5 block text-[13px] text-ink-3">
-                    {t.topSavings.spentInsteadOf(
-                      `${formatCraftedCompact(item.realCost)}${currencySymbol}`,
-                      `${formatCraftedCompact(item.alternativeCost)}${currencySymbol}`,
-                    )}
+                    <Amount value={item.realCost} className="text-[13px]" />{" "}
+                    {t.entries.insteadOf}{" "}
+                    <Amount value={item.alternativeCost} className="text-[13px]" />
                   </Serif>
                 </div>
-                <Mono
+                {/* Il verde qui è la scala del giudizio, ed è il suo posto: la
+                    riga dice che dei soldi non sono usciti. */}
+                <Amount
+                  value={item.savedAmount}
                   className={cn(
                     "shrink-0 whitespace-nowrap text-[15px] font-medium",
-                    item.savedAmount > 0 ? "text-green" : "text-foreground",
+                    item.savedAmount > 0 ? "text-[var(--avoided-ink)]" : "text-foreground",
                   )}
-                >
-                  {formatCraftedCompact(item.savedAmount)}
-                  <span className="text-[11px] text-accent">{currencySymbol}</span>
-                </Mono>
+                />
               </Link>
               {index < sortedEntries.length - 1 ? <Rule soft /> : null}
             </div>

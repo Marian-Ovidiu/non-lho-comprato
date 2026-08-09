@@ -5,9 +5,8 @@ import { round2 } from "@/src/lib/money-number";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 
-import { Label, Mono, Serif } from "@/components/crafted";
+import { Amount, Eyebrow, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
-import { formatCraftedCompact } from "@/src/lib/crafted-money";
 import type {
   DailySpendingCell,
   DailySpendingComparison,
@@ -55,13 +54,25 @@ type AnchorPoint = {
   y: number;
 };
 
+/**
+ * La rampa dell'intensità. Erano sei velature di lime (`bg-accent/10` … `/60`):
+ * trentun celle del colore che in questa app significa "premi qui", su una
+ * griglia in cui non si preme niente — e in tema chiaro il lime diventava
+ * oliva, quindi la stessa heatmap aveva due identità nei due temi.
+ *
+ * Adesso è inchiostro: `--foreground` mescolato dentro `--background`, opaco.
+ * Opaco è la parte che conta e non è estetica — una cella ad alpha sopra la
+ * stanza cambia valore quando ci passa dietro un orb, e un grafico il cui
+ * livello dipende da cosa gli sta dietro non sta misurando niente.
+ * I gradini e il ribaltamento dell'inchiostro stanno in globals.css.
+ */
 const INTENSITY_CLASS = [
-  "border-line-soft bg-surface-muted text-ink-3",
-  "border-accent/15 bg-accent/10 text-foreground",
-  "border-accent/20 bg-accent/20 text-foreground",
-  "border-accent/25 bg-accent/30 text-foreground",
-  "border-accent/30 bg-accent/45 text-foreground",
-  "border-accent/35 bg-accent/60 text-foreground",
+  "nlc-heat-0",
+  "nlc-heat-1",
+  "nlc-heat-2",
+  "nlc-heat-3",
+  "nlc-heat-4",
+  "nlc-heat-5",
 ] as const;
 
 function formatSignedMoney(
@@ -284,6 +295,12 @@ function getDayAriaLabel(
     hs.ariaSpentForReal(formatMoney(details.cell.totalRealSpent, currencyCode, locale)),
   ];
 
+  // Il giorno futuro non porta più l'etichetta "FUT" sulla cella: sullo schermo
+  // lo dice lo spegnimento, qui lo deve dire una parola.
+  if (details.cell.isFuture) {
+    parts.splice(1, 1, hs.futureBadge);
+  }
+
   if (details.previousDateExists && details.previousLabel) {
     parts.push(
       details.hasPreviousData
@@ -316,13 +333,17 @@ function DayDetailPopover({
   className?: string;
   style?: CSSProperties;
 }) {
+  // Il giudizio ha la sua scala e adesso è raggiungibile per nome: `destructive`
+  // e `green` sono alias di `--nlc-over` e `--nlc-under`, ma passare dagli alias
+  // è il modo in cui il giudizio, altrove nell'app, era finito scritto con i
+  // colori del brand.
   const deltaTone =
     details.delta === null
       ? "text-ink-3"
       : details.delta > 0
-        ? "text-destructive"
+        ? "text-nlc-over"
         : details.delta < 0
-          ? "text-green"
+          ? "text-nlc-under"
           : "text-foreground";
 
   return (
@@ -397,24 +418,39 @@ function DayDetailPopover({
   );
 }
 
+/**
+ * La leggenda serve, ma non quella di prima.
+ *
+ * Prima mostrava **sei** caselle, e la prima era il livello 0 — "nessuna
+ * spesa". Ma zero non è "meno": è un'altra cosa. Infilarlo in fondo a una
+ * rampa che va da "meno" a "più" dice che un giorno senza spese è un giorno di
+ * spesa piccola, e non lo è. La rampa adesso ha i cinque livelli che sono
+ * davvero una quantità; il giorno vuoto è il fondo della griglia e si spiega da
+ * sé, perché è l'unico senza il pallino.
+ *
+ * L'altra cosa che è cambiata è a chi parla. Le caselle portavano il valore in
+ * euro dentro un attributo `title`: su un telefono il `title` non si apre mai,
+ * e con `aria-hidden` non lo leggeva nemmeno lo screen reader. Era un numero
+ * scritto per nessuno. Adesso quel numero è il nome accessibile del gruppo — la
+ * scala è relativa al massimo del mese, e senza il massimo "più speso" non ha
+ * unità di misura.
+ */
 function IntensityLegend({ maxDailySpent, currency, hs }: { maxDailySpent: number; currency: string; hs: HeatmapStrings }) {
   const locale = languageToLocale(useWorkspaceLanguage());
+
   return (
-    <div className="flex items-center justify-end gap-2 text-[10px] text-ink-3">
-      <span>{hs.lessLabel}</span>
-      <div className="flex gap-1">
-        {INTENSITY_CLASS.map((className, level) => (
-          <div
-            key={level}
-            className={cn("size-4 rounded-md border", className)}
-            title={
-              level === 0 ? hs.noSpendingTitle : formatMoney((maxDailySpent * level) / 5, currency, locale)
-            }
-            aria-hidden="true"
-          />
+    <div
+      className="flex items-center justify-end gap-2 text-[10px] text-ink-3"
+      role="img"
+      aria-label={`${hs.intensityLegendLabel}: ${hs.lessLabel} – ${hs.moreLabel} (${formatMoney(maxDailySpent, currency, locale)})`}
+    >
+      <span aria-hidden="true">{hs.lessLabel}</span>
+      <div className="flex gap-1" aria-hidden="true">
+        {INTENSITY_CLASS.slice(1).map((className, index) => (
+          <div key={index} className={cn("size-3.5 rounded-[4px]", className)} />
         ))}
       </div>
-      <span>{hs.moreLabel}</span>
+      <span aria-hidden="true">{hs.moreLabel}</span>
     </div>
   );
 }
@@ -525,7 +561,7 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
 
   return (
     <section ref={rootRef} className="px-5 py-5">
-      <Label className="mb-2 block">{hs.dailySpendingLabel}</Label>
+      <Eyebrow className="mb-2 block">{hs.dailySpendingLabel}</Eyebrow>
       <Serif className="mb-4 block text-sm text-ink-3">{getSubtitle(data, currencyCode, locale, hs)}</Serif>
 
       {!hasData ? (
@@ -534,9 +570,17 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
         </p>
       ) : (
         <>
-          <div className="-mx-1 overflow-x-auto px-1 pb-2">
+          {/* La griglia era `min-w-[21rem]` (336px) dentro un contenitore che a
+              360px ne misura 320: la settima colonna finiva tagliata, e per
+              vederla si doveva scorrere lateralmente. Un calendario che scorre
+              di sedici pixel non si legge come "c'è dell'altro", si legge come
+              rotto. Adesso la griglia esce di 12px per lato dal margine di
+              pagina — 344px invece di 320 — e le sette colonne entrano intere:
+              a 360px la cella misura esattamente 44px, che è anche la misura
+              minima di un bersaglio da toccare. Niente scroll orizzontale. */}
+          <div className="-mx-3 pb-2">
             <ol
-              className="grid min-w-[21rem] grid-cols-7 gap-1.5 sm:min-w-0 sm:gap-2"
+              className="grid grid-cols-7 gap-1.5 sm:gap-2"
               aria-label={hs.heatmapAriaLabel(data.currentMonth.label)}
             >
               {currentDays.map((cell) => {
@@ -567,30 +611,31 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
                         }
                       }}
                       className={cn(
-                        "group flex aspect-square min-h-11 w-full touch-manipulation flex-col items-start justify-between rounded-2xl border p-2.5 text-left outline-none transition-[background-color,border-color,box-shadow,opacity,transform] duration-150 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring/50 sm:min-h-14 sm:p-3",
+                        "group flex aspect-square w-full touch-manipulation flex-col items-start justify-between rounded-[var(--r-control)] p-2 text-left outline-none transition-[background-color,box-shadow,opacity,transform] duration-150 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-ring/50 sm:p-3",
                         INTENSITY_CLASS[level],
+                        /* Oggi si marca con l'accento perché "oggi" è l'unico
+                           posto della griglia dove l'app ti sta indicando
+                           qualcosa; resta un anello, cioè un tratto. */
                         cell.isToday &&
-                          "ring-2 ring-accent/45 ring-offset-2 ring-offset-background",
-                        cell.isFuture && "border-line-soft bg-surface-muted text-ink-3 opacity-55",
+                          "ring-2 ring-accent ring-offset-2 ring-offset-background",
+                        cell.isFuture && "nlc-heat-0 opacity-45",
                         isActive &&
-                          "border-foreground/40 shadow-sm ring-2 ring-foreground/10 ring-offset-2 ring-offset-background",
+                          "ring-2 ring-foreground ring-offset-2 ring-offset-background",
                       )}
                     >
                       <Mono className="text-[11px] font-semibold leading-none sm:text-xs">
                         {cell.day}
                       </Mono>
-                      <span className="flex w-full items-end justify-between gap-1">
-                        {cell.entriesCount > 0 ? (
-                          <span className="size-1.5 rounded-full bg-current opacity-75" />
-                        ) : (
-                          <span className="size-1.5 rounded-full bg-current opacity-20" />
-                        )}
-                        {cell.isFuture ? (
-                          <span className="text-[8px] uppercase tracking-[0.12em] opacity-80">
-                            {hs.futureShort}
-                          </span>
-                        ) : null}
-                      </span>
+                      {/* Il pallino resta solo dove c'è un movimento: prima
+                          c'era anche sui giorni vuoti, al 20% di opacità, e un
+                          segno che compare sempre non segna niente. E l'etichetta
+                          "FUT" è sparita da ventidue celle su trentuno — che il
+                          giorno non sia ancora arrivato lo dice già il fatto che
+                          è spento, e ventidue volte non è un'informazione, è un
+                          motivo. Resta nel nome accessibile della cella. */}
+                      {cell.entriesCount > 0 ? (
+                        <span className="size-1.5 rounded-full bg-current opacity-70" />
+                      ) : null}
                     </button>
                   </li>
                 );
@@ -625,24 +670,30 @@ export function CraftedDailySpendingHeatmap({ data }: CraftedDailySpendingHeatma
             </div>
 
             {data.monthToDateDelta !== null ? (
+              /* Questa riga scriveva i soldi in due modi diversi nella stessa
+                 frase: "1016€" (compatto, simbolo in coda) e "-676,00 €"
+                 (esteso, simbolo staccato). Adesso è due volte lo stesso
+                 oggetto, e il segno del delta lo porta `Amount` con la sua
+                 variante `delta` — lì il segno è il contenuto, non un'eccezione. */
               <p className="text-xs leading-5 text-muted-foreground">
                 {data.currentMonth.days.some((cell) => cell.isToday) ? hs.monthProgress : hs.monthTotal}:{" "}
-                <Mono className="font-semibold text-foreground">
-                  {formatCraftedCompact(data.currentMonth.totalRealSpent, locale)}{currencySymbol}
-                </Mono>{" "}
+                <Amount
+                  value={data.currentMonth.totalRealSpent}
+                  className="text-xs font-semibold text-foreground"
+                />{" "}
                 {hs.inMonth(data.currentMonth.label.toLowerCase())},{" "}
-                <Mono
+                <Amount
+                  value={data.monthToDateDelta}
+                  sign="delta"
                   className={cn(
-                    "font-semibold",
+                    "text-xs font-semibold",
                     data.monthToDateDelta > 0
-                      ? "text-destructive"
+                      ? "text-nlc-over"
                       : data.monthToDateDelta < 0
-                        ? "text-green"
+                        ? "text-nlc-under"
                         : "text-foreground",
                   )}
-                >
-                  {formatSignedMoney(data.monthToDateDelta, currencyCode, locale)}
-                </Mono>{" "}
+                />{" "}
                 {hs.comparedToPrevious}
               </p>
             ) : null}
