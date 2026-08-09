@@ -4,8 +4,8 @@ import dynamic from "next/dynamic";
 
 const AiAnalysisExportCard = dynamic(
   () =>
-    import("@/src/components/more/ai-analysis-export-card").then(
-      (module) => module.AiAnalysisExportCard,
+    import("@/src/components/more/crafted-ai-analysis-export").then(
+      (module) => module.CraftedAiAnalysisExport,
     ),
   {
     ssr: false,

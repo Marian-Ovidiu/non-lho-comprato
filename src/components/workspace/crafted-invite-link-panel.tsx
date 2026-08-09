@@ -103,11 +103,13 @@ export function CraftedInviteGenerateButton({
       onClick={onClick}
       disabled={pending}
       className={cn(
-        "flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-accent text-[15px] font-bold text-accent-foreground transition-opacity disabled:opacity-60",
+        "nlc-press flex h-[52px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] bg-accent text-[15px] font-bold text-accent-foreground outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-60",
         className,
       )}
     >
-      {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
+      {pending ? (
+        <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+      ) : null}
       {pending ? t.workspace.inviteGeneratingButton : t.workspace.inviteGenerateButton}
     </button>
   );

@@ -139,7 +139,7 @@ function CraftedPwaInstallBody({
   if (ios) {
     return (
       <div className="space-y-4">
-        <p className="text-sm leading-6 text-ink-3">
+        <p className="text-sm leading-6 text-muted-foreground">
           Apri il menu Condividi e scegli &ldquo;Aggiungi alla schermata Home&rdquo;.
         </p>
         <ol className="space-y-2 border-y border-line py-3">
@@ -149,14 +149,14 @@ function CraftedPwaInstallBody({
             "Conferma",
           ].map((step, index) => (
             <li key={step} className="flex items-start gap-3 text-sm">
-              <Mono className="mt-0.5 size-5 shrink-0 text-center text-[11px] text-ink-3">
+              <Mono className="mt-0.5 size-5 shrink-0 text-center text-[11px] text-muted-foreground">
                 {index + 1}
               </Mono>
               <span>{step}</span>
             </li>
           ))}
         </ol>
-        <p className="inline-flex items-center gap-2 text-xs text-ink-3">
+        <p className="inline-flex items-center gap-2 text-xs text-muted-foreground">
           <Share2 className="size-3.5" aria-hidden="true" />
           Funziona da Safari su iPhone
         </p>
@@ -167,13 +167,13 @@ function CraftedPwaInstallBody({
   if (canPrompt) {
     return (
       <div className="space-y-3">
-        <p className="text-sm text-ink-3">
+        <p className="text-sm text-muted-foreground">
           Aggiungi Non l&apos;ho comprato alla schermata Home.
         </p>
         <button
           type="button"
           onClick={() => void promptInstall()}
-          className="flex h-11 w-full items-center justify-center gap-2 border border-line text-[14px] font-semibold transition-opacity hover:opacity-80"
+          className="nlc-press flex h-11 w-full items-center justify-center gap-2 rounded-[var(--r-control)] border border-line text-[14px] font-semibold outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <Download className="size-4" aria-hidden="true" />
           Installa app
@@ -204,7 +204,7 @@ export function PwaInstallSection() {
 
   return (
     <div className="py-4">
-      <Label className="mb-3 block">Installa app</Label>
+      <Label className="mb-3 block text-muted-foreground">Installa app</Label>
       <CraftedPwaInstallBody snapshot={snapshot} />
     </div>
   );
@@ -226,7 +226,7 @@ export function InstallButton({
       type="button"
       onClick={() => void promptInstall()}
       className={cn(
-        "inline-flex items-center gap-2 border border-line px-4 py-2 text-sm font-semibold transition-opacity hover:opacity-80",
+        "nlc-press inline-flex items-center gap-2 border border-line px-4 py-2 text-sm font-semibold outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         compact && "rounded-full px-3 py-1.5 text-xs",
         className,
       )}

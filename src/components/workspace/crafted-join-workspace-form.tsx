@@ -51,7 +51,7 @@ export function CraftedJoinWorkspaceForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <div className="border-y border-line py-3">
+      <div className="border-y border-line">
         <div className="flex items-center justify-between gap-4">
           <input
             id={inputId}
@@ -62,9 +62,11 @@ export function CraftedJoinWorkspaceForm() {
             aria-label={t.workspace.joinLinkLabel}
             aria-describedby={state.message && !state.success ? errorId : undefined}
             aria-invalid={Boolean(state.message && !state.success)}
-            className="min-w-0 flex-1 bg-transparent text-[15px] outline-none placeholder:text-ink-3/70"
+            className="h-11 min-w-0 flex-1 rounded-[var(--r-control)] bg-transparent text-[15px] outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           />
-          <CraftedLabel>{t.workspace.joinLinkLabel}</CraftedLabel>
+          <CraftedLabel className="text-muted-foreground">
+            {t.workspace.joinLinkLabel}
+          </CraftedLabel>
         </div>
       </div>
       {state.message && !state.success ? (
@@ -75,7 +77,7 @@ export function CraftedJoinWorkspaceForm() {
       <button
         type="submit"
         disabled={pending}
-        className="flex h-11 w-full items-center justify-center gap-2 border border-line text-[14px] font-semibold text-foreground transition-opacity hover:opacity-80 disabled:opacity-50"
+        className="nlc-press flex h-11 w-full items-center justify-center gap-2 rounded-[var(--r-control)] border border-line text-[14px] font-semibold text-foreground outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50"
       >
         {pending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : null}
         {pending ? t.workspace.joinVerifyingButton : t.workspace.joinButton}

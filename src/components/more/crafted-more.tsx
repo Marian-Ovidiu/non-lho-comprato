@@ -3,10 +3,15 @@
 import Link from "next/link";
 
 import { signOutAction } from "@/src/actions/auth";
-import { Rule, Serif } from "@/components/crafted";
+import { CraftedIcon, Eyebrow, Serif } from "@/components/crafted";
 import { useTranslations } from "@/src/components/language/language-context";
 import { CraftedMoreRow, CraftedMoreSection } from "@/src/components/more/crafted-more-row";
-import { cn } from "@/lib/utils";
+import {
+  CraftedMoreAnalysisExport,
+  CraftedMoreAppPreferences,
+  CraftedMoreWorkspaceAccessTools,
+  CraftedMoreWorkspacePreferences,
+} from "@/src/components/more/crafted-more-tools";
 
 export type CraftedMoreProps = {
   profileLabel: string;
@@ -14,9 +19,9 @@ export type CraftedMoreProps = {
   workspaceLabel: string;
   isAuthenticated: boolean;
   showWorkspaceTools: boolean;
-  workspaceSection: React.ReactNode;
-  appSection: React.ReactNode;
 };
+
+const ROW_GROUP_CLASS_NAME = "divide-y divide-line-soft";
 
 export function CraftedMore({
   profileLabel,
@@ -24,8 +29,6 @@ export function CraftedMore({
   workspaceLabel,
   isAuthenticated,
   showWorkspaceTools,
-  workspaceSection,
-  appSection,
 }: CraftedMoreProps) {
   const t = useTranslations();
 
@@ -39,144 +42,166 @@ export function CraftedMore({
       .toUpperCase() || "?";
 
   return (
-    <div className="-mx-4 pb-6 sm:-mx-6 lg:-mx-8">
-      <section className="px-5 py-6">
-        <div className="flex items-center gap-3.5">
-          <div className="flex size-11 shrink-0 items-center justify-center rounded-full border border-line text-xs font-semibold tracking-[0.08em]">
+    <div className="-mx-4 pb-8 sm:-mx-6 lg:-mx-8">
+      <header className="px-[var(--sp-page-x)] pb-5 pt-2">
+        <Eyebrow className="block">{t.more.profileSection}</Eyebrow>
+        <div className="mt-3.5 flex items-center gap-3.5">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-xs font-semibold tracking-[0.08em]">
             {profileInitials}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[18px] font-semibold tracking-[-0.02em]">{profileLabel}</p>
+            <h1 className="truncate text-[21px] font-semibold leading-6 tracking-[-0.025em]">
+              {profileLabel}
+            </h1>
             {workspaceName ? (
-              <p className="mt-0.5 text-sm text-muted-foreground">
+              <Serif className="mt-1 block truncate text-[14px] text-muted-foreground">
                 {workspaceName} · {workspaceLabel}
-              </p>
+              </Serif>
             ) : (
-              <Serif className="mt-0.5 block text-sm text-ink-3">
+              <Serif className="mt-1 block text-[14px] text-muted-foreground">
                 {t.more.syncMessage}
               </Serif>
             )}
           </div>
         </div>
-      </section>
+      </header>
 
       {!isAuthenticated ? (
-        <section className="px-5 pb-6">
+        <section className="px-[var(--sp-page-x)] pb-2">
           <Link
             href="/login"
-            className="flex h-[54px] w-full items-center justify-center rounded-2xl bg-accent text-[15.5px] font-bold text-accent-foreground transition-opacity hover:opacity-90"
+            className="nlc-press flex h-[52px] w-full items-center justify-center rounded-[var(--r-cta)] bg-accent text-[15px] font-bold text-accent-foreground outline-none transition-opacity hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
             {t.more.login}
           </Link>
         </section>
       ) : null}
 
-      <Rule />
-
       <CraftedMoreSection title={t.more.managementSection}>
-        <div className="divide-y divide-line-soft">
+        <div className={ROW_GROUP_CLASS_NAME}>
           <CraftedMoreRow
             href="/goals"
             label={t.more.goalsLabel}
             detail={t.more.goalsDetail}
             icon="target"
           />
+          {showWorkspaceTools ? (
+            <CraftedMoreRow
+              href="/budget"
+              label={t.more.budgetLabel}
+              detail={t.more.budgetDetail}
+              icon="wallet"
+            />
+          ) : null}
           <CraftedMoreRow
             href="/presets"
             label={t.more.presetsLabel}
             detail={t.more.presetsDetail}
-            icon="receipt"
+            icon="bookmark"
           />
+          {showWorkspaceTools ? (
+            <CraftedMoreRow
+              href="/workspace/categories"
+              label={t.more.categoriesLabel}
+              detail={t.more.categoriesDetail}
+              icon="tags"
+            />
+          ) : null}
+        </div>
+      </CraftedMoreSection>
+
+      <CraftedMoreSection title={t.more.analyticsSection}>
+        <div className={ROW_GROUP_CLASS_NAME}>
           <CraftedMoreRow
             href="/reports/monthly"
             label={t.more.monthlyReportLabel}
             detail={t.more.monthlyReportDetail}
-            icon="arrowUp"
+            icon="chart"
           />
           <CraftedMoreRow
             href="/insights"
-            label="Pattern"
-            detail="Resistenza, trigger, vittorie e punti deboli."
+            label={t.more.patternLabel}
+            detail={t.more.patternDetail}
             icon="brain"
           />
+        </div>
+        <div className="mt-3 rounded-[var(--r-card)] bg-surface-muted p-4">
+          <CraftedMoreAnalysisExport />
         </div>
       </CraftedMoreSection>
 
       {showWorkspaceTools ? (
-        <>
-          <Rule />
-          <CraftedMoreSection title={t.more.workspaceSection}>
-            <div className="divide-y divide-line-soft">
-              {workspaceSection}
-              <CraftedMoreRow
-                href="/workspace/categories"
-                label={t.more.categoriesLabel}
-                detail={t.more.categoriesDetail}
-                icon="receipt"
-              />
-              <CraftedMoreRow
-                href="/budget"
-                label="Budget"
-                detail="Rimanente, ritmo, categorie sforate e gestione."
-                icon="target"
-              />
-              <CraftedMoreRow
-                href="/workspace/members"
-                label={t.more.membersLabel}
-                detail={t.more.membersDetail}
-                icon="shield"
-              />
-              <CraftedMoreRow
-                href="/workspace/imports"
-                label="Import CSV"
-                detail="Carica un estratto conto CSV e conferma solo le righe utili."
-                icon="receipt"
-              />
-              <CraftedMoreRow
-                href="/workspace/new"
-                label={t.more.newWorkspaceLabel}
-                detail={t.more.newWorkspaceDetail}
-                icon="target"
-              />
-            </div>
-          </CraftedMoreSection>
-        </>
+        <CraftedMoreSection title={t.more.workspaceSection}>
+          <div className={ROW_GROUP_CLASS_NAME}>
+            <CraftedMoreRow
+              href="/workspace/members"
+              label={t.more.membersLabel}
+              detail={t.more.membersDetail}
+              icon="users"
+            />
+            <CraftedMoreRow
+              href="/workspace/new"
+              label={t.more.newWorkspaceLabel}
+              detail={t.more.newWorkspaceDetail}
+              icon="folderPlus"
+            />
+          </div>
+          <div className={`mt-2 ${ROW_GROUP_CLASS_NAME}`}>
+            <CraftedMoreWorkspaceAccessTools />
+          </div>
+        </CraftedMoreSection>
       ) : null}
 
-      <Rule />
+      <CraftedMoreSection title={t.more.dataSection}>
+        <div className={ROW_GROUP_CLASS_NAME}>
+          {showWorkspaceTools ? (
+            <CraftedMoreRow
+              href="/workspace/imports"
+              label={t.more.importLabel}
+              detail={t.more.importDetail}
+              icon="fileUp"
+            />
+          ) : null}
+          <CraftedMoreRow
+            href="/privacy"
+            label={t.more.privacyLabel}
+            detail={t.more.privacyDetail}
+            icon="shield"
+          />
+        </div>
+      </CraftedMoreSection>
 
       <CraftedMoreSection title={t.more.appSection}>
-        <div className="divide-y divide-line-soft">
-          {appSection}
+        <div className={ROW_GROUP_CLASS_NAME}>
+          {showWorkspaceTools ? <CraftedMoreWorkspacePreferences /> : null}
+          <CraftedMoreAppPreferences />
         </div>
       </CraftedMoreSection>
 
       {isAuthenticated ? (
-        <>
-          <Rule />
-          <CraftedMoreSection title={t.more.accountSection}>
-            <div>
-              <CraftedMoreRow
-                href="/account/delete"
-                label={t.more.deleteAccountLabel}
-                detail={t.more.deleteAccountDetail}
-                icon="del"
-              />
-            </div>
-          </CraftedMoreSection>
-          <Rule className="mt-5" />
-          <form action={signOutAction} className="px-5 py-5">
-            <button
-              type="submit"
-              className={cn(
-                "w-full border border-line py-3.5 text-sm font-medium text-muted-foreground",
-                "transition-colors hover:text-foreground",
-              )}
-            >
-              {t.more.logout}
-            </button>
-          </form>
-        </>
+        <CraftedMoreSection title={t.more.accountSection} className="pb-2">
+          <div className={ROW_GROUP_CLASS_NAME}>
+            <CraftedMoreRow
+              href="/account/delete"
+              label={t.more.deleteAccountLabel}
+              detail={t.more.deleteAccountDetail}
+              icon="del"
+            />
+            <form action={signOutAction}>
+              <button
+                type="submit"
+                className="nlc-press -mx-2 flex min-h-16 w-[calc(100%+1rem)] items-center gap-3 px-2 py-2.5 text-left outline-none transition-colors hover:bg-surface-muted/45 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
+                  <CraftedIcon name="logOut" size={17} />
+                </span>
+                <span className="text-[15px] font-medium leading-5 tracking-[-0.01em]">
+                  {t.more.logout}
+                </span>
+              </button>
+            </form>
+          </div>
+        </CraftedMoreSection>
       ) : null}
     </div>
   );

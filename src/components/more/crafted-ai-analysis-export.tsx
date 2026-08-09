@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileDown, Loader2 } from "lucide-react";
+import { FileDown, Loader2, Sparkles } from "lucide-react";
 
-import { CraftedIcon, Serif } from "@/components/crafted";
 import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
 import {
@@ -91,14 +90,16 @@ export function CraftedAiAnalysisExport() {
 
   return (
     <>
-      <div className="space-y-4">
+      <div className="space-y-3.5">
         <div className="flex items-start gap-3">
-          <CraftedIcon name="receipt" size={20} className="mt-0.5 shrink-0 text-muted-foreground" />
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-background text-muted-foreground">
+            <Sparkles className="size-[17px]" aria-hidden="true" />
+          </span>
           <div className="min-w-0">
-            <Serif className="text-sm text-muted-foreground">
+            <h3 className="text-[14.5px] font-semibold leading-5 tracking-[-0.01em]">
               {t.aiExport.title}
-            </Serif>
-            <p className="mt-1 text-xs leading-5 text-ink-3">
+            </h3>
+            <p className="mt-1 text-[12px] leading-[18px] text-muted-foreground">
               {t.aiExport.description}
             </p>
           </div>
@@ -113,10 +114,11 @@ export function CraftedAiAnalysisExport() {
                 type="button"
                 disabled={exportingRange !== null}
                 onClick={() => handleExport(option.range)}
-                className="flex min-h-11 w-full items-center justify-center gap-2 border border-line px-3 text-[14px] font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink disabled:cursor-not-allowed disabled:opacity-50"
+                aria-busy={isCurrentExport}
+                className="nlc-press flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--r-control)] border border-line bg-background px-3 text-[13.5px] font-semibold transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {isCurrentExport ? (
-                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
                 ) : (
                   <FileDown className="size-4" aria-hidden="true" />
                 )}
@@ -130,10 +132,10 @@ export function CraftedAiAnalysisExport() {
       {toast ? (
         <div
           className={cn(
-            "fixed bottom-4 left-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 border px-4 py-3 text-sm backdrop-blur",
+            "fixed bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] left-1/2 z-50 w-[min(92vw,28rem)] -translate-x-1/2 rounded-[var(--r-control)] border bg-background px-4 py-3 text-sm shadow-[var(--shadow-pop)] md:bottom-4",
             toast.kind === "success"
-              ? "border-green/30 bg-background text-green"
-              : "border-destructive/30 bg-background text-destructive",
+              ? "border-nlc-under/30 text-nlc-under"
+              : "border-nlc-over/30 text-nlc-over",
           )}
           role="status"
           aria-live="polite"

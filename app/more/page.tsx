@@ -1,10 +1,6 @@
 import { unstable_rethrow } from "next/navigation";
 
 import { CraftedMore } from "@/src/components/more/crafted-more";
-import {
-  CraftedMoreAppTools,
-  CraftedMoreWorkspaceTools,
-} from "@/src/components/more/crafted-more-tools";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { getAuthenticatedUser, getCurrentWorkspace } from "@/src/lib/auth/session";
@@ -34,12 +30,12 @@ export default async function MorePage() {
   }
 
   const workspace = workspaceResult;
-  const profileLabel = authUser?.name ?? authUser?.email ?? "Account";
+  const profileLabel = authUser?.name ?? authUser?.email ?? t.more.accountFallback;
   const workspaceLabel = workspace
     ? workspace.kind === "shared"
       ? t.common.shared
       : t.common.private
-    : "Nessun workspace";
+    : t.more.noWorkspaceLabel;
 
   return (
     <main>
@@ -57,8 +53,6 @@ export default async function MorePage() {
         workspaceLabel={workspaceLabel}
         isAuthenticated={Boolean(authUser)}
         showWorkspaceTools={Boolean(workspace)}
-        workspaceSection={<CraftedMoreWorkspaceTools />}
-        appSection={<CraftedMoreAppTools />}
       />
     </main>
   );

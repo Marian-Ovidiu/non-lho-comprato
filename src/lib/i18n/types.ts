@@ -325,6 +325,8 @@ export type Translations = {
 
   more: {
     profileSection: string;
+    accountFallback: string;
+    noWorkspaceLabel: string;
     login: string;
     syncMessage: string;
     nextStepSection: string;
@@ -336,6 +338,8 @@ export type Translations = {
     newWorkspaceLabel: string;
     newWorkspaceDetail: string;
     managementSection: string;
+    budgetLabel: string;
+    budgetDetail: string;
     habitsLabel: string;
     habitsDetail: string;
     presetsLabel: string;
@@ -343,9 +347,17 @@ export type Translations = {
     goalsLabel: string;
     goalsDetail: string;
     analyticsSection: string;
+    patternLabel: string;
+    patternDetail: string;
     monthlyReportLabel: string;
     monthlyReportDetail: string;
     appSection: string;
+    themeLabel: string;
+    inviteLabel: string;
+    joinLabel: string;
+    dataSection: string;
+    importLabel: string;
+    importDetail: string;
     privacyLabel: string;
     privacyDetail: string;
     accountSection: string;

@@ -149,10 +149,37 @@ export function CraftedHabitsLoadingSkeleton() {
 
 export function CraftedMoreLoadingSkeleton() {
   return (
-    <main className="pb-6">
-      <CraftedSkeletonHero />
-      <CraftedSkeletonTrio />
-      <CraftedSkeletonRows rows={6} />
+    <main className="-mx-4 pb-8 sm:-mx-6 lg:-mx-8">
+      <section className="px-[var(--sp-page-x)] pb-5 pt-2">
+        <CraftedSkeletonLine className="mb-3.5 h-3 w-14" />
+        <div className="flex items-center gap-3.5">
+          <CraftedSkeletonLine className="size-11 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <CraftedSkeletonLine className="h-5 w-36 max-w-full" />
+            <CraftedSkeletonLine className="h-3.5 w-44 max-w-full" />
+          </div>
+        </div>
+      </section>
+      {[4, 3, 4, 2, 3].map((rows, sectionIndex) => (
+        <section key={sectionIndex} className="px-[var(--sp-page-x)] pt-7">
+          <CraftedSkeletonLine className="mb-3 h-3 w-20" />
+          {Array.from({ length: rows }).map((_, rowIndex) => (
+            <div
+              key={rowIndex}
+              className={cn(
+                "flex min-h-16 items-center gap-3 py-2.5",
+                rowIndex > 0 && "border-t border-line-soft",
+              )}
+            >
+              <CraftedSkeletonLine className="size-9 shrink-0 rounded-xl" />
+              <div className="min-w-0 flex-1 space-y-2">
+                <CraftedSkeletonLine className="h-4 w-32 max-w-full" />
+                <CraftedSkeletonLine className="h-3 w-52 max-w-full" />
+              </div>
+            </div>
+          ))}
+        </section>
+      ))}
     </main>
   );
 }

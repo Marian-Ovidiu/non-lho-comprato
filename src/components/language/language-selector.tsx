@@ -38,10 +38,10 @@ export function LanguageSelector() {
               onClick={() => handleChange(lang.code)}
               aria-pressed={active}
               className={cn(
-                "border-b-[1.5px] pb-2 text-[13px] transition-colors disabled:opacity-50",
+                "inline-flex min-h-11 min-w-11 items-center justify-center border-b-[1.5px] px-0.5 text-[13px] outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:opacity-50",
                 active
-                  ? "border-accent font-semibold text-foreground"
-                  : "border-transparent font-[450] text-ink-3 hover:text-foreground",
+                  ? "border-foreground font-semibold text-foreground"
+                  : "border-transparent font-[450] text-muted-foreground hover:text-foreground",
               )}
             >
               {lang.nativeName}
@@ -49,7 +49,7 @@ export function LanguageSelector() {
           );
         })}
       </div>
-      <p className="text-xs text-ink-3">
+      <p className="text-xs text-muted-foreground">
         {SUPPORTED_LANGUAGES.find((l) => l.code === currentCode)?.name ?? currentCode}
       </p>
     </div>

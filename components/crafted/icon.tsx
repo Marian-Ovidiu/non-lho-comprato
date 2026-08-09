@@ -1,14 +1,19 @@
 import {
   ArrowUp,
+  BarChart3,
   Bike,
   Brain,
+  Bookmark,
   Camera,
   Check,
   Cigarette,
   Coffee,
   Delete,
+  FileUp,
+  FolderPlus,
   GraduationCap,
   Home,
+  LogOut,
   Martini,
   PiggyBank,
   Plane,
@@ -16,8 +21,11 @@ import {
   Search,
   Shield,
   ShoppingBag,
+  Tags,
   Target,
   Utensils,
+  UsersRound,
+  WalletCards,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,12 +37,18 @@ export type CraftedIconName =
   | "fork"
   | "bike"
   | "brain"
+  | "bookmark"
   | "camera"
+  | "chart"
+  | "fileUp"
   | "flame"
+  | "folderPlus"
   | "graduation"
   | "home"
+  | "logOut"
   | "piggy"
   | "target"
+  | "tags"
   | "arrowUp"
   | "plane"
   | "shield"
@@ -43,7 +57,9 @@ export type CraftedIconName =
   | "receipt"
   | "check"
   | "cig"
-  | "del";
+  | "del"
+  | "users"
+  | "wallet";
 
 type CraftedIconProps = {
   name: CraftedIconName;
@@ -61,11 +77,17 @@ const LUCIDE_MAP: Record<
   fork: Utensils,
   bike: Bike,
   brain: Brain,
+  bookmark: Bookmark,
   camera: Camera,
+  chart: BarChart3,
+  fileUp: FileUp,
+  folderPlus: FolderPlus,
   graduation: GraduationCap,
   home: Home,
+  logOut: LogOut,
   piggy: PiggyBank,
   target: Target,
+  tags: Tags,
   arrowUp: ArrowUp,
   plane: Plane,
   shield: Shield,
@@ -75,6 +97,8 @@ const LUCIDE_MAP: Record<
   check: Check,
   cig: Cigarette,
   del: Delete,
+  users: UsersRound,
+  wallet: WalletCards,
 };
 
 function CraftedFlameIcon({

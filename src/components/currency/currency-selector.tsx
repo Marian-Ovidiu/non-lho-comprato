@@ -32,7 +32,7 @@ export function CurrencySelector() {
       onChange={handleChange}
       disabled={pending}
       aria-label={t.workspace.currencyAriaLabel}
-      className="w-full bg-transparent text-[15px] text-foreground outline-none disabled:opacity-50"
+      className="h-11 w-full rounded-[var(--r-control)] bg-transparent text-[15px] text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-muted disabled:opacity-50"
     >
       {SUPPORTED_CURRENCIES.map((currency) => (
         <option key={currency.code} value={currency.code}>

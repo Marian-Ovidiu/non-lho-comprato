@@ -1348,3 +1348,209 @@ Gli strumenti con cui ho misurato la palette — distanze ΔE, simulazione della
 dicromazia, ottimizzatore della scala, contrasto delle celle misurato in pagina —
 non sono nel repository: stanno in `.nlc-tools/`, che è in `.gitignore`. Sono
 ricostruibili, ma i numeri che contano sono scritti qui.
+
+---
+
+# `/more`: un indice deve avere una grammatica, non una vetrina
+
+Questa pagina aveva già il colore giusto, ma non aveva ancora preso una
+posizione. Si presentava come una sequenza di righe divisa in «Gestione»,
+«Workspace», «App» e «Account»: quattro nomi che descrivevano **dove il codice
+salva le funzioni**, non perché una persona le cerca. Budget e categorie erano
+separati dagli obiettivi; il report era accanto ai preset; privacy ed export
+stavano sotto il tema. La divisione esisteva, ma non produceva orientamento.
+
+La tesi di questo giro è semplice: **`/more` non è un cassetto degli avanzi, è
+l'indice dell'app.** Un indice non ha bisogno di un numero eroe o di una lastra
+che gli dia importanza. Ha bisogno di parole esatte, gruppi che reggano a memoria
+e un ritmo in cui il pollice capisca dove una famiglia finisce prima ancora di
+aver letto il titolo successivo.
+
+## I gruppi adesso seguono l'intenzione
+
+Le voci sono tutte quelle di prima, ma l'ordine ora risponde a sei domande
+riconoscibili:
+
+1. **Organizza:** obiettivi, budget, preset e categorie. Sono i quattro posti in
+   cui si decide la struttura futura dei soldi, non quattro implementazioni
+   diverse.
+2. **Capisci:** report mensile e Pattern. Prima uno stava in «Gestione» e
+   l'altro sembrava solo un'altra riga; adesso sono le due letture del dato — una
+   periodica, una comportamentale.
+3. **Spazio:** partecipanti, creazione di un altro workspace, invito e ingresso
+   tramite link. Qui il soggetto non sono i soldi ma il perimetro umano che li
+   condivide.
+4. **Dati:** import CSV e privacy. Una porta fa entrare dati, l'altra spiega come
+   vengono trattati. Metterle vicine rende visibile una responsabilità che
+   «App» nascondeva.
+5. **Preferenze:** valuta, lingua, tema e installazione PWA. Sono modi in cui
+   l'app si adatta al contesto, non contenuti del workspace.
+6. **Account:** eliminazione ed uscita. Restano in fondo e senza enfasi
+   cromatica: sono azioni reali, ma non devono competere con la navigazione
+   quotidiana.
+
+Questa tassonomia non cambia permessi né disponibilità. Le voci legate al
+workspace continuano a comparire soltanto quando il workspace esiste; login,
+logout e cancellazione conservano le condizioni precedenti; inviti, join,
+selettori, installazione ed export eseguono esattamente le stesse azioni. Sono
+state spostate le frasi sulla pagina, non le regole del prodotto.
+
+## La carta non ha bisogno di sei scatole
+
+`/more` resta una pagina `quiet`, quindi **carta**, come `/entries` e `/stats`.
+Non ho trasformato i sei gruppi in sei card: sarebbe stato un modo costoso di
+ridisegnare i separatori che c'erano già. Il raggruppamento lo fanno spazio,
+eyebrow e ordine. I filetti esistono solo fra righe della stessa famiglia; fra
+due famiglie c'è respiro, non un altro bordo.
+
+La testata ora dichiara finalmente una gerarchia semantica: «Profilo» è
+l'eyebrow, il nome è l'unico `h1`, il workspace scende nella voce serif che
+commenta. Prima non c'era nessun heading in tutta la pagina: nome, sezione e
+dettaglio erano tre paragrafi che il CSS rendeva diversi. Un indice senza titoli
+nel markup è un indice solo per chi lo vede.
+
+Ogni destinazione ha una riga da almeno 64px e un'icona in un incasso opaco da
+36px. L'incasso non è una terza lastra: niente blur, niente ombra, niente bordo;
+è `--surface-muted` pieno, cioè il gradino piatto che la carta usa per tenere
+fermo un segno. Le icone sono diventate specifiche — tag per le categorie,
+portafoglio per il budget, persone per i membri, file in ingresso per il CSV —
+perché qui l'icona deve abbreviare la scansione, non decorare undici righe con
+tre simboli ripetuti.
+
+I controlli più piccoli (lingua, tema, valuta e join) hanno ora un bersaglio
+minimo di 44×44px e un focus visibile. Lingua e tema non usano più il lime per
+dire «selezionato»: il lime è azione, mentre una preferenza corrente è uno
+stato. Il sottolineato passa all'inchiostro neutro; il lime resta al focus e
+alla CTA «Genera link invito», dove davvero succede qualcosa.
+
+Non c'è nessuna animazione nuova. Su una pagina che porta altrove il movimento
+non ha una distanza da spiegare: la risposta alla pressione basta. Con
+`prefers-reduced-motion: reduce` non resta nessuna animazione attiva nel
+contenuto di `/more`.
+
+## L'export per analisi AI: resta, ma smette di fingersi una destinazione
+
+Era l'elemento anomalo perché faceva due cose contraddittorie insieme: stava nel
+flusso delle preferenze come un controllo, ma si presentava con un'etichetta
+«Export AI», un secondo titolo «Export per analisi AI», una descrizione e due
+pulsanti. Non era una riga e non era una sezione; era una piccola card infilata
+dove avanzava posto.
+
+**Merita di restare, ma sotto “Capisci” e con il peso di uno strumento.** Report
+e Pattern sono destinazioni; l'export è il gesto con cui si porta la stessa
+materia fuori dall'app per leggerla altrove. Perciò arriva dopo quelle due righe
+in un unico incasso opaco, senza vetro e senza una seconda eyebrow ridondante.
+L'incasso gli dà abbastanza superficie per spiegare le due portate — mese o
+storico — ma non lo promuove a terza destinazione primaria. Nasconderlo in un
+`details` avrebbe accorciato la pagina aggiungendo però un gesto prima del
+download; non c'era nessun argomento d'uso che giustificasse quell'attrito.
+
+Il feedback dell'export era `bottom-4`: su mobile nasceva dietro la barra
+inferiore. Ora si appoggia sopra la geometria del chrome e torna a `bottom-4`
+da `md` in su. Anche qui niente vetro: il toast è fondo opaco, perché un
+messaggio di esito non può dipendere da ciò che gli scorre dietro.
+
+Il file `ai-analysis-export-card.tsx` da una riga non era morto, ma era un ponte
+senza lavoro: il wrapper lazy importava il ponte, che riesportava il componente
+vero. Il caricamento differito resta identico e punta direttamente a
+`crafted-ai-analysis-export.tsx`; il ponte è stato rimosso. Una sola identità
+per una sola cosa.
+
+## Il contrasto che il test verde non vedeva, corretto e dichiarato
+
+In tema chiaro `--ink-3` misura **4,61:1** sul fondo piatto. Sembrava sufficiente
+e axe non riportava violazioni, ma qui il fondo non è una costante: c'è l'aura
+`quiet`, e l'export usa un incasso `--surface-muted`. Il calcolo sui colori
+effettivi dava **4,35:1** per la descrizione dell'export sul suo incasso; il
+campionamento dei pixel realmente resi, ripetuto lungo lo scroll, portava alcune
+postille sulla carta fino a **3,99:1**. Axe le classificava come
+`color-contrast incomplete` — sessanta nodi — quindi una suite verde non stava
+dicendo che fossero leggibili.
+
+La correzione è locale: i testi secondari e i label dei controlli di `/more`
+passano a `--muted-foreground`. In chiaro misura **7,01:1** sulla carta base e
+**6,60:1** sull'incasso opaco; in scuro 11,21:1 e 8,75:1. Nessun token globale è
+cambiato. Dopo la correzione il campionamento non trova testo sotto 4,5:1; il
+minimo dell'intero viewport è 4,52:1 ed è una voce inattiva del chrome
+condiviso, non il contenuto di `/more`.
+
+Verificato in browser a 360, 390 e 430px, chiaro e scuro, più il caso iPhone in
+cui compare l'installazione PWA: nessun overflow orizzontale, tutte le undici
+destinazioni presenti, zero violazioni WCAG 2 AA da axe. Gli `incomplete`
+restano, come previsto dai fondi compositi; per questo il verdetto viene dai
+rapporti calcolati e dai pixel, non dal semaforo del test.
+
+## Gli elementi costruiti sulla funzione morta, e cosa ne farei
+
+Su `/more` ne ho trovati due. Uno è visibile, l'altro viaggia nei dati.
+
+1. **La descrizione di “Obiettivi”: «Mete alimentate dall'impatto positivo».**
+   Non è una sfumatura di copy: la progressione degli obiettivi è costruita
+   sulla stessa quantità che vale 19,20 euro su 320 movimenti. Non ho tolto né
+   indebolito la voce, perché gli obiettivi sono una funzione autonoma e la
+   decisione di prodotto è aperta. **Raccomandazione:** se le spese evitate
+   vengono ritirate, non ritirare gli obiettivi insieme a loro; separare la
+   progressione dall'«impatto positivo» e darle un'alimentazione che esista nei
+   dati reali (manuale o legata a una regola di budget). Finché non si decide,
+   il copy deve restare esplicito: nascondere il legame renderebbe il problema
+   meno visibile, non meno vero.
+2. **Il CSV dell'export AI.** La superficie non promette risparmio, ma il file
+   esportato contiene una famiglia intera di colonne costruite sulla funzione:
+   `savedAmount`, `wouldHaveSpent`, `savingImpact`, `avoidedAmount`,
+   `comparisonSaved`, `grossPositiveImpact`, `netImpact` e relativi totali.
+   Non le ho toccate: rimuoverle ora romperebbe un contratto dati e sarebbe una
+   decisione di prodotto presa dentro un redesign. **Raccomandazione:** se la
+   funzione viene chiusa, versionare lo schema dell'export, deprecare questi
+   campi con una finestra dichiarata e lasciare al centro `spentReal`, categorie
+   e condivisione. Il controllo di download va mantenuto: è utile anche senza
+   una sola colonna di «impatto».
+
+Preset e report possono contenere movimenti evitati nelle schermate a cui
+portano, ma le due voci di questo indice non sono costruite su quella funzione:
+rimangono utili con sole spese reali. Non le conto per gonfiare il catalogo.
+
+## Cosa ho deliberatamente non fatto
+
+- **Nessuna voce aggiunta, rimossa o rinominata come destinazione.** “Pattern”,
+  budget, import, categorie, membri, privacy, account: gli undici `href` sono
+  gli stessi. Sono nuovi solo i nomi dei gruppi, tradotti in italiano e inglese.
+- **Nessuna logica spostata.** Server action, fetch dell'export, range, rate
+  limit, permessi, visibilità e selezione del workspace sono invariati. La
+  verifica non ha eseguito seed, migrazioni, export o azioni di prodotto sul
+  database reale.
+- **Nessun foglio o scheda di vetro.** L'unica campitura importante è l'incasso
+  piatto dell'export; trasformare ogni gruppo in una `nlc-glass-card` avrebbe
+  contraddetto la natura di indice e moltiplicato i materiali durante lo scroll.
+- **Nessun hero, nessun riepilogo, nessuna metrica.** Questa pagina non misura:
+  orienta. Darle un numero grande sarebbe stato importare la gerarchia della
+  dashboard nel posto sbagliato.
+- **Nessun token globale cambiato.** Il difetto di contrasto aveva una cura
+  locale e l'ha ricevuta. Le altre rotte non pagano una correzione nata qui.
+- **Nessuna rimozione silenziosa della funzione morta.** I due legami trovati
+  restano nel codice e sono esposti qui con una raccomandazione di prodotto.
+
+## Dove voglio un occhio umano
+
+23. **Il peso dell'incasso dell'export, soprattutto in scuro.** È
+    deliberatamente più presente di una riga perché contiene due azioni, ma
+    meno importante del titolo «Capisci» e delle due destinazioni sopra. Se a
+    un occhio reale sembra ancora la cosa più importante della pagina, la
+    correzione è abbassare il gradino della campitura, non nasconderlo dietro
+    una disclosure.
+24. **“Capisci” come nome di gruppo.** È il verbo più preciso: report e Pattern
+    servono a capire, non genericamente ad «analizzare». Ma è anche l'unico
+    titolo all'imperativo implicito. Se in uso suona prescrittivo, «Letture» è
+    l'alternativa; non la sceglierei senza sentirla accanto al lessico reale del
+    prodotto.
+25. **La doppia presenza del profilo in cima.** Il chrome mostra le iniziali e
+    il workspace; la pagina ripete le iniziali, aggiunge il nome per esteso e
+    rende esplicito il tipo di spazio. Per me non è duplicazione: il primo è un
+    controllo globale, il secondo è il titolo del documento. Su un telefono
+    vero, però, sono a pochi centimetri; è il punto da guardare prima di ridurre
+    ancora la testata.
+26. **La CTA di invito mentre passa sotto il velo inferiore.** La riserva in
+    fondo garantisce che a fine scroll tutto resti sopra il chrome, ma durante
+    lo scorrimento il pulsante lime attraversa la fascia velata come qualunque
+    altro contenuto. È coerente con la decisione già presa per la barra; qui è
+    più evidente perché la campitura è forte. Va giudicato con il dito, non su
+    una schermata full-page che congela la barra a metà documento.
