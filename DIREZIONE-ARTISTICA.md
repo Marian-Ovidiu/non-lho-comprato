@@ -917,3 +917,434 @@ telefono lento, l'ordine in cui difendere queste tre cose è: **prima il
 carattere, poi la palette, poi la stanza.** La stanza è la più visibile delle
 tre e la meno strutturale. È l'unica di cui l'app può fare a meno restando una
 sola app.
+
+---
+
+# `/stats`: la prova del nove sulla scala categorica
+
+Questa schermata era l'unico posto dove la direzione artistica poteva essere
+smentita dai fatti invece che discussa. La scala categorica dei grafici
+(`--chart-1..5`) l'avevo definita con una motivazione precisa — «la
+distribuzione per categoria è un dato, non un giudizio» — e poi l'avevo usata su
+una barra sola, larga sei pixel, con quattro segmenti. Una regola provata su un
+caso è una regola non provata.
+
+## L'esito della prova, in breve
+
+**La scala non ha retto, ma non per la ragione che mi aspettavo.** Non è che
+cinque colori fossero pochi. È che su `/stats` la scala categorica **non era
+usata affatto**, e che come token conteneva un errore misurabile.
+
+Tre reperti, in ordine di gravità.
+
+**Primo: la scala violava la regola che dichiarava di rispettare.** Nel commento
+in `globals.css` c'era scritto che evita «sia il lime sia il corallo». Vero. Ma
+nessuno aveva controllato il terzo colore del giudizio: `--chart-1` era
+`#9ad9b0` e `--nlc-under` è `#8ad6ab`. **ΔE 4,7.** Non «simili»: lo stesso
+colore. Il primo colore della scala nata per non dire giudizi *era* il verde che
+nell'app dice «sei sotto budget». La regola era scritta nel commento e smentita
+nella riga sotto.
+
+**Secondo: `/stats` non la usava.** Le barre per categoria giravano su quattro
+tinte definite in `crafted-stats-build.ts` — `bg-accent`, `bg-foreground`,
+`bg-green`, `bg-ink-3` — assegnate per **posizione in classifica**, con
+`index % 4`. Tradotto: la prima categoria del mese era dipinta del colore della
+CTA, la terza del colore del giudizio positivo, e dalla quinta il giro
+ricominciava. Con i dati veri — **diciassette categorie** — il colore non
+identificava niente: era un palo da barbiere. E siccome l'indice è la classifica,
+«Caffè» cambia colore da un mese all'altro perché cambia la posizione. **Un
+colore categorico che cambia quando cambiano i dati non porta informazione:
+porta rumore travestito da informazione.**
+
+In tema chiaro la stessa riga produceva un difetto duro: la prima categoria —
+quella che si guarda per prima — aveva la barra `bg-accent`, che in chiaro la
+regola dell'accento manda alla campitura lime. Lime pallido su carta pallida:
+**1,3:1.** La barra della categoria più importante era invisibile.
+
+**Terzo: c'erano due scale categoriche, e non lo sapeva nessuna delle due.**
+`--chart-1..5` (cinque tinte, per indice) e le sei famiglie `.nlc-cat-*` (per
+identità della categoria, quelle dei chip dell'elenco movimenti) facevano lo
+stesso lavoro con due vocabolari diversi. La stessa categoria poteva essere
+turchese in una schermata e ambra in un'altra. Due scale categoriche nella stessa
+app sono una di troppo, esattamente come lo erano i tre `formatEUR`.
+
+## Cosa ho fatto, e il numero che lo giustifica
+
+**Una scala sola.** `--chart-1..5` non è più una tavolozza a sé: sono le cinque
+tinte delle famiglie di categoria. Un vocabolario di colore solo per «che cosa è
+questa spesa», in tutta l'app.
+
+**Ri-spaziata, perché non si distingueva.** Le sei famiglie avevano tre azzurri
+consecutivi — servizi `#7cc9e8`, spostarsi `#8fb8ee`, abitare `#93a8e8` — con
+**ΔE 9,9** fra le due più vicine. Alla dimensione di un chip o di un pallino da
+otto pixel, ΔE 10 è lo stesso colore. Adesso la coppia peggiore sta a **ΔE 20,7
+in scuro e 18,6 in chiaro**, e la distanza minima da un colore di ruolo è salita
+da 17 a **27**.
+
+**E qui arriva la parte da leggere per intera, perché è un limite e non un
+risultato.**
+
+## Sei colori non si distinguono se non si vedono i colori. Nessuna scala li distingue.
+
+La domanda del brief era: sono distinguibili per chi non vede bene i colori? Ho
+smesso di stimarlo a occhio e l'ho misurato, simulando protanopia e deuteranopia
+e ricalcolando le distanze. La risposta è **no**, e non è colpa di queste sei
+tinte.
+
+Ho scritto un ottimizzatore che cerca la migliore scala possibile sotto i
+vincoli veri: leggibile sul fondo del tema, ad almeno ΔE 20 da tutti e quattro i
+colori di ruolo, e il più separata possibile anche per un occhio dicromatico. Su
+trecentomila tentativi il tetto è **ΔE 20,7 in tema scuro** — con colori al neon
+che in questa palette non possono stare — e **ΔE 13,7 in tema chiaro**, cioè
+*sotto la soglia di distinguibilità anche nel caso migliore che esista*. In
+chiaro la finestra di luminosità utilizzabile è stretta (L\* 34–58) e le tinte
+libere sono poche, perché quattro regioni della ruota sono già occupate dai
+ruoli. **Non è un problema di gusto: è un problema di capienza.**
+
+C'è un secondo motivo, ed è più interessante del primo. Si potrebbe rendere una
+scala robusta alla dicromazia scalando la **luminosità** invece della tinta: una
+categoria chiara, una media, una scura. Ma una scala categorica con luminosità
+diverse comincia a dire un'altra cosa — *questa categoria conta più di
+quell'altra* — e il peso è precisamente ciò che una scala categorica non deve
+codificare. **Le due richieste sono in conflitto diretto.** Ho scelto
+l'iso-luminosità (L\* 67–77 in scuro, 36–42 in chiaro) perché la correttezza
+semantica viene prima, e ho accettato la conseguenza.
+
+**La conseguenza, dichiarata come regola:** il colore categorico in questa app
+non porta mai informazione da solo. Deve sempre stare accanto a un canale che
+non è colore. Dove questo non era vero, l'ho reso vero.
+
+## Dove il colore serve davvero: un posto, e non è questa pagina
+
+Passando le due schermate ho capito che la domanda giusta non era «quanti
+colori», ma «in quanti punti il colore è l'unico legame possibile». La risposta è
+**uno solo in tutta l'app**: la barra segmentata della dashboard, dove un
+segmento e la sua riga non hanno nessun altro modo di riconoscersi.
+
+E proprio lì il legame **non c'era**: i segmenti erano colorati, le righe sotto
+no. Cinque tinte che non collegavano niente, e l'unico appiglio era l'ordine. Ora
+ogni riga porta il suo segno di colore, e il colore è diventato ridondante con la
+posizione e con il nome — che è la sola condizione a cui è lecito affidargli
+qualcosa.
+
+Su `/stats` di grafici ad asse condiviso non ce n'è nessuno: diciassette righe,
+ognuna con icona, nome, percentuale e importo. **Lì il colore per categoria non
+serviva a identificare, serviva a decorare, e decorando mentiva.** Quindi ho
+separato i due lavori, ed è la decisione centrale di questa pagina:
+
+- **l'identità sta sull'icona**, tinta con la famiglia della categoria — la
+  stessa tinta che quella categoria ha nei chip dell'elenco movimenti. «Caffè» è
+  lo stesso oggetto nelle due schermate, e non si sposta quando si sposta la
+  classifica;
+- **la quantità sta sulla barra**, che è di un inchiostro solo. Una barra misura
+  una cosa sola: non ha bisogno di cambiare colore per dirla. Quattro tinte
+  alternate su una colonna di barre affiancate facevano sembrare *diverse*
+  quantità che erano soltanto *diverse categorie*.
+
+## La heatmap: mancava una scala, e nessuno se n'era accorto
+
+Il pezzo più grosso (654 righe) aveva il problema più semplice da nominare e il
+più profondo da risolvere: **la palette aveva due scale e ne servivano tre.**
+
+C'era il categorico (un dato) e c'era il giudizio (sotto / in tensione /
+sforato). Non c'era il **sequenziale**: una quantità che cresce. La heatmap della
+spesa giornaliera è esattamente quello, e non trovando una scala propria si era
+presa quella dell'accento: `bg-accent/10` … `/60`. **Trentun celle del colore che
+in questa app significa «premi qui», su una griglia in cui non si preme niente.**
+In più, siccome in tema chiaro `--accent` è l'oliva dell'inchiostro e in scuro è
+il lime, la stessa heatmap aveva **due identità diverse nei due temi**: un
+oggetto che cambia natura cambiando tema non è un oggetto.
+
+La scala nuova non è un colore. È **inchiostro**: `--foreground` mescolato dentro
+`--background`. Più soldi sono usciti, più il giorno è stampato denso. È la
+metafora che l'app già usa — il registro, la carta — e ha tre proprietà che un
+colore non avrebbe avuto:
+
+1. **Segue i due temi senza una seconda tabella di valori.** Una formula, non
+   dodici numeri da tenere allineati a mano. (È la quarta volta in questo
+   documento che una costante duplicata si sfasa; qui non c'è la costante.)
+2. **È monotona, quindi si legge senza distinguere i colori.** Una heatmap a
+   tinta unica è l'unica heatmap onesta, e risolve da sola il problema che la
+   scala categorica non può risolvere.
+3. **È opaca.** Sembra un dettaglio tecnico ed è la parte più importante, perché
+   collega la heatmap alla domanda sulla stanza.
+
+### Perché l'opacità non è un dettaglio: le celle erano velature sopra la stanza
+
+`bg-accent/10` è una velatura, e una cella velata sopra un fondo vivo prende il
+colore di quel fondo. La stanza c'è anche qui, e gli orb si muovono. Significa
+che **il livello apparente di un giorno dipendeva da cosa gli passava dietro**:
+due giorni con la stessa spesa potevano leggersi diversi perché uno stava sopra
+un orb e l'altro no.
+
+Un grafico il cui valore dipende dallo sfondo non sta misurando niente. Adesso le
+celle sono opache per costruzione, e la stanza non può più entrare dentro un
+dato.
+
+### Le fermate non sono regolari, e c'è una ragione
+
+16 / 28 / 40 / 68 / 88%. Il salto fra il terzo e il quarto gradino è il doppio
+degli altri, di proposito: **salta la fascia centrale di luminanza in cui né
+l'inchiostro chiaro né quello scuro arrivano a 4,5:1** sul numero del giorno. È
+il problema classico delle rampe monocrome, e si risolve non passandoci.
+L'inchiostro si ribalta al livello 4 in tutti e due i temi — la simmetria non
+l'ho cercata, è caduta così — e il salto di ΔE 24 in quel punto rinforza la
+lettura invece di disturbarla. Ogni gradino sta a ΔE ≥ 9 dal precedente.
+
+### La settima colonna era tagliata
+
+A 360px la griglia era `min-w-[21rem]` (336px) dentro un contenitore che ne
+misura 320. **La settima colonna finiva fuori, e per vederla si doveva scorrere
+lateralmente di sedici pixel.** Un calendario che scorre di sedici pixel non si
+legge come «c'è dell'altro»: si legge come rotto. Ora la griglia sporge di 12px
+per lato — 344px — e le sette colonne entrano intere, con la cella a **44px
+esatti**, che è anche la misura minima di un bersaglio da toccare. Verificato in
+pagina: `scrollWidth == clientWidth`, nessuno scroll orizzontale.
+
+### La leggenda serve, ma non quella che c'era
+
+Mostrava **sei** caselle, e la prima era il livello 0, «nessuna spesa». Ma zero
+non è «meno»: è un'altra cosa. Infilarlo in fondo a una rampa che va da «meno» a
+«più» dice che un giorno senza spese è un giorno di spesa piccola. La leggenda
+adesso ha i cinque livelli che sono davvero una quantità.
+
+L'altra cosa che è cambiata è **a chi parla**. Le caselle portavano il valore in
+euro dentro un attributo `title`: su un telefono il `title` non si apre mai, e
+con `aria-hidden` non lo leggeva nemmeno uno screen reader. Era un numero scritto
+per nessuno. Adesso il massimo del mese è il nome accessibile del gruppo — e
+senza il massimo, «più speso» non ha unità di misura, perché la scala è relativa.
+
+Sono anche sparite due cose: l'etichetta **«FUT»** da ventidue celle su trentuno
+(che il giorno non sia arrivato lo dice già lo spegnimento; ventidue volte non è
+informazione, è un motivo — resta nel nome accessibile della cella) e il
+**pallino sui giorni vuoti**, che c'era al 20% di opacità. Un segno che compare
+sempre non segna niente.
+
+## La stanza: resta `quiet`, e adesso ho un argomento che prima non avevo
+
+La decisione è: **`/stats` resta `data-room="quiet"`.** Ma la ragione non è
+«perché lo erano le altre».
+
+`/stats` è **carta**, come `/entries`: non c'è nessuna lastra di vetro, quindi
+non c'è nessuna lente che trasformi gli orb in luce. Vale la regola già scritta —
+gli orb sono oggetti, e per leggersi come luce hanno bisogno del vetro davanti.
+Alzare l'ambiente qui vorrebbe dire mettere dischi dietro dei numeri.
+
+L'argomento nuovo è più forte ed è specifico di questa pagina: **è l'unica
+schermata dove l'ambiente poteva entrare dentro un dato.** Altrove la stanza sta
+dietro del testo, e il testo o si legge o non si legge — è un problema di
+contrasto, e il contrasto si misura. Qui la stanza stava dietro delle *campiture
+che codificavano un valore*, e una velatura sopra un fondo vivo cambia valore.
+Non è un problema di leggibilità: è un problema di verità.
+
+La risposta giusta però non era abbassare la stanza: era **togliere l'alpha ai
+dati**. Un grafico non deve chiedere all'ambiente di stare fermo, deve essere
+opaco. Fatto questo, la stanza a 0,4 può restare esattamente com'è, e ci resta.
+
+## Gli importi: tutti da `Amount`, e il motivo principale non è la coerenza
+
+Su questa pagina i soldi si scrivevano in **tre** modi: `formatCraftedCompact`
+con il simbolo in coda e **in lime** (`119€`), `formatMoney` con il simbolo
+staccato secondo la locale (`-676,00 €`), e `CraftedAmount` con la sua scala.
+Nella riga sotto la heatmap i primi due comparivano **nella stessa frase**:
+«progressivo: 1016€ … -676,00 € rispetto…». Adesso passa tutto da `Amount`, che è
+l'oggetto dell'app. Con questo se ne va anche il **simbolo di valuta in lime**,
+che era in sei punti: il lime è azione, e una `€` non è un pulsante.
+
+Ma il motivo che conta di più non è l'ordine. **L'importo eroe era un odometro
+che conta salendo da zero.** Vuol dire che nell'HTML che il server manda, e per
+tutto il tempo che il JavaScript ci mette ad arrivare, **questa pagina dichiarava
+di aver speso 0,00 €** — su una schermata che esiste per dire quanto hai speso.
+L'ho vista con i miei occhi nella prima tornata di schermate: tre zeri grandi,
+«SPESO 0», «MOVIMENTI 0». Con `Amount` il numero è giusto già nel markup.
+Un'animazione che costa la verità del primo fotogramma non è un'animazione, è un
+difetto con una curva di easing.
+
+`Amount` ha imparato un terzo segno, `delta`. La regola esistente diceva: il
+segno si scrive solo dove è un'eccezione da leggere. Una differenza fra due
+periodi è il caso opposto — lì **il segno è il contenuto** — e si scrive sempre,
+con il meno vero (−) e non con un trattino.
+
+## Due difetti di correttezza, corretti e dichiarati
+
+Come nei giri precedenti: se è aritmetica o è rottura, si corregge e si scrive.
+
+**1. Il grafico degli ultimi dodici mesi non disegnava niente.** La riga delle
+barre era `items-end`, che toglie lo stretch alle colonne; le colonne prendevano
+l'altezza del contenuto, quindi il contenitore della barra — un `flex-1` senza
+altezza definita — non poteva risolvere la percentuale. Misurato in pagina:
+`height: 100%` e `height: 10,64%` rendevano **tutte e due 3px**, cioè il
+`min-height`. **Dodici mesi di spesa disegnati come barre identiche, qualunque
+fosse la spesa.** Il calcolo era giusto — `heightPct` esce corretto dal build, e
+non l'ho toccato — era il CSS a non farlo vedere. Adesso le stesse percentuali
+rendono 10px, 98px e 17px.
+
+È il difetto che dimostra perché le schermate vanno guardate: leggendo il codice
+quel grafico è corretto. Solo aprendolo si vede che non c'è.
+
+**2. Ventidue celle su trentuno erano sotto la soglia di contrasto, e il test era
+verde.** La cella futura portava `opacity-45` sull'intero bottone. Misurato: il
+numero del giorno dava **2,17:1 in scuro e 1,76:1 in chiaro**. Axe non lo
+segnalava, e vale la pena sapere perché: su un fondo dichiarato in
+`color(srgb …)` — che è ciò che `color-mix()` produce — e composto con
+un'opacità, la regola di contrasto di axe esce **«incomplete»** e non
+«violation», quindi il filtro serious/critical la lascia passare. **Il test
+passava e il testo era illeggibile.**
+
+Ora il giorno vuoto e il giorno futuro si distinguono per inchiostro invece che
+per opacità — sono due assenze diverse, e nessuna delle due è «poco speso» — e la
+cella peggiore sta a **4,65:1 in scuro e 5,21:1 in chiaro**. Misurati, non
+dedotti.
+
+## Gli elementi costruiti sulla funzione morta, e cosa ne farei
+
+Il vincolo dice di non rimuoverli e di scriverne. Ne ho trovati **sei**, e non si
+equivalgono. In ordine di costo:
+
+1. **`crafted-top-savings-list.tsx` — «Impatto positivo».** Una sezione intera,
+   con titolo, sottotitolo, elenco e stato vuoto: la superficie più grande che la
+   funzione morta occupa in tutta l'app. **Raccomandazione: è la prima da
+   togliere se la decisione si prende.** Non perché sia fatta male — l'ho
+   ridisegnata e adesso sta bene — ma perché è l'unica che occupa spazio *in
+   proporzione al proprio valore dichiarato* invece che al proprio valore reale.
+2. **«Impatto netto» nel trio del bilancio.** Sta accanto a «Speso» in un
+   riquadro della stessa dimensione, e con i dati veri scrive **€0,00**. Tre
+   riquadri uguali dicono che i tre numeri contano uguale: è lo stesso difetto
+   che avevo già risolto sulla testata di `/entries` mettendoli in gerarchia.
+   **Raccomandazione: applicare qui la stessa cura** — fuori dal trio, giù nelle
+   postille, visibile solo se maggiore di zero. Non l'ho fatto perché `StatTrio`
+   è condiviso con `/reports/monthly`, e toccarlo qui significa deciderlo anche
+   là.
+3. **«Dettagli del periodo»** (il `<details>` richiudibile): «Avresti speso»,
+   «Impatto medio», «Indice netto» — **tre metriche su tre** costruite sulla
+   funzione morta. **Raccomandazione: è il posto giusto dove sono.** È già chiuso
+   di default e non costa niente a chi non lo apre. Se la funzione resta, questo
+   è il modello: sotto una piega, non nel flusso.
+4. **«Impatto netto» sotto ogni categoria**, in serif corsivo, solo quando è > 0.
+   Costo basso e condizionato. **Raccomandazione: tenerlo** finché resta
+   l'elenco; sparisce da solo quando il dato è zero.
+5. **«… impatto netto» nella riga della categoria principale.** Stesso caso,
+   stessa raccomandazione.
+6. **La colonna del risparmio in «Impatto positivo»**, tinta con `--avoided-ink`.
+   Segue la sorte del punto 1.
+
+Il mio parere complessivo non è cambiato rispetto a quello che avevo scritto per
+`/entries`, e adesso ho un numero in più a sostegno: su questa pagina la funzione
+morta occupa **una sezione, un terzo del trio principale, l'intero pannello dei
+dettagli e due postille**. È la funzione più rappresentata di `/stats`, e vale
+19,20 € su 320 movimenti. Il criterio che proponevo resta lo stesso e resta
+misurabile: **se in tre mesi nessuno apre «Dettagli del periodo» e nessuno usa il
+filtro «Confronti», la funzione non esiste già adesso** — esiste solo il suo
+costo.
+
+## Cosa ho deliberatamente non fatto
+
+- **Nessuna metrica nuova, nessun grafico nuovo.** Non ho aggiunto medie,
+  proiezioni, confronti né un secondo asse. I blocchi sono quelli che c'erano,
+  nello stesso ordine.
+- **Nessuna metrica rimossa**, compresi i sei elementi qui sopra: ridisegnati e
+  segnalati, non cancellati. La decisione di prodotto non è mia.
+- **Non ho toccato i calcoli.** `heightPct`, `getIntensityLevel`, le soglie della
+  rampa (0,2 / 0,4 / 0,6 / 0,8), `savingRatePercent`, i totali: invariati. Del
+  grafico dei dodici mesi ho corretto il CSS che impediva di *vedere* il calcolo,
+  non il calcolo.
+- **I filtri restano, con la loro logica.** Periodo, persona e mese fanno
+  esattamente quello che facevano. Ho cambiato tre cose: le etichette passano da
+  `src/lib/i18n` invece di essere italiano scritto a mano, la griglia diventa a
+  tre colonne pari perché a 360px «Tutti i movimenti» finiva sotto la freccia e
+  «Agosto 2026» usciva dal bordo, e il periodo «anno» smette di tingersi di
+  lime — un filtro attivo è uno **stato**, non un'azione, ed è la regola già
+  scritta per il segmentato dell'elenco.
+- **Non ho allineato la heatmap ai giorni della settimana.** Vedi sotto: è la
+  cosa su cui voglio più di ogni altra un occhio umano, ed è una decisione di
+  prodotto, non di colore.
+- **Non ho toccato il popover del confronto** oltre a portarlo sulla scala del
+  giudizio per nome (`--nlc-over` / `--nlc-under` invece degli alias
+  `destructive` / `green`, che sono la strada da cui il giudizio era finito
+  scritto con i colori del brand).
+- **Nessuna libreria di grafici.** Tutto CSS, `color-mix` e lucide. Nessuna
+  dipendenza nuova.
+
+## Dove voglio un occhio umano
+
+17. **La heatmap ha sette colonne e non sono i giorni della settimana.** Il
+    giorno 1 sta sempre nella prima colonna: è un a capo ogni sette, non un
+    calendario. Il 1º agosto 2026 è un sabato, e nella griglia sta di «lunedì».
+    Una griglia a sette colonne di giorni ha un'affordance fortissima — chiunque
+    la legge come un calendario, e chi cerca «i miei sabati» legge una cosa
+    falsa. Le strade sono due e sono opposte: allinearla ai giorni della settimana
+    (ma è una decisione di prodotto, aggiunge celle vuote in testa e cambia cosa
+    la griglia afferma) oppure **rompere la griglia di sette** e darle un numero
+    di colonne che non evochi la settimana. Non l'ho fatto perché è la scelta che
+    cambia il significato della schermata, non il suo aspetto. **È la prima cosa
+    che guarderei.**
+18. **La cella al livello 5 in tema scuro è quasi bianca** (`#d2d7d0`). È
+    corretta — più inchiostro, più spesa — ed è il gradino che rende leggibile il
+    numero sopra. Ma su una pagina scura cinque quadrati quasi bianchi sono la
+    cosa più forte della schermata, più dell'importo eroe. A me sembra giusto che
+    il giorno in cui hai speso di più sia la cosa che salta all'occhio; a un altro
+    occhio potrebbe sembrare che la heatmap urli. Si abbassa portando l'ultima
+    fermata da 88% a ~78% in `.nlc-heat-5`: un numero solo.
+19. **La scala categorica e la dicromazia: ho accettato un limite, non l'ho
+    risolto.** La misura dice che non è risolvibile mantenendo l'iso-luminosità, e
+    che l'iso-luminosità è semanticamente obbligatoria. La mia conclusione è che
+    il colore non deve mai essere l'unico canale, e l'ho reso vero nei due punti
+    dove non lo era. Ma **se un giorno servisse un grafico in cui il colore è
+    davvero l'unico canale possibile, quel grafico non si può fare in questa
+    palette** — e la risposta giusta sarà cambiare il grafico, non aggiungere
+    tinte. Vorrei che questa frase la leggesse qualcuno che non sono io.
+20. **`crafted-person-filter.tsx` non è montato da nessuna parte.** Il filtro per
+    persona che si vede è la `select` dentro `CraftedStatsPeriodFilter`; questo
+    file è una seconda implementazione della stessa scelta, in un'altra forma (tab
+    sottolineate), con l'etichetta in italiano scritto a mano e con il lime a dire
+    «selezionato». Non l'ho tolto perché il brief dice che i filtri restano — ma
+    questo non è un filtro, è un filtro *che non c'è*. **La mia raccomandazione è
+    cancellarlo:** finché resta è codice che nessuno vede e che nessuno aggiorna,
+    e la prossima persona che cerca «il filtro persona» troverà per primo quello.
+21. **`--chart-1..5` e le famiglie sono adesso le stesse tinte, ma restano due
+    nomi.** L'ho lasciato di proposito: `--chart-*` è la convenzione di shadcn e
+    qualcosa fuori dal nostro codice potrebbe leggerla. Ma sono due nomi per una
+    cosa sola, ed è esattamente la condizione da cui nascono le divergenze — è
+    successo già tre volte in questo documento. Se nessuno dipende da quei nomi,
+    andrebbero unificati.
+22. **Lo splash è rimasto indietro rispetto alla soglia.** Non è `/stats` e non
+    l'ho toccato, ma l'ho visto a ogni apertura: `app-splash.tsx` ha il fondo
+    `#0a0a09` scritto a mano — il **nero caldo della vecchia palette**, non
+    `#0b1512` della stanza — e la fiamma di `FlameSplash` ha la `€` **oro**.
+    Questo documento dà la nota per chiusa («la soglia è il nero della stanza e la
+    fiamma è lime»): è vera per lo shell di bootstrap in `globals.css`, non per il
+    componente React che gli sta sopra per 1800ms. È la prima cosa che si vede
+    dell'app, ed è ancora sull'altra direzione artistica.
+
+## Nota tecnica per chi tocca questo codice
+
+La rampa dell'intensità sta in `globals.css`, in `@layer components`, come
+`.nlc-heat-0` … `.nlc-heat-5` più `.nlc-heat-future`. Nasce da
+`color-mix(in srgb, var(--foreground) N%, var(--background))`: **`in srgb` non è
+un dettaglio** — le fermate sono state scelte misurando l'interpolazione in sRGB,
+e passare a `oklab` le sposta e rimette il livello 3 nella fascia in cui nessuno
+dei due inchiostri arriva a 4,5:1. Se si cambia una fermata vanno ricontrollate
+due cose insieme: il ΔE dal gradino precedente (≥ 9) e il contrasto del numero
+del giorno, che si ribalta fra il livello 3 e il 4.
+
+I due stati di assenza — `.nlc-heat-0` (giorno senza spese) e `.nlc-heat-future`
+(giorno non ancora arrivato) — condividono il fondo e si distinguono per
+inchiostro. Non si distinguono per opacità, e non devono tornare a farlo: un
+`opacity` sul bottone moltiplica anche il testo, e la regola di contrasto di axe
+su un fondo `color(srgb …)` composto con l'opacità esce «incomplete» — il test
+resta verde mentre il testo diventa illeggibile. `--heat-ink-future` esiste solo
+in tema chiaro, dove `--ink-3` si ferma a 4,35:1.
+
+La griglia della heatmap sporge di 12px per lato (`-mx-3` dentro un `px-5`): è
+quello che a 360px fa entrare sette colonne da 44px esatti. Se cambia il padding
+di pagina o il `gap`, la cella scende sotto i 44px e il bersaglio non è più
+toccabile: i tre numeri vanno cambiati insieme.
+
+`getCategoryIdentity()` ha adesso un quarto campo, `inkClassName`: solo il tratto
+(`color: var(--cat)`), per l'icona dentro un elenco fitto, dove la campitura
+farebbe una piastrella e la piastrella farebbe un coriandolo.
+
+Gli strumenti con cui ho misurato la palette — distanze ΔE, simulazione della
+dicromazia, ottimizzatore della scala, contrasto delle celle misurato in pagina —
+non sono nel repository: stanno in `.nlc-tools/`, che è in `.gitignore`. Sono
+ricostruibili, ma i numeri che contano sono scritti qui.
