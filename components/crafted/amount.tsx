@@ -14,8 +14,12 @@ type AmountProps = {
    * Il segno si mette solo dove è un'eccezione da leggere (una spesa evitata
    * dentro una colonna di spese). Su una colonna in cui *tutto* è denaro
    * uscito, il meno è la cosa che ogni riga ha in comune: non informa.
+   *
+   * `delta` è il terzo caso, ed è l'opposto degli altri due: una differenza
+   * fra due periodi non ha un verso implicito, quindi lì il segno *è* il
+   * contenuto e si scrive sempre — meno vero (−), non un trattino.
    */
-  sign?: "none" | "plus";
+  sign?: "none" | "plus" | "delta";
   className?: string;
 };
 
@@ -52,6 +56,8 @@ export function Amount({
   return (
     <span className={cn("nlc-amount", className)}>
       {sign === "plus" ? "+" : null}
+      {sign === "delta" && value > 0 ? "+" : null}
+      {sign === "delta" && value < 0 ? "−" : null}
       <span className="nlc-currency">{symbol}</span>
       {integer}
       {fraction ? (

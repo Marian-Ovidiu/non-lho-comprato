@@ -1147,6 +1147,13 @@ export const it: Translations = {
   stats: {
     noCategoryData: "Nessun dato per categoria ancora disponibile.",
     categoryNetImpact: (amount) => `${amount} impatto netto`,
+    /* Le code delle frasi in cui l'importo lo scrive `Amount`: stesso schema
+       già usato nell'elenco movimenti (`<Amount/> {avoidedTotalLabel}`). */
+    netImpactSuffix: "impatto netto",
+    chartMaxLabel: "max",
+    filtersLabel: "Filtri",
+    personLabel: "Persona",
+    intensityLegendLabel: "Intensità della spesa giornaliera",
     trendAbove: "sopra",
     trendBelow: "sotto",
     trendAverage: "la tua media",

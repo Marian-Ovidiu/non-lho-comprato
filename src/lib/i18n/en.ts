@@ -1130,6 +1130,11 @@ export const en: Translations = {
   stats: {
     noCategoryData: "No category data yet.",
     categoryNetImpact: (amount) => `${amount} net impact`,
+    netImpactSuffix: "net impact",
+    chartMaxLabel: "max",
+    filtersLabel: "Filters",
+    personLabel: "Person",
+    intensityLegendLabel: "Daily spending intensity",
     trendAbove: "above",
     trendBelow: "below",
     trendAverage: "your average",

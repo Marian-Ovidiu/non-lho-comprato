@@ -7,6 +7,8 @@ type CategoryIdentity = {
   chipClassName: string;
   markerClassName: string;
   subtleSurfaceClassName: string;
+  /** Solo il tratto, per l'icona in un elenco fitto. */
+  inkClassName: string;
 };
 
 /**
@@ -35,6 +37,7 @@ function identity(famiglia: (typeof FAMIGLIA)[keyof typeof FAMIGLIA]): CategoryI
     chipClassName: `${famiglia} nlc-cat-chip ring-1 ring-transparent`,
     markerClassName: `${famiglia} nlc-cat-marker`,
     subtleSurfaceClassName: `${famiglia} nlc-cat-surface`,
+    inkClassName: `${famiglia} nlc-cat-ink`,
   };
 }
 

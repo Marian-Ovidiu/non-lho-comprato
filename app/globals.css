@@ -157,13 +157,22 @@
   --input: #16211d;
   --ring: var(--accent);
 
-  /* Scala categorica dei grafici: nessun lime (che resta azione) e nessun
-     arancio (che resta sforamento). */
-  --chart-1: #9ad9b0;
-  --chart-2: #6fc6c2;
-  --chart-3: #bb9cf2;
-  --chart-4: #e3c98f;
-  --chart-5: #93a094;
+  /* Scala categorica dei grafici. Non è più una scala a sé: sono le stesse
+     cinque tinte delle famiglie di categoria (vedi `.nlc-cat-*`), perché due
+     scale categoriche nella stessa app sono una di troppo — la stessa
+     categoria non può essere verde nell'elenco e ambra nel grafico.
+     Serve in un posto solo: un grafico ad asse condiviso, dove il colore è
+     l'unico legame fra un segmento e la sua riga. Ovunque il nome sia scritto
+     accanto, il colore è ridondante e non deve portare informazione da solo:
+     la scala è iso-luminosa di proposito (vedi la nota sulle famiglie).
+     Misurato: la vecchia `--chart-1` (#9ad9b0) distava ΔE 4,7 da `--nlc-under`
+     (#8ad6ab), cioè *era* il verde del giudizio pur dichiarando di non
+     toccarlo. Adesso la distanza minima da un ruolo è ΔE 27. */
+  --chart-1: #4ac8d8;
+  --chart-2: #6ab7e8;
+  --chart-3: #8f9df0;
+  --chart-4: #c491e6;
+  --chart-5: #f093ac;
   --radius: 14px;
   --sidebar: var(--surface);
   --sidebar-foreground: var(--foreground);
@@ -261,11 +270,11 @@
   --info: #5c6a5e;
   --input: #e8ede4;
   --ring: #35520f;
-  --chart-1: #2f8b62;
-  --chart-2: #1f7f85;
-  --chart-3: #6f4bb5;
-  --chart-4: #8a6b1f;
-  --chart-5: #6d7a6c;
+  --chart-1: #0d687a;
+  --chart-2: #16628f;
+  --chart-3: #4348ad;
+  --chart-4: #7d359b;
+  --chart-5: #ac2f56;
   --sidebar: var(--surface);
   --sidebar-foreground: var(--foreground);
   --sidebar-primary: var(--accent);
@@ -816,19 +825,31 @@ html.nlc-splash-pending #nlc-splash-shell {
    Stanno in @layer components di proposito: le utility di Tailwind devono
    poterle scavalcare, o lo stato attivo (`bg-accent/5`) perderebbe. */
 @layer components {
-  .nlc-cat-nutrimento { --cat: #6fc6c2; }
-  .nlc-cat-servizi { --cat: #7cc9e8; }
-  .nlc-cat-spostarsi { --cat: #8fb8ee; }
-  .nlc-cat-abitare { --cat: #93a8e8; }
-  .nlc-cat-desiderio { --cat: #e79ab8; }
-  .nlc-cat-neutro { --cat: #a3b0ab; }
+  /* Le sei tinte sono state ri-spaziate. Le tre precedenti — servizi #7cc9e8,
+     spostarsi #8fb8ee, abitare #93a8e8 — erano tre azzurri a un passo l'uno
+     dall'altro: ΔE 9,9 fra le due più vicine, cioè lo stesso colore alla
+     dimensione di un chip. Adesso la coppia peggiore sta a ΔE 20,7 in scuro e
+     18,6 in chiaro, e la distanza minima da un colore di ruolo è ΔE 27.
 
-  :root:not(.dark) .nlc-cat-nutrimento { --cat: #1f7f85; }
-  :root:not(.dark) .nlc-cat-servizi { --cat: #1f6f95; }
-  :root:not(.dark) .nlc-cat-spostarsi { --cat: #2d5fa8; }
-  :root:not(.dark) .nlc-cat-abitare { --cat: #3f4f9e; }
-  :root:not(.dark) .nlc-cat-desiderio { --cat: #a33a68; }
-  :root:not(.dark) .nlc-cat-neutro { --cat: #5c6a5e; }
+     Sono di proposito tutte alla *stessa* chiarezza (L* 67–77 in scuro,
+     36–42 in chiaro): una scala categorica non può scalare di luminosità, o la
+     luminosità inizia a dire "questa categoria conta di più". È anche il motivo
+     per cui non reggono la dicromazia — vedi la nota nel documento: il colore
+     qui non porta mai informazione da solo, sta sempre accanto al nome e
+     all'icona. */
+  .nlc-cat-nutrimento { --cat: #4ac8d8; }
+  .nlc-cat-servizi { --cat: #6ab7e8; }
+  .nlc-cat-spostarsi { --cat: #8f9df0; }
+  .nlc-cat-abitare { --cat: #c491e6; }
+  .nlc-cat-desiderio { --cat: #f093ac; }
+  .nlc-cat-neutro { --cat: #9fb0a4; }
+
+  :root:not(.dark) .nlc-cat-nutrimento { --cat: #0d687a; }
+  :root:not(.dark) .nlc-cat-servizi { --cat: #16628f; }
+  :root:not(.dark) .nlc-cat-spostarsi { --cat: #4348ad; }
+  :root:not(.dark) .nlc-cat-abitare { --cat: #7d359b; }
+  :root:not(.dark) .nlc-cat-desiderio { --cat: #ac2f56; }
+  :root:not(.dark) .nlc-cat-neutro { --cat: #55655a; }
 
   .nlc-cat-surface {
     background-color: color-mix(in srgb, var(--cat) 9%, transparent);
@@ -840,10 +861,66 @@ html.nlc-splash-pending #nlc-splash-shell {
     color: var(--cat);
   }
 
+  /* Solo il tratto: l'icona di categoria dentro un elenco, dove la campitura
+     farebbe una piastrella e la piastrella farebbe un coriandolo. */
+  .nlc-cat-ink {
+    color: var(--cat);
+  }
+
   .nlc-cat-chip {
     background-color: color-mix(in srgb, var(--cat) 9%, transparent);
     border-color: color-mix(in srgb, var(--cat) 22%, transparent);
     color: var(--cat);
+  }
+}
+
+/* ---------- La rampa dell'intensità ----------
+   Serviva una terza scala e non c'era. La palette aveva il categorico (un
+   dato) e il giudizio (sotto / in tensione / sforato), ma non il *sequenziale*:
+   una quantità che cresce. La heatmap della spesa giornaliera è esattamente
+   quello — quanto denaro è uscito in un giorno — e in mancanza di una scala
+   propria si era presa il lime, cioè il colore dell'azione, per cinque livelli
+   di intensità. Trentun celle del colore che nell'app significa "premi qui".
+
+   La scala nuova non è un colore: è **inchiostro**. Più soldi sono usciti, più
+   il giorno è stampato scuro (in chiaro) o acceso (in scuro). Nasce da
+   `--foreground` mescolato dentro `--background`, quindi:
+   - segue i due temi senza una seconda tabella di valori;
+   - è monotona per costruzione, quindi si legge anche senza distinguere i
+     colori — che è la sola cosa che rende una heatmap onesta;
+   - è **opaca**: nessuna velatura. Una cella ad alpha sopra la stanza cambia
+     valore quando ci passa dietro un orb, e un grafico che dipende da cosa gli
+     sta dietro non è un grafico.
+
+   Le fermate (16/28/40/68/88%) non sono regolari: saltano la fascia centrale
+   di luminanza in cui né l'inchiostro chiaro né quello scuro arrivano a 4,5:1
+   sul numero del giorno. L'inchiostro si ribalta al livello 4, in tutti e due
+   i temi, e il salto di ΔE 24 in quel punto rinforza la lettura invece di
+   disturbarla. Ogni gradino sta a ΔE ≥ 9 dal precedente. */
+@layer components {
+  .nlc-heat-0 {
+    background-color: var(--surface-muted);
+    color: var(--ink-3);
+  }
+  .nlc-heat-1 {
+    background-color: color-mix(in srgb, var(--foreground) 16%, var(--background));
+    color: var(--foreground);
+  }
+  .nlc-heat-2 {
+    background-color: color-mix(in srgb, var(--foreground) 28%, var(--background));
+    color: var(--foreground);
+  }
+  .nlc-heat-3 {
+    background-color: color-mix(in srgb, var(--foreground) 40%, var(--background));
+    color: var(--foreground);
+  }
+  .nlc-heat-4 {
+    background-color: color-mix(in srgb, var(--foreground) 68%, var(--background));
+    color: var(--background);
+  }
+  .nlc-heat-5 {
+    background-color: color-mix(in srgb, var(--foreground) 88%, var(--background));
+    color: var(--background);
   }
 }
 

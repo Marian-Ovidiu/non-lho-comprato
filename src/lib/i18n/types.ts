@@ -1112,6 +1112,11 @@ export type Translations = {
   stats: {
     noCategoryData: string;
     categoryNetImpact: (amount: string) => string;
+    netImpactSuffix: string;
+    chartMaxLabel: string;
+    filtersLabel: string;
+    personLabel: string;
+    intensityLegendLabel: string;
     trendAbove: string;
     trendBelow: string;
     trendAverage: string;
