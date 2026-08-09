@@ -167,7 +167,14 @@ function Heatmap({
             </Mono>
           ))}
         </div>
-        <div className="grid grid-cols-8 gap-1" aria-label="Heatmap impulso ultime otto settimane">
+        {/* L'etichetta ha bisogno di un ruolo per esistere: su un div nudo
+            viene scartata, e la griglia resta muta. Le celle sono decorative
+            (aria-hidden), quindi il nome descrive l'immagine nel suo insieme. */}
+        <div
+          role="img"
+          aria-label="Heatmap impulso ultime otto settimane"
+          className="grid grid-cols-8 gap-1"
+        >
           {heatmap.map((week, weekIndex) => (
             <div key={weekIndex} className="grid grid-rows-7 gap-1">
               {week.map((intensity, dayIndex) => (

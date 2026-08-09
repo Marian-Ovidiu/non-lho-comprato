@@ -1,3 +1,5 @@
+"use client";
+
 import { confirmImportedTransactionsAction, ignoreImportedTransactionsAction } from "@/src/actions/imports";
 import { Button } from "@/components/ui/button";
 import { Label, Mono, Serif } from "@/components/crafted";
