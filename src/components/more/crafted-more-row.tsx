@@ -9,6 +9,8 @@ type CraftedMoreRowProps = {
   label: string;
   detail?: string;
   icon: CraftedIconName;
+  /** Voce annunciata ma non ancora aperta: si vede, non si tocca. */
+  comingSoon?: string;
   children?: React.ReactNode;
 };
 
@@ -17,15 +19,35 @@ export function CraftedMoreRow({
   label,
   detail,
   icon,
+  comingSoon,
   children,
 }: CraftedMoreRowProps) {
   const content = (
     <>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground">
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-muted-foreground",
+          comingSoon && "opacity-60",
+        )}
+      >
         <CraftedIcon name={icon} size={17} />
       </span>
       <div className="min-w-0 flex-1">
-        <p className="text-[15px] font-medium leading-5 tracking-[-0.01em]">{label}</p>
+        <div className="flex flex-wrap items-center gap-2">
+          <p
+            className={cn(
+              "text-[15px] font-medium leading-5 tracking-[-0.01em]",
+              comingSoon && "text-muted-foreground",
+            )}
+          >
+            {label}
+          </p>
+          {comingSoon ? (
+            <span className="rounded-[var(--r-chip)] border border-line px-1.5 py-0.5 text-[10px] font-medium uppercase leading-none tracking-[0.08em] text-ink-3">
+              {comingSoon}
+            </span>
+          ) : null}
+        </div>
         {detail ? (
           <p className="mt-0.5 text-[12px] leading-[17px] text-muted-foreground">
             {detail}

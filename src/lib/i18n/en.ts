@@ -347,10 +347,11 @@ export const en: Translations = {
     presetsLabel: "Quick presets",
     presetsDetail: "One-tap shortcuts for common expenses",
     goalsLabel: "Goals",
-    goalsDetail: "Savings goals fueled by your choices",
+    goalsDetail: "We are rethinking how to measure them",
+    comingSoon: "Coming soon",
     analyticsSection: "Understand",
-    patternLabel: "Patterns",
-    patternDetail: "Resistance, triggers, wins and weak spots",
+    patternLabel: "What is changing",
+    patternDetail: "What your entries say about this month",
     monthlyReportLabel: "Monthly report",
     monthlyReportDetail: "Monthly summary as PDF",
     appSection: "Preferences",
@@ -1243,5 +1244,30 @@ export const en: Translations = {
     firstEntrySkip: "Let me look around first",
 
     stepLabel: (current, total) => `Step ${current} of ${total}`,
+  },
+
+  goalsFrozen: {
+    context: "This part will come back, with a measure that means something.",
+    title: "Goals are on hold",
+    description:
+      "Their progress only counted avoided purchases, and in three months that number barely moved: a bar that never fills is not a goal. We are deciding what to tie them to instead.",
+    back: "Back to More",
+  },
+
+  insights: {
+    pageTitle: "What is changing",
+    pageContext: "What your entries say about this month.",
+    alsoLabel: "Also worth knowing",
+    trendLabel: "Everyday spending, month by month",
+    trendHint: "This month so far:",
+    basedOn: (count) => (count === 1 ? "From 1 entry" : `From ${count} entries`),
+    earlyTitle: "Still early",
+    earlyNoHistory:
+      "It takes at least two months of entries to say what is changing: with less, any number would be a coincidence dressed up as a pattern.",
+    earlyOneMonth:
+      "One more month of history to go. From the next one, months can be compared and real shifts start to show.",
+    earlyAction: "Log an expense",
+    footnote:
+      "Only money that actually left the account. Recurring fixed costs stay out of the comparisons.",
   },
 };

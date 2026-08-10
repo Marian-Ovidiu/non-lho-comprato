@@ -1,63 +1,55 @@
 import type { Metadata } from "next";
 import { unstable_rethrow } from "next/navigation";
 
-import {
-  getInsightsPageData,
-  type InsightsRangeDays,
-} from "@/src/actions/insights";
+import { getInsightsPageData, type InsightsData } from "@/src/actions/insights";
 import { CraftedInsights } from "@/src/components/insights/crafted-insights";
+import { CraftedSubpageHeader } from "@/src/components/layout/crafted-subpage-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
+import { Rule } from "@/components/crafted";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
-import { getCurrentWorkspaceCurrency } from "@/src/lib/workspace-context";
-import { getCurrencySymbol } from "@/src/lib/workspace-currency";
+import { getCurrentWorkspaceLanguage } from "@/src/lib/workspace-context";
+import { getTranslations } from "@/src/lib/i18n";
 
 export const metadata: Metadata = {
-  title: "Pattern · Non l'ho comprato",
+  title: "Cosa sta cambiando · Non l'ho comprato",
 };
 
-type InsightsPageProps = {
-  searchParams: Promise<{
-    range?: string | string[];
-  }>;
-};
+export default async function InsightsPage() {
+  const language = await getCurrentWorkspaceLanguage();
+  const t = getTranslations(language);
 
-function parseInsightsRange(value?: string | string[]): InsightsRangeDays {
-  const raw = Array.isArray(value) ? value[0] : value;
-  const parsed = Number(raw);
-
-  return parsed === 30 || parsed === 90 || parsed === 365 ? parsed : 90;
-}
-
-export default async function InsightsPage({ searchParams }: InsightsPageProps) {
-  const resolvedSearchParams = await searchParams;
-  const rangeDays = parseInsightsRange(resolvedSearchParams.range);
-  const currency = await getCurrentWorkspaceCurrency();
-  const currencySymbol = getCurrencySymbol(currency);
-  let data: Awaited<ReturnType<typeof getInsightsPageData>> | null = null;
+  let data: InsightsData | null = null;
   let loadError: string | null = null;
 
   try {
-    data = await getInsightsPageData(rangeDays);
+    data = await getInsightsPageData();
   } catch (error) {
     unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
-    console.error("Failed to load insights:", error);
+    console.error("Failed to load insights page:", error);
   }
 
   return (
     <main className="pb-6">
-      {loadError ? (
-        <div className="px-5 pb-4">
+      <CraftedSubpageHeader
+        backHref="/more"
+        eyebrow={t.more.analyticsSection}
+        title={t.insights.pageTitle}
+        context={t.insights.pageContext}
+      />
+
+      <Rule />
+
+      {loadError || !data ? (
+        <div className="px-[var(--sp-page-x)] pt-5">
           <DataLoadErrorBanner
-            title="Impossibile caricare i pattern"
-            message={loadError}
+            title={t.insights.pageTitle}
+            message={loadError ?? "Riprova tra poco."}
           />
         </div>
-      ) : null}
-
-      {data ? (
-        <CraftedInsights data={data} currencySymbol={currencySymbol} />
-      ) : null}
+      ) : (
+        <CraftedInsights data={data} />
+      )}
     </main>
   );
 }

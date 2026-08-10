@@ -346,6 +346,7 @@ export type Translations = {
     presetsDetail: string;
     goalsLabel: string;
     goalsDetail: string;
+    comingSoon: string;
     analyticsSection: string;
     patternLabel: string;
     patternDetail: string;
@@ -1222,5 +1223,26 @@ export type Translations = {
     firstEntryButton: string;
     firstEntrySkip: string;
     stepLabel: (current: number, total: number) => string;
+  };
+
+  goalsFrozen: {
+    context: string;
+    title: string;
+    description: string;
+    back: string;
+  };
+
+  insights: {
+    pageTitle: string;
+    pageContext: string;
+    alsoLabel: string;
+    trendLabel: string;
+    trendHint: string;
+    basedOn: (count: number) => string;
+    earlyTitle: string;
+    earlyNoHistory: string;
+    earlyOneMonth: string;
+    earlyAction: string;
+    footnote: string;
   };
 };

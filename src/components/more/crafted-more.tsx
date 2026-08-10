@@ -79,11 +79,14 @@ export function CraftedMore({
 
       <CraftedMoreSection title={t.more.managementSection}>
         <div className={ROW_GROUP_CLASS_NAME}>
+          {/* Congelata: il progresso era alimentato dalle spese evitate, che
+              in tre mesi valgono 19 euro su 320 movimenti. Resta annunciata
+              perché torni, non perché sia sparita. */}
           <CraftedMoreRow
-            href="/goals"
             label={t.more.goalsLabel}
             detail={t.more.goalsDetail}
             icon="target"
+            comingSoon={t.more.comingSoon}
           />
           {showWorkspaceTools ? (
             <CraftedMoreRow

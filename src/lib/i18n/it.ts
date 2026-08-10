@@ -348,10 +348,11 @@ export const it: Translations = {
     presetsLabel: "Preset rapidi",
     presetsDetail: "Modelli veloci in un tap",
     goalsLabel: "Obiettivi",
-    goalsDetail: "Mete alimentate dall'impatto positivo",
+    goalsDetail: "Stiamo ripensando come misurarle",
+    comingSoon: "In arrivo",
     analyticsSection: "Capisci",
-    patternLabel: "Pattern",
-    patternDetail: "Resistenza, trigger, vittorie e punti deboli",
+    patternLabel: "Cosa sta cambiando",
+    patternDetail: "Cosa dicono i vostri movimenti su questo mese",
     monthlyReportLabel: "Report mensile",
     monthlyReportDetail: "Riepilogo del mese in PDF",
     appSection: "Preferenze",
@@ -1267,5 +1268,31 @@ export const it: Translations = {
     firstEntrySkip: "Guardo prima in giro",
 
     stepLabel: (current, total) => `Passo ${current} di ${total}`,
+  },
+
+  goalsFrozen: {
+    context: "Questa parte torna, ma con una misura che voglia dire qualcosa.",
+    title: "Gli obiettivi sono in pausa",
+    description:
+      "Il loro avanzamento contava solo le spese evitate, e in tre mesi quel numero non si è quasi mosso: una barra ferma non è un obiettivo. Stiamo decidendo a cosa agganciarli davvero.",
+    back: "Torna ad Altro",
+  },
+
+  insights: {
+    pageTitle: "Cosa sta cambiando",
+    pageContext: "Quello che i vostri movimenti dicono su questo mese.",
+    alsoLabel: "Anche questo",
+    trendLabel: "Spesa corrente, mese per mese",
+    trendHint: "Questo mese, finora:",
+    basedOn: (count) =>
+      count === 1 ? "Da 1 movimento" : `Da ${count} movimenti`,
+    earlyTitle: "Ancora presto",
+    earlyNoHistory:
+      "Servono almeno due mesi di movimenti per dire cosa sta cambiando: con meno, qualunque numero sarebbe un caso spacciato per pattern.",
+    earlyOneMonth:
+      "Manca ancora un mese di storico. Dal prossimo si potranno confrontare i mesi fra loro e dire cosa si muove davvero.",
+    earlyAction: "Registra una spesa",
+    footnote:
+      "Solo soldi realmente usciti. Le spese fisse ricorrenti restano fuori dai confronti.",
   },
 };
