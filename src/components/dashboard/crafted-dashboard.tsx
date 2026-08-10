@@ -925,12 +925,17 @@ export function CraftedDashboard({
                   <QuickActionRow href="/entries/new" icon={PlusCircle} label="Altra spesa" />
                 </>
               ) : (
-                <>
-                  <QuickActionRow href="/entries/new" icon={PlusCircle} label="Registra spesa" />
-                  <Rule soft />
-                  <QuickActionRow href="/stats" icon={BarChart3} label="Statistiche" />
-                </>
+                <QuickActionRow
+                  href="/entries/new"
+                  icon={PlusCircle}
+                  label="Registra spesa"
+                />
               )}
+              {/* Fuori dal ramo delle scorciatoie: quando ci sono, la voce
+                  finiva nel ramo di riserva e su telefono le statistiche non
+                  erano piu' raggiungibili da nessuna parte. */}
+              <Rule soft />
+              <QuickActionRow href="/stats" icon={BarChart3} label="Statistiche" />
             </section>
           </div>
 

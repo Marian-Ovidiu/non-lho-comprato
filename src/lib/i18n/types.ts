@@ -348,6 +348,8 @@ export type Translations = {
     goalsDetail: string;
     comingSoon: string;
     analyticsSection: string;
+    statsLabel: string;
+    statsDetail: string;
     patternLabel: string;
     patternDetail: string;
     monthlyReportLabel: string;

@@ -350,6 +350,8 @@ export const en: Translations = {
     goalsDetail: "We are rethinking how to measure them",
     comingSoon: "Coming soon",
     analyticsSection: "Understand",
+    statsLabel: "Statistics",
+    statsDetail: "Categories, months and day-by-day trend",
     patternLabel: "What is changing",
     patternDetail: "What your entries say about this month",
     monthlyReportLabel: "Monthly report",

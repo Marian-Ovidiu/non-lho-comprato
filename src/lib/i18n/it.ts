@@ -351,6 +351,8 @@ export const it: Translations = {
     goalsDetail: "Stiamo ripensando come misurarle",
     comingSoon: "In arrivo",
     analyticsSection: "Capisci",
+    statsLabel: "Statistiche",
+    statsDetail: "Categorie, mesi e andamento giorno per giorno",
     patternLabel: "Cosa sta cambiando",
     patternDetail: "Cosa dicono i vostri movimenti su questo mese",
     monthlyReportLabel: "Report mensile",

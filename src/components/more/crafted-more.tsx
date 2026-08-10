@@ -122,6 +122,12 @@ export function CraftedMore({
             icon="chart"
           />
           <CraftedMoreRow
+            href="/stats"
+            label={t.more.statsLabel}
+            detail={t.more.statsDetail}
+            icon="chart"
+          />
+          <CraftedMoreRow
             href="/insights"
             label={t.more.patternLabel}
             detail={t.more.patternDetail}
