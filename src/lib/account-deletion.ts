@@ -116,7 +116,6 @@ export async function deleteAppAccountData(
       where: { entry: workspaceWhere },
     });
     await tx.entry.deleteMany({ where: workspaceWhere });
-    await tx.quickPreset.deleteMany({ where: workspaceWhere });
     await tx.goal.deleteMany({ where: workspaceWhere });
     await tx.habit.deleteMany({ where: workspaceWhere });
     await tx.category.deleteMany({ where: workspaceWhere });

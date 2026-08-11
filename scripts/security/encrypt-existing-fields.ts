@@ -21,7 +21,6 @@ const shouldReencrypt = process.env.REENCRYPT_FIELDS === "true";
 
 type BackfillCounters = {
   entryNotes: number;
-  presetNotes: number;
   feedbackMessages: number;
   importedTransactions: number;
 };
@@ -61,41 +60,6 @@ async function encryptEntryNotes(): Promise<number> {
       }
 
       await prisma.entry.update({
-        where: { id: row.id },
-        data: { note: encryptTextForWrite(row.note) },
-      });
-      updated += 1;
-    }
-
-    cursor = rows.at(-1)?.id;
-  }
-
-  return updated;
-}
-
-async function encryptPresetNotes(): Promise<number> {
-  let cursor: string | undefined;
-  let updated = 0;
-
-  while (true) {
-    const rows = await prisma.quickPreset.findMany({
-      where: { note: { not: null } },
-      orderBy: { id: "asc" },
-      take: BATCH_SIZE,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      select: { id: true, note: true },
-    });
-
-    if (rows.length === 0) {
-      break;
-    }
-
-    for (const row of rows) {
-      if (!shouldWriteText(row.note)) {
-        continue;
-      }
-
-      await prisma.quickPreset.update({
         where: { id: row.id },
         data: { note: encryptTextForWrite(row.note) },
       });
@@ -210,14 +174,12 @@ async function main() {
 
   const counters: BackfillCounters = {
     entryNotes: await encryptEntryNotes(),
-    presetNotes: await encryptPresetNotes(),
     feedbackMessages: await encryptFeedbackMessages(),
     importedTransactions: await encryptImportedTransactions(),
   };
 
   console.log("Field encryption backfill completed:");
   console.log(`- Entry.note rows updated: ${counters.entryNotes}`);
-  console.log(`- QuickPreset.note rows updated: ${counters.presetNotes}`);
   console.log(`- Feedback.message rows updated: ${counters.feedbackMessages}`);
   console.log(
     `- ImportedTransaction rows updated: ${counters.importedTransactions}`,

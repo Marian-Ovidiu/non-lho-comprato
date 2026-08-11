@@ -4,26 +4,22 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useActionState, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowRight,
   Check,
   ChevronLeft,
   LockKeyhole,
   Loader2,
   Plus,
   Receipt,
-  SlidersHorizontal,
   Sparkles,
   Users2,
 } from "lucide-react";
 
 import { createEntry, deleteEntry, getCategories } from "@/src/actions/entries";
-import { getPresets, type SerializablePreset } from "@/src/actions/presets";
 import { useToast } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
@@ -38,7 +34,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { DEFAULT_CATEGORIES } from "@/src/lib/categories";
-import { getCategoryIdentity } from "@/src/lib/category-identity";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
 import { ExpenseSuggestionCard } from "@/src/components/entries/expense-suggestion-card";
 import { FormFieldError } from "@/src/components/shared/form-field-error";
@@ -53,19 +48,12 @@ import { useExpenseSuggestion } from "@/src/hooks/use-expense-suggestion";
 import { triggerHaptic } from "@/src/lib/haptics";
 import { trackPostHogEvent } from "@/src/lib/posthog";
 import { getBrowserTodayDateKey, shiftDateKey } from "@/src/lib/workspace-dates";
-import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { toHiddenMoneyValue } from "@/src/components/entries/entry-form-money";
 import {
   useTranslations,
-  useWorkspaceLanguage,
 } from "@/src/components/language/language-context";
-import { languageToLocale } from "@/src/lib/i18n";
 import type { EntryMode, EntrySavingContext } from "@/src/lib/entry-domain";
 import type { EntryPaymentModeValue } from "@/src/lib/entry-payment-mode";
-import {
-  DEFAULT_QUICK_ADD_PRESETS,
-  readHiddenDefaultPresetIds,
-} from "@/src/lib/quick-add-presets";
 
 type CategoryOption = {
   id: string;
@@ -75,21 +63,6 @@ type CategoryOption = {
   icon: string | null;
 };
 
-type QuickAddPreset = {
-  id: string;
-  source: "default" | "saved";
-  presetId: string;
-  emoji: string;
-  title: string;
-  categoryId?: string;
-  categorySlug?: string;
-  amountSpent: string;
-  comparisonAmount: string;
-  mode: EntryMode;
-  savingContext: EntrySavingContext;
-  rangeLabel: string;
-  shared?: boolean;
-};
 
 type QuickAddState = {
   success: boolean;
@@ -141,69 +114,9 @@ function getInitialDraft(
   };
 }
 
-function getPresetAmountLabel(amount: string, currencySymbol: string, locale: string) {
-  const parsed = Number(amount.replace(",", "."));
 
-  if (!Number.isFinite(parsed)) {
-    return `${amount} ${currencySymbol}`;
-  }
 
-  return `${new Intl.NumberFormat(locale, {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: parsed % 1 === 0 ? 0 : 2,
-  }).format(parsed)} ${currencySymbol}`;
-}
 
-function buildDefaultQuickPreset(
-  preset: (typeof DEFAULT_QUICK_ADD_PRESETS)[number],
-): QuickAddPreset {
-  const amount = preset.amount.toFixed(2);
-
-  return {
-    id: `default:${preset.id}`,
-    source: "default",
-    presetId: preset.id,
-    emoji: preset.emoji,
-    title: preset.title,
-    categorySlug: preset.categorySlug,
-    amountSpent: amount,
-    comparisonAmount: "",
-    mode: "spent",
-    savingContext: "none",
-    rangeLabel: preset.rangeLabel,
-    shared: preset.shared,
-  };
-}
-
-function getSavedPresetEmoji(preset: SerializablePreset) {
-  if (preset.savingContext === "comparison") {
-    return "↘";
-  }
-
-  return "•";
-}
-
-function buildSavedQuickPreset(preset: SerializablePreset, currencySymbol: string, locale: string): QuickAddPreset {
-  const amountLabel = getPresetAmountLabel(preset.amountSpent, currencySymbol, locale);
-
-  return {
-    id: `saved:${preset.id}`,
-    source: "saved",
-    presetId: preset.id,
-    emoji: getSavedPresetEmoji(preset),
-    title: preset.title,
-    categoryId: preset.category.id,
-    categorySlug: preset.category.slug,
-    amountSpent: preset.amountSpent,
-    comparisonAmount: preset.comparisonAmount,
-    mode: "spent",
-    savingContext: preset.savingContext,
-    rangeLabel:
-      preset.savingContext === "comparison"
-          ? `${amountLabel} con confronto`
-          : amountLabel,
-  };
-}
 
 function getSearchHref(
   draft: QuickAddDraft,
@@ -301,27 +214,17 @@ export function QuickAddSheet({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  const currencySymbol = useCurrencySymbol();
   const t = useTranslations();
-  const language = useWorkspaceLanguage();
-  const locale = languageToLocale(language);
   const [open, setOpen] = useState(false);
-  const [activePreset, setActivePreset] = useState<string | null>(null);
   const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
-  const [savedPresets, setSavedPresets] = useState<SerializablePreset[]>([]);
   const [loadedCategoryState, setLoadedCategoryState] = useState<{
     workspaceId: string;
     categories: CategoryOption[];
   } | null>(null);
-  const [presetsLoading, setPresetsLoading] = useState(false);
-  const [hiddenDefaultPresetIds, setHiddenDefaultPresetIds] = useState<string[]>(
-    () => readHiddenDefaultPresetIds(),
-  );
   const [draft, setDraft] = useState<QuickAddDraft>(() =>
     getInitialDraft([], currentUserId),
   );
-  const firstPresetRef = useRef<HTMLButtonElement>(null);
   const titleRef = useRef<HTMLInputElement>(null);
   const didHandleSuccessRef = useRef(false);
   const hasDraftBeenEditedRef = useRef(false);
@@ -359,23 +262,6 @@ export function QuickAddSheet({
             },
       ),
     [categories, loadedCategoryState, workspace.id],
-  );
-  const quickAddPresets = useMemo(() => {
-    const hiddenDefaultIds = new Set(hiddenDefaultPresetIds);
-    const visibleDefaults = DEFAULT_QUICK_ADD_PRESETS.filter(
-      (preset) => !hiddenDefaultIds.has(preset.id),
-    ).map((preset) => buildDefaultQuickPreset(preset));
-
-    return [
-      ...savedPresets
-        .filter((preset) => preset.mode !== "avoided")
-        .map((preset) => buildSavedQuickPreset(preset, currencySymbol, locale)),
-      ...visibleDefaults,
-    ];
-  }, [hiddenDefaultPresetIds, savedPresets, currencySymbol, locale]);
-  const presetMap = useMemo(
-    () => new Map(quickAddPresets.map((preset) => [preset.id, preset])),
-    [quickAddPresets],
   );
   const activeMembers = useMemo(
     () =>
@@ -471,43 +357,6 @@ export function QuickAddSheet({
     };
   }, [pushToast]);
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-
-    let active = true;
-
-    async function loadPresets() {
-      setPresetsLoading(true);
-
-      try {
-        const loadedPresets = await getPresets();
-
-        if (active) {
-          setSavedPresets(loadedPresets);
-        }
-      } catch (error) {
-        console.error("Failed to load quick-add presets:", error);
-        pushToast({
-          title: "Preset non disponibili",
-          description: "Non riesco a caricare i preset salvati. Riprova tra poco.",
-          tone: "error",
-          duration: 5200,
-        });
-      } finally {
-        if (active) {
-          setPresetsLoading(false);
-        }
-      }
-    }
-
-    void loadPresets();
-
-    return () => {
-      active = false;
-    };
-  }, [open, pushToast]);
 
   useEffect(() => {
     if (!open) {
@@ -619,7 +468,6 @@ export function QuickAddSheet({
 
     refreshTimerRef.current = window.setTimeout(() => {
       setOpen(false);
-      setActivePreset(null);
       hasDraftBeenEditedRef.current = false;
       setMode("spent");
       setPaymentMode("single_payer");
@@ -657,67 +505,13 @@ export function QuickAddSheet({
     };
   }, []);
 
-  function resolveCategoryId(categorySlug: string) {
-    const bySlug = categoryOptions.find((category) => category.slug === categorySlug);
-    if (bySlug) {
-      return bySlug.id;
-    }
 
-    const byId = categoryOptions.find((category) => category.id === categorySlug);
-    return byId?.id ?? categorySlug;
-  }
 
-  function focusTitleSoon() {
-    window.requestAnimationFrame(() => {
-      titleRef.current?.focus();
-    });
-  }
 
-  function applyPreset(presetId: string) {
-    const preset = presetMap.get(presetId);
-
-    if (!preset) {
-      return;
-    }
-
-    hasDraftBeenEditedRef.current = true;
-    setActivePreset(preset.id);
-    setMode("spent");
-    setPaymentMode("single_payer");
-    const paidByUserId = getDefaultPaidByUserId(activeMembers, currentUserId);
-    const beneficiaryUserIds = preset.shared
-      ? activeMembers.map((member) => member.userId)
-      : getDefaultBeneficiaryUserIds(activeMembers, paidByUserId);
-
-    setDraft({
-      title: preset.title,
-      categoryId: preset.categoryId ?? resolveCategoryId(preset.categorySlug ?? ""),
-      amountSpent: preset.amountSpent,
-      comparisonAmount:
-        preset.savingContext === "comparison" ? preset.comparisonAmount : "",
-      paidByUserId,
-      beneficiaryUserIds,
-      date: getTodayLocal(),
-    });
-    setComparisonEnabled(preset.savingContext === "comparison");
-    setComparisonAmountTouched(preset.savingContext === "comparison");
-    focusTitleSoon();
-  }
-
-  function personalize() {
-    hasDraftBeenEditedRef.current = true;
-    setActivePreset("custom");
-    setPaymentMode("single_payer");
-    setComparisonEnabled(false);
-    setComparisonAmountTouched(false);
-    setDraft(getInitialDraft(activeMembers, currentUserId));
-    focusTitleSoon();
-  }
 
   function handleModeChange(nextMode: EntryMode) {
     hasDraftBeenEditedRef.current = true;
     setMode(nextMode === "spent" ? "spent" : "spent");
-    setActivePreset("custom");
 
     setDraft((current) => ({
       ...current,
@@ -774,11 +568,9 @@ export function QuickAddSheet({
         setOpen(nextOpen);
 
         if (nextOpen) {
-          setHiddenDefaultPresetIds(readHiddenDefaultPresetIds());
         }
 
         if (!nextOpen) {
-          setActivePreset(null);
           setMode("spent");
           setPaymentMode("single_payer");
           setComparisonEnabled(false);
@@ -815,12 +607,14 @@ export function QuickAddSheet({
 
       <DialogContent
         showCloseButton={false}
+        /* Senza DialogDescription, Radix cercherebbe un aria-describedby che
+           non esiste più: dichiararlo assente evita di puntare al vuoto. */
+        aria-describedby={undefined}
         className={cn(
           "inset-x-3 top-auto bottom-0 w-auto max-w-none translate-x-0 translate-y-0 overflow-x-hidden rounded-t-[var(--r-sheet)] rounded-b-none border-border bg-surface p-0 shadow-[var(--shadow-sheet)] data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4 sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-xl sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-[var(--r-sheet)] sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
         )}
         onOpenAutoFocus={(event) => {
           event.preventDefault();
-          firstPresetRef.current?.focus();
         }}
       >
         <div
@@ -832,19 +626,12 @@ export function QuickAddSheet({
           <div className="border-b border-border/70 px-4 pb-4 pt-4 sm:px-6 sm:pb-6">
             <div className="flex min-w-0 items-start justify-between gap-4">
               <div className="min-w-0 flex-1 space-y-1">
-                <p className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">
-                  {t.quickAdd.title}
-                </p>
                 <DialogTitle className="flex items-center gap-2 text-lg tracking-tight">
                   {/* Non lilla: qui non c'è nessuna coppia, c'è una scorciatoia.
                       Il lilla torna a dire una cosa sola. */}
                   <Sparkles className="size-4 text-accent" aria-hidden="true" />
                   {t.quickAdd.dialogTitle}
                 </DialogTitle>
-                <DialogDescription className="max-w-md text-sm leading-5 text-muted-text">
-                  {t.quickAdd.desc}
-                </DialogDescription>
-
                 <div className="inline-flex max-w-full items-center gap-2 rounded-full border border-line bg-transparent px-3 py-1.5">
                   <span className="inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted-text">
                     {workspace.isShared ? (
@@ -929,103 +716,11 @@ export function QuickAddSheet({
                   </button>
                 ) : null}
               </div>
-              <p className="mt-2 text-center text-xs leading-5 text-muted-text">
-                {quickAddIntent === "spent"
-                  ? t.quickAdd.onlyRealMoney
-                  : quickAddIntent === "comparison"
-                    ? t.quickAdd.cheaperOption
-                    : t.entryForm.jointDesc}
-              </p>
-            </div>
-
-            {presetsLoading ? (
-              <p className="sm:col-span-2 rounded-[var(--r-card)] border border-line bg-transparent px-4 py-3 text-sm text-muted-text">
-                {t.quickAdd.loadingPresets}
-              </p>
-            ) : null}
-
-            {quickAddPresets.map((preset, index) => {
-              const isActive = activePreset === preset.id;
-              const presetIdentity = getCategoryIdentity({
-                name: preset.title,
-                slug: preset.categorySlug ?? preset.categoryId ?? "altro",
-              });
-
-              return (
-                <button
-                  key={preset.id}
-                  ref={index === 0 ? firstPresetRef : undefined}
-                  type="button"
-                  onClick={() => applyPreset(preset.id)}
-                  aria-pressed={isActive}
-                  className={cn(
-                    "flex min-h-20 items-start gap-3 rounded-[var(--r-card)] border px-3 py-3 text-left transition-[background-color,border-color,opacity,transform] duration-200 ease-[cubic-bezier(.2,.8,.2,1)]",
-                    "hover:bg-[var(--state-hover)] active:scale-[var(--state-press)] active:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
-                    presetIdentity.subtleSurfaceClassName,
-                    isActive &&
-                      "border-accent/45 bg-accent/5",
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] text-lg",
-                      presetIdentity.markerClassName,
-                    )}
-                  >
-                    {preset.emoji}
-                  </span>
-
-                  <span className="min-w-0 flex-1 space-y-0.5">
-                    <span className="block truncate text-sm font-medium text-foreground">
-                      {preset.title}
-                    </span>
-                    <span className="block text-xs leading-4 text-muted-text">
-                      {preset.rangeLabel}
-                    </span>
-                  </span>
-                </button>
-              );
-            })}
-
-            <button
-              type="button"
-              onClick={personalize}
-              aria-pressed={activePreset === "custom"}
-              className={cn(
-                "flex min-h-20 items-start gap-3 rounded-[var(--r-card)] border px-3 py-3 text-left transition-[background-color,border-color,opacity,transform] duration-200 ease-[cubic-bezier(.2,.8,.2,1)] sm:col-span-2",
-                "hover:bg-[var(--state-hover)] active:scale-[var(--state-press)] active:opacity-95",
-                activePreset === "custom"
-                  ? "border-accent/45 bg-accent/5"
-                  : "border-border bg-background",
-              )}
-            >
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-foreground">
-                <SlidersHorizontal className="size-4" aria-hidden="true" />
-              </span>
-
-              <span className="min-w-0 flex-1 space-y-0.5">
-                <span className="block text-sm font-medium text-foreground">
-                  {t.quickAdd.customize}
-                </span>
-                <span className="block text-xs leading-4 text-muted-text">
-                  {t.quickAdd.customizeDesc}
-                </span>
-              </span>
-
-              <ArrowRight className="mt-0.5 size-4 shrink-0 text-muted-text" aria-hidden="true" />
-            </button>
-
-            <div className="sm:col-span-2 flex flex-wrap items-center justify-between gap-3 rounded-[var(--r-card)] border border-line bg-transparent px-4 py-3">
-              <span className="text-xs leading-5 text-muted-text">
-                {t.quickAdd.presetHelp}
-              </span>
-              <Link
-                href="/presets"
-                onClick={() => setOpen(false)}
-                className="rounded-full border border-line px-3 py-1.5 text-[11px] font-semibold text-foreground hover:bg-surface-muted"
-              >
-                {t.quickAdd.managePresets}
-              </Link>
+              {quickAddIntent === "joint" ? (
+                <p className="mt-2 text-center text-xs leading-5 text-muted-text">
+                  {t.entryForm.jointDesc}
+                </p>
+              ) : null}
             </div>
           </div>
 
@@ -1268,9 +963,6 @@ export function QuickAddSheet({
                       message={state.errors?.comparisonAmount}
                       className="text-sm"
                     />
-                    <p className="text-xs leading-5 text-muted-text">
-                      {t.quickAdd.comparisonHelp}
-                    </p>
                     {showLargeComparisonWarning ? (
                       <p className="rounded-[var(--r-control)] border border-warm/25 bg-warm/5 px-3 py-2 text-xs font-medium leading-5 text-warm">
                         {t.quickAdd.largeComparisonWarning}

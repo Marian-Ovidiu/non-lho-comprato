@@ -48,7 +48,7 @@ export default function PublicDeleteAccountPage() {
           <Label>Dati eliminati</Label>
           <p className="text-sm leading-6 text-muted-foreground">
             Eliminiamo il profilo dell&apos;app, i workspace personali dove sei
-            l&apos;unico membro, movimenti, categorie, abitudini, obiettivi, preset,
+            l&apos;unico membro, movimenti, categorie, abitudini, obiettivi,
             inviti e impostazioni collegati a quei workspace.
           </p>
           <p className="text-sm leading-6 text-muted-foreground">

@@ -198,19 +198,6 @@ export type Translations = {
     incomeSaved: string;
   };
 
-  presetActions: {
-    invalidId: string;
-    saved: string;
-    updated: string;
-    deleted: string;
-    notFound: string;
-    entryCreated: string;
-    entryCreateFailed: string;
-    saveFailed: string;
-    updateFailed: string;
-    selectValidContext: string;
-    selectValidMode: string;
-  };
 
   habitActions: {
     invalidId: string;
@@ -342,8 +329,6 @@ export type Translations = {
     budgetDetail: string;
     habitsLabel: string;
     habitsDetail: string;
-    presetsLabel: string;
-    presetsDetail: string;
     goalsLabel: string;
     goalsDetail: string;
     comingSoon: string;
@@ -473,14 +458,10 @@ export type Translations = {
   };
 
   quickAdd: {
-    title: string;
     dialogTitle: string;
-    desc: string;
     close: string;
     customize: string;
     customizeDesc: string;
-    onlyRealMoney: string;
-    cheaperOption: string;
     titleLabel: string;
     titlePlaceholder: string;
     categoryLabel: string;
@@ -492,14 +473,10 @@ export type Translations = {
     comparisonToggle: string;
     hideComparison: string;
     comparisonAmountLabel: string;
-    comparisonHelp: string;
     largeComparisonWarning: string;
     searchingSuggestion: string;
     addComparison: string;
     loadingMembers: string;
-    loadingPresets: string;
-    presetHelp: string;
-    managePresets: string;
     fullFormLink: string;
     saveButton: string;
     savingButton: string;
@@ -587,7 +564,6 @@ export type Translations = {
   dashboardQuickActions: {
     title: string;
     registerExpense: string;
-    quickPresets: string;
     statistics: string;
   };
 
@@ -892,7 +868,6 @@ export type Translations = {
     catDeleteAriaLabel: (name: string) => string;
     catUsageMov: string;
     catUsageRic: string;
-    catUsagePreset: string;
     catActiveTitle: string;
     catEmptyActive: string;
     catArchivedTitle: (count: number) => string;
@@ -975,57 +950,6 @@ export type Translations = {
     allOption: string;
   };
 
-  preset: {
-    avoided: string;
-    avoidedNote: (amount: string) => string;
-    comparisonDetail: (amount: string) => string;
-    savedBetter: (amount: string) => string;
-    spentMoreThan: (amount: string) => string;
-    normalSpend: string;
-    noComparison: string;
-    deleteConfirm: string;
-    useButton: string;
-    deleteButton: string;
-    editButton: string;
-    restoreButton: string;
-    emptyState: string;
-    defaultPresetInfo: string;
-    intentSpent: string;
-    intentComparison: string;
-    intentComparisonAria: string;
-    intentAvoided: string;
-    intentSpentDesc: string;
-    intentComparisonDesc: string;
-    intentAvoidedDesc: string;
-    titleLabel: string;
-    titlePlaceholderSpent: string;
-    titlePlaceholderAvoided: string;
-    categoryLabel: string;
-    categoryPlaceholder: string;
-    selectCategory: string;
-    noCategoriesAvailable: string;
-    wouldHaveSpent: string;
-    amountSpentLabel: string;
-    youSpent: string;
-    amountPlaceholderSpent: string;
-    amountPlaceholderAvoided: string;
-    hideComparison: string;
-    showComparison: string;
-    addComparison: string;
-    comparisonLabel: string;
-    comparisonLabelShort: string;
-    comparisonPlaceholder: string;
-    largeComparisonWarning: string;
-    noteLabel: string;
-    notePlaceholder: string;
-    updateButton: string;
-    saveButton: string;
-    savingButton: string;
-    newPresetTitle: string;
-    newPresetDesc: string;
-    hiddenFromQuickAdd: string;
-    visibleInQuickAdd: string;
-  };
 
   report: {
     monthFallback: string;

@@ -41,7 +41,6 @@ function usageSummary(item: CategoryManagementItem, tw: Translations["workspace"
   const parts: string[] = [];
   if (item.entriesCount > 0) parts.push(`${item.entriesCount} ${tw.catUsageMov}`);
   if (item.habitsCount > 0) parts.push(`${item.habitsCount} ${tw.catUsageRic}`);
-  if (item.presetsCount > 0) parts.push(`${item.presetsCount} ${tw.catUsagePreset}`);
   return parts.join(" · ");
 }
 

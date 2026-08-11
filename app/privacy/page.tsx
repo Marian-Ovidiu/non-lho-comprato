@@ -14,7 +14,7 @@ const dataCategories = [
   {
     title: "Contenuti dell'app",
     body:
-      "Workspace, membri, inviti, movimenti, importi, categorie, note, beneficiari, pagatore, abitudini, obiettivi, budget, preset e report.",
+      "Workspace, membri, inviti, movimenti, importi, categorie, note, beneficiari, pagatore, abitudini, obiettivi, budget e report.",
   },
   {
     title: "Import CSV",

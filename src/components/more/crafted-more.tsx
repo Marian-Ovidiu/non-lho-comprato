@@ -96,12 +96,6 @@ export function CraftedMore({
               icon="wallet"
             />
           ) : null}
-          <CraftedMoreRow
-            href="/presets"
-            label={t.more.presetsLabel}
-            detail={t.more.presetsDetail}
-            icon="bookmark"
-          />
           {showWorkspaceTools ? (
             <CraftedMoreRow
               href="/workspace/categories"

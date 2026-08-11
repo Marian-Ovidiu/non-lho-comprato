@@ -12,7 +12,6 @@ const E2E_IDS = {
   entryCoffee: "e2e-entry-coffee",
   entryShared: "e2e-entry-shared-delivery",
   goal: "e2e-goal-vacanza",
-  preset: "e2e-preset-caffe",
   habit: "e2e-habit-caffe",
 };
 
@@ -284,30 +283,6 @@ async function main() {
     },
   });
 
-  await prisma.quickPreset.upsert({
-    where: { id: E2E_IDS.preset },
-    update: {
-      workspaceId: E2E_IDS.sharedWorkspace,
-      title: "Caffe e2e",
-      categoryId: coffeeCategory.id,
-      realCost: "2.00",
-      alternativeCost: "2.00",
-      note: "Preset e2e",
-      targetUserId: E2E_IDS.marian,
-      targetScope: "self",
-    },
-    create: {
-      id: E2E_IDS.preset,
-      workspaceId: E2E_IDS.sharedWorkspace,
-      title: "Caffe e2e",
-      categoryId: coffeeCategory.id,
-      realCost: "2.00",
-      alternativeCost: "2.00",
-      note: "Preset e2e",
-      targetUserId: E2E_IDS.marian,
-      targetScope: "self",
-    },
-  });
 
   await prisma.habit.upsert({
     where: { id: E2E_IDS.habit },

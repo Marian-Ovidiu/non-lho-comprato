@@ -41,7 +41,6 @@ export type CategoryManagementItem = {
   archivedAt: Date | null;
   entriesCount: number;
   habitsCount: number;
-  presetsCount: number;
 };
 
 // ── private helpers ──────────────────────────────────────────────────────────
@@ -107,7 +106,6 @@ export async function getWorkspaceCategories(): Promise<CategoryManagementItem[]
           select: {
             entries: true,
             habits: true,
-            quickPresets: true,
           },
         },
       },
@@ -128,7 +126,6 @@ export async function getWorkspaceCategories(): Promise<CategoryManagementItem[]
       archivedAt: row.archivedAt,
       entriesCount: row._count.entries,
       habitsCount: row._count.habits,
-      presetsCount: row._count.quickPresets,
     }));
   } catch (error) {
     logAndRethrowDataLoadError("getWorkspaceCategories failed", error);
@@ -335,15 +332,14 @@ export async function deleteCategory(
       select: {
         id: true,
         name: true,
-        _count: { select: { entries: true, habits: true, quickPresets: true } },
+        _count: { select: { entries: true, habits: true } },
       },
     });
     if (!category) return { success: false, message: t.categoryActions.notFound };
 
     const entriesCount = category._count.entries;
     const habitsCount = category._count.habits;
-    const presetsCount = category._count.quickPresets;
-    const totalRefs = entriesCount + habitsCount + presetsCount;
+    const totalRefs = entriesCount + habitsCount;
 
     if (totalRefs > 0) {
       const parts: string[] = [];
@@ -351,7 +347,6 @@ export async function deleteCategory(
         parts.push(`${entriesCount} ${entriesCount === 1 ? "movimento" : "movimenti"}`);
       if (habitsCount > 0)
         parts.push(`${habitsCount} ${habitsCount === 1 ? "abitudine" : "abitudini"}`);
-      if (presetsCount > 0) parts.push(`${presetsCount} preset`);
       return {
         success: false,
         message: t.categoryActions.inUseBy(parts.join(", ")),

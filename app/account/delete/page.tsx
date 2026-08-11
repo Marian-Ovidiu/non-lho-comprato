@@ -30,7 +30,7 @@ export default async function DeleteAccountPage() {
           <p className="text-[15px] leading-7 text-foreground">
             L&apos;eliminazione e permanente. Verranno cancellati il profilo
             dell&apos;app, i workspace personali, movimenti, categorie, abitudini,
-            obiettivi, preset e impostazioni associati al tuo account.
+            obiettivi e impostazioni associati al tuo account.
           </p>
           <Serif className="block text-sm leading-6 text-muted-foreground">
             Nei workspace condivisi, per non rompere i dati degli altri membri,

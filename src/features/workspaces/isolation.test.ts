@@ -53,8 +53,8 @@ describe("assertWorkspaceRecord — workspace isolation policy", () => {
 
     it("throws when workspaceId is null (orphan record)", () => {
       assert.throws(
-        () => assertWorkspaceRecord({ workspaceId: null }, "ws-a", "Preset"),
-        { message: "Preset not found" },
+        () => assertWorkspaceRecord({ workspaceId: null }, "ws-a", "Budget"),
+        { message: "Budget not found" },
       );
     });
 

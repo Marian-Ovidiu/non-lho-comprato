@@ -102,7 +102,6 @@ model Category {
   archivedAt   DateTime?
   entries      Entry[]
   habits       Habit[]
-  quickPresets QuickPreset[]
   budgets      Budget[]
   importedTransactionsSuggested ImportedTransaction[] @relation("ImportedTransactionCategorySuggested")
   importedTransactionsConfirmed ImportedTransaction[] @relation("ImportedTransactionCategoryConfirmed")
@@ -219,26 +218,6 @@ model Goal {
   isActive     Boolean    @default(true)
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
-
-  @@index([workspaceId])
-  @@index([targetUserId])
-}
-
-model QuickPreset {
-  id              String     @id @default(cuid())
-  workspaceId     String
-  workspace       Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  title           String
-  categoryId      String
-  category        Category   @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  realCost        Decimal    @db.Decimal(10, 2)
-  alternativeCost Decimal    @db.Decimal(10, 2)
-  note            String?
-  targetUserId    String?
-  targetScope     String?
-  targetUser      User?      @relation("QuickPresetTargetUser", fields: [targetUserId], references: [id], onDelete: SetNull)
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
 
   @@index([workspaceId])
   @@index([targetUserId])
@@ -370,7 +349,6 @@ model User {
   settlementsCreated   WorkspaceSettlement[] @relation("WorkspaceSettlementCreatedBy")
   targetHabits         Habit[]             @relation("HabitTargetUser")
   targetGoals          Goal[]              @relation("GoalTargetUser")
-  targetPresets        QuickPreset[]       @relation("QuickPresetTargetUser")
   feedbacks            Feedback[]          @relation("FeedbackUser")
   createdImportBatches ImportBatch[]
 }
@@ -395,7 +373,6 @@ model Workspace {
   entries      Entry[]
   habits       Habit[]
   goals        Goal[]
-  quickPresets QuickPreset[]
   feedbacks    Feedback[]        @relation("FeedbackWorkspace")
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
