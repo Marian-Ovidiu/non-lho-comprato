@@ -503,23 +503,39 @@ export function QuickAddSheet({
       return;
     }
 
-    const node = stepNodesRef.current[step];
+    let frame = 0;
+    let observer: ResizeObserver | null = null;
 
-    if (!node) {
-      return;
-    }
+    /* Il contenuto del dialog vive in un portale: al primo giro il nodo può
+       non essere ancora agganciato, e rinunciando lì l'altezza non verrebbe
+       più misurata: con `overflow-hidden` un contenitore rimasto a zero non
+       mostra niente. Per la stessa ragione una misura nulla non viene mai
+       scritta — se non sappiamo quanto è alto il gruppo, meglio lasciarlo
+       crescere da solo che ritagliarlo via. */
+    const attach = () => {
+      const node = stepNodesRef.current[step];
 
-    const update = () => {
-      setViewportHeight(node.getBoundingClientRect().height);
+      if (!node) {
+        frame = requestAnimationFrame(attach);
+        return;
+      }
+
+      const update = () => {
+        const height = node.getBoundingClientRect().height;
+        setViewportHeight(height > 0 ? height : undefined);
+      };
+
+      update();
+
+      observer = new ResizeObserver(update);
+      observer.observe(node);
     };
 
-    update();
-
-    const observer = new ResizeObserver(update);
-    observer.observe(node);
+    attach();
 
     return () => {
-      observer.disconnect();
+      cancelAnimationFrame(frame);
+      observer?.disconnect();
     };
   }, [open, step]);
 
