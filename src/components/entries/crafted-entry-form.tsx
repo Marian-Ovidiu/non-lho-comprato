@@ -467,7 +467,7 @@ function CraftedEntryFormFields({
         ref={formRef}
         action={formAction}
         className={cn(
-          "-mx-4 -mb-[calc(var(--nlc-chrome-bottom)-6.5rem)] flex min-h-[100dvh] flex-col bg-background sm:-mx-6 md:mb-0 lg:-mx-8",
+          "nlc-entry-form-floor -mx-4 -mb-[calc(var(--nlc-chrome-bottom)-6.5rem)] flex min-h-[100dvh] flex-col sm:-mx-6 md:mb-0 lg:-mx-8",
           "transition-[opacity,transform,filter] duration-200 ease-out",
           successStage === "closing" && "translate-y-1 opacity-0 blur-[1px]",
         )}

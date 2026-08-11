@@ -1101,8 +1101,7 @@ html.nlc-splash-pending #nlc-splash-shell {
    chiude fuori e non esiste nessuna linea in cui il chrome comincia o finisce.
    `-up` è lo stesso velo rovesciato, per la barra inferiore. */
 .nlc-chrome-veil,
-.nlc-chrome-veil-up,
-.nlc-chrome-veil-list {
+.nlc-chrome-veil-up {
   isolation: isolate;
 }
 .nlc-chrome-veil::before,
@@ -1198,48 +1197,28 @@ html.nlc-splash-pending #nlc-splash-shell {
   );
 }
 
-/* ---- Terzo profilo: la striscia dei controlli dell'elenco ----
-   Stesso materiale e stessa regola (nessun bordo, nessuna lastra, il colore lo
-   prende da `var(--background)`), ma il profilo non poteva essere quello
-   dell'header: lì le scritte stanno nel primo 52% del box, qui i controlli
-   occupano tutta l'altezza — 110px, e di più quando si apre il pannello delle
-   categorie. Con la curva dell'header sotto il segmentato lo scrim è già al
-   30%, e i movimenti che scorrono si vedono passare attraverso i filtri.
-   Quindi: pieno per tutta la zona toccabile, dissolvenza solo sull'ultimo
-   tratto. Le fermate sono in px misurati dal *basso* dello strato e non in
-   percentuale, per la stessa ragione per cui quelle della barra inferiore sono
-   misurate dall'alto: l'altezza del box cambia (pannello aperto o chiuso), la
-   distanza fra l'ultimo controllo e l'inizio della sfumatura no. */
-.nlc-chrome-veil-list::before,
-.nlc-chrome-veil-list::after {
-  content: "";
-  position: absolute;
-  /* Sporge anche in alto, e non è simmetria: sopra c'è l'header, il cui velo
-     per definizione si dissolve verso il basso. Senza questa sporgenza resta
-     una fascia di una decina di pixel — l'ultimo tratto della dissolvenza
-     dell'header — in cui i movimenti si vedono passare, e attaccata a una
-     striscia opaca quella fascia non si legge come una dissolvenza: si legge
-     come una giuntura sporca. I due veli si sovrappongono, e nella
-     sovrapposizione vince il pieno. */
-  inset: -20px 0 -28px;
-  pointer-events: none;
-  z-index: -1;
+/* Il modulo di creazione è una carta opaca, mentre sotto la bottom bar torna
+   visibile la stanza. Se la carta finisce con il suo box, l'occhio legge una
+   riga anche se nessuno ha disegnato un bordo. Su mobile gli ultimi 80px
+   perdono quindi materia con la stessa grammatica del velo inferiore: il testo
+   resta sul fondo pieno, la CTA è una campitura autonoma e il bordo del form
+   sparisce prima di incontrare il chrome. A `md` la bottom bar non esiste e la
+   carta torna uniformemente opaca. */
+.nlc-entry-form-floor {
+  background: var(--background);
 }
-.nlc-chrome-veil-list::before {
-  -webkit-backdrop-filter: blur(16px) saturate(130%);
-  backdrop-filter: blur(16px) saturate(130%);
-  -webkit-mask-image: linear-gradient(to top, transparent 0, #000 40px);
-  mask-image: linear-gradient(to top, transparent 0, #000 40px);
-}
-.nlc-chrome-veil-list::after {
-  background: linear-gradient(
-    to top,
-    transparent 0,
-    color-mix(in srgb, var(--background) 28%, transparent) 14px,
-    color-mix(in srgb, var(--background) 62%, transparent) 24px,
-    color-mix(in srgb, var(--background) 88%, transparent) 34px,
-    var(--background) 48px
-  );
+
+@media (width < 48rem) {
+  .nlc-entry-form-floor {
+    background: linear-gradient(
+      to bottom,
+      var(--background) 0,
+      var(--background) calc(100% - 5rem),
+      color-mix(in srgb, var(--background) 84%, transparent) calc(100% - 3.5rem),
+      color-mix(in srgb, var(--background) 48%, transparent) calc(100% - 1.75rem),
+      transparent 100%
+    );
+  }
 }
 
 /* Nota chiusa (era la 1 di "Dove vorrei un occhio umano"): in tema chiaro il
@@ -1312,14 +1291,6 @@ html.nlc-splash-pending #nlc-splash-shell {
     );
   }
 
-  .nlc-chrome-veil-list::after {
-    background: linear-gradient(
-      to top,
-      transparent 0,
-      color-mix(in srgb, var(--background) 55%, transparent) 20px,
-      var(--background) 44px
-    );
-  }
 }
 
 /* Righelli e bordi restano traslucidi dentro le lastre (non in layer → vince

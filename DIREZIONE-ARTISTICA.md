@@ -333,37 +333,24 @@ stata presa, e la direzione artistica non è il posto da cui prenderla di
 straforo. Ma la gerarchia posso stabilirla adesso, ed è reversibile con una
 riga.
 
-### La striscia dei filtri: un mini-chrome dentro la pagina
+### La striscia dei filtri: controlli fermi, nessuna fascia
 
 Era `sticky top-14` con bordo inferiore, fondo al 95% e blur: cioè una lastra,
-sotto un header che una lastra non è più. Due bordi in cascata — esattamente il
-fantasma della barra che avevo tolto in cima. Le tre strade erano: toglierle lo
-sticky (ma su una lista da centinaia di righe la ricerca deve restare a portata
-di pollice), dividere il lavoro fra i due (ma allora sono due chrome), oppure
-**farne lo stesso materiale**. Ho fatto la terza.
+sotto un header che una lastra non è più. Il primo ridisegno ha provato a
+trasformarla in un terzo profilo del velo del chrome. L'idea reggeva sul bordo
+inferiore, ma falliva prima ancora: per garantire contrasto ai controlli, lo
+scrim diventava pieno già sopra la ricerca e copriva la stanza con una fascia
+rettangolare. Allungare e rimodulare la dissolvenza in basso non poteva
+cancellare il taglio in alto.
 
-Ora la striscia porta il velo del chrome: scrim nel colore che la pagina ha già
-e blur progressivo mascherato, nessun bordo, nessuna lastra. Ma con un **terzo
-profilo**, ed è la parte interessante. L'header apre e va a zero; la barra
-inferiore chiude e va al pieno; qui serviva una terza forma, perché il problema
-è diverso: nell'header le scritte stanno nel primo 52% del box, qui i controlli
-occupano **tutta** l'altezza — 110px, e più del doppio quando si apre il
-pannello delle categorie. Con la curva dell'header, sotto il segmentato lo
-scrim è già al 30%, e i movimenti si vedono passare attraverso i filtri. Il
-profilo giusto è: pieno per tutta la zona toccabile, dissolvenza solo
-sull'ultimo tratto. Le fermate sono in px misurati dal basso dello strato e non
-in percentuale, per la stessa ragione per cui quelle della barra inferiore sono
-misurate dall'alto: l'altezza del box cambia quando il pannello si apre, la
-distanza fra l'ultimo controllo e l'inizio della sfumatura no.
-
-C'è un dettaglio che sembra un cavillo e invece è quello che rende la cosa
-credibile: lo strato **sporge anche verso l'alto**, di 20px, dentro la coda
-della dissolvenza dell'header. Senza, resta una fascia di una decina di pixel
-in cui i movimenti si vedono passare, e quella fascia — attaccata sotto a una
-striscia opaca — non si legge come una dissolvenza: si legge come una giuntura
-sporca. I due veli si sovrappongono, e nella sovrapposizione vince il pieno.
-Costo: zero elementi nuovi, e un `backdrop-filter` che c'era già (era il blur
-della vecchia lastra).
+La correzione definitiva è più semplice: **il contenitore sticky non dipinge
+niente**. Niente `::before`, niente `::after`, niente blur e nessuno scrim. La
+ricerca porta già il proprio incasso; il segmentato e i chip hanno i propri
+confini. Sono loro a restare fermi, non una superficie invisibile che pretende
+di unirli. Le righe continuano a scorrere sotto lo sticky, ma non attraversano
+più una campitura estranea alla stanza. Il risultato perde una protezione
+uniforme e guadagna una cosa più importante: non finge che controlli separati
+siano una barra.
 
 Nel farlo ho trovato un bug che non era mio: `top-14` sono 56px scritti a mano,
 mentre l'altezza vera dell'header dipende da `env(safe-area-inset-top)` ed è
@@ -600,17 +587,14 @@ giorno la gerarchia dei centesimi va tolta, il posto è uno: `.nlc-cents` e
 finezza: è ciò che permette allo stesso componente di stare in un numero eroe
 da 50px e in una riga d'elenco da 15px senza due varianti.
 
-Il velo del chrome ha tre profili, tutti in `globals.css` e fuori dai layer,
-tutti fatti dei soliti due pseudo-elementi (scrim su `::after`, blur mascherato
-su `::before`, `z-index: -1`, colore da `var(--background)`):
-`.nlc-chrome-veil` (header: apre e va a zero), `.nlc-chrome-veil-up` (barra
-inferiore: chiude e va al pieno), `.nlc-chrome-veil-list` (striscia dei filtri:
-pieno sotto i controlli, dissolvenza sull'ultimo tratto). Il terzo sporge di
-20px in alto per sovrapporsi alla coda del primo: se si cambia il profilo
-dell'header, quella sporgenza va ricontrollata, altrimenti fra i due riappare
-una fascia in cui il contenuto traspare. La striscia si aggancia a
-`--nlc-chrome-top` (l'altezza vera dell'header, pubblicata da `app-shell`):
-mai rimettere un numero fisso, cambia con la safe area e con la nav desktop.
+Il velo del chrome ha due profili, entrambi in `globals.css` e fuori dai layer,
+entrambi fatti dei soliti due pseudo-elementi (scrim su `::after`, blur
+mascherato su `::before`, `z-index: -1`, colore da `var(--background)`):
+`.nlc-chrome-veil` per l'header, che apre e va a zero, e
+`.nlc-chrome-veil-up` per la barra inferiore, che chiude e va al pieno. La
+striscia dei filtri non è chrome e non porta un velo. Resta agganciata a
+`--nlc-chrome-top` (l'altezza vera dell'header, pubblicata da `app-shell`): mai
+rimettere un numero fisso, cambia con la safe area e con la nav desktop.
 
 `.nlc-ledger` è la superficie dell'elenco movimenti: per ora porta solo il
 carattere, ed è il gancio giusto se la carta dovrà prendere altri token propri.
@@ -1623,6 +1607,23 @@ stessa quota e avrebbe sovrapposto un secondo gesto circolare alla CTA. Non è
 stato rimosso dall'app, soltanto dalla rotta in cui il compito primario è già
 persistente.
 
+## La carta consegna la pagina al chrome, non gli lascia una riga
+
+Il form ha bisogno di un fondo opaco: importo, categorie e campi non devono
+leggere gli orb come decorazione. Ma quel fondo finiva insieme al box del form,
+22px prima della bottom bar. Sotto tornava visibile la stanza e, pur senza un
+bordo CSS, il salto fra carta e luce disegnava una riga perfettamente netta. Il
+chrome era corretto; era il documento a morire di colpo.
+
+Su mobile gli ultimi 80px del form perdono ora materia in quattro fermate: il
+fondo resta pieno fino alla zona priva di testo, poi diventa trasparente mentre
+il velo inferiore compie il percorso opposto e torna a `--background` pieno
+sotto le dita. La CTA non perde contrasto perché è una campitura autonoma. Non
+ho allungato né ispessito il velo globale: il difetto apparteneva a questa carta
+opaca, e correggere il chrome avrebbe alterato tutte le pagine che già si
+chiudono bene. Da `md` in su la bottom bar scompare e il form torna uniformemente
+opaco.
+
 ## Un requisito di salvataggio che prima non coincideva
 
 Il server richiede un titolo di almeno due caratteri e una data valida, ma il
@@ -1653,7 +1654,9 @@ documento, scrollbar della striscia assente, CTA disabilitata prima dei
 requisiti e attiva dopo, campi persona assenti nel privato e presenti nel
 condiviso. Axe non trova violazioni WCAG 2 A/AA serious o critical nei due temi;
 i testi secondari sui nuovi incassi usano `--muted-foreground`, già misurato a
-6,60:1 su `--surface-muted` in tema chiaro.
+6,60:1 su `--surface-muted` in tema chiaro. Un secondo passaggio a 390×844 ha
+misurato la chiusura: form a y=740, nav a y=762, rampa di 80px senza contenuto
+testuale esposto direttamente alla stanza.
 
 ## Dove voglio un occhio umano
 

@@ -557,15 +557,14 @@ export function CraftedEntryList({
 
   return (
     <div>
-      {/* I controlli restano a portata di pollice per tutta la lista, ma non
-          sono una seconda barra: portano lo stesso velo del chrome — scrim nel
-          colore del fondo e blur progressivo, nessun bordo, nessuna lastra —
-          con il profilo tarato sulla loro altezza (vedi .nlc-chrome-veil-list).
-          L'aggancio è `--nlc-chrome-top`, la misura vera dell'header pubblicata
-          dal guscio: il `top-14` di prima era un 56px scritto a mano che con la
-          safe area di un iPhone finiva *sotto* l'header. */}
+      {/* I controlli restano a portata di pollice per tutta la lista, ma il loro
+          contenitore non dipinge una fascia: ricerca e segmentato portano già
+          le superfici che servono. L'aggancio è `--nlc-chrome-top`, la misura
+          vera dell'header pubblicata dal guscio: il `top-14` di prima era un
+          56px scritto a mano che con la safe area di un iPhone finiva *sotto*
+          l'header. */}
       <div
-        className="nlc-chrome-veil-list sticky z-20 px-[var(--sp-page-x)] pb-2.5 pt-2"
+        className="sticky z-20 px-[var(--sp-page-x)] pb-2.5 pt-2"
         style={{ top: "var(--nlc-chrome-top, 3.5rem)" }}
       >
         <div className="flex items-center gap-2">
