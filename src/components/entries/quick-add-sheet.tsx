@@ -16,7 +16,7 @@ import {
   Users2,
 } from "lucide-react";
 
-import { createEntry, deleteEntry } from "@/src/actions/entries";
+import { createEntry, deleteEntry, getCategories } from "@/src/actions/entries";
 import { getPresets, type SerializablePreset } from "@/src/actions/presets";
 import { useToast } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
@@ -310,6 +310,10 @@ export function QuickAddSheet({
   const [members, setMembers] = useState<WorkspaceMemberOption[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
   const [savedPresets, setSavedPresets] = useState<SerializablePreset[]>([]);
+  const [loadedCategoryState, setLoadedCategoryState] = useState<{
+    workspaceId: string;
+    categories: CategoryOption[];
+  } | null>(null);
   const [presetsLoading, setPresetsLoading] = useState(false);
   const [hiddenDefaultPresetIds, setHiddenDefaultPresetIds] = useState<string[]>(
     () => readHiddenDefaultPresetIds(),
@@ -337,7 +341,13 @@ export function QuickAddSheet({
   const { push: pushToast } = useToast();
   const categoryOptions = useMemo(
     () =>
-      (categories?.length ? categories : DEFAULT_CATEGORIES).map((category) =>
+      (loadedCategoryState?.workspaceId === workspace.id &&
+      loadedCategoryState.categories.length > 0
+        ? loadedCategoryState.categories
+        : categories?.length
+          ? categories
+          : DEFAULT_CATEGORIES
+      ).map((category) =>
         "id" in category
           ? category
           : {
@@ -348,7 +358,7 @@ export function QuickAddSheet({
               icon: category.icon,
             },
       ),
-    [categories],
+    [categories, loadedCategoryState, workspace.id],
   );
   const quickAddPresets = useMemo(() => {
     const hiddenDefaultIds = new Set(hiddenDefaultPresetIds);
@@ -498,6 +508,41 @@ export function QuickAddSheet({
       active = false;
     };
   }, [open, pushToast]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+
+    let active = true;
+
+    async function loadCategories() {
+      try {
+        const loadedCategories = await getCategories();
+
+        if (active) {
+          setLoadedCategoryState({
+            workspaceId: workspace.id,
+            categories: loadedCategories,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load quick-add categories:", error);
+        pushToast({
+          title: "Categorie non disponibili",
+          description: "Non riesco a caricare le categorie. Riprova tra poco.",
+          tone: "error",
+          duration: 5200,
+        });
+      }
+    }
+
+    void loadCategories();
+
+    return () => {
+      active = false;
+    };
+  }, [open, pushToast, workspace.id]);
 
   useEffect(() => {
     if (membersLoading || hasDraftBeenEditedRef.current) {

@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { mergeCategoryOptions, DEFAULT_CATEGORIES } from "@/src/lib/categories";
+import {
+  mergeCategoryOptions,
+  DEFAULT_CATEGORIES,
+  sortCategoryOptionsByUsage,
+  type CategoryOption,
+} from "@/src/lib/categories";
 
 describe("mergeCategoryOptions", () => {
   it("returns all default categories when given empty db list", () => {
@@ -105,5 +110,49 @@ describe("mergeCategoryOptions", () => {
     assert.equal("createdAt" in cibo, false);
     assert.equal("updatedAt" in cibo, false);
     assert.equal("archivedAt" in cibo, false);
+  });
+});
+
+describe("sortCategoryOptionsByUsage", () => {
+  const categories: CategoryOption[] = [
+    { id: "z", name: "Zaino", slug: "zaino", color: null, icon: null },
+    { id: "a", name: "Auto", slug: "auto", color: null, icon: null },
+    { id: "c", name: "Casa", slug: "casa", color: null, icon: null },
+  ];
+
+  it("uses alphabetical order when no category has movements", () => {
+    const result = sortCategoryOptionsByUsage(categories, new Map(), "it");
+
+    assert.deepEqual(
+      result.map((category) => category.name),
+      ["Auto", "Casa", "Zaino"],
+    );
+  });
+
+  it("puts the most used categories first", () => {
+    const usage = new Map([
+      ["zaino", 8],
+      ["auto", 2],
+      ["casa", 5],
+    ]);
+    const result = sortCategoryOptionsByUsage(categories, usage, "it");
+
+    assert.deepEqual(
+      result.map((category) => category.slug),
+      ["zaino", "casa", "auto"],
+    );
+  });
+
+  it("breaks equal usage counts alphabetically and leaves unused categories last", () => {
+    const usage = new Map([
+      ["zaino", 3],
+      ["auto", 3],
+    ]);
+    const result = sortCategoryOptionsByUsage(categories, usage, "it");
+
+    assert.deepEqual(
+      result.map((category) => category.slug),
+      ["auto", "zaino", "casa"],
+    );
   });
 });

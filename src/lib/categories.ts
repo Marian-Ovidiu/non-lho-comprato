@@ -40,6 +40,20 @@ export type CategoryOption = {
   icon: string | null;
 };
 
+export function sortCategoryOptionsByUsage(
+  categories: readonly CategoryOption[],
+  usageCountBySlug: ReadonlyMap<string, number>,
+  language = "it",
+): CategoryOption[] {
+  return [...categories].sort((left, right) => {
+    const usageDifference =
+      (usageCountBySlug.get(right.slug) ?? 0) -
+      (usageCountBySlug.get(left.slug) ?? 0);
+
+    return usageDifference || left.name.localeCompare(right.name, language);
+  });
+}
+
 export function toCategoryOption(
   category: CategoryOption & {
     workspaceId?: string | null;

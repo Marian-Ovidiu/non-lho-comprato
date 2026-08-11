@@ -31,7 +31,10 @@ import { Prisma } from "@/src/lib/generated/prisma/client";
 import { cacheLife, cacheTag, revalidatePath, updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 
-import { mergeCategoryOptions } from "@/src/lib/categories";
+import {
+  mergeCategoryOptions,
+  sortCategoryOptionsByUsage,
+} from "@/src/lib/categories";
 import { logAndRethrowDataLoadError } from "@/src/lib/data-load-error";
 import {
   decryptOptionalText,
@@ -817,6 +820,11 @@ export async function getCategories() {
           icon: true,
           isDefault: true,
           archivedAt: true,
+          _count: {
+            select: {
+              entries: true,
+            },
+          },
         },
       }),
       getCurrentWorkspaceLanguage(),
@@ -824,6 +832,7 @@ export async function getCategories() {
 
     const archivedDefaultSlugs = new Set<string>();
     const activeCategories = [];
+    const usageCountBySlug = new Map<string, number>();
 
     for (const cat of allCategories) {
       if (cat.archivedAt !== null) {
@@ -832,10 +841,15 @@ export async function getCategories() {
         }
       } else {
         activeCategories.push(cat);
+        usageCountBySlug.set(cat.slug, cat._count.entries);
       }
     }
 
-    return mergeCategoryOptions(activeCategories, archivedDefaultSlugs, language);
+    return sortCategoryOptionsByUsage(
+      mergeCategoryOptions(activeCategories, archivedDefaultSlugs, language),
+      usageCountBySlug,
+      language,
+    );
   } catch (error) {
     logAndRethrowDataLoadError("Failed to load entry categories", error);
   }
