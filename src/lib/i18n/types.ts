@@ -460,26 +460,33 @@ export type Translations = {
   quickAdd: {
     dialogTitle: string;
     close: string;
-    customize: string;
-    customizeDesc: string;
     titleLabel: string;
     titlePlaceholder: string;
     categoryLabel: string;
     categoryPlaceholder: string;
     amountLabel: string;
+    amountShortLabel: string;
     dateLabel: string;
+    whenLabel: string;
     todayButton: string;
     yesterdayButton: string;
-    comparisonToggle: string;
-    hideComparison: string;
-    comparisonAmountLabel: string;
-    largeComparisonWarning: string;
+    otherDateButton: string;
+    otherDateLabel: string;
+    paymentGroupLabel: string;
+    stepOf: (current: number, total: number) => string;
+    stepOneTitle: string;
+    stepTwoTitle: string;
+    singleStepTitle: string;
+    nextStep: string;
+    previousStep: string;
     searchingSuggestion: string;
-    addComparison: string;
     loadingMembers: string;
+    fullFormHint: string;
     fullFormLink: string;
     saveButton: string;
+    saveAndNewButton: string;
     savingButton: string;
+    savedKeepGoing: string;
     successTitle: string;
     successDesc: string;
     undoButton: string;
@@ -495,6 +502,8 @@ export type Translations = {
     similarPlural: string;
     apply: string;
     addComparison: string;
+    usually: string;
+    compareInFullForm: string;
   };
 
   dashboard: {

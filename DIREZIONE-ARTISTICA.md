@@ -1664,3 +1664,405 @@ testuale esposto direttamente alla stanza.
     può attraversare la nota. A me sembra il costo giusto per tenere sempre
     visibile lo stato di salvataggio; va giudicato con il pollice, non con una
     schermata intera.
+
+---
+
+# L'aggiunta rapida: due passi, e la ragione per cui il secondo esiste
+
+Questo pannello è il gesto più ripetuto dell'app — dieci volte al giorno, con il
+pollice, spesso in piedi davanti a una cassa — ed era l'unico rimasto scritto
+come un modulo. Un modulo corto, ma un modulo: etichetta sopra, campo sotto,
+etichetta sopra, campo sotto. Il rilievo del fondatore («non voglio righe con
+una sola parola per riga») non è una preferenza estetica: è la diagnosi esatta
+di cosa non andava.
+
+## La composizione, che è la parte da leggere per prima
+
+Il pannello di prima aveva **sei righe per tre informazioni**. «Titolo» su una
+riga, il campo sotto; «Categoria» su una riga, il campo sotto; «Quanto hai
+speso» su una riga, il campo sotto. Metà delle righe erano una parola sola e un
+vuoto largo trecento pixel. Su uno schermo alto ottocento, dove ogni riga
+allontana il pulsante dal pollice, quello è spazio pagato per non dire niente.
+
+La regola che ho seguito è una sola, e la scrivo per esteso perché è quella con
+cui giudicare tutto il resto: **una riga porta una parola solo se accanto a
+quella parola c'è la sostanza a cui si riferisce.** Etichetta a sinistra,
+controllo a destra, sulla stessa riga. Dove l'etichetta non serve, non c'è.
+
+Da lì discendono tre decisioni di larghezza, e ognuna ha un motivo diverso.
+
+**Il titolo prende la riga intera, e non ha etichetta.** È l'unico campo a testo
+libero, è di lunghezza imprevedibile, ed è la stringa che poi si legge
+nell'elenco movimenti: è la cosa per cui, fra un mese, si scorrerà quella
+pagina. Un campo che merita larghezza piena è un campo che può riempirla. Il
+segnaposto («Pranzo») dice cosa scrivere meglio di quanto lo direbbe la parola
+«Titolo» sospesa sopra il vuoto; l'etichetta vera esiste, per chi usa uno
+screen reader, come `sr-only`.
+
+**Importo e categoria dividono una riga, separati da un filetto verticale.**
+Sono la coppia giusta perché rispondono a due domande brevi e complementari —
+*quanto* e *di che tipo* — e perché nessuna delle due ha bisogno di respiro
+orizzontale: un importo è un numero corto, una categoria è una parola scelta da
+una lista. Qui le etichette servono (un numero nudo accanto a un'altra cosa non
+si spiega da solo) e stanno sopra il valore, in maiuscoletto: due celle
+affiancate, ognuna con la sua parola e la sua sostanza. Non è una riga con una
+parola sola: è una riga con quattro cose.
+
+Dentro quella riga c'è la gerarchia vera del passo 1. **L'importo è scritto a
+23px in semibold tabulare, la categoria a 15px in regolare.** Non è decorazione:
+in un'app di spese il numero è il carico, la categoria è l'etichetta del carico.
+Il simbolo di valuta arretra di corpo e di colore come fa `Amount` ovunque — gli
+euro decidono, la valuta è contesto.
+
+**Il filetto verticale è l'unico segno nuovo di questo giro**, e l'ho aggiunto
+con cautela perché nell'app non ce n'erano. Serve a dire che quelle due celle
+sono pari fra loro e diverse dalla riga sopra: senza, a 360px le due colonne si
+leggono come un'unica riga con del testo sparso. È alto quanto il contenuto e
+rientra di dieci pixel sopra e sotto, così non tocca i filetti orizzontali e non
+disegna una griglia.
+
+Tutto questo sta dentro **una lastra piatta sola** (`--surface-muted`, raggio di
+card, separatori interni): non è vetro, non è annidata, non ha ombra. È l'incasso
+piatto che l'app usa già per raggruppare controlli — la stessa grammatica dei
+pannelli del form completo e dell'export in `/more`. Il pannello non inventa un
+materiale nuovo: usa quello che c'è, in una composizione nuova.
+
+**Il risultato misurato:** il passo 1 è alto 349px su un viewport da 360×760,
+contro le sei righe di prima. Tre campi, due righe, zero parole sole.
+
+## Il passo 2 non è la coda del passo 1
+
+Il rischio che il fondatore ha nominato — «che il passo 2 non sembri più vuoto
+del passo 1» — era reale, e con la sua lista alla lettera si presentava così: il
+passo 2 avrebbe contenuto una data (già compilata) e i campi delle persone (già
+compilati). Cioè una schermata che non chiede niente. Un secondo passo che non
+chiede niente insegna che «Prossimo» è una formalità, e da lì in poi lo si preme
+senza guardare.
+
+Quindi ho spostato lì **la tipologia di pagamento**, e non per riempire: perché è
+il suo posto. «Ho speso» e «Pagata insieme» non dicono nulla su *cosa* hai
+comprato: dicono **come i soldi si dividono fra voi due**, che è esattamente la
+domanda del passo 2. Prima stava in cima al pannello, sopra il titolo, nel punto
+di massima attenzione — un intento di divisione contabile promosso a prima cosa
+che si vede. Adesso i due passi hanno due soggetti netti, e i titoli lo
+dichiarano: **«Cosa e quanto»** e **«Quando e con chi»**.
+
+Il passo 2 ha quattro righe, con lo stesso ritmo del primo:
+
+- **Quando** — etichetta a sinistra, e a destra un segmentato di tre celle:
+  Oggi, Ieri, e una terza che è il calendario di sistema. Quando la data è
+  personalizzata la terza cella smette di dire «Altra» e scrive la data («8
+  ago»): il controllo mostra il proprio stato invece di nasconderlo dietro una
+  parola generica. L'input `type="date"` copre la cella a opacità zero, così il
+  dito apre il selettore nativo e la tastiera lo raggiunge lo stesso.
+- **La tipologia di pagamento** — due celle a tutta riga, senza etichetta a
+  sinistra. È l'unica riga che comincia dal margine, ed è voluto: quelle due
+  parole *sono* la domanda, e un'etichetta («Pagamento») sopra due voci che si
+  spiegano da sole sarebbe la settima riga inutile appena tolta.
+- **Chi paga** — etichetta a sinistra, selettore a destra, senza cornice: dentro
+  una lastra i valori non portano una seconda scatola.
+- **Vale per** — etichetta a sinistra, i nomi a destra.
+
+Con «Pagata insieme» attivo le due righe delle persone spariscono e restano una
+frase che spiega la divisione: il passo scende da 509 a 460px. Non è un vuoto, è
+una risposta che ne rende superflue altre due.
+
+## Due modelli di scelta non possono avere la stessa forma (di nuovo)
+
+Questa l'ho trovata guardando le schermate, non scrivendo il codice. Nella prima
+versione «Vale per» era un segmentato come gli altri, e con due membri entrambi
+selezionati — che è il caso normale di una spesa condivisa — diventava **due
+lastre bianche piene affiancate**, in tema scuro la cosa più luminosa del
+pannello: più della CTA lime, che è l'unica azione della schermata. Lo stato
+gridava più forte dell'azione.
+
+Ma il difetto vero non era la luminosità: era che stavo usando la forma di «uno
+fra tre» per dire «quanti ne vuoi». È la stessa regola già scritta in questo
+documento per i filtri dell'elenco — *il tipo è una scelta sola fra quattro, le
+categorie sono una selezione multipla, dare la stessa forma a due comportamenti
+diversi è la definizione di interfaccia che mente.* Adesso «Vale per» sono chip
+con il segno di spunta, e la gerarchia si è rimessa a posto da sola: il pieno
+resta alle scelte esclusive (la data, il tipo di pagamento), la spunta alle
+scelte multiple, il lime all'azione. Lo spazio della spunta è riservato anche
+quando è spenta, così togliere una persona non fa saltare la riga.
+
+## Lo spazio privato: un passo solo, e perché
+
+**In uno spazio privato il pannello resta a un passo.** La domanda non è quanti
+campi restano: è se esiste una seconda domanda. In uno spazio privato «chi ha
+pagato per chi» non ha soggetti — la persona è una — e «Pagata insieme» non ha
+significato. Quello che resterebbe al passo 2 è la data, che è già compilata
+sull'oggi nella quasi totalità dei casi.
+
+Un secondo passo che contiene un solo controllo già giusto non è un passo: è un
+corridoio. E costa il doppio di quanto sembra, perché insegna che il pulsante di
+avanzamento si può premere senza leggere — e quella lezione l'utente poi la
+porta con sé nello spazio condiviso, dove invece al passo 2 c'è una decisione
+vera sui soldi di due persone.
+
+Quindi nel privato la data scende dentro la lastra del passo 1, come terza riga,
+con la stessa forma che ha nel condiviso (etichetta a sinistra, tre celle a
+destra). Il pannello è alto 465px, ha tutto, e in fondo ci sono già i due
+pulsanti di salvataggio. Il titolo del gruppo diventa «Cosa, quanto e quando»,
+che è il contenuto vero e non una promessa generica.
+
+Una conseguenza di forma che vale la pena dire: **dove i passi non ci sono, non
+c'è nemmeno l'indicatore.** Il confine dell'intestazione, che nel condiviso è
+diviso in due segmenti (uno inchiostrato, uno tenue) ed è il progresso, nel
+privato torna a essere un filetto e basta. Un indicatore di passo su un pannello
+a un passo è un ornamento che dice una cosa falsa.
+
+## Il movimento: quello che esce va a sinistra, e la sua altezza lo segue
+
+I due gruppi vivono nello stesso spazio, sovrapposti, e scorrono: quello che
+esce va a sinistra e sfuma, quello che entra arriva da destra. 280 millisecondi
+— sotto i 200 il gruppo che esce non si vede uscire, e allora tanto vale non
+animarlo; sopra i 350 un gesto che si ripete dieci volte al giorno comincia a
+farsi aspettare.
+
+La parte che costa qualcosa e che non era evitabile: **i due passi non sono alti
+uguale** (349 contro 509 pixel), e sovrapporli in una scatola sola vorrebbe dire
+o tagliare il più alto o lasciare un vuoto sotto il più corto — cioè
+esattamente l'effetto «passo vuoto» che il fondatore voleva evitare, ottenuto
+per via geometrica invece che per contenuto. Quindi l'altezza della scatola
+segue il gruppo attivo, misurata con un `ResizeObserver`, e si anima con la
+stessa curva della scivolata. Il pannello è ancorato in basso: cresce verso
+l'alto, e i pulsanti restano fermi sotto il pollice mentre il contenuto cambia.
+Vale anche quando compare il suggerimento mentre si scrive l'importo — il
+pannello si alza, il pulsante no.
+
+Con `prefers-reduced-motion` non c'è nessuna transizione: né la scivolata né
+l'altezza. Il gruppo cambia e basta, che è il cambio netto richiesto.
+
+Per chi non vede lo scorrimento, il passaggio è dichiarato in tre modi: il
+titolo del gruppo è un `h2` che riceve il fuoco al cambio (e porta con sé un
+`sr-only` «Passo 2 di 2 ·»), il gruppo non attivo è `inert` — quindi il fuoco
+non può finirci dentro anche se resta nel DOM per poter scorrere — e il segmento
+inchiostrato in cima avanza.
+
+## Il suggerimento: da azione a memoria
+
+Con il confronto fuori dall'aggiunta rapida, la card del suggerimento non poteva
+restare com'era: il suo pulsante prometteva di applicare un confronto che questo
+pannello non sa più registrare. Cancellarla non si poteva e non si doveva. Così
+ha cambiato mestiere: **adesso è una memoria, non un'azione.**
+
+Dice quello che sa — «Di solito 9,80€ · 6 movimenti simili» — e lo dice mentre
+stai scrivendo l'importo, che è l'unico momento in cui quel numero serve
+davvero: è lì che ti accorgi di aver speso il doppio del solito. È una riga
+sola, sotto la lastra, con la sua icona; non è più una card dentro un pannello
+che è già una card.
+
+Il gesto per trasformarla in un confronto vero porta al form completo, con la
+bozza già in tasca (titolo, importo, categoria, data, persone e l'importo di
+confronto suggerito). Non è un ripiego: è il posto dove il confronto vive
+adesso, e il suggerimento è il punto esatto in cui viene voglia di andarci.
+
+Per la stessa ragione il collegamento al form completo non è più un pulsante
+alla pari del salvataggio — lo era, e diceva che uscire da qui vale quanto
+salvare. Adesso è una riga di servizio in fondo, con la domanda che la
+giustifica («Serve una nota o un confronto?»). In fondo restano i due pulsanti
+che il fondatore ha chiesto e nient'altro: **Salva** in campitura lime, **Salva
+e aggiungi nuovo** in tratto.
+
+«Salva e aggiungi nuovo» svuota quello che cambia da uno scontrino all'altro —
+titolo, importo, categoria — e **tiene quello che di solito non cambia**: il
+giorno che stai registrando e chi ha pagato per chi. Torna al passo 1, mette il
+fuoco sul titolo e lo annuncia. Chi registra tre scontrini di sabato sera non
+deve ridire tre volte che è sabato.
+
+## Tre difetti di correttezza, corretti e dichiarati
+
+Come nei giri precedenti: se è rottura o è aritmetica, si corregge e si scrive.
+
+**1. Il pulsante si abilitava prima del server.** Il server richiede un titolo di
+almeno due caratteri; il pannello si accontentava di uno, e non guardava affatto
+la data. Era possibile vedere un pulsante attivo e ricevere subito dopo un errore
+prevedibile. È lo stesso difetto già corretto sul form completo, e adesso le due
+soglie coincidono. Non ho aggiunto nessuna regola: ho fatto in modo che il
+pulsante mostrasse prima quella che c'era già. La stessa soglia governa
+«Prossimo», che è il motivo per cui i requisiti si scoprono al passo 1 invece
+che alla fine.
+
+**2. Il secondo salvataggio consecutivo non sarebbe stato gestito.** Il pannello
+riconosceva l'esito di una server action con un flag che si azzerava solo quando
+lo stato tornava «non riuscito». Finché non c'era «Salva e aggiungi nuovo» il
+difetto non era raggiungibile — si salvava una volta e il pannello si chiudeva.
+Con due salvataggi di fila, il secondo esito sarebbe stato ignorato: niente
+toast, niente svuotamento, niente annulla. Adesso il riconoscimento è
+sull'identità dell'oggetto di stato, che la action produce nuovo ogni volta.
+
+**3. Testo italiano scritto a mano in un componente tradotto.** Le due voci
+dell'intento e la spiegazione di «Pagata insieme» erano stringhe fisse nel
+codice: in inglese restavano in italiano. Adesso passano da `src/lib/i18n` e
+riusano le chiavi che il form completo aveva già (`entryForm.spentIntent`,
+`entryForm.jointIntent`, `entryForm.jointPaymentInfo`). Le chiavi nuove di
+questo giro sono in `it.ts`, `en.ts` e `types.ts`; quelle del confronto uscito
+dal pannello sono state tolte da tutte e tre.
+
+**Il salvataggio non l'ho toccato.** I campi inviati sono gli stessi di prima e
+nello stesso modo: `mode`, `savingContext`, `paymentMode`, `amountSpent`, `date`
+nascosti; `title` sull'input; `categoryId` dal selettore; nel privato
+`paidByUserId` e `beneficiaryUserIds` nascosti; nel condiviso a pagatore singolo
+quelli che rende `EntryPeopleFields`; con «Pagata insieme» nessuno dei due, come
+prima. L'unica differenza è che `comparisonAmount` non parte più, perché il
+confronto non si registra più da qui.
+
+## La tastiera
+
+Il pannello è incollato al bordo basso, e una tastiera che si apre gli finisce
+sopra: è il modo classico in cui un pulsante di avanzamento sparisce proprio
+mentre si scrive. Il pannello adesso legge `visualViewport` — l'unica misura che
+tutti i browser mobili aggiornano davvero — e si alza di quanto la tastiera
+copre, riducendo insieme la propria altezza massima. Dove `visualViewport` non
+esiste l'offset resta zero e il comportamento è quello di prima.
+
+Sull'ordine dei due pulsanti: **il primario sta sopra**. Il pollice arriva più
+comodo su quello in basso, ma «Salva e aggiungi nuovo» è la scelta che si prende
+consapevolmente, e metterla dove il dito cade da solo è il modo di farla premere
+per sbaglio. Fra ergonomia e conseguenza, ho scelto la conseguenza.
+
+## Come l'ho verificato, e cosa non sono riuscito a verificare
+
+Questa parte va letta prima di fidarsi delle schermate, perché in questo giro il
+banco di prova ha combattuto.
+
+**Verde:** `npm run lint`, `npm run typecheck`, `npm run test` (565 test),
+`npm run build`. In più `e2e/entry-money-flow.spec.ts` e `e2e/a11y.spec.ts`, 9
+su 9 — la prima esercita `/entries/new`, cioè la variante `inset` di
+`EntryPeopleFields` che ho toccato: le due varianti preesistenti rendono lo
+stesso markup di prima, la terza (`quick`) è nuova e non le attraversa.
+
+**Le schermate:** il pannello dal vivo, in `next dev`, **non si apre in questo
+ambiente**, per una ragione che ho misurato e che non è mia (vedi sotto). Per
+guardarlo comunque ho montato un banco di prova statico: la CSS vera compilata
+dal `build` di produzione, i token veri dei due temi, il carattere vero, e il
+markup del pannello trascritto dal componente. Non prova il comportamento — i
+passi, il fuoco, la tastiera — ma prova quello che dovevo vedere: composizione,
+larghezze, ritmo, contrasto, e se qualcosa si tronca. Dieci schermate a 360, 390
+e 430px nei due temi, in condiviso e in privato, con e senza suggerimento, con
+«Ho speso» e con «Pagata insieme». Nessun troncamento, nessuno scorrimento
+orizzontale, altezze da 349 a 509px. **Ed è lì che ho trovato le due lastre
+bianche di «Vale per»**, che leggendo il codice erano una riga come le altre.
+
+Il fatto che il banco sia stato necessario è la ragione per cui le note più
+sotto sono aperte: sono le cose che solo il pannello vivo può smentire.
+
+## Due cose rotte che ho trovato e non ho sistemato
+
+Non sono di direzione artistica e non le ho toccate, ma la seconda è seria e
+riguarda tutti i giri futuri, non solo questo.
+
+- **In `next dev` l'app non completa l'idratazione.** Lo splash resta, la classe
+  `nlc-splash-pending` non viene mai tolta, e con lei
+  `body > :not(#nlc-splash-shell)` resta a `visibility: hidden`. Verificato su
+  `master` con le mie modifiche riposte: precede il mio lavoro. Le rotte
+  dinamiche (`/entries/new`) si idratano, quelle in streaming (`/`, `/entries`,
+  `/stats`) no, e a larghezza mobile non si idrata nemmeno la prima; i componenti
+  caricati con `next/dynamic({ ssr: false })` — cioè proprio l'aggiunta rapida —
+  restano al loro segnaposto. In produzione non succede: lì lo splash se ne va in
+  un secondo. Non ho la diagnosi, ho le condizioni.
+- **La suite `e2e/a11y.spec.ts` è verde per la ragione sbagliata.** Nelle sue
+  stesse condizioni (390px, movimento ridotto, `networkidle` più 400ms) ho
+  misurato le tre rotte che analizza: `main` a `visibility: hidden` e **un
+  carattere di testo visibile in tutta la pagina**. Axe non trova violazioni
+  perché non c'è niente da guardare. È l'ennesima volta, in questo documento, che
+  un semaforo verde non dice quello che sembra dire, ed è la più costosa: è il
+  semaforo su cui ci siamo appoggiati per scrivere «zero violazioni» in più giri
+  di lavoro. Finché l'idratazione in dev non torna, quel numero va riportato con
+  la stessa cautela con cui riportiamo gli `incomplete` di axe.
+
+## Cosa ho deliberatamente non fatto
+
+- **Nessun preset, in nessuna forma.** Non ho reintrodotto scorciatoie, ultimi
+  movimenti, «ripeti l'ultimo» né suggerimenti di titolo: il pannello si è
+  alleggerito togliendoli e non è il posto dove rimetterli sotto un altro nome.
+- **Nessun campo nuovo e nessuna metrica nuova.** La nota resta al form
+  completo, dove c'era; non ho aggiunto totali, anteprime del saldo, contatori
+  né riepiloghi. Il pannello registra una spesa: non commenta.
+- **Nessun riferimento a spesa evitata o impatto netto**, e il confronto è
+  uscito senza lasciare tracce di sé nell'interfaccia — nessun «aggiungi
+  confronto» disattivato, nessuna spiegazione di dove è andato. Chi lo cerca
+  trova il form completo dove è sempre stato.
+- **Non ho toccato le due varianti esistenti di `EntryPeopleFields`.** La terza è
+  nuova e vive accanto alle altre; `default` e `inset` rendono lo stesso markup
+  di prima, riga per riga.
+- **Non ho toccato il form completo**, né l'intento «confronto» che ci vive.
+- **Nessun materiale nuovo.** Una lastra piatta, un incasso per i controlli, i
+  filetti. Niente vetro dentro un pannello che è già una superficie.
+- **Nessuna dipendenza nuova.** CSS, SVG inline e lucide.
+
+## Dove voglio un occhio umano
+
+29. **La tastiera vera, che è la nota che mi sta più a cuore.** La correzione con
+    `visualViewport` è ragionata e misurata su desktop, dove la tastiera non
+    esiste: su iOS e su Android il comportamento di `position: fixed` durante
+    l'apertura della tastiera è notoriamente diverso fra browser. Va guardato con
+    un dito vero: che i due pulsanti restino visibili, che il pannello non
+    rimbalzi alla chiusura, e che passando dal titolo all'importo non ci sia uno
+    scatto. È la stessa nota che il form completo ha aperto al punto 27, e
+    andrebbero guardate insieme nella stessa mezz'ora.
+30. **La cella della categoria a 360px.** Il nome ha circa ottantotto pixel prima
+    di troncarsi, cioè undici o dodici caratteri: «Abbonamenti» entra per un
+    soffio, una categoria personalizzata più lunga no. Ho preferito dare quei
+    pixel all'importo, che è il dato, invece che al nome, che è già ripetuto
+    dall'icona colorata della sua famiglia. Se in uso reale le categorie lunghe
+    sono molte, la proporzione della riga è un numero solo da girare
+    (`1fr / 1px / 1.05fr`).
+31. **I nomi lunghi in «Vale per».** Stessa aritmetica: con due membri ogni chip
+    ha una sessantina di pixel per il nome dopo la spunta. «Marian» e «Sara»
+    stanno larghi; un nome da dodici caratteri si tronca. Sopra i due membri il
+    gruppo va a capo sotto l'etichetta e il problema non si pone — ma sopra i due
+    membri questa app, oggi, non va.
+32. **Il salto da 349 a 509 pixel fra i due passi**, che l'animazione dell'altezza
+    rende continuo ma non piccolo: il bordo alto del pannello si alza di
+    centosessanta pixel mentre il contenuto scorre di lato. Sul banco di prova
+    non posso vederlo muoversi. Se dal vivo risultasse irrequieto, la strada non
+    è bloccare l'altezza sul massimo dei due — quello riporta il vuoto sotto il
+    passo corto — ma accorciare la scivolata e allungare l'altezza, così il
+    movimento verticale finisce dopo quello orizzontale invece che insieme.
+33. **La riga della tipologia di pagamento senza etichetta a sinistra**, unica
+    fra le quattro del passo 2 a cominciare dal margine. Per me è giusta —
+    quelle due parole sono la domanda — ma è anche l'unico punto in cui il ritmo
+    della lastra si interrompe, e su una schermata che si guarda per mezzo
+    secondo un ritmo interrotto può leggersi come un'etichetta dimenticata.
+34. **«Salva» sopra e «Salva e aggiungi nuovo» sotto.** L'ho argomentato — il
+    pollice cade sul basso, e la scelta consapevole non va messa dove il dito
+    arriva da solo — ma è esattamente il genere di decisione che l'uso vero
+    ribalta in una settimana. Se chi registra la spesa della settimana preme
+    dieci volte il secondo pulsante, l'ordine è sbagliato e va invertito.
+
+## Nota tecnica per chi tocca questo codice
+
+I due gruppi stanno **tutti e due nel form**, sempre, anche quando uno è fuori
+schermo: è quello che permette al passo 1 di essere ancora inviato mentre si
+guarda il passo 2. Il gruppo non attivo è `inert` (il fuoco non ci entra) ma non
+è smontato: se qualcuno un giorno lo smonta per «risparmiare», i campi del primo
+passo smettono di partire e il salvataggio si rompe in silenzio.
+
+L'altezza della scatola dei passi è misurata con un `ResizeObserver` sul gruppo
+attivo e scritta in `style`. Non è una raffinatezza: con i gruppi in
+`position: absolute` la scatola non ha altezza propria. Se si toglie la misura,
+il pannello collassa.
+
+`EntryPeopleFields` ha ora tre varianti. `default` e `inset` sono del form
+completo e non vanno toccate da qui; `quick` è di questo pannello, e la
+differenza non è cosmetica: le prime due impilano etichetta e controllo, la
+terza li accosta. Chi aggiunge una variante nuova aggiunga un ramo, non una
+condizione dentro i rami esistenti — è il motivo per cui questi tre non si sono
+ancora rotti a vicenda.
+
+`ExpenseSuggestionCard` non ha più `onApply` ma `href`: il confronto non si
+applica più sul posto perché non abita più qui. Se un giorno il confronto
+tornasse nell'aggiunta rapida, il componente va rimesso ad azione — non
+duplicato.
+
+Il pannello prende l'offset della tastiera da `visualViewport` e lo pubblica come
+`--nlc-kb` sul contenuto del dialogo, usato sia dal `bottom` sia dall'altezza
+massima. Le due cose vanno insieme: alzare il pannello senza accorciarlo lo fa
+uscire dallo schermo dall'alto.
+
+Le costanti `QUICK_ADD_MODE` e `QUICK_ADD_SAVING_CONTEXT` sono i due valori che
+questo pannello manda sempre. Sono costanti e non stato perché non c'è più niente
+che le faccia cambiare: se tornassero a essere stato, tornerebbe anche il
+confronto.

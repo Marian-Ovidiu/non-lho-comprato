@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Sparkles } from "lucide-react";
+import Link from "next/link";
+import { ArrowUpRight, Sparkles } from "lucide-react";
 
 import { Label, Mono } from "@/components/crafted";
 import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
@@ -11,51 +12,61 @@ import { cn } from "@/lib/utils";
 
 type ExpenseSuggestionCardProps = {
   suggestion: ExpenseSuggestionResult;
-  onApply: () => void;
+  /** Dove si va per registrare davvero il confronto: il form completo. */
+  href: string;
+  onNavigate?: () => void;
   className?: string;
 };
 
+/**
+ * Il suggerimento non è più un'azione, è una memoria.
+ *
+ * Finché il confronto stava nell'aggiunta rapida, questo blocco poteva
+ * applicarlo sul posto. Adesso il confronto vive solo nel form completo, e un
+ * pulsante che dicesse "usa suggerimento" prometterebbe una cosa che questo
+ * pannello non sa più fare. Quindi la card dice quello che sa — quanto spendi
+ * di solito per questa cosa — mentre stai scrivendo l'importo, che è il momento
+ * in cui quel numero serve; e il gesto per trasformarlo in un confronto porta
+ * dove il confronto abita, con la bozza già in tasca.
+ */
 export function ExpenseSuggestionCard({
   suggestion,
-  onApply,
+  href,
+  onNavigate,
   className,
 }: ExpenseSuggestionCardProps) {
   const { formatCraftedCompact } = useLocaleFormatters();
   const currencySymbol = useCurrencySymbol();
   const t = useTranslations();
+
   return (
-    <div className={cn("border-y border-line py-3.5", className)}>
-      <div className="flex items-center gap-2">
-        <Sparkles className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
-        <Label>{t.expenseSuggestion.found}</Label>
-      </div>
+    <div className={cn("flex items-center gap-3", className)}>
+      <Sparkles className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
 
-      <p className="mt-2 text-[15px] font-[450]">{suggestion.label}</p>
+      <p className="min-w-0 flex-1 text-[12.5px] leading-4 text-ink-3">
+        <Label className="tracking-[0.1em]">{t.expenseSuggestion.usually}</Label>{" "}
+        <Mono className="text-[13px] text-foreground">
+          {formatCraftedCompact(suggestion.alternativeCost)}
+          {currencySymbol}
+        </Mono>{" "}
+        · {suggestion.evidenceCount}{" "}
+        {suggestion.evidenceCount === 1
+          ? t.expenseSuggestion.similarSingular
+          : t.expenseSuggestion.similarPlural}
+      </p>
 
-      <div className="mt-1.5 flex items-center justify-between gap-3">
-        <span className="min-w-0 text-[13px] text-ink-3">
-          <Mono className="text-muted-foreground">
-            {formatCraftedCompact(suggestion.alternativeCost)}{currencySymbol}
-          </Mono>{" "}
-          · da {suggestion.evidenceCount}{" "}
-          {suggestion.evidenceCount === 1
-            ? t.expenseSuggestion.similarSingular
-            : t.expenseSuggestion.similarPlural}
-        </span>
-
-        <button
-          type="button"
-          onClick={onApply}
-          aria-label={t.expenseSuggestion.apply}
-          className={cn(
-            "inline-flex shrink-0 items-center gap-1.5 rounded-full border border-accent/40 px-3.5 py-1.5",
-            "text-[12.5px] font-medium text-accent transition-colors hover:bg-accent/10 active:scale-[0.98]",
-          )}
-        >
-          <Check className="size-3.5" aria-hidden="true" />
-          {t.expenseSuggestion.addComparison}
-        </button>
-      </div>
+      <Link
+        href={href}
+        onClick={onNavigate}
+        aria-label={t.expenseSuggestion.compareInFullForm}
+        className={cn(
+          "inline-flex size-9 shrink-0 items-center justify-center rounded-full",
+          "text-accent outline-none transition-colors hover:bg-accent/10",
+          "focus-visible:ring-2 focus-visible:ring-ring/50",
+        )}
+      >
+        <ArrowUpRight className="size-4" aria-hidden="true" />
+      </Link>
     </div>
   );
 }
