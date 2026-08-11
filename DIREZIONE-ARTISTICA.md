@@ -1554,3 +1554,117 @@ rimangono utili con sole spese reali. Non le conto per gonfiare il catalogo.
     altro contenuto. È coerente con la decisione già presa per la barra; qui è
     più evidente perché la campitura è forte. Va giudicato con il dito, non su
     una schermata full-page che congela la barra a metà documento.
+
+---
+
+# `/entries/new`: il gesto principale non si nasconde in fondo al modulo
+
+Questa pagina aveva già una buona gerarchia per l'importo e le categorie, ma
+trattava le scelte secondarie come due link di servizio centrati: un chevron,
+una frase grigia e nessun peso strutturale. «Ho speso e voglio confrontarlo» e
+«Data, nota, chi paga e vale per» erano disclosure nel comportamento, non nel
+disegno. La CTA, invece, compariva soltanto dopo aver attraversato tutto il
+modulo. Su mobile significava compilare i requisiti senza poter vedere se il
+form fosse già pronto a essere salvato.
+
+La tesi di questo giro è: **il modulo è un documento, non una pila di widget; la
+CTA è il suo gesto, non il suo ultimo campo.**
+
+## Due disclosure, una grammatica
+
+Confronto e dettagli adesso condividono la stessa riga: icona funzionale in un
+incasso opaco, titolo stabile a sinistra, chevron dentro un controllo circolare
+a destra. Non diventano card. I filetti appartengono alla riga; quando una
+sezione si apre, il contenuto entra in un unico incasso piatto
+`--surface-muted`, con separatori interni e campi opachi. È la regola già
+stabilita per la carta: un solo perimetro, nessun vetro annidato, nessuna ombra
+che simuli profondità dove serve soltanto ordine.
+
+La riga del confronto conserva una seconda riga di testo perché spiega *quando*
+usarlo; la disclosure dei dettagli non la inventa. In un workspace privato il
+titolo è «Data e nota»: continuare a promettere «chi paga e vale per» dopo aver
+reso quelle due scelte implicite sarebbe stato un difetto di copy, non una
+sfumatura. Nel workspace condiviso pagatore e beneficiari restano, ma smettono
+di sembrare due componenti presi da un'altra pagina: il pagatore è una riga con
+selettore incassato, i beneficiari un segmentato neutro. Il lime non dice mai
+«selezionato»; resta alla CTA.
+
+## Le categorie scorrono, la barra no
+
+La striscia mantiene lo scorrimento orizzontale, il gesto touch, la rotella e la
+navigazione da tastiera. È sparita soltanto la scrollbar nativa, che su una riga
+di icone alta pochi pixel diventava il segno più pesante dell'intero blocco.
+Non è stato mascherato un overflow della pagina: a 390px la striscia misura
+350px su 1411px di contenuto, mentre il documento resta esattamente 390px su
+390px. Il contenuto continua a dichiarare che prosegue perché l'ultima categoria
+esce dal margine; non serve una rotaia per dirlo una seconda volta.
+
+## La CTA galleggia finché serve, poi appartiene alla pagina
+
+«Salva movimento» resta sopra la bottom bar durante lo scroll. Quando il suo
+alloggiamento naturale arriva alla stessa quota, la CTA non salta: resta nello
+stesso punto e perde l'ombra. La profondità fa un lavoro solo e leggibile — prima
+il controllo è sopra il documento, alla fine è il fondo del documento — poi si
+ferma. Con `prefers-reduced-motion` non c'è nessuna transizione aggiuntiva; anche
+i chevron rinunciano alla rotazione animata.
+
+L'implementazione ha richiesto una scelta meno ovvia. `PullToRefresh` porta una
+trasformazione permanente e quindi crea un contesto di impilamento: una CTA
+`fixed` al suo interno resta sotto il velo della bottom bar qualunque `z-index`
+le si assegni. Il primo giro in browser lo ha mostrato come una falsa sfumatura
+scura sulla metà inferiore del lime. La CTA viene quindi resa in un portal sul
+piano del chrome, con `z-index: 41` sopra la barra a 40; resta collegata al form
+tramite il suo `id`. Non è una nuova barra e non porta uno scrim proprio. A
+390×844 misura 350×54px, sta a y=686 sia flottante sia agganciata e lascia 22px
+prima della navigazione.
+
+Il pulsante di feedback globale non compare su `/entries/new`: occupava la
+stessa quota e avrebbe sovrapposto un secondo gesto circolare alla CTA. Non è
+stato rimosso dall'app, soltanto dalla rotta in cui il compito primario è già
+persistente.
+
+## Un requisito di salvataggio che prima non coincideva
+
+Il server richiede un titolo di almeno due caratteri e una data valida, ma il
+pulsante si abilitava con un solo carattere e non controllava la data. Era
+possibile vedere una CTA attiva e ricevere subito dopo un errore prevedibile.
+Ora lo stato disabilitato e la validazione reale coincidono: titolo di almeno
+due caratteri, categoria, importo positivo, data valida, membri disponibili e,
+quando il confronto è aperto, importo di confronto valido. È una correzione di
+coerenza, non una nuova regola di prodotto.
+
+## Cosa ho deliberatamente non fatto
+
+- **Non ho ridisegnato modifica e aggiunta rapida.** Condividono parte della
+  logica, non la stessa composizione; estendere questa forma senza guardarle
+  sarebbe uniformità meccanica.
+- **Non ho cambiato azioni, valori predefiniti o semantica del confronto.** Le
+  disclosure mostrano gli stessi campi e producono gli stessi dati.
+- **Non ho aggiunto una barra o un terzo materiale.** La CTA è una campitura
+  d'azione; i pannelli aperti sono incassi piatti.
+- **Non ho animato l'apertura dei pannelli.** Il contenuto compare dove il
+  chevron dice che comparirà; altro movimento non spiegherebbe niente.
+- **Non ho usato il colore per gli stati dei dettagli.** Neutro per selezione,
+  lime esclusivamente per l'azione di salvataggio.
+
+Verificato in browser a 360px in workspace condiviso e a 390px in workspace
+privato, tema chiaro e scuro, con movimento ridotto. Nessun overflow del
+documento, scrollbar della striscia assente, CTA disabilitata prima dei
+requisiti e attiva dopo, campi persona assenti nel privato e presenti nel
+condiviso. Axe non trova violazioni WCAG 2 A/AA serious o critical nei due temi;
+i testi secondari sui nuovi incassi usano `--muted-foreground`, già misurato a
+6,60:1 su `--surface-muted` in tema chiaro.
+
+## Dove voglio un occhio umano
+
+27. **La tastiera virtuale con la CTA persistente.** Su Chromium desktop la
+    geometria è stabile; su iOS e Android la visual viewport cambia quando si
+    apre la tastiera e i browser non trattano tutti `position: fixed` allo stesso
+    modo. Voglio verificare che la CTA salga senza coprire il campo attivo e che
+    non rimbalzi quando la tastiera si chiude.
+28. **L'occlusione transitoria del pannello aperto.** Una CTA persistente, per
+    definizione, passa davanti al contenuto mentre si scorre. La riserva finale
+    garantisce che a pagina ferma non copra niente, ma durante la compilazione
+    può attraversare la nota. A me sembra il costo giusto per tenere sempre
+    visibile lo stato di salvataggio; va giudicato con il pollice, non con una
+    schermata intera.

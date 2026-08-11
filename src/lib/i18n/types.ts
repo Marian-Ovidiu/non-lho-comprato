@@ -442,6 +442,7 @@ export type Translations = {
     comparisonHelp: string;
     largeComparisonWarning: string;
     advancedToggle: string;
+    advancedPrivateToggle: string;
     advancedHide: string;
     dateLabel: string;
     noteLabel: string;

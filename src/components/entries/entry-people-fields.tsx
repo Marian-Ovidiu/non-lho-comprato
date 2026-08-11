@@ -22,6 +22,7 @@ import {
 
 type EntryPeopleFieldsProps = {
   members: WorkspaceMemberOption[];
+  variant?: "default" | "inset";
   paidByUserId?: string | null;
   beneficiaryUserIds?: string[];
   errors?: Record<string, string>;
@@ -43,6 +44,7 @@ function getMemberGridClass(count: number) {
 
 export function EntryPeopleFields({
   members,
+  variant = "default",
   paidByUserId,
   beneficiaryUserIds,
   errors,
@@ -98,40 +100,79 @@ export function EntryPeopleFields({
   }
 
   return (
-    <div className="grid gap-4">
+    <div
+      className={cn(
+        "grid",
+        variant === "inset" ? "divide-y divide-line" : "gap-4",
+      )}
+    >
       <input type="hidden" name="beneficiariesMode" value="explicit" />
 
-      <div className="space-y-2">
-        <Label htmlFor="paidByUserId">{t.entryForm.paidByLabel}</Label>
-        <Select
-          name="paidByUserId"
-          value={selectedPaidBy}
-          onValueChange={(value) => onPaidByUserIdChange?.(value)}
-          required
+      <div className={cn(variant === "inset" ? "px-4 py-3" : "space-y-2")}>
+        <div
+          className={cn(
+            variant === "inset" &&
+              "grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-center gap-4",
+          )}
         >
-          <SelectTrigger
-            id="paidByUserId"
-            className="w-full"
-            aria-invalid={Boolean(errors?.paidByUserId)}
+          <Label
+            htmlFor="paidByUserId"
+            className={cn(
+              variant === "inset" &&
+                "font-num text-[10px] font-normal uppercase tracking-[0.18em] text-muted-foreground",
+            )}
           >
-            <SelectValue placeholder={t.entryForm.paidByPlaceholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {sortedMembers.map((member) => (
-              <SelectItem key={member.userId} value={member.userId}>
-                {member.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+            {t.entryForm.paidByLabel}
+          </Label>
+          <Select
+            name="paidByUserId"
+            value={selectedPaidBy}
+            onValueChange={(value) => onPaidByUserIdChange?.(value)}
+            required
+          >
+            <SelectTrigger
+              id="paidByUserId"
+              className={cn(
+                "w-full",
+                variant === "inset" &&
+                  "h-11 border-0 bg-background px-3 shadow-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              )}
+              aria-invalid={Boolean(errors?.paidByUserId)}
+            >
+              <SelectValue placeholder={t.entryForm.paidByPlaceholder} />
+            </SelectTrigger>
+            <SelectContent>
+              {sortedMembers.map((member) => (
+                <SelectItem key={member.userId} value={member.userId}>
+                  {member.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <FormFieldError message={errors?.paidByUserId} className="text-sm" />
       </div>
 
-      <fieldset className="space-y-3">
-        <legend className="text-sm font-medium text-foreground">
+      <fieldset
+        className={cn("space-y-3", variant === "inset" && "px-4 py-3")}
+      >
+        <legend
+          className={cn(
+            "text-sm font-medium text-foreground",
+            variant === "inset" &&
+              "font-num text-[10px] font-normal uppercase tracking-[0.18em] text-muted-foreground",
+          )}
+        >
           {t.entryForm.appliesToLabel}
         </legend>
-        <div className={cn("grid gap-2", gridClass)}>
+        <div
+          className={cn(
+            "grid gap-2",
+            gridClass,
+            variant === "inset" &&
+              "rounded-[var(--r-control)] bg-background p-1",
+          )}
+        >
           {sortedMembers.map((member) => {
             const id = `beneficiary-${member.userId}`;
 
@@ -155,6 +196,11 @@ export function EntryPeopleFields({
                     "hover:-translate-y-px hover:bg-surface-muted hover:text-foreground active:translate-y-px active:opacity-95",
                     "peer-focus-visible:outline-none peer-focus-visible:ring-2 peer-focus-visible:ring-ring/50",
                     "peer-checked:border-foreground/15 peer-checked:bg-foreground peer-checked:text-background peer-checked:shadow-[0_8px_18px_-14px_rgba(0,0,0,0.6)]",
+                    variant === "inset" && [
+                      "rounded-[calc(var(--r-control)-4px)] border-0 bg-transparent shadow-none",
+                      "hover:translate-y-0 hover:bg-surface-muted active:translate-y-0",
+                      "peer-checked:bg-foreground peer-checked:text-background peer-checked:shadow-none",
+                    ],
                   )}
                 >
                   <span className="truncate">{member.label}</span>

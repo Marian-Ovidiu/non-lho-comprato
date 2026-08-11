@@ -446,6 +446,7 @@ export const it: Translations = {
     comparisonHelp: "Usalo quando hai scelto un'opzione più economica.",
     largeComparisonWarning: "Questo confronto pesa molto sulle statistiche.",
     advancedToggle: "Data, nota, chi paga e vale per",
+    advancedPrivateToggle: "Data e nota",
     advancedHide: "Nascondi dettagli",
     dateLabel: "Data",
     noteLabel: "Nota",

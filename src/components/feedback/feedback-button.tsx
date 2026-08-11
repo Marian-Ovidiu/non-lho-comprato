@@ -78,6 +78,10 @@ export function FeedbackButton() {
     }
   }, [state.success]);
 
+  if (pathname === "/entries/new") {
+    return null;
+  }
+
   return (
     <Dialog
       open={open}

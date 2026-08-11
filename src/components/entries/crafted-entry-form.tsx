@@ -11,11 +11,14 @@ import {
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   ArrowRight,
   ChevronDown,
+  GitCompareArrows,
   Loader2,
   Receipt,
+  SlidersHorizontal,
   Users2,
 } from "lucide-react";
 
@@ -35,7 +38,10 @@ import type {
   EntryMode,
   EntrySavingContext,
 } from "@/src/lib/entry-domain";
-import { getBrowserTodayDateKey } from "@/src/lib/workspace-dates";
+import {
+  getBrowserTodayDateKey,
+  isDateKey,
+} from "@/src/lib/workspace-dates";
 import { cn } from "@/lib/utils";
 import type { WorkspaceMemberOption } from "@/src/lib/workspace-members";
 import { useStreakCelebrationTrigger } from "@/src/hooks/use-streak-celebration-trigger";
@@ -202,6 +208,8 @@ function CraftedEntryFormFields({
   const currencySymbol = useCurrencySymbol();
   const t = useTranslations();
   const formRef = useRef<HTMLFormElement>(null);
+  const ctaDockRef = useRef<HTMLDivElement>(null);
+  const ctaFloatRef = useRef<HTMLDivElement>(null);
   const didHandleSuccessRef = useRef(false);
   const redirectTimerRef = useRef<number | null>(null);
   const successTimerRef = useRef<number | null>(null);
@@ -213,6 +221,8 @@ function CraftedEntryFormFields({
     initialValues?.beneficiaryUserIds ?? initialBeneficiaryUserIds;
 
   const [successStage, setSuccessStage] = useState<"idle" | "confirming" | "closing">("idle");
+  const [isCtaDocked, setIsCtaDocked] = useState(false);
+  const [isCtaPortalReady, setIsCtaPortalReady] = useState(false);
   const [mode, setMode] = useState<EntryMode>("spent");
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [categoryId, setCategoryId] = useState(initialValues?.categoryId ?? "");
@@ -301,6 +311,62 @@ function CraftedEntryFormFields({
     };
   }, []);
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- il portal può esistere solo dopo l'hydration
+    setIsCtaPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isCtaPortalReady) {
+      return;
+    }
+
+    let frame: number | null = null;
+    let resizeObserver: ResizeObserver | null = null;
+
+    const updateCtaPosition = () => {
+      if (frame !== null) {
+        return;
+      }
+
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        const dock = ctaDockRef.current;
+        const floating = ctaFloatRef.current;
+
+        if (!dock || !floating) {
+          return;
+        }
+
+        const shouldDock =
+          dock.getBoundingClientRect().top <=
+          floating.getBoundingClientRect().top + 1;
+
+        setIsCtaDocked((current) =>
+          current === shouldDock ? current : shouldDock,
+        );
+      });
+    };
+
+    updateCtaPosition();
+    window.addEventListener("scroll", updateCtaPosition, { passive: true });
+    window.addEventListener("resize", updateCtaPosition);
+    if (formRef.current && typeof ResizeObserver !== "undefined") {
+      resizeObserver = new ResizeObserver(updateCtaPosition);
+      resizeObserver.observe(formRef.current);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", updateCtaPosition);
+      window.removeEventListener("resize", updateCtaPosition);
+      resizeObserver?.disconnect();
+
+      if (frame !== null) {
+        window.cancelAnimationFrame(frame);
+      }
+    };
+  }, [isCtaPortalReady]);
+
   const canUseJointPayment = workspaceKind === "shared" && members.length === 2;
   const effectivePaymentMode = canUseJointPayment ? paymentMode : "single_payer";
   const savingContext: EntrySavingContext = showComparison ? "comparison" : "none";
@@ -317,10 +383,11 @@ function CraftedEntryFormFields({
     ? toHiddenMoneyValue(comparisonInput)
     : "";
   const canSubmit =
-    title.trim().length > 0 &&
+    title.trim().length >= 2 &&
     categoryId.length > 0 &&
     members.length > 0 &&
     categories.length > 0 &&
+    isDateKey(date) &&
     !pending &&
     hiddenAmountSpent !== "" &&
     hiddenAmountSpent !== "0.00" &&
@@ -359,14 +426,48 @@ function CraftedEntryFormFields({
     });
   }
 
+  function renderSubmitButton(floating: boolean, formId?: string) {
+    return (
+      <button
+        type="submit"
+        form={formId}
+        disabled={!canSubmit}
+        className={cn(
+          "flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] text-[15.5px] font-bold",
+          "transition-[opacity,transform,background-color,box-shadow] duration-200 motion-reduce:transition-none",
+          canSubmit
+            ? "bg-accent text-accent-foreground active:scale-[0.98] active:opacity-90"
+            : "bg-surface-muted text-muted-foreground",
+          floating && "shadow-[var(--shadow-pop)]",
+        )}
+      >
+        {pending ? (
+          <>
+            <Loader2
+              className="size-4 animate-spin motion-reduce:animate-none"
+              aria-hidden="true"
+            />
+            {t.entryForm.savingButton}
+          </>
+        ) : (
+          <>
+            {t.entryForm.saveButton}
+            <ArrowRight className="size-4" aria-hidden="true" />
+          </>
+        )}
+      </button>
+    );
+  }
+
   return (
     <>
       {overlay}
       <form
+        id="new-entry-form"
         ref={formRef}
         action={formAction}
         className={cn(
-          "-mx-4 flex min-h-[100dvh] flex-col bg-background sm:-mx-6 lg:-mx-8",
+          "-mx-4 -mb-[calc(var(--nlc-chrome-bottom)-6.5rem)] flex min-h-[100dvh] flex-col bg-background sm:-mx-6 md:mb-0 lg:-mx-8",
           "transition-[opacity,transform,filter] duration-200 ease-out",
           successStage === "closing" && "translate-y-1 opacity-0 blur-[1px]",
         )}
@@ -514,7 +615,11 @@ function CraftedEntryFormFields({
         </section>
 
         <div className="px-5 pb-2">
-          <div className="flex gap-5 overflow-x-auto pb-1" role="group" aria-label={t.entryForm.categoryLabel}>
+          <div
+            className="flex gap-5 overflow-x-auto overscroll-x-contain pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            role="group"
+            aria-label={t.entryForm.categoryLabel}
+          >
             {categories.map((cat) => {
               const selected = categoryId === cat.id;
 
@@ -590,26 +695,46 @@ function CraftedEntryFormFields({
             <FormFieldError message={primaryFieldError} className="mt-2 text-xs" />
           </div>
 
-          <>
+          <div className="space-y-3">
             <button
               type="button"
               onClick={toggleComparison}
-              className="flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-foreground"
+              className="group flex min-h-14 w-full items-center gap-3 border-y border-line py-2.5 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+              aria-expanded={showComparison}
+              aria-controls="entry-comparison-fields"
+              aria-label={
+                showComparison
+                  ? t.entryForm.hideComparison
+                  : t.entryForm.toggleComparison
+              }
             >
-              <ChevronDown
-                className={cn(
-                  "size-3.5 transition-transform duration-200",
-                  showComparison && "rotate-180",
-                )}
-                aria-hidden="true"
-              />
-              {showComparison
-                ? t.entryForm.hideComparison
-                : t.entryForm.toggleComparison}
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-foreground">
+                <GitCompareArrows className="size-4" aria-hidden="true" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13.5px] font-semibold leading-5 text-foreground">
+                  {t.entryForm.toggleComparison}
+                </span>
+                <span className="block text-[11.5px] leading-4 text-muted-foreground">
+                  {t.entryForm.comparisonHelp}
+                </span>
+              </span>
+              <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted-foreground transition-colors group-hover:text-foreground">
+                <ChevronDown
+                  className={cn(
+                    "size-4 transition-transform duration-200 motion-reduce:transition-none",
+                    showComparison && "rotate-180",
+                  )}
+                  aria-hidden="true"
+                />
+              </span>
             </button>
 
             {showComparison ? (
-              <div className="border-y border-line py-[var(--sp-field-y)]">
+              <div
+                id="entry-comparison-fields"
+                className="rounded-[var(--r-card)] bg-surface-muted px-4 py-3"
+              >
                 <label className="flex items-center justify-between gap-4">
                   <input
                     type="text"
@@ -619,7 +744,7 @@ function CraftedEntryFormFields({
                       setComparisonInput(normalizeMoneyInput(event.target.value))
                     }
                     placeholder={t.entryForm.comparisonAmountPlaceholder}
-                    className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-ink-3/70"
+                    className="min-w-0 flex-1 bg-transparent font-num text-sm text-foreground outline-none placeholder:text-muted-foreground/75"
                     aria-invalid={Boolean(comparisonFieldError)}
                   />
                   <Label>{t.entryForm.comparisonAmountLabel}</Label>
@@ -635,43 +760,64 @@ function CraftedEntryFormFields({
                 />
               </div>
             ) : null}
-          </>
+          </div>
         </div>
 
-        <div className="px-5 pb-[calc(env(safe-area-inset-bottom)+6.5rem)] pt-1.5">
+        <div className="px-5 pb-0 pt-1.5">
           <button
             type="button"
             onClick={() => setShowAdvanced((value) => !value)}
-            className="mb-4 flex w-full items-center justify-center gap-1.5 text-[13px] text-ink-3 transition-colors hover:text-foreground"
+            className="group flex min-h-14 w-full items-center gap-3 border-y border-line py-2.5 text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+            aria-expanded={showAdvanced}
+            aria-controls="entry-advanced-fields"
+            aria-label={
+              showAdvanced
+                ? t.entryForm.advancedHide
+                : workspaceKind === "private"
+                  ? t.entryForm.advancedPrivateToggle
+                  : t.entryForm.advancedToggle
+            }
           >
-            <ChevronDown
-              className={cn(
-                "size-3.5 transition-transform duration-200",
-                showAdvanced && "rotate-180",
-              )}
-              aria-hidden="true"
-            />
-            {showAdvanced ? t.entryForm.advancedHide : t.entryForm.advancedToggle}
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-[var(--r-control)] bg-surface-muted text-foreground">
+              <SlidersHorizontal className="size-4" aria-hidden="true" />
+            </span>
+            <span className="min-w-0 flex-1 text-[13.5px] font-semibold leading-5 text-foreground">
+              {workspaceKind === "private"
+                ? t.entryForm.advancedPrivateToggle
+                : t.entryForm.advancedToggle}
+            </span>
+            <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-muted text-muted-foreground transition-colors group-hover:text-foreground">
+              <ChevronDown
+                className={cn(
+                  "size-4 transition-transform duration-200 motion-reduce:transition-none",
+                  showAdvanced && "rotate-180",
+                )}
+                aria-hidden="true"
+              />
+            </span>
           </button>
 
           {showAdvanced ? (
-            <div className="mb-5 space-y-4 border-t border-line pt-4">
-              <div className="space-y-2 border-b border-line pb-3">
-                <label htmlFor="entry-date" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">{t.entryForm.dateLabel}</label>
+            <div
+              id="entry-advanced-fields"
+              className="mt-3 overflow-hidden rounded-[var(--r-card)] bg-surface-muted"
+            >
+              <div className="grid grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] items-center gap-4 px-4 py-3">
+                <label htmlFor="entry-date" className="font-num text-[10px] font-normal uppercase tracking-[0.18em] text-muted-foreground">{t.entryForm.dateLabel}</label>
                 <input
                   id="entry-date"
                   type="date"
                   name="date"
                   value={date}
                   onChange={(event) => setDate(event.target.value)}
-                  className="w-full bg-transparent py-[var(--sp-stack-sm)] text-sm text-foreground outline-none"
+                  className="h-11 w-full rounded-[var(--r-control)] bg-background px-3 font-num text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
                   aria-describedby={state.errors?.date ? "entry-date-error" : undefined}
                 />
-                <FormFieldError id="entry-date-error" message={state.errors?.date} className="text-xs" />
+                <FormFieldError id="entry-date-error" message={state.errors?.date} className="col-span-2 text-xs" />
               </div>
 
-              <div className="space-y-2 border-b border-line pb-3">
-                <label htmlFor="entry-note" className="font-num text-[10px] font-normal uppercase tracking-[0.22em] text-ink-3">{t.entryForm.noteLabel}</label>
+              <div className="space-y-2 border-t border-line px-4 py-3">
+                <label htmlFor="entry-note" className="font-num text-[10px] font-normal uppercase tracking-[0.18em] text-muted-foreground">{t.entryForm.noteLabel}</label>
                 <textarea
                   id="entry-note"
                   name="note"
@@ -679,17 +825,18 @@ function CraftedEntryFormFields({
                   onChange={(event) => setNote(event.target.value)}
                   placeholder={t.entryForm.notePlaceholder}
                   rows={2}
-                  className="w-full resize-none bg-transparent py-[var(--sp-stack-sm)] text-sm text-foreground outline-none placeholder:text-ink-3/70"
+                  className="w-full resize-none rounded-[var(--r-control)] bg-background px-3 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground/75 focus-visible:ring-2 focus-visible:ring-ring/50"
                 />
               </div>
 
               {effectivePaymentMode === "joint_account" ? (
-                <div className="rounded-[var(--r-control)] border border-line bg-surface-muted/60 px-4 py-3 text-sm leading-6 text-ink-3">
+                <div className="border-t border-line px-4 py-3 text-sm leading-6 text-muted-foreground">
                   {t.entryForm.jointPaymentInfo}
                 </div>
               ) : workspaceKind === "shared" ? (
                 <EntryPeopleFields
                   members={members}
+                  variant="inset"
                   paidByUserId={paidByUserId}
                   beneficiaryUserIds={beneficiaryUserIds}
                   errors={state.errors}
@@ -706,33 +853,24 @@ function CraftedEntryFormFields({
             <input type="hidden" name="note" value={note} />
           ) : null}
 
-          <button
-            type="submit"
-            disabled={!canSubmit}
-            className={cn(
-              "flex h-[54px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] text-[15.5px] font-bold",
-              "transition-[opacity,transform,background-color] duration-200",
-              canSubmit
-                ? "bg-accent text-accent-foreground active:scale-[0.98] active:opacity-90"
-                : "bg-surface-muted text-ink-3",
-            )}
-          >
-            {pending ? (
-              <>
-                <Loader2
-                  className="size-4 animate-spin motion-reduce:animate-none"
-                  aria-hidden="true"
-                />
-                {t.entryForm.savingButton}
-              </>
-            ) : (
-              <>
-                {t.entryForm.saveButton}
-                <ArrowRight className="size-4" aria-hidden="true" />
-              </>
-            )}
-          </button>
+          <div ref={ctaDockRef} className="mt-5 h-[54px]">
+            {!isCtaPortalReady ? renderSubmitButton(false) : null}
+          </div>
         </div>
+
+        {isCtaPortalReady
+          ? createPortal(
+              <div
+                ref={ctaFloatRef}
+                className="pointer-events-none fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] z-[41] px-5 md:bottom-6"
+              >
+                <div className="pointer-events-auto mx-auto w-full max-w-5xl">
+                  {renderSubmitButton(!isCtaDocked, "new-entry-form")}
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
       </form>
     </>
   );

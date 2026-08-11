@@ -445,6 +445,7 @@ export const en: Translations = {
     comparisonHelp: "Use this when you went with the cheaper option.",
     largeComparisonWarning: "Heads up — this comparison will weigh heavily on your stats.",
     advancedToggle: "Date, note, who paid & who it's for",
+    advancedPrivateToggle: "Date and note",
     advancedHide: "Hide details",
     dateLabel: "Date",
     noteLabel: "Note",
