@@ -355,7 +355,7 @@ export const en: Translations = {
     patternLabel: "What is changing",
     patternDetail: "What your entries say about this month",
     monthlyReportLabel: "Monthly report",
-    monthlyReportDetail: "Monthly summary as PDF",
+    monthlyReportDetail: "Folded into statistics, with the period you pick",
     appSection: "Preferences",
     themeLabel: "Theme",
     inviteLabel: "Invite",
@@ -1170,7 +1170,9 @@ export const en: Translations = {
     spentIn: (name) => `spent on ${name}`,
     queenDetail: (pct, count) => `${pct}% of all entries, across ${count} ${count === 1 ? "entry" : "entries"}.`,
     queenNetImpact: (amount) => ` ${amount} net impact.`,
+    biggestExpensesLabel: "Biggest expenses",
     byCategoryLabel: "By category",
+    avgPerEntry: "Average per entry",
     avgMonthlySpent: "Avg. spend/month",
     activeDays: "Active days",
     habitsLabel: "Recurring",
@@ -1271,5 +1273,14 @@ export const en: Translations = {
     earlyAction: "Log an expense",
     footnote:
       "Only money that actually left the account. Recurring fixed costs stay out of the comparisons.",
+  },
+
+  monthlyReportFrozen: {
+    context: "The same numbers, in one place.",
+    title: "The report moved into Statistics",
+    description:
+      "It repeated data you already find there, where you pick the period instead of waiting for the month to end. The biggest expenses are still there, and there is a page that tells you what is changing in words.",
+    toStats: "Go to statistics",
+    toInsights: "What is changing",
   },
 };

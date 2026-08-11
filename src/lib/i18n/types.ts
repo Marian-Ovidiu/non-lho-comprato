@@ -1152,8 +1152,10 @@ export type Translations = {
     spentIn: (name: string) => string;
     queenDetail: (pct: number, count: number) => string;
     queenNetImpact: (amount: string) => string;
+    biggestExpensesLabel: string;
     byCategoryLabel: string;
     avgMonthlySpent: string;
+    avgPerEntry: string;
     activeDays: string;
     habitsLabel: string;
     disciplineRate: (pct: number) => string;
@@ -1246,5 +1248,13 @@ export type Translations = {
     earlyOneMonth: string;
     earlyAction: string;
     footnote: string;
+  };
+
+  monthlyReportFrozen: {
+    context: string;
+    title: string;
+    description: string;
+    toStats: string;
+    toInsights: string;
   };
 };

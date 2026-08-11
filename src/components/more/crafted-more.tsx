@@ -115,11 +115,14 @@ export function CraftedMore({
 
       <CraftedMoreSection title={t.more.analyticsSection}>
         <div className={ROW_GROUP_CLASS_NAME}>
+          {/* Congelata: ripeteva i numeri delle Statistiche con sopra il
+              vocabolario delle spese evitate — il suo numero grande era
+              "Risparmio netto". Quello che aveva in più è passato di là. */}
           <CraftedMoreRow
-            href="/reports/monthly"
             label={t.more.monthlyReportLabel}
             detail={t.more.monthlyReportDetail}
             icon="chart"
+            comingSoon={t.more.comingSoon}
           />
           <CraftedMoreRow
             href="/stats"

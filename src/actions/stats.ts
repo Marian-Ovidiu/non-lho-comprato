@@ -38,7 +38,6 @@ import {
   entryMetricAggregateSelectSql,
   entryMetricDateRangeSql,
   entryMetricMemberFilterSql,
-  entryNetImpactSql,
   normalizeEntryMetricAggregate,
   toMetricNumber,
   type EntryMetricAggregateRow,
@@ -94,23 +93,12 @@ type StatsDailySpendingMetricRow = {
   entriesCount: number;
 };
 
-type StatsTopSavingsMetricRow = {
-  id: string;
-  title: string;
-  date: Date;
-  realCost: unknown;
-  alternativeCost: unknown;
-  savedAmount: unknown;
-  source: EntrySource;
-  categoryName: string;
-};
-
 type StatsPageData = {
   overview: StatsOverview;
   allTimeOverview: StatsOverview;
   monthlyStats: MonthlyStatsItem[];
   categoryStats: CategoryStatsItem[];
-  topSavings: TopSavingsItem[];
+  biggestExpenses: BiggestExpenseItem[];
   habitStats: HabitStatsItem[];
   insights: StatsInsight[];
   dailySpendingComparison: DailySpendingComparison;
@@ -383,34 +371,58 @@ async function getMonthlyCategoryRowsForWorkspace(
   `);
 }
 
-async function getTopSavingsForWorkspace(
+export type BiggestExpenseItem = {
+  id: string;
+  title: string;
+  categoryName: string;
+  categorySlug: string | null;
+  date: Date;
+  realCost: number;
+};
+
+/**
+ * Le uscite più grandi del periodo.
+ *
+ * Prende il posto della classifica dei risparmi, che ordinava per impatto
+ * netto — cioè per una metrica che in tre mesi d'uso reale vale 19 euro su
+ * 320 movimenti, e che quindi elencava quasi sempre le stesse due o tre voci.
+ * "Quanto ho speso di più" è una domanda che invece ha sempre una risposta.
+ */
+async function getBiggestExpensesForWorkspace(
   workspaceId: string,
   memberUserId: string | undefined,
   range: EntryMetricDateRange = {},
-  limit = 10,
-): Promise<TopSavingsItem[]> {
+  limit = 3,
+): Promise<BiggestExpenseItem[]> {
   const safeLimit = Math.max(0, Math.floor(limit));
   if (safeLimit === 0) {
     return [];
   }
 
-  const rows = await prisma.$queryRaw<StatsTopSavingsMetricRow[]>(Prisma.sql`
+  const rows = await prisma.$queryRaw<
+    Array<{
+      id: string;
+      title: string;
+      date: Date;
+      realCost: unknown;
+      categoryName: string;
+      categorySlug: string | null;
+    }>
+  >(Prisma.sql`
     SELECT
       e."id",
       e."title",
       e."date",
       e."realCost",
-      e."alternativeCost",
-      ${entryNetImpactSql}::text AS "savedAmount",
-      e."source",
-      c."name" AS "categoryName"
+      c."name" AS "categoryName",
+      c."slug" AS "categorySlug"
     FROM "Entry" e
     INNER JOIN "Category" c ON c."id" = e."categoryId"
     WHERE e."workspaceId" = ${workspaceId}
       ${entryMetricMemberFilterSql(memberUserId)}
       ${entryMetricDateRangeSql(range)}
-      AND ${entryNetImpactSql} > 0
-    ORDER BY ${entryNetImpactSql} DESC, e."date" DESC
+      AND e."mode"::text <> 'avoided'
+    ORDER BY e."realCost" DESC, e."date" DESC
     LIMIT ${safeLimit}
   `);
 
@@ -418,11 +430,9 @@ async function getTopSavingsForWorkspace(
     id: row.id,
     title: row.title,
     categoryName: row.categoryName,
+    categorySlug: row.categorySlug,
     date: row.date,
     realCost: round2(toMetricNumber(row.realCost)),
-    alternativeCost: round2(toMetricNumber(row.alternativeCost)),
-    savedAmount: round2(toMetricNumber(row.savedAmount)),
-    source: row.source,
   }));
 }
 
@@ -470,7 +480,7 @@ type StatsQueryResults = {
   periodMonthlyStats: MonthlyStatsItem[];
   categoryStats: CategoryStatsItem[];
   monthlyCategoryRows: Array<StatsCategoryMetricRow & { month: string }>;
-  topSavings: TopSavingsItem[];
+  biggestExpenses: BiggestExpenseItem[];
   dailyRows: StatsDailySpendingMetricRow[];
   habitStats: HabitStatsItem[];
 };
@@ -504,7 +514,7 @@ async function _cachedStatsQueries(
     periodMonthlyStats,
     categoryStats,
     monthlyCategoryRows,
-    topSavings,
+    biggestExpenses,
     dailyRows,
     habitStats,
   ] = await Promise.all([
@@ -519,7 +529,7 @@ async function _cachedStatsQueries(
       timeZone,
       periodRange,
     ),
-    getTopSavingsForWorkspace(workspaceId, memberUserId, periodRange, 10),
+    getBiggestExpensesForWorkspace(workspaceId, memberUserId, periodRange, 3),
     getDailySpendingRowsForWorkspace(
       workspaceId,
       memberUserId,
@@ -536,7 +546,7 @@ async function _cachedStatsQueries(
     periodMonthlyStats,
     categoryStats,
     monthlyCategoryRows,
-    topSavings,
+    biggestExpenses,
     dailyRows,
     habitStats,
   };
@@ -564,7 +574,7 @@ export async function getStatsPageData(
     periodMonthlyStats,
     categoryStats,
     monthlyCategoryRows,
-    topSavings,
+    biggestExpenses,
     dailyRows,
     habitStats,
   } = await _cachedStatsQueries(
@@ -614,7 +624,7 @@ export async function getStatsPageData(
     allTimeOverview,
     monthlyStats: allTimeMonthlyStats,
     categoryStats,
-    topSavings,
+    biggestExpenses,
     habitStats,
     insights,
     dailySpendingComparison,

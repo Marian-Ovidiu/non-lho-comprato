@@ -16,9 +16,9 @@ import {
 import { CraftedDailySpendingHeatmap } from "@/src/components/stats/crafted-daily-spending-heatmap";
 import { CraftedStatsPeriodFilter } from "@/src/components/stats/crafted-stats-period-filter";
 import {
-  CraftedTopSavingsList,
-  type CraftedTopSavingsItem,
-} from "@/src/components/stats/crafted-top-savings-list";
+  CraftedBiggestExpenses,
+  type CraftedBiggestExpenseItem,
+} from "@/src/components/stats/crafted-biggest-expenses";
 import {
   getActiveDays,
   getAverageMonthlySpent,
@@ -48,7 +48,7 @@ type CraftedStatsComponentProps = CraftedStatsProps & {
   selectedMonthLabel: string;
   selectedYear: string;
   monthOptions: StatsMonthOption[];
-  topSavings?: CraftedTopSavingsItem[];
+  biggestExpenses?: CraftedBiggestExpenseItem[];
   habitStats?: Array<{
     habitId: string;
     habitName: string;
@@ -109,12 +109,6 @@ function CraftedCategoryBars({
             <Mono className="mr-3 text-[11px] text-ink-3">{category.pct}%</Mono>
             <Amount value={category.spent} className="text-sm font-medium whitespace-nowrap" />
           </div>
-          {category.saved > 0 ? (
-            <Serif className="mb-2 block text-[12.5px] text-ink-3">
-              <Amount value={category.saved} className="text-[12.5px]" />{" "}
-              {t.stats.netImpactSuffix}
-            </Serif>
-          ) : null}
           <ProgressLine
             value={category.pct}
             className="rounded-[1px]"
@@ -140,7 +134,7 @@ export function CraftedStats({
   selectedMonthLabel,
   selectedYear,
   monthOptions,
-  topSavings = [],
+  biggestExpenses = [],
   habitStats = [],
 }: CraftedStatsComponentProps) {
   const t = useTranslations();
@@ -243,10 +237,6 @@ export function CraftedStats({
             value: <Amount value={periodOverview.totalRealSpent} />,
           },
           {
-            label: t.stats.netImpactLabel,
-            value: <Amount value={periodOverview.totalSaved} />,
-          },
-          {
             /* Un conteggio non è un importo: niente valuta, niente centesimi. */
             label: t.stats.entriesLabel,
             value: period === "all" ? overview.entriesCount : hero.entriesCount,
@@ -261,17 +251,28 @@ export function CraftedStats({
         <StatTrio
           items={[
             {
-              label: t.stats.wouldHaveSpent,
-              value: <Amount value={periodOverview.totalAlternativeCost} />,
+              label: t.stats.avgMonthlySpent,
+              value: (
+                <Amount
+                  value={periodOverview.totalRealSpent / Math.max(monthlyStats.length, 1)}
+                />
+              ),
             },
             {
-              label: t.stats.avgImpact,
-              value: <Amount value={periodOverview.averageSavedPerEntry} />,
+              label: t.stats.avgPerEntry,
+              value: (
+                <Amount
+                  value={
+                    periodOverview.totalRealSpent /
+                    Math.max(periodOverview.entriesCount, 1)
+                  }
+                />
+              ),
             },
             {
-              label: t.stats.netIndex,
-              value: Math.round(periodOverview.savingRatePercent * 10) / 10,
-              suffix: "%",
+              /* Un conteggio non è un importo: niente valuta, niente centesimi. */
+              label: t.stats.entriesLabel,
+              value: period === "all" ? overview.entriesCount : hero.entriesCount,
             },
           ]}
         />
@@ -393,7 +394,7 @@ export function CraftedStats({
       <CraftedCategoryBars categories={categories} />
       <Rule />
 
-      <CraftedTopSavingsList entries={topSavings} />
+      <CraftedBiggestExpenses entries={biggestExpenses} />
       <Rule />
 
       <StatTrio

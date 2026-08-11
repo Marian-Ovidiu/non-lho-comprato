@@ -3,7 +3,7 @@ import { unstable_rethrow } from "next/navigation";
 import { getStatsPageData } from "@/src/actions/stats";
 import { PostHogEventOnMount } from "@/src/components/analytics/posthog-event-on-mount";
 import { CraftedStats } from "@/src/components/stats/crafted-stats";
-import type { CraftedTopSavingsItem } from "@/src/components/stats/crafted-top-savings-list";
+import type { CraftedBiggestExpenseItem } from "@/src/components/stats/crafted-biggest-expenses";
 import { CraftedStatsEmptyState } from "@/src/components/stats/crafted-stats-empty-state";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { buildCraftedStatsProps } from "@/src/lib/crafted-stats-build";
@@ -79,7 +79,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
   let categoryStats: Awaited<ReturnType<typeof getStatsPageData>>["categoryStats"] = [];
   let habitStats: Awaited<ReturnType<typeof getStatsPageData>>["habitStats"] = [];
   let insights: Awaited<ReturnType<typeof getStatsPageData>>["insights"] = [];
-  let topSavings: CraftedTopSavingsItem[] = [];
+  let biggestExpenses: CraftedBiggestExpenseItem[] = [];
   let dailySpendingComparison = buildDailySpendingComparison(
     [],
     timeZone,
@@ -105,7 +105,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
     categoryStats = stats.categoryStats;
     habitStats = stats.habitStats;
     insights = stats.insights;
-    topSavings = stats.topSavings.map((item) => ({
+    biggestExpenses = stats.biggestExpenses.map((item) => ({
       ...item,
       date: item.date.toISOString(),
     }));
@@ -156,7 +156,7 @@ export default async function StatsPage({ searchParams }: StatsPageProps) {
           selectedMonthLabel={selectedMonthLabel}
           selectedYear={selectedYear}
           monthOptions={monthOptions}
-          topSavings={topSavings}
+          biggestExpenses={biggestExpenses}
           habitStats={habitStats.map((habit) => ({
             habitId: habit.habitId,
             habitName: habit.habitName,

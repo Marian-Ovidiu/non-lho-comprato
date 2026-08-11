@@ -356,7 +356,7 @@ export const it: Translations = {
     patternLabel: "Cosa sta cambiando",
     patternDetail: "Cosa dicono i vostri movimenti su questo mese",
     monthlyReportLabel: "Report mensile",
-    monthlyReportDetail: "Riepilogo del mese in PDF",
+    monthlyReportDetail: "Assorbito dalle statistiche, con il periodo che scegli",
     appSection: "Preferenze",
     themeLabel: "Tema",
     inviteLabel: "Invita",
@@ -1190,7 +1190,9 @@ export const it: Translations = {
     queenDetail: (pct, count) => `il ${pct}% di tutto, in ${count} ${count === 1 ? "movimento" : "movimenti"}.`,
     queenNetImpact: (amount) => ` ${amount} impatto netto.`,
     byCategoryLabel: "Per categoria",
+    biggestExpensesLabel: "Le uscite più grandi",
     avgMonthlySpent: "Media spesa/mese",
+    avgPerEntry: "Scontrino medio",
     activeDays: "Giorni attivi",
     habitsLabel: "Ricorrenti",
     disciplineRate: (pct) => `${pct}% disciplina`,
@@ -1296,5 +1298,14 @@ export const it: Translations = {
     earlyAction: "Registra una spesa",
     footnote:
       "Solo soldi realmente usciti. Le spese fisse ricorrenti restano fuori dai confronti.",
+  },
+
+  monthlyReportFrozen: {
+    context: "Gli stessi numeri, in un posto solo.",
+    title: "Il report è passato nelle Statistiche",
+    description:
+      "Ripeteva i dati che trovi già lì, dove puoi scegliere tu il periodo invece di aspettare che il mese finisca. Le uscite più grandi ci sono ancora, e per capire cosa sta cambiando c'è una pagina che lo dice a parole.",
+    toStats: "Vai alle statistiche",
+    toInsights: "Cosa sta cambiando",
   },
 };
