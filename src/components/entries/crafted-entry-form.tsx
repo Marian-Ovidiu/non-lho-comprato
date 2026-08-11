@@ -98,6 +98,7 @@ type EntryIntent = "spent" | "comparison" | "joint";
 export type CraftedEntryFormProps = {
   categories: CategoryOption[];
   members: WorkspaceMemberOption[];
+  workspaceKind: "private" | "shared";
   initialPaidByUserId: string;
   initialBeneficiaryUserIds: string[];
   returnTo: string;
@@ -191,6 +192,7 @@ export function CraftedEntryForm(props: CraftedEntryFormProps) {
 function CraftedEntryFormFields({
   categories,
   members,
+  workspaceKind,
   initialPaidByUserId,
   initialBeneficiaryUserIds,
   returnTo,
@@ -685,7 +687,7 @@ function CraftedEntryFormFields({
                 <div className="rounded-[var(--r-control)] border border-line bg-surface-muted/60 px-4 py-3 text-sm leading-6 text-ink-3">
                   {t.entryForm.jointPaymentInfo}
                 </div>
-              ) : (
+              ) : workspaceKind === "shared" ? (
                 <EntryPeopleFields
                   members={members}
                   paidByUserId={paidByUserId}
@@ -694,7 +696,7 @@ function CraftedEntryFormFields({
                   onPaidByUserIdChange={setPaidByUserId}
                   onBeneficiaryUserIdsChange={setBeneficiaryUserIds}
                 />
-              )}
+              ) : null}
             </div>
           ) : (
             <input type="hidden" name="date" value={date} />

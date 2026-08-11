@@ -11,6 +11,7 @@ import {
 import { normalizeEntryPaymentMode } from "@/src/lib/entry-payment-mode";
 import {
   getCurrentUser,
+  getCurrentWorkspace,
   getCurrentWorkspaceMembers,
 } from "@/src/lib/workspace-context";
 
@@ -57,23 +58,27 @@ export default async function NewEntryPage({
   let categories: CategoryOption[] = [];
   let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
   let currentUser: Awaited<ReturnType<typeof getCurrentUser>> | null = null;
+  let workspace: Awaited<ReturnType<typeof getCurrentWorkspace>> | null = null;
 
   try {
-    const [categoriesResult, loadedMembers, loadedUser] = await Promise.all([
-      getCategories(),
-      getCurrentWorkspaceMembers(),
-      getCurrentUser(),
-    ]);
+    const [categoriesResult, loadedMembers, loadedUser, loadedWorkspace] =
+      await Promise.all([
+        getCategories(),
+        getCurrentWorkspaceMembers(),
+        getCurrentUser(),
+        getCurrentWorkspace(),
+      ]);
     categories = categoriesResult;
     members = loadedMembers;
     currentUser = loadedUser;
+    workspace = loadedWorkspace;
   } catch (error) {
     unstable_rethrow(error);
     loadError = formatEntryLoadError(error);
     console.error("Failed to load new entry page:", error);
   }
 
-  if (loadError || !currentUser) {
+  if (loadError || !currentUser || !workspace) {
     return (
       <main className="pb-6">
         <div className="px-5 pt-5 pb-4">
@@ -135,6 +140,7 @@ export default async function NewEntryPage({
     <CraftedEntryForm
       categories={categories}
       members={members}
+      workspaceKind={workspace.kind}
       initialPaidByUserId={paidByUserId}
       initialBeneficiaryUserIds={resolvedBeneficiaryUserIds}
       returnTo={returnTo}

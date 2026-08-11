@@ -4,28 +4,42 @@ import {
   Bike,
   Brain,
   Bookmark,
+  Bus,
   Camera,
+  CarFront,
   Check,
   Cigarette,
   Coffee,
+  CroissantIcon,
   Delete,
   FileUp,
   FolderPlus,
+  Gift,
   GraduationCap,
   Home,
+  Laptop,
   LogOut,
   Martini,
+  MoreHorizontal,
+  PartyPopper,
   PiggyBank,
+  Pill,
   Plane,
   Receipt,
   Search,
   Shield,
+  Shirt,
   ShoppingBag,
+  ShoppingCart,
+  Sparkles,
   Tags,
   Target,
+  TicketSlash,
+  UtensilsCrossed,
   Utensils,
   UsersRound,
   WalletCards,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -59,7 +73,22 @@ export type CraftedIconName =
   | "cig"
   | "del"
   | "users"
-  | "wallet";
+  | "wallet"
+  /* Icone di categoria: una per ciascuna, mai condivise fra i default. */
+  | "cart"
+  | "bus"
+  | "car"
+  | "party"
+  | "gift"
+  | "laptop"
+  | "sparkles"
+  | "pill"
+  | "shirt"
+  | "croissant"
+  | "restaurant"
+  | "toll"
+  | "bolt"
+  | "dots";
 
 type CraftedIconProps = {
   name: CraftedIconName;
@@ -99,6 +128,20 @@ const LUCIDE_MAP: Record<
   del: Delete,
   users: UsersRound,
   wallet: WalletCards,
+  cart: ShoppingCart,
+  bus: Bus,
+  car: CarFront,
+  party: PartyPopper,
+  gift: Gift,
+  laptop: Laptop,
+  sparkles: Sparkles,
+  pill: Pill,
+  shirt: Shirt,
+  croissant: CroissantIcon,
+  restaurant: UtensilsCrossed,
+  toll: TicketSlash,
+  bolt: Zap,
+  dots: MoreHorizontal,
 };
 
 function CraftedFlameIcon({

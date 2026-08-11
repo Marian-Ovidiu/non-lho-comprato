@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label as CraftedLabel, Rule, Serif } from "@/components/crafted";
 import { useTranslations } from "@/src/components/language/language-context";
+import { CraftedCategoryIconPicker } from "@/src/components/workspace/crafted-category-icon-picker";
 import type { Translations } from "@/src/lib/i18n/types";
 
 import type { CategoryManagementItem } from "@/src/actions/categories";
@@ -92,17 +93,12 @@ function CategoryEditForm({ category, onClose, onSaved }: EditFormProps) {
           autoFocus
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="edit-cat-icon" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">{t.workspace.catIconLabel}</label>
-          <Input
-            id="edit-cat-icon"
-            className={CATEGORY_INPUT_CLASS}
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            placeholder="es. coffee"
-          />
-        </div>
+      <CraftedCategoryIconPicker
+        id="edit-cat-icon"
+        value={icon}
+        onChange={setIcon}
+      />
+      <div className="grid grid-cols-1 gap-3">
         <div className="flex flex-col gap-1.5">
           <label htmlFor="edit-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">{t.workspace.catColorLabel}</label>
           <Input
@@ -345,31 +341,22 @@ function CategoryCreateForm({ onCreated, onCancel }: CreateFormProps) {
           autoFocus
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="create-cat-icon" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">
-            {t.workspace.catIconOptionalLabel}
-          </label>
-          <Input
-            id="create-cat-icon"
-            className={CATEGORY_INPUT_CLASS}
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-            placeholder="es. coffee"
-          />
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="create-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">
-            {t.workspace.catColorOptionalLabel}
-          </label>
-          <Input
-            id="create-cat-color"
-            className={CATEGORY_INPUT_CLASS}
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            placeholder="es. #a3e635"
-          />
-        </div>
+      <CraftedCategoryIconPicker
+        id="create-cat-icon"
+        value={icon}
+        onChange={setIcon}
+      />
+      <div className="flex flex-col gap-1.5">
+        <label htmlFor="create-cat-color" className="font-num text-[10px] uppercase tracking-[0.22em] text-ink-3">
+          {t.workspace.catColorOptionalLabel}
+        </label>
+        <Input
+          id="create-cat-color"
+          className={CATEGORY_INPUT_CLASS}
+          value={color}
+          onChange={(e) => setColor(e.target.value)}
+          placeholder="es. #a3e635"
+        />
       </div>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
       <div className="flex items-center gap-2">

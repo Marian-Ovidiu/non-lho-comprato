@@ -1047,6 +1047,23 @@ export function QuickAddSheet({
               />
             ) : null}
             <input type="hidden" name="date" value={draft.date} />
+            {workspace.kind === "private" ? (
+              <>
+                <input
+                  type="hidden"
+                  name="paidByUserId"
+                  value={draft.paidByUserId}
+                />
+                {draft.beneficiaryUserIds.map((userId) => (
+                  <input
+                    key={userId}
+                    type="hidden"
+                    name="beneficiaryUserIds"
+                    value={userId}
+                  />
+                ))}
+              </>
+            ) : null}
 
             <div className="min-w-0 space-y-4">
               {state.message ? (
@@ -1297,7 +1314,7 @@ export function QuickAddSheet({
                   Pagata insieme: l&apos;importo vale per entrambi e il saldo
                   considera metà già pagata da ciascuno.
                 </div>
-              ) : membersLoading ? (
+              ) : workspace.kind === "private" ? null : membersLoading ? (
                 <p className="text-xs leading-5 text-muted-text" aria-live="polite">
                   {t.quickAdd.loadingMembers}
                 </p>
