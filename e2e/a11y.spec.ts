@@ -23,7 +23,7 @@ const PAGES: Array<[string, string]> = [
   ["goals", "/goals"],
   ["budget", "/budget"],
   ["stats", "/stats"],
-  ["presets", "/presets"],
+  ["insights", "/insights"],
   ["login", "/login"],
 ];
 
