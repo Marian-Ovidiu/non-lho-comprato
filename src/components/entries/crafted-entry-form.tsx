@@ -301,7 +301,7 @@ function CraftedEntryFormFields({
     };
   }, []);
 
-  const canUseJointPayment = members.length === 2;
+  const canUseJointPayment = workspaceKind === "shared" && members.length === 2;
   const effectivePaymentMode = canUseJointPayment ? paymentMode : "single_payer";
   const savingContext: EntrySavingContext = showComparison ? "comparison" : "none";
   const entryIntent = getEntryIntent(showComparison, effectivePaymentMode);
