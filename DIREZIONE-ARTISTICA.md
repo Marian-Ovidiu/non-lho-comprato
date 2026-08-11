@@ -1607,22 +1607,15 @@ stessa quota e avrebbe sovrapposto un secondo gesto circolare alla CTA. Non è
 stato rimosso dall'app, soltanto dalla rotta in cui il compito primario è già
 persistente.
 
-## La carta consegna la pagina al chrome, non gli lascia una riga
+## Il documento non aggiunge un secondo fondo
 
-Il form ha bisogno di un fondo opaco: importo, categorie e campi non devono
-leggere gli orb come decorazione. Ma quel fondo finiva insieme al box del form,
-22px prima della bottom bar. Sotto tornava visibile la stanza e, pur senza un
-bordo CSS, il salto fra carta e luce disegnava una riga perfettamente netta. Il
-chrome era corretto; era il documento a morire di colpo.
-
-Su mobile gli ultimi 80px del form perdono ora materia in quattro fermate: il
-fondo resta pieno fino alla zona priva di testo, poi diventa trasparente mentre
-il velo inferiore compie il percorso opposto e torna a `--background` pieno
-sotto le dita. La CTA non perde contrasto perché è una campitura autonoma. Non
-ho allungato né ispessito il velo globale: il difetto apparteneva a questa carta
-opaca, e correggere il chrome avrebbe alterato tutte le pagine che già si
-chiudono bene. Da `md` in su la bottom bar scompare e il form torna uniformemente
-opaco.
+Il primo tentativo assegnava al form una campitura `--background` e provava poi
+a dissolverla prima della bottom bar. Era una soluzione costruita sul difetto:
+appena la rampa o l'altezza del modulo cambiavano, il limite della campitura
+tornava a leggersi come una riga. Il form ora non dipinge un fondo proprio. Vive
+direttamente sulla stanza quieta dell'app, mentre campi, disclosure e CTA
+conservano le superfici necessarie alla leggibilità. Non c'è più una lastra da
+far terminare e quindi non c'è più una giunzione da nascondere.
 
 ## Un requisito di salvataggio che prima non coincideva
 
