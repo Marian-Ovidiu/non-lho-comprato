@@ -8,7 +8,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Non l'ho comprato",
     short_name: "NLC",
-    description: "Traccia le spese e tieni visibile l'impatto netto.",
+    description: "Le spese di casa, condivise: chi ha pagato, per chi, e cosa cambia mese dopo mese.",
     lang: "it",
     start_url: "/",
     scope: "/",

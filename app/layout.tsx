@@ -41,7 +41,7 @@ const instrumentSerif = Instrument_Serif({
 
 export const metadata: Metadata = {
   title: "Non l'ho comprato",
-  description: "Traccia le spese e tieni visibile l'impatto netto.",
+  description: "Le spese di casa, condivise: chi ha pagato, per chi, e cosa cambia mese dopo mese.",
   icons: {
     icon: [
       { url: "/icons/favicon-32.png", sizes: "32x32", type: "image/png" },
