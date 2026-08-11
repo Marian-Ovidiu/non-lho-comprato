@@ -1,10 +1,15 @@
+import { MARK_ACCENT } from "@/src/lib/nlc-mark-art";
 import { applyStoredTheme } from "@/src/lib/theme";
 
 /* Il nero della soglia. Era #0a0a09, un nero caldo che veniva dalla palette
    oro: la prima cosa che si vedeva dell'app era ancora la vecchia direzione, e
    all'uscita dello splash il fondo saltava di tinta. Adesso è il nero della
    stanza, cioè --background del tema scuro: entrare nell'app non è più un
-   cambio di colore, è solo la fiamma che si toglie di mezzo. */
+   cambio di colore, è solo il marchio che si toglie di mezzo.
+
+   Resta questo e non il #0A0A0A della tavola del marchio proprio per quel
+   motivo: la tavola sceglie il nero che sta meglio accanto al monogramma, ma
+   qui il vicino non è il monogramma, è la prima schermata dell'app. */
 export const SPLASH_BACKGROUND = "#0b1512";
 export const SPLASH_START_KEY = "nlc-splash-start";
 export const SPLASH_PENDING_CLASS = "nlc-splash-pending";
@@ -19,13 +24,15 @@ html.nlc-splash-pending #nlc-splash-shell{display:block!important}
 #nlc-splash-shell{position:fixed;inset:0;z-index:9999;display:none;background:${SPLASH_BACKGROUND}}
 .nlc-splash-bootstrap-scene{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:100%;overflow:hidden}
 .nlc-splash-bootstrap-border{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
-.nlc-splash-bootstrap-comet{fill:none;stroke:#d1f975;stroke-width:2;stroke-linecap:round;stroke-dasharray:14 86;filter:drop-shadow(0 0 5px rgba(209,249,117,.85));animation:nlc-splash-comet 2.2s linear infinite}
-@keyframes nlc-splash-comet{to{stroke-dashoffset:-100}}
-@keyframes nlc-splash-flicker{0%,100%{transform:scaleY(1) scaleX(1) rotate(0deg)}20%{transform:scaleY(1.04) scaleX(.985) rotate(-1.1deg)}45%{transform:scaleY(.975) scaleX(1.015) rotate(.9deg)}70%{transform:scaleY(1.025) scaleX(.99) rotate(-.6deg)}85%{transform:scaleY(.99) scaleX(1.008) rotate(.4deg)}}
-@keyframes nlc-splash-glow{0%,100%{opacity:.5}50%{opacity:.85}}
-.nlc-splash-flicker{transform-box:fill-box;transform-origin:50% 92%;animation:nlc-splash-flicker 2.6s ease-in-out infinite}
-.nlc-splash-glow{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(209,249,117,.13),transparent 62%);animation:nlc-splash-glow 2.6s ease-in-out infinite}
-@media (prefers-reduced-motion:reduce){.nlc-splash-bootstrap-comet,.nlc-splash-flicker,.nlc-splash-glow{animation:none!important}}
+.nlc-splash-stage{position:relative;display:grid;place-items:center;width:236px;height:236px}
+.nlc-splash-stage>*{grid-area:1/1}
+.nlc-splash-ring{width:100%;height:100%}
+.nlc-splash-ring-track{fill:none;stroke:rgba(255,255,255,.09);stroke-width:1.6}
+.nlc-splash-ring-arc{fill:none;stroke:${MARK_ACCENT};stroke-width:1.9;stroke-linecap:round;stroke-dasharray:24 76;transform-origin:50% 50%;filter:drop-shadow(0 0 4px rgba(157,196,95,.7));animation:nlc-splash-orbit 2.4s cubic-bezier(.5,0,.5,1) infinite}
+@keyframes nlc-splash-orbit{to{transform:rotate(360deg)}}
+@keyframes nlc-splash-glow{0%,100%{opacity:.45}50%{opacity:.8}}
+.nlc-splash-glow{position:absolute;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(157,196,95,.13),transparent 62%);animation:nlc-splash-glow 2.6s ease-in-out infinite}
+@media (prefers-reduced-motion:reduce){.nlc-splash-ring-arc,.nlc-splash-glow{animation:none!important}}
 `;
 }
 

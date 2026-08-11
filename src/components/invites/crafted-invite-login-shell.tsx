@@ -1,4 +1,5 @@
-import { CraftedIcon, Serif } from "@/components/crafted";
+import { Serif } from "@/components/crafted";
+import { NlcMark } from "@/src/components/brand/nlc-mark";
 import { LoginPanel } from "@/src/components/auth/login-panel";
 
 type CraftedInviteLoginShellProps = {
@@ -19,7 +20,7 @@ export function CraftedInviteLoginShell({
   return (
     <main className="flex min-h-[100dvh] flex-col bg-background px-6 pb-8 pt-10">
       <div className="flex items-center gap-2">
-        <CraftedIcon name="flame" size={18} className="text-accent" />
+        <NlcMark size={20} />
         <span className="text-[13px] font-semibold tracking-[0.02em] text-muted-foreground">
           Non l&apos;ho comprato
         </span>

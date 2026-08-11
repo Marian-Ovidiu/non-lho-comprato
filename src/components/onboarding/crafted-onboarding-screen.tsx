@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ArrowRight, Check, Loader2, Share2 } from "lucide-react";
 
-import { CraftedIcon, Serif } from "@/components/crafted";
+import { Serif } from "@/components/crafted";
+import { NlcMark } from "@/src/components/brand/nlc-mark";
 import { completeWorkspaceSetupAction, generateOpenInviteAction } from "@/src/actions/workspace";
 import { useTranslations } from "@/src/components/language/language-context";
 import { cn } from "@/lib/utils";
@@ -215,7 +216,7 @@ export function CraftedOnboardingScreen({
     <main className="flex min-h-[100dvh] flex-col bg-background px-6 pb-8 pt-10">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <CraftedIcon name="flame" size={18} className="text-accent" />
+          <NlcMark size={20} />
           <span className="text-[13px] font-semibold tracking-[0.02em] text-muted-foreground">
             Non l&apos;ho comprato
           </span>

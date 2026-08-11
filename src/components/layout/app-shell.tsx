@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { CraftedIcon } from "@/components/crafted";
 import { PullToRefresh, ToastProvider } from "@/components/crafted/motion";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { NlcMark } from "@/src/components/brand/nlc-mark";
 import { AppRoom } from "@/src/components/layout/app-room";
 import { CraftedBottomBar } from "@/src/components/layout/crafted-bottom-bar";
 import { FeedbackButton } from "@/src/components/feedback/feedback-button";
@@ -244,10 +244,10 @@ export function AppShell({
                 <Link
                   href="/"
                   aria-label="Home"
-                  className="shrink-0 text-accent transition-opacity hover:opacity-70"
+                  className="shrink-0 transition-opacity hover:opacity-70"
                   onClick={() => triggerHaptic("subtle")}
                 >
-                  <CraftedIcon name="flame" size={16} />
+                  <NlcMark size={19} />
                 </Link>
                 <WorkspaceSwitcher
                   currentWorkspace={workspace}

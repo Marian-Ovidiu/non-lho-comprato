@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { FlameSplash } from "@/src/components/brand/flame-splash";
+import { NlcSplash } from "@/src/components/brand/nlc-splash";
 import {
   clearSplashBootstrapShell,
   getSplashElapsedMs,
@@ -57,7 +57,7 @@ export function AppSplash({
         transitionDuration: `${fadeDuration}ms`,
       }}
     >
-      <FlameSplash />
+      <NlcSplash />
     </div>
   );
 }
