@@ -30,6 +30,7 @@ import type {
 } from "@/src/lib/imports/import-domain";
 import {
   detectDelimiter,
+  MAX_CSV_IMPORT_ROWS,
   parseCsvText,
 } from "@/src/lib/imports/import-parser";
 import {
@@ -668,7 +669,7 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
         const delimiter = detectDelimiter(csvText);
         const parsed = parseCsvText(csvText, {
           delimiter,
-          maxRows: 1000,
+          maxRows: MAX_CSV_IMPORT_ROWS,
         });
 
         if (parsed.headers.length === 0 || parsed.headers.every((header) => header.trim() === "")) {

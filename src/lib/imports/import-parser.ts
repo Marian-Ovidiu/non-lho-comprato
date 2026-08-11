@@ -15,7 +15,7 @@ export type ParseCsvTextResult = {
 };
 
 const DELIMITERS: CsvDelimiter[] = [",", ";", "\t"];
-const DEFAULT_MAX_ROWS = 1000;
+export const MAX_CSV_IMPORT_ROWS = 1500;
 
 function stripBom(text: string): string {
   return text.startsWith("\uFEFF") ? text.slice(1) : text;
@@ -158,7 +158,7 @@ export function parseCsvText(
   options: ParseCsvTextOptions = {},
 ): ParseCsvTextResult {
   const delimiter = options.delimiter ?? detectDelimiter(csvText);
-  const maxRows = options.maxRows ?? DEFAULT_MAX_ROWS;
+  const maxRows = options.maxRows ?? MAX_CSV_IMPORT_ROWS;
   const rows = parseDelimitedText(csvText, delimiter);
 
   if (rows.length === 0) {

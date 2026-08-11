@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 
 import {
   detectDelimiter,
+  MAX_CSV_IMPORT_ROWS,
   parseCsvText,
 } from "@/src/lib/imports/import-parser";
 
@@ -41,12 +42,14 @@ describe("parseCsvText", () => {
     });
   });
 
-  it("throws when the default row limit is exceeded", () => {
-    const csv = `date,description,amount\n${Array.from({ length: 1001 }, (_, index) =>
+  it("accepts the default row limit and throws when it is exceeded", () => {
+    const rows = Array.from({ length: MAX_CSV_IMPORT_ROWS + 1 }, (_, index) =>
       `2026-06-${String((index % 28) + 1).padStart(2, "0")},Item ${index + 1},1.00`,
-    ).join("\n")}`;
+    );
+    const csvAtLimit = `date,description,amount\n${rows.slice(0, MAX_CSV_IMPORT_ROWS).join("\n")}`;
+    const csvOverLimit = `date,description,amount\n${rows.join("\n")}`;
 
-    assert.throws(() => parseCsvText(csv), /max row limit/i);
+    assert.equal(parseCsvText(csvAtLimit).rowCount, MAX_CSV_IMPORT_ROWS);
+    assert.throws(() => parseCsvText(csvOverLimit), /max row limit/i);
   });
 });
-
