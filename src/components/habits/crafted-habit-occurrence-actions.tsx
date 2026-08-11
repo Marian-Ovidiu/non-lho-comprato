@@ -4,7 +4,6 @@ import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
 
 import {
-  markHabitOccurrenceAvoided,
   markHabitOccurrenceSkipped,
   markHabitOccurrenceSpent,
 } from "@/src/actions/habits";
@@ -15,10 +14,11 @@ import { cn } from "@/lib/utils";
 type CraftedHabitOccurrenceActionsProps = {
   occurrenceId: string;
   currentStatus: "pending" | "spent" | "avoided" | "skipped";
-  onStatusChange?: (status: "spent" | "avoided" | "skipped") => void;
+  onStatusChange?: (status: "spent" | "skipped") => void;
 };
 
-type ActionStatus = Exclude<CraftedHabitOccurrenceActionsProps["currentStatus"], "pending">;
+/** Gli stati che si possono ancora assegnare: "avoided" resta solo in lettura. */
+type ActionStatus = "spent" | "skipped";
 
 function DrawnCheck({ className }: { className?: string }) {
   return (
@@ -73,7 +73,7 @@ export function CraftedHabitOccurrenceActions({
         }
 
         onStatusChange?.(nextStatus);
-        triggerHaptic(nextStatus === "avoided" ? "success" : "light");
+        triggerHaptic("light");
         setPendingStatus(null);
       } catch {
         setFeedback(t.habitOccurrence.error);
@@ -84,10 +84,12 @@ export function CraftedHabitOccurrenceActions({
 
   const loading = isPending && Boolean(pendingStatus);
 
+  // Lo stato resta leggibile per le occorrenze già segnate così in passato:
+  // si è tolto il modo di crearne di nuove, non la memoria di quelle vecchie.
   if (currentStatus === "avoided") {
     return (
-      <span className="inline-flex shrink-0 items-center gap-1.5 text-[12.5px] font-semibold text-accent">
-        <DrawnCheck className="text-accent" />
+      <span className="inline-flex shrink-0 items-center gap-1.5 text-[12.5px] font-medium text-ink-3">
+        <DrawnCheck className="text-ink-3" />
         {t.habitOccurrence.avoided}
       </span>
     );
@@ -114,27 +116,15 @@ export function CraftedHabitOccurrenceActions({
           type="button"
           disabled={loading}
           onClick={() => runAction(markHabitOccurrenceSpent, "spent")}
-          className="text-[11px] text-ink-3 transition-colors hover:text-foreground disabled:opacity-50"
-        >
-          {pendingStatus === "spent" ? (
-            <Loader2 className="size-3 animate-spin" aria-hidden="true" />
-          ) : (
-            t.habitOccurrence.paid
-          )}
-        </button>
-        <button
-          type="button"
-          disabled={loading}
-          onClick={() => runAction(markHabitOccurrenceAvoided, "avoided")}
           className={cn(
             "rounded-full border border-line px-3.5 py-1.5 text-[12.5px] font-semibold",
             "transition-opacity hover:opacity-80 disabled:opacity-50",
           )}
         >
-          {pendingStatus === "avoided" ? (
-            <DrawnCheck className="text-accent" />
+          {pendingStatus === "spent" ? (
+            <Loader2 className="size-3 animate-spin" aria-hidden="true" />
           ) : (
-            t.habitOccurrence.avoided
+            t.habitOccurrence.paid
           )}
         </button>
       </div>

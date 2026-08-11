@@ -326,8 +326,10 @@ function buildUsageNote(stats?: {
     return `saltata ${stats.skippedCount} volte`;
   }
 
-  if (stats.avoidedCount > 0) {
-    return `${stats.avoidedCount} volte evitata`;
+  // Il conteggio delle evitate non compare più: la nota dice quante volte è
+  // stata pagata, che è il dato che l'occorrenza produce davvero.
+  if (stats.spentCount > 0) {
+    return stats.spentCount === 1 ? "pagata 1 volta" : `pagata ${stats.spentCount} volte`;
   }
 
   return undefined;
@@ -349,15 +351,11 @@ function getStatus(input: {
     return "pausa";
   }
 
-  const stats = input.stats;
-  const reviewCandidate =
-    input.group === "abbonamenti" &&
-    input.monthlyAmount >= 8 &&
-    stats &&
-    stats.totalOccurrences > 0 &&
-    stats.disciplineRatePercent < 10;
-
-  return reviewCandidate ? "da-rivedere" : "attiva";
+  // "Da rivedere" si appoggiava alla disciplina, cioè alla quota di occorrenze
+  // segnate come evitate: ora che non si possono più segnare quella quota è
+  // sempre zero, e la regola avrebbe marcato ogni abbonamento sopra gli 8 euro.
+  // Meglio nessun verdetto di un verdetto automatico su tutti.
+  return "attiva";
 }
 
 function groupLabel(group: HabitGroup) {

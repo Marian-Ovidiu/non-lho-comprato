@@ -119,8 +119,8 @@ export function buildCraftedDashboardProps(input: {
     categories: buildCraftedCategories(input.categoryStats),
     currentStreak: input.currentStreak,
     habitsTotal: input.todayHabits.length,
-    habitsAvoided: input.todayHabits.filter(
-      (occurrence) => occurrence.status === "avoided",
+    habitsDone: input.todayHabits.filter(
+      (occurrence) => occurrence.status !== "pending",
     ).length,
     nextHabitPayment: input.nextHabitPayment,
     dailyPaceComparison: input.dailyPaceComparison,

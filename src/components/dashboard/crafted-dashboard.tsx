@@ -75,7 +75,8 @@ export type CraftedDashboardProps = {
   categories: CraftedCategoryRow[];
   currentStreak: number;
   habitsTotal: number;
-  habitsAvoided: number;
+  /** Ricorrenti di oggi già sistemate: pagate o segnate come non applicabili. */
+  habitsDone: number;
   nextHabitPayment: {
     id: string;
     name: string;
@@ -633,7 +634,7 @@ export function CraftedDashboard({
   categories,
   currentStreak,
   habitsTotal,
-  habitsAvoided,
+  habitsDone,
   nextHabitPayment,
   dailyPaceComparison,
   reflection,
@@ -962,17 +963,20 @@ export function CraftedDashboard({
               href="/habits"
               className="nlc-press nlc-glass-card block rounded-[var(--r-card)] p-4 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
+              {/* Contava le ricorrenti evitate: senza il modo di segnarle,
+                  quel numero sarebbe sempre zero. Ora conta quelle sistemate,
+                  che è la cosa che il blocco chiede di fare. */}
               <div className="mb-3 flex items-center justify-between gap-2">
                 <Eyebrow>Ricorrenti oggi</Eyebrow>
                 <Mono className="text-[12px] text-muted-foreground">
-                  {habitsAvoided}/{habitsTotal}
+                  {habitsDone}/{habitsTotal}
                 </Mono>
               </div>
               <Mono className="nlc-amount block text-[length:var(--num-lead)] font-semibold leading-none">
-                {Math.max(habitsTotal - habitsAvoided, 0)}
+                {Math.max(habitsTotal - habitsDone, 0)}
               </Mono>
               <ProgressLine
-                value={(habitsAvoided / habitsTotal) * 100}
+                value={(habitsDone / habitsTotal) * 100}
                 className="mt-4 nlc-track"
                 indicatorClassName="bg-[var(--nlc-under)]"
               />
