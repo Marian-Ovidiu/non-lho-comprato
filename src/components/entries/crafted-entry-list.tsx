@@ -22,6 +22,7 @@ import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import {
   clampRestoredCount,
   entryAnchorId,
+  planRestoreScroll,
   isSnapshotUsable,
   readSnapshot,
   writeSnapshot,
@@ -515,9 +516,45 @@ export function CraftedEntryList({
       }
 
       requestAnimationFrame(() => {
-        document
-          .getElementById(entryAnchorId(snapshot.anchorEntryId))
-          ?.scrollIntoView({ block: "center" });
+        const anchor = document.getElementById(
+          entryAnchorId(snapshot.anchorEntryId),
+        );
+
+        if (!anchor) {
+          return;
+        }
+
+        const rect = anchor.getBoundingClientRect();
+        const destination = Math.max(
+          0,
+          rect.top +
+            window.scrollY -
+            window.innerHeight / 2 +
+            rect.height / 2,
+        );
+        const plan = planRestoreScroll({
+          currentScroll: window.scrollY,
+          destination,
+          rowHeight: rect.height,
+          prefersReducedMotion: window.matchMedia(
+            "(prefers-reduced-motion: reduce)",
+          ).matches,
+        });
+
+        if (plan.instantTo !== null) {
+          window.scrollTo({ top: plan.instantTo });
+        }
+
+        if (plan.smoothTo === null) {
+          return;
+        }
+
+        /* Il tratto morbido parte al fotogramma dopo: chiesti nello stesso, il
+           browser fonde i due scorrimenti e il salto se lo mangia. */
+        const smoothTo = plan.smoothTo;
+        requestAnimationFrame(() => {
+          window.scrollTo({ top: smoothTo, behavior: "smooth" });
+        });
       });
     })();
   }, [monthKey]);

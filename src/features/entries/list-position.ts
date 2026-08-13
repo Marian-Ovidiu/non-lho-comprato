@@ -41,6 +41,49 @@ export function entryAnchorId(entryId: string): string {
   return `entry-row-${entryId}`;
 }
 
+/**
+ * Quante righe restano allo scorrimento morbido. Sotto questa distanza il
+ * ritorno è tutto morbido; sopra, si salta di colpo fin qui e si scivola solo
+ * l'ultimo tratto — quello che serve a capire dove si è atterrati, senza far
+ * viaggiare l'occhio per mezzo elenco.
+ */
+export const SMOOTH_TAIL_ROWS = 10;
+
+export type RestoreScrollPlan = {
+  /** Salto secco, per accorciare la strada. Null se non serve. */
+  instantTo: number | null;
+  /** Tratto finale morbido. Null quando il movimento va fatto tutto secco. */
+  smoothTo: number | null;
+};
+
+export function planRestoreScroll(input: {
+  currentScroll: number;
+  destination: number;
+  rowHeight: number;
+  prefersReducedMotion: boolean;
+}): RestoreScrollPlan {
+  const { currentScroll, destination, rowHeight, prefersReducedMotion } = input;
+
+  if (prefersReducedMotion) {
+    return { instantTo: destination, smoothTo: null };
+  }
+
+  const tail = Math.max(rowHeight, 1) * SMOOTH_TAIL_ROWS;
+  const distance = Math.abs(destination - currentScroll);
+
+  if (distance <= tail) {
+    return { instantTo: null, smoothTo: destination };
+  }
+
+  /* Il salto atterra a una coda di distanza dalla meta, dalla parte da cui si
+     stava arrivando: così la parte morbida si muove sempre nello stesso verso
+     del viaggio, e non si vede un rimbalzo all'indietro. */
+  const approach =
+    destination > currentScroll ? destination - tail : destination + tail;
+
+  return { instantTo: approach, smoothTo: destination };
+}
+
 export function isSnapshotUsable(
   snapshot: EntriesListSnapshot | null,
   monthKey: string,

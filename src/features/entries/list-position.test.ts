@@ -5,6 +5,8 @@ import {
   clampRestoredCount,
   ENTRIES_SNAPSHOT_STORAGE_KEY,
   entryAnchorId,
+  planRestoreScroll,
+  SMOOTH_TAIL_ROWS,
   isSnapshotUsable,
   MAX_RESTORED_ENTRIES,
   parseSnapshot,
@@ -171,5 +173,74 @@ describe("entryAnchorId", () => {
   it("builds a dom id that survives being used as a selector", () => {
     assert.equal(entryAnchorId("abc123"), "entry-row-abc123");
     assert.equal(ENTRIES_SNAPSHOT_STORAGE_KEY, "nlc_entries_list_position");
+  });
+});
+
+describe("planRestoreScroll", () => {
+  const rowHeight = 72;
+  const tail = rowHeight * SMOOTH_TAIL_ROWS;
+
+  it("scivola e basta quando la riga è a poche posizioni", () => {
+    const plan = planRestoreScroll({
+      currentScroll: 0,
+      destination: tail - 100,
+      rowHeight,
+      prefersReducedMotion: false,
+    });
+
+    assert.equal(plan.instantTo, null);
+    assert.equal(plan.smoothTo, tail - 100);
+  });
+
+  it("salta fin quasi a destinazione quando la strada è lunga", () => {
+    const destination = 6000;
+    const plan = planRestoreScroll({
+      currentScroll: 0,
+      destination,
+      rowHeight,
+      prefersReducedMotion: false,
+    });
+
+    // Il salto lascia esattamente una coda da percorrere in morbido.
+    assert.equal(plan.instantTo, destination - tail);
+    assert.equal(plan.smoothTo, destination);
+  });
+
+  it("salta dalla parte giusta anche tornando indietro", () => {
+    const plan = planRestoreScroll({
+      currentScroll: 6000,
+      destination: 0,
+      rowHeight,
+      prefersReducedMotion: false,
+    });
+
+    // Risalendo, l'avvicinamento sta *sotto* la meta: il tratto morbido si
+    // muove nello stesso verso del viaggio, senza rimbalzi.
+    assert.equal(plan.instantTo, tail);
+    assert.equal(plan.smoothTo, 0);
+  });
+
+  it("non anima niente quando il movimento è di troppo disturbo", () => {
+    const plan = planRestoreScroll({
+      currentScroll: 0,
+      destination: 6000,
+      rowHeight,
+      prefersReducedMotion: true,
+    });
+
+    assert.equal(plan.instantTo, 6000);
+    assert.equal(plan.smoothTo, null);
+  });
+
+  it("regge una riga di altezza nulla senza dividere per zero", () => {
+    const plan = planRestoreScroll({
+      currentScroll: 0,
+      destination: 5,
+      rowHeight: 0,
+      prefersReducedMotion: false,
+    });
+
+    assert.equal(plan.instantTo, null);
+    assert.equal(plan.smoothTo, 5);
   });
 });
