@@ -158,12 +158,8 @@ async function expectEntryMissingFromEntriesPage(page: Page, title: string) {
   await expect(page.getByText(title)).not.toBeVisible();
 }
 
-async function expectEntryOnDashboard(page: Page, title: string) {
-  await page.goto("/");
-  await closeDailySummaryIfVisible(page);
-  await expect(page.getByText(title).first()).toBeVisible();
-}
-
+/* La dashboard non elenca i singoli movimenti dal suo rifacimento: un titolo
+   ci si cerca solo per verificare che *non* ci sia. */
 async function expectEntryMissingFromDashboard(page: Page, title: string) {
   await page.goto("/");
   await closeDailySummaryIfVisible(page);
@@ -195,16 +191,22 @@ test("authenticated user can load the shared workspace home", async ({ page }) =
     page.getByRole("button", { name: /Cambia workspace: Casa E2E/i }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: /Aggiungi movimento/i }).first()).toBeVisible();
-  await expect(page.getByText(/Caffe e2e evitato/i).first()).toBeVisible();
+  // Cercava una spesa evitata: la dashboard non ne mostra piu' da quando quella
+  // funzione e' uscita dall'app, quindi il test era rosso da allora. Al suo
+  // posto il totale del mese, che e' cio' che la home dice davvero.
+  await expect(page.getByText(/Totale del mese/i).first()).toBeVisible();
 });
 
 test("workspace switch hides entries from the previous workspace", async ({ page }) => {
   await authenticateE2EUser(page);
 
+  // I movimenti si controllano dove stanno: la dashboard non li elenca piu'
+  // dal suo rifacimento, mentre l'isolamento fra spazi — che e' cio' che
+  // questo test difende — resta esattamente lo stesso.
+  await expectEntryOnEntriesPage(page, "Delivery e2e condiviso");
+
   await page.goto("/");
   await closeDailySummaryIfVisible(page);
-
-  await expect(page.getByText(/Delivery e2e condiviso/i).first()).toBeVisible();
 
   await page.getByRole("button", { name: /Cambia workspace: Casa E2E/i }).click();
   await expect(page.getByRole("dialog", { name: /Cambia workspace/i })).toBeVisible();
@@ -214,8 +216,7 @@ test("workspace switch hides entries from the previous workspace", async ({ page
   await expect(
     page.getByRole("button", { name: /Cambia workspace: Privato E2E/i }),
   ).toBeVisible();
-  await expect(page.getByText(/Delivery e2e condiviso/i)).not.toBeVisible();
-  await expect(page.getByText(/Caffe e2e evitato/i)).not.toBeVisible();
+  await expectEntryMissingFromEntriesPage(page, "Delivery e2e condiviso");
 });
 
 test("created entries stay isolated between shared and private workspaces", async ({ page }) => {
@@ -226,18 +227,17 @@ test("created entries stay isolated between shared and private workspaces", asyn
   const privateTitle = `${E2E_CREATED_TITLE_PREFIX} privato ${runId}`;
 
   await createSpentEntry(page, sharedTitle, "9,50");
-  await expectEntryOnDashboard(page, sharedTitle);
+  await expectEntryOnEntriesPage(page, sharedTitle);
 
   await switchWorkspace(page, E2E_SHARED_WORKSPACE_NAME, E2E_PRIVATE_WORKSPACE_NAME);
   await expectEntryMissingFromEntriesPage(page, sharedTitle);
   await expectEntryMissingFromDashboard(page, sharedTitle);
 
   await createSpentEntry(page, privateTitle, "4,20");
-  await expectEntryOnDashboard(page, privateTitle);
+  await expectEntryOnEntriesPage(page, privateTitle);
 
   await switchWorkspace(page, E2E_PRIVATE_WORKSPACE_NAME, E2E_SHARED_WORKSPACE_NAME);
   await expectEntryOnEntriesPage(page, sharedTitle);
-  await expectEntryOnDashboard(page, sharedTitle);
   await expectEntryMissingFromEntriesPage(page, privateTitle);
   await expectEntryMissingFromDashboard(page, privateTitle);
 });

@@ -15,6 +15,18 @@ const E2E_IDS = {
   habit: "e2e-habit-caffe",
 };
 
+/* I movimenti di esempio erano datati a un giorno fisso di giugno 2026. La
+ * pagina dei movimenti mostra il mese corrente, quindi passato giugno quelle
+ * righe uscivano dalla vista e i test che le cercavano fallivano senza che
+ * niente si fosse rotto nel codice. Adesso il seed li mette in questo mese, e
+ * restano dove i test li cercano qualunque sia la data di oggi. */
+function daysAgo(days: number, hour: number, minute = 0): Date {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() - days);
+  date.setUTCHours(hour, minute, 0, 0);
+  return date;
+}
+
 async function main() {
   const [{ DEFAULT_CATEGORIES }, { getWorkspaceCategorySlugWhere }, { prisma }] =
     await Promise.all([
@@ -186,7 +198,7 @@ async function main() {
       paymentMode: "single_payer",
       paidByUserId: E2E_IDS.marian,
       createdByUserId: E2E_IDS.marian,
-      date: new Date("2026-06-10T10:00:00.000Z"),
+      date: daysAgo(2, 10),
       source: "manual",
     },
     create: {
@@ -202,7 +214,7 @@ async function main() {
       paymentMode: "single_payer",
       paidByUserId: E2E_IDS.marian,
       createdByUserId: E2E_IDS.marian,
-      date: new Date("2026-06-10T10:00:00.000Z"),
+      date: daysAgo(2, 10),
       source: "manual",
     },
   });
@@ -221,7 +233,7 @@ async function main() {
       paymentMode: "single_payer",
       paidByUserId: E2E_IDS.marian,
       createdByUserId: E2E_IDS.marian,
-      date: new Date("2026-06-11T18:30:00.000Z"),
+      date: daysAgo(1, 18, 30),
       source: "manual",
     },
     create: {
@@ -237,7 +249,7 @@ async function main() {
       paymentMode: "single_payer",
       paidByUserId: E2E_IDS.marian,
       createdByUserId: E2E_IDS.marian,
-      date: new Date("2026-06-11T18:30:00.000Z"),
+      date: daysAgo(1, 18, 30),
       source: "manual",
     },
   });
