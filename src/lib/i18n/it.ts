@@ -32,8 +32,8 @@ export const it: Translations = {
   balances: {
     sectionTitle: "Saldo",
     yourBalance: "Il tuo saldo",
-    jointBalance: "Cointestato",
-    notSet: "Saldo non impostato",
+    jointBalance: "Conto comune",
+    notSet: "Non impostato",
     setUpCta: "Imposta il saldo",
     setUpTitle: "Quanto hai adesso?",
     setUpDesc:
@@ -42,18 +42,37 @@ export const it: Translations = {
     fromDateLabel: "Vale da",
     saveButton: "Salva saldo",
     skipButton: "Non adesso",
-    sinceLine: (from: string, incoming: string, outgoing: string) =>
-      `Dal ${from}: ${incoming} in entrata, ${outgoing} in uscita`,
-    addIncome: "Aggiungi entrata",
+    addIncome: "Entrata",
     incomeTitle: "Nuova entrata",
     incomeTitleLabel: "Cos'è",
     incomeTitlePlaceholder: "Stipendio",
     incomeAmountLabel: "Importo",
     incomeDateLabel: "Quando",
-    incomeWhoLabel: "Su quale conto",
+    /* Corta di proposito: la riga la dividono con tre celle che portano dei
+       nomi, e ogni carattere dell'etichetta è un carattere in meno per il nome
+       della persona. La domanda per esteso è nel nome accessibile del gruppo. */
+    incomeWhoLabel: "Conto",
     incomeJointOption: "Conto comune",
     incomeSaveButton: "Salva entrata",
     incomeEmpty: "Nessuna entrata questo mese",
+    setUpTitleJoint: "Quanto c'è sul conto comune?",
+    setUpJointCta: "Imposta",
+    fromDay: (day: string) => `dal ${day}`,
+    incomingLabel: "Entrate",
+    outgoingLabel: "Uscite",
+    negativeNote: "Il conto è in negativo.",
+    close: "Chiudi",
+    incomeJointShort: "Comune",
+    incomeAccountGroupLabel: "Conto su cui è arrivata",
+    invalidAmount: "Scrivi un importo, anche negativo.",
+    /* L'invito fa la domanda che fa anche il pannello che apre: così quello che
+       si apre è già stato annunciato, e non ci sono tre «imposta il saldo»
+       nella stessa schermata. */
+    inviteTitle: "Quanto hai adesso?",
+    inviteText:
+      "L'app sa quanto spendi. Dille quanto hai, e saprà dirti quanto ti resta.",
+    inviteRegionLabel: "Invito a impostare il saldo",
+    inviteDismiss: "Non adesso",
   },
   budgetAlerts: {
     overBudgetTitle: "Budget superato",

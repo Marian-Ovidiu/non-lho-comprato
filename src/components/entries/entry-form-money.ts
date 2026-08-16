@@ -33,6 +33,19 @@ export function normalizeMoneyInput(value: string): string {
     .replace(/^0+(\d)/, "$1");
 }
 
+/**
+ * Come `normalizeMoneyInput`, ma tiene il meno in testa.
+ *
+ * Serve in un posto solo, ed è il saldo di partenza: un conto può cominciare
+ * sotto zero, e un campo che rifiuta il segno costringe a dichiarare il falso.
+ * Le spese restano sull'altra funzione, dove un importo negativo non esiste.
+ */
+export function normalizeSignedMoneyInput(value: string): string {
+  const isNegative = value.trimStart().startsWith("-");
+
+  return (isNegative ? "-" : "") + normalizeMoneyInput(value);
+}
+
 export function formatMoneyPreview(raw: string): string {
   const value = parseMoneyString(raw);
 

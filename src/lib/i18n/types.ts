@@ -39,7 +39,6 @@ export type Translations = {
     fromDateLabel: string;
     saveButton: string;
     skipButton: string;
-    sinceLine: (from: string, incoming: string, outgoing: string) => string;
     addIncome: string;
     incomeTitle: string;
     incomeTitleLabel: string;
@@ -50,6 +49,20 @@ export type Translations = {
     incomeJointOption: string;
     incomeSaveButton: string;
     incomeEmpty: string;
+    setUpTitleJoint: string;
+    setUpJointCta: string;
+    fromDay: (day: string) => string;
+    incomingLabel: string;
+    outgoingLabel: string;
+    negativeNote: string;
+    close: string;
+    incomeJointShort: string;
+    incomeAccountGroupLabel: string;
+    invalidAmount: string;
+    inviteTitle: string;
+    inviteText: string;
+    inviteRegionLabel: string;
+    inviteDismiss: string;
   };
   budgetAlerts: {
     overBudgetTitle: string;

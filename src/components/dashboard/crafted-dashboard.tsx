@@ -108,6 +108,15 @@ export type CraftedDashboardProps = {
     counterpartLabel: string | null;
   };
   budgetDashboardState: BudgetDashboardSelection;
+  /**
+   * La scheda del saldo, resa dalla pagina e infilata qui.
+   *
+   * Arriva come nodo e non come dati di proposito: il saldo ha le sue azioni
+   * server e i suoi pannelli, e farlo passare da `buildCraftedDashboardProps`
+   * significherebbe far conoscere alla dashboard una funzione che non è sua.
+   * Quello che la dashboard decide è una cosa sola, ed è la sua: **dove sta**.
+   */
+  balanceSlot?: React.ReactNode;
 };
 
 /**
@@ -641,6 +650,7 @@ export function CraftedDashboard({
   emptyState,
   coupleBalance,
   budgetDashboardState,
+  balanceSlot,
 }: CraftedDashboardProps) {
   const formatEUR = useBoundLocale(formatEURBase);
   const currencySymbol = useCurrencySymbol();
@@ -765,8 +775,17 @@ export function CraftedDashboard({
 
         {/* Bento — card compatte a metà, liste a piena larghezza; parallax legato allo scroll */}
         <div className="grid grid-cols-2 items-start gap-3">
-          {/* Il budget globale apre la griglia: è l'unico blocco che risponde a
-              "posso spendere?", che è la domanda con cui si apre l'app. */}
+          {/* Il saldo apre la griglia, e il budget scende di un posto. La
+              domanda con cui si apre l'app resta "posso spendere?", ma ha due
+              risposte in ordine: prima se i soldi ci sono, poi se me li ero
+              concessi. Un tetto che ci si dà conta solo dopo che si sa quanto
+              c'è sotto. */}
+          {balanceSlot ? (
+            <div className="nlc-parallax col-span-2" data-amt="20">
+              {balanceSlot}
+            </div>
+          ) : null}
+
           {budgetDashboardState.mainBudget ? (
           <div className="nlc-parallax col-span-2" data-amt="22">
             <BudgetBlock

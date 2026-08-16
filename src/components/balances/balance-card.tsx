@@ -1,45 +1,49 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Plus, Wallet } from "lucide-react";
+import { useState } from "react";
+import { Plus } from "lucide-react";
 
-import { Amount, Eyebrow } from "@/components/crafted";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { setBalanceStartAction } from "@/src/actions/balances";
-import { createIncomeAction } from "@/src/actions/incomes";
+import { Amount, Eyebrow, Serif } from "@/components/crafted";
+import { cn } from "@/lib/utils";
 import {
   useTranslations,
   useWorkspaceLanguage,
 } from "@/src/components/language/language-context";
 import { languageToLocale } from "@/src/lib/i18n";
 import type { BalanceState } from "@/src/features/balances/balance";
-import { cn } from "@/lib/utils";
-
-type MemberOption = {
-  userId: string;
-  label: string;
-};
+import { BalanceInvite } from "@/src/components/balances/balance-invite";
+import {
+  BalanceSetupDialog,
+  type BalanceSetupTarget,
+} from "@/src/components/balances/balance-setup-dialog";
+import {
+  IncomeDialog,
+  type IncomeMemberOption,
+} from "@/src/components/balances/income-dialog";
 
 type BalanceCardProps = {
   personal: BalanceState;
   joint: BalanceState | null;
   isShared: boolean;
-  members: MemberOption[];
+  members: IncomeMemberOption[];
   currentUserId: string;
   todayDateKey: string;
 };
 
-/* Interfaccia volutamente spoglia: qui c'e' la meccanica, il vestito lo mette
-   il direttore artistico. Quello che deve gia' essere giusto e' cosa si vede e
-   cosa no — il saldo dell'altra persona non compare da nessuna parte. */
+/**
+ * La scheda del saldo.
+ *
+ * Sta subito sotto il foglio della spesa corrente e subito sopra il budget,
+ * perché la lettura è: quanto ho speso → quanto mi resta → quanto mi ero dato.
+ * Fatto, fatto, intenzione. Il numero è un gradino sotto l'eroe (`--num-lead`)
+ * e resta il secondo più grande dell'app: la posizione gli dà il peso, il corpo
+ * conserva l'identità di un'app che parla di spese.
+ *
+ * Nello spazio condiviso i numeri sono due e non sono pari grado, quindi non
+ * hanno la stessa forma: **il saldo personale ha un paragrafo, il conto comune
+ * ha una riga.** Il saldo dell'altra persona non compare, e non arriva qui
+ * nemmeno dal server.
+ */
 export function BalanceCard({
   personal,
   joint,
@@ -50,50 +54,65 @@ export function BalanceCard({
 }: BalanceCardProps) {
   const t = useTranslations();
   const locale = languageToLocale(useWorkspaceLanguage());
-  const [setupTarget, setSetupTarget] = useState<"personal" | "joint" | null>(
+  const [setupTarget, setSetupTarget] = useState<BalanceSetupTarget | null>(
     null,
   );
   const [incomeOpen, setIncomeOpen] = useState(false);
 
+  /* Un'entrata registrata prima che esista un saldo finisce in un posto che
+     non si vede: il calcolo parte da una data di partenza, e senza partenza non
+     c'è niente a cui sommarla. Finché nessuno dei due conti è impostato, la
+     porta delle entrate non si apre — un gesto che non produce niente è peggio
+     di un gesto che manca. */
+  const hasAnyBalance =
+    personal.configured || Boolean(isShared && joint?.configured);
+
   return (
-    <section className="px-[var(--sp-page-x)] pb-4">
-      <div className="rounded-[var(--r-card)] border border-line-soft bg-surface p-4">
-        <div className="flex items-center justify-between gap-3">
+    <>
+      <section className="nlc-glass-card rounded-[var(--r-card)] p-4">
+        <div className="flex items-start justify-between gap-3">
           <Eyebrow>{t.balances.sectionTitle}</Eyebrow>
-          <button
-            type="button"
-            onClick={() => setIncomeOpen(true)}
-            className="flex items-center gap-1 text-[12px] font-semibold text-muted-foreground transition-opacity hover:opacity-70"
-          >
-            <Plus className="size-3.5" aria-hidden="true" />
-            {t.balances.addIncome}
-          </button>
+          {/* Le entrate restano marginali per scelta: una riga quieta in cima
+              alla scheda, non un gesto dell'app. */}
+          {hasAnyBalance ? (
+            <button
+              type="button"
+              onClick={() => setIncomeOpen(true)}
+              className="-mt-1.5 -mr-1.5 flex min-h-9 shrink-0 items-center gap-1 rounded-[var(--r-control)] px-1.5 text-[12px] text-muted-foreground outline-none transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+            >
+              <Plus className="size-3.5" aria-hidden="true" />
+              {t.balances.addIncome}
+            </button>
+          ) : null}
         </div>
 
-        <BalanceRow
-          label={t.balances.yourBalance}
+        <PersonalBalance
           state={personal}
-          onSetUp={() => setSetupTarget("personal")}
-          t={t}
+          isShared={isShared}
           locale={locale}
+          t={t}
+          onSetUp={() => setSetupTarget("personal")}
         />
 
         {isShared && joint ? (
-          <BalanceRow
-            label={t.balances.jointBalance}
+          <JointBalance
             state={joint}
-            onSetUp={() => setSetupTarget("joint")}
-            t={t}
             locale={locale}
+            t={t}
+            onSetUp={() => setSetupTarget("joint")}
           />
         ) : null}
-      </div>
+      </section>
+
+      <BalanceInvite
+        configured={personal.configured}
+        onAccept={() => setSetupTarget("personal")}
+      />
 
       <BalanceSetupDialog
         target={setupTarget}
         todayDateKey={todayDateKey}
         onClose={() => setSetupTarget(null)}
-        t={t}
       />
 
       <IncomeDialog
@@ -103,24 +122,33 @@ export function BalanceCard({
         currentUserId={currentUserId}
         isShared={isShared}
         todayDateKey={todayDateKey}
-        t={t}
       />
-    </section>
+    </>
   );
 }
 
-/* Gli importi della riga vanno scritti come quello grande sopra: il saldo usa
-   la virgola decimale, e un "250.00" col punto due righe sotto si legge come
-   un numero di un'altra app. */
-function formatMoney(value: number, locale: string): string {
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
+type Translations = ReturnType<typeof useTranslations>;
+
+/* Nota sul colore dei testi secondari di questa scheda.
+   Sono tutti su `--muted-foreground` e nessuno su `--ink-3`, e non è una
+   preferenza. Misurato sui pixel realmente resi: la riga serif della data in
+   `--ink-3`, sopra il vetro della scheda in tema chiaro, dava **4,43:1** —
+   sotto la soglia AA, con axe che la classificava `incomplete` e quindi con la
+   suite verde. È lo stesso difetto già trovato su `/more`, dove la cura era la
+   stessa: il fondo qui non è una costante, è vetro sopra la stanza, e un
+   inchiostro tarato sul fondo piatto non regge sopra un fondo composito.
+   Dopo il cambio la peggiore di queste righe sta a 7,0:1 in chiaro. */
 
 function formatDay(dateKey: string, locale: string): string {
   const [year, month, day] = dateKey.split("-").map(Number);
+
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
+    return dateKey;
+  }
 
   return new Intl.DateTimeFormat(locale, {
     day: "numeric",
@@ -129,263 +157,174 @@ function formatDay(dateKey: string, locale: string): string {
   }).format(new Date(Date.UTC(year, month - 1, day)));
 }
 
-function BalanceRow({
-  label,
+function PersonalBalance({
   state,
-  onSetUp,
-  t,
+  isShared,
   locale,
+  t,
+  onSetUp,
 }: {
-  label: string;
   state: BalanceState;
-  onSetUp: () => void;
-  t: ReturnType<typeof useTranslations>;
+  isShared: boolean;
   locale: string;
+  t: Translations;
+  onSetUp: () => void;
 }) {
+  /* «Il tuo saldo» serve solo dove c'è un secondo saldo da cui distinguerlo.
+     In uno spazio privato l'eyebrow della scheda dice già «Saldo», e ripeterlo
+     due righe sotto è una riga in più che non aggiunge una parola. */
+  const label = isShared ? (
+    <p className="text-[13px] text-muted-foreground">{t.balances.yourBalance}</p>
+  ) : null;
+
   if (!state.configured) {
+    /* Quando il saldo non c'è, la scheda è una porta, non un annuncio: la frase
+       che spiega a cosa serve sta nel pannello, dove si decide, e nell'invito,
+       che è il posto in cui l'app chiede. Qui basta dire che manca. */
     return (
-      <div className="mt-3 flex items-center justify-between gap-3">
-        <div>
-          <p className="text-[13px] font-semibold">{label}</p>
-          <p className="text-[12px] text-muted-foreground">
-            {t.balances.notSet}
-          </p>
-        </div>
-        <Button type="button" size="sm" variant="secondary" onClick={onSetUp}>
-          <Wallet className="mr-1.5 size-3.5" aria-hidden="true" />
+      <div className="mt-3">
+        {label}
+        <p
+          className={cn(
+            "text-[13px] text-muted-foreground",
+            isShared ? "mt-0.5" : undefined,
+          )}
+        >
+          {t.balances.notSet}
+        </p>
+        {/* Qui il saldo è una possibilità fra i contenuti della scheda, non
+            l'unica cosa da fare: quindi tratto, non campitura. Il lime pieno lo
+            porta l'invito, dove è davvero l'azione della schermata. */}
+        <button
+          type="button"
+          onClick={onSetUp}
+          className="mt-3 flex min-h-11 w-full items-center justify-center rounded-[var(--r-control)] border border-line px-4 text-[14px] font-medium text-foreground outline-none transition-colors hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
           {t.balances.setUpCta}
-        </Button>
+        </button>
       </div>
     );
   }
 
+  const isNegative = state.current < 0;
+
   return (
     <div className="mt-3">
-      <p className="text-[13px] font-semibold">{label}</p>
-      {/* Il rosso non è un allarme: un saldo sotto zero è un fatto, e va detto
-          senza drammi ma senza nasconderlo. */}
+      {label}
+      {/* Il negativo non ha un colore, e non è una dimenticanza.
+          `--nlc-over` nell'app significa «hai sforato il budget», cioè un
+          giudizio su una regola che ti sei dato; un conto sotto zero è un
+          fatto, e usare lo stesso corallo per le due cose vorrebbe dire dare
+          due significati a una tinta sola. Il fatto lo dicono il segno meno —
+          che a questo corpo non si può non vedere — e una frase. */}
       <Amount
         value={state.current}
+        sign="minus"
         className={cn(
-          "text-[26px]",
-          state.current < 0 && "text-[var(--nlc-over)]",
+          "block text-[length:var(--num-lead)] font-semibold",
+          isShared ? "mt-1" : undefined,
         )}
       />
-      <p className="text-[12px] text-muted-foreground">
-        {t.balances.sinceLine(
-          formatDay(state.start.dateKey, locale),
-          `+${formatMoney(state.incoming, locale)}`,
-          `−${formatMoney(state.outgoing, locale)}`,
-        )}
-      </p>
+      <Serif className="mt-1.5 block text-[13px] text-muted-foreground">
+        {t.balances.fromDay(formatDay(state.start.dateKey, locale))}
+      </Serif>
+
+      {isNegative ? (
+        <p className="mt-1.5 text-[12.5px] leading-4 text-muted-foreground">
+          {t.balances.negativeNote}
+        </p>
+      ) : null}
+
+      <BalanceFlow state={state} t={t} />
     </div>
   );
 }
 
-function BalanceSetupDialog({
-  target,
-  todayDateKey,
-  onClose,
-  t,
-}: {
-  target: "personal" | "joint" | null;
-  todayDateKey: string;
-  onClose: () => void;
-  t: ReturnType<typeof useTranslations>;
-}) {
-  const [pending, startTransition] = useTransition();
-  const [amount, setAmount] = useState("");
-  const [dateKey, setDateKey] = useState(todayDateKey);
-  const [error, setError] = useState<string | null>(null);
-
-  function save() {
-    const parsed = Number(amount.replace(",", "."));
-
-    if (!Number.isFinite(parsed)) {
-      setError(t.validation.invalidNumber);
-      return;
-    }
-
-    startTransition(async () => {
-      const result = await setBalanceStartAction(
-        target === "joint" ? "joint" : "personal",
-        parsed,
-        dateKey,
-      );
-
-      if (!result.success) {
-        setError(result.message);
-        return;
-      }
-
-      setAmount("");
-      setError(null);
-      onClose();
-    });
+/**
+ * Le postille: come si è arrivati da lì a qui.
+ *
+ * Compaiono solo se sono maggiori di zero. Prima la riga scriveva sempre tutte
+ * e due le voci, e su un saldo appena impostato diceva «+0,00 in entrata, −0,00
+ * in uscita»: due numeri che non erano ancora successi, e uno zero con il segno
+ * meno davanti, che non è una quantità.
+ */
+function BalanceFlow({ state, t }: { state: BalanceState; t: Translations }) {
+  if (!state.configured || (state.incoming <= 0 && state.outgoing <= 0)) {
+    return null;
   }
 
   return (
-    <Dialog open={target !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle>{t.balances.setUpTitle}</DialogTitle>
-        </DialogHeader>
-
-        <p className="text-[13px] text-muted-foreground">
-          {t.balances.setUpDesc}
-        </p>
-
-        <div className="mt-4 space-y-3">
-          <div>
-            <Label htmlFor="balance-amount">{t.balances.amountLabel}</Label>
-            <Input
-              id="balance-amount"
-              inputMode="decimal"
-              value={amount}
-              onChange={(event) => setAmount(event.target.value)}
-              placeholder="0,00"
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="balance-date">{t.balances.fromDateLabel}</Label>
-            <Input
-              id="balance-date"
-              type="date"
-              value={dateKey}
-              onChange={(event) => setDateKey(event.target.value)}
-            />
-          </div>
-
-          {error ? (
-            <p className="text-[13px] text-[var(--nlc-over)]">{error}</p>
-          ) : null}
-        </div>
-
-        <div className="mt-4 flex gap-2">
-          <Button type="button" variant="ghost" onClick={onClose}>
-            {t.balances.skipButton}
-          </Button>
-          <Button
-            type="button"
-            className="flex-1"
-            disabled={pending || amount.trim() === ""}
-            onClick={save}
-          >
-            {t.balances.saveButton}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <p className="mt-2 flex flex-wrap items-baseline gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
+      {state.incoming > 0 ? (
+        <span className="inline-flex items-baseline gap-1">
+          {t.balances.incomingLabel}
+          <Amount value={state.incoming} sign="plus" className="text-[12px]" />
+        </span>
+      ) : null}
+      {state.outgoing > 0 ? (
+        <span className="inline-flex items-baseline gap-1">
+          {t.balances.outgoingLabel}
+          <Amount value={-state.outgoing} sign="minus" className="text-[12px]" />
+        </span>
+      ) : null}
+    </p>
   );
 }
 
-function IncomeDialog({
-  open,
-  onClose,
-  members,
-  currentUserId,
-  isShared,
-  todayDateKey,
+/**
+ * Il conto comune: una riga, non una seconda scheda.
+ *
+ * È l'unico posto della dashboard, insieme al dare/avere, dove i soggetti sono
+ * due — quindi porta il lilla, che nella palette significa esattamente quello e
+ * nient'altro. Un pallino da sei pixel basta a dire «questo è di tutti e due»
+ * senza scrivere una parola in più, e distingue le due righe con il materiale
+ * invece che con la dimensione.
+ */
+function JointBalance({
+  state,
+  locale,
   t,
+  onSetUp,
 }: {
-  open: boolean;
-  onClose: () => void;
-  members: MemberOption[];
-  currentUserId: string;
-  isShared: boolean;
-  todayDateKey: string;
-  t: ReturnType<typeof useTranslations>;
+  state: BalanceState;
+  locale: string;
+  t: Translations;
+  onSetUp: () => void;
 }) {
-  const [pending, startTransition] = useTransition();
-  const [errors, setErrors] = useState<Record<string, string>>({});
-
-  function submit(formData: FormData) {
-    startTransition(async () => {
-      const result = await createIncomeAction(formData);
-
-      if (!result.success) {
-        setErrors(result.errors ?? {});
-        return;
-      }
-
-      setErrors({});
-      onClose();
-    });
-  }
-
   return (
-    <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
-      <DialogContent aria-describedby={undefined}>
-        <DialogHeader>
-          <DialogTitle>{t.balances.incomeTitle}</DialogTitle>
-        </DialogHeader>
+    <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-3">
+      <div className="min-w-0">
+        <span className="flex min-w-0 items-center gap-2 text-[13px] text-muted-foreground">
+          <span
+            className="size-1.5 shrink-0 rounded-full bg-[var(--lilac-ink)]"
+            aria-hidden="true"
+          />
+          <span className="truncate">{t.balances.jointBalance}</span>
+        </span>
+        <span className="mt-0.5 block pl-[14px] text-[11px] text-muted-foreground">
+          {state.configured
+            ? t.balances.fromDay(formatDay(state.start.dateKey, locale))
+            : t.balances.notSet}
+        </span>
+      </div>
 
-        <form action={submit} className="mt-3 space-y-3">
-          <div>
-            <Label htmlFor="income-title">{t.balances.incomeTitleLabel}</Label>
-            <Input
-              id="income-title"
-              name="title"
-              placeholder={t.balances.incomeTitlePlaceholder}
-              required
-            />
-            {errors.title ? (
-              <p className="text-[13px] text-[var(--nlc-over)]">{errors.title}</p>
-            ) : null}
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label htmlFor="income-amount">{t.balances.incomeAmountLabel}</Label>
-              <Input
-                id="income-amount"
-                name="amount"
-                inputMode="decimal"
-                placeholder="0,00"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="income-date">{t.balances.incomeDateLabel}</Label>
-              <Input
-                id="income-date"
-                name="date"
-                type="date"
-                defaultValue={todayDateKey}
-              />
-            </div>
-          </div>
-          {errors.amount ? (
-            <p className="text-[13px] text-[var(--nlc-over)]">{errors.amount}</p>
-          ) : null}
-
-          {isShared ? (
-            <div>
-              <Label htmlFor="income-who">{t.balances.incomeWhoLabel}</Label>
-              <select
-                id="income-who"
-                name="receivedByUserId"
-                defaultValue={currentUserId}
-                className="h-11 w-full rounded-[var(--r-control)] border border-line-soft bg-background px-3 text-[15px]"
-              >
-                {members.map((member) => (
-                  <option key={member.userId} value={member.userId}>
-                    {member.label}
-                  </option>
-                ))}
-                <option value="">{t.balances.incomeJointOption}</option>
-              </select>
-            </div>
-          ) : (
-            <input type="hidden" name="receivedByUserId" value={currentUserId} />
+      {state.configured ? (
+        <Amount
+          value={state.current}
+          sign="minus"
+          className={cn(
+            "shrink-0 text-[length:var(--num-mid)] font-semibold",
           )}
-
-          <Button type="submit" className="w-full" disabled={pending}>
-            {t.balances.incomeSaveButton}
-          </Button>
-        </form>
-      </DialogContent>
-    </Dialog>
+        />
+      ) : (
+        <button
+          type="button"
+          onClick={onSetUp}
+          className="flex min-h-9 shrink-0 items-center rounded-[var(--r-control)] border border-line px-3 text-[13px] font-medium text-foreground outline-none transition-colors hover:bg-surface-muted focus-visible:ring-2 focus-visible:ring-ring/50"
+        >
+          {t.balances.setUpJointCta}
+        </button>
+      )}
+    </div>
   );
 }

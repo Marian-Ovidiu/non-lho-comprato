@@ -2066,3 +2066,483 @@ Le costanti `QUICK_ADD_MODE` e `QUICK_ADD_SAVING_CONTEXT` sono i due valori che
 questo pannello manda sempre. Sono costanti e non stato perché non c'è più niente
 che le faccia cambiare: se tornassero a essere stato, tornerebbe anche il
 confronto.
+
+---
+
+# Il saldo: il secondo numero, e perché non è il primo
+
+Fino a ieri questa app rispondeva bene a una domanda sola — *quanto ho speso* —
+e la rispondeva con il numero più grande della schermata. Il saldo è la seconda
+metà di quella frase: *quanto mi resta*. È arrivato con la meccanica finita e
+l'interfaccia volutamente spoglia: un rettangolo con un bordo e due righe di
+testo, messo **sopra** il foglio della spesa corrente.
+
+Quel rettangolo diceva tre cose, tutte sbagliate, e vale la pena elencarle
+perché sono la mappa di quello che ho fatto. Era **l'elemento più largo della
+pagina** — portava il padding di pagina, mentre l'hero è rientrato di qualche
+pixel in più — quindi la cosa meno costruita della dashboard era anche quella
+che la scavalcava. Era **l'unico oggetto opaco** in una schermata fatta di
+vetro: in tema chiaro un rettangolo bianco pieno appoggiato sulla stanza, che
+non legge come una scheda, legge come un elemento non ancora vestito. Ed **era
+il primo**, anche quando era vuoto: in uno spazio senza saldo la prima cosa che
+si vedeva aprendo l'app era un riquadro che diceva «non impostato».
+
+## La gerarchia, e l'argomento per cui non è quella che sembrava ovvia
+
+Il brief mi chiedeva di decidere fra saldo e spesa corrente e di giustificarlo.
+La risposta comoda era promuovere il saldo a numero eroe: *è quello che conta
+davvero, quanti soldi hai.* Non l'ho fatto, e l'argomento non è la prudenza.
+
+**L'hero non è il numero più importante della schermata: è il soggetto
+dell'app.** Questa app si chiama «Non l'ho comprato». Il suo oggetto è la
+decisione di spesa — la cosa su cui si può agire, quella che cambia domani
+perché stasera si è fatto qualcosa di diverso. Il saldo non è una decisione: è
+la **conseguenza** delle decisioni. Mettere la conseguenza al posto del soggetto
+trasformerebbe l'app in un'altra: da un diario di scelte a un conto corrente con
+sopra un logo. Le app che mostrano il saldo in grande le fa già la banca, e le
+fa meglio, perché il saldo lo sa per davvero.
+
+Ma «non è l'eroe» non vuol dire «è una postilla». Quindi la gerarchia la fa
+**la posizione**, che è l'altro strumento che ho:
+
+> **Il saldo apre la griglia, e il budget scende di un posto.**
+
+Questa è la decisione, ed è più forte di quanto sembri, perché il posto che il
+saldo prende non era libero. In questo documento avevo scritto: «il budget
+globale apre la griglia: è l'unico blocco che risponde a *posso spendere?*, che
+è la domanda con cui si apre l'app.» La domanda era giusta, la risposta era
+incompleta. **«Posso spendere?» ha due risposte, e hanno un ordine:** prima *i
+soldi ci sono?*, poi *me li ero concessi?*. Un tetto che ci si dà conta solo
+dopo che si sa quanto c'è sotto. Un budget rispettato su un conto vuoto non è
+una buona notizia; un budget sforato con mille euro in banca è un'informazione
+di tutt'altro peso. Il saldo è il vincolo duro, il budget è il vincolo che ci si
+è dati: il fatto viene prima dell'intenzione.
+
+La lettura della dashboard adesso è, nell'ordine: **quanto ho speso → quanto mi
+resta → quanto mi ero dato.** Fatto, fatto, intenzione.
+
+Il corpo segue la posizione con un gradino solo di distacco. Il saldo è
+`--num-lead` (27px) contro i 38–50px fluidi dell'hero: è il **secondo numero più
+grande dell'applicazione**, più di qualunque cosa stia nella griglia, e sopra di
+lui c'è una cosa sola. Non ho inventato un gradino nuovo per farcelo stare — la
+scala dei numeri ne ha tre da quando esiste, e questa era esattamente la sua
+ragione d'essere.
+
+Il materiale è **la scheda** (`.nlc-glass-card`), non il foglio. Il foglio è uno
+solo ed è il documento del mese; moltiplicarlo avrebbe sciolto la distinzione
+fra le due lastre, che è l'unica gerarchia di materiale che questa app ha. E c'è
+una ragione di contenuto: **il foglio è tutto agganciato al mese** — «agosto», le
+spese fisse, il totale del mese, oggi. Il saldo non è una quantità mensile:
+parte da una data dichiarata, che può essere di quattro mesi fa. Infilare un
+numero non-mensile dentro il documento del mese è lo stesso errore di categoria
+della colonna che non sommava.
+
+## I due numeri dello spazio condiviso: un paragrafo e una riga
+
+Nello spazio condiviso i saldi visibili sono due — il mio e il comune — e non
+sono pari grado. Il rischio era ovvio ed era già nel codice che ho ricevuto: due
+blocchi identici, stessa etichetta, stesso corpo, stessa riga di postille sotto.
+Due blocchi uguali dicono una cosa sola, *questi due numeri contano allo stesso
+modo*, ed è la stessa diagnosi che avevo fatto per i tre riquadri della testata
+di `/entries`.
+
+La regola che ho scelto si dice in una riga:
+
+> **Il saldo personale ha un paragrafo. Il conto comune ha una riga.**
+
+Il personale porta etichetta, numero a 27px, la data di partenza in serif
+corsivo — la voce che commenta, come «agosto» sotto l'hero — e le postille di
+come ci è arrivato. Il comune porta un pallino, il nome, la sua data a 11px e il
+numero a `--num-mid`. Nessuna postilla, nessun serif, nessuna spiegazione: quello
+che è successo sul conto comune lo sanno in due, e non è la storia personale di
+nessuno.
+
+Il pallino è **lilla**, ed è il punto in cui questa scelta smette di essere
+composizione e diventa disciplina di palette. La regola è scritta dall'inizio:
+*il lilla è la coppia, ed è l'unico posto dove esistono due persone.* Un conto
+cointestato è la definizione letterale di quella regola. Sei pixel di lilla
+dicono «questo è di tutti e due» senza spendere una parola, e distinguono le due
+righe con **il materiale** invece che con la dimensione — che è il modo in cui
+questa app dice gli stati da quando i filtri hanno smesso di tingersi di lime.
+
+Il saldo dell'altra persona non compare. Non è una questione di interfaccia: non
+arriva nemmeno dal server, e sono andato a controllarlo prima di disegnare
+qualsiasi cosa. `getWorkspaceBalances` restituisce `personal` e `joint`, e non
+esiste un campo da cui si possa dedurre il terzo numero.
+
+## Il saldo negativo: il rosso non c'è, ed è la decisione
+
+Questa è la parte del lavoro di cui sono più convinto, e comincia con un difetto
+che ho trovato guardando la schermata invece che il codice.
+
+**Un saldo negativo mostrava il numero sbagliato.** Il componente `Amount`
+prende il valore assoluto per tutti i segni tranne `delta` — giustamente, perché
+la regola dell'app è che il meno si scrive solo dove è un'eccezione da leggere.
+Il saldo passava da `sign="none"`. Risultato misurato dal vivo, con partenza a
+−800 e 500 di entrate: **il conto era a −300,00 € e la scheda scriveva
+«€ 300,00»**, in corallo. L'unica cosa che diceva «sotto zero» era una tinta. Un
+numero che perde il segno non è arrotondato: è sbagliato, e per giunta sbagliato
+di seicento euro.
+
+Corretto con un quarto segno su `Amount`, `minus`, che è la regola originale
+applicata a una colonna che di norma è positiva: il meno si scrive quando c'è e
+non si scrive quando non c'è. Si marca la deroga, non la regola.
+
+E qui viene la parte di direzione artistica. Il brief chiedeva di dirlo «senza
+drammatizzare e senza nasconderlo», e di verificare che non nascesse un doppio
+senso con `--nlc-under/warn/over`. **Il doppio senso c'era, ed è peggio di un
+problema di sfumature.**
+
+Il corallo di questa app ha un significato dichiarato e preciso: **hai sforato
+il budget**. È un giudizio su una regola che l'utente si è dato. Un conto sotto
+zero non è un giudizio: è un fatto, e per giunta un fatto che con il budget non
+c'entra niente — si può essere in rosso e ampiamente sotto budget, perché il
+budget è un tetto sul mese mentre il saldo è una quantità che viene da prima. Con
+il corallo su tutti e due, quel colore avrebbe smesso di avere un significato e
+ne avrebbe avuti due, e l'utente avrebbe dovuto sapere *quale elemento sta
+guardando* per sapere *cosa gli sta dicendo il colore*. È esattamente il difetto
+per cui il lime aveva smesso di significare qualcosa quando faceva tre lavori
+insieme.
+
+La scelta è quindi netta: **il saldo negativo non ha un colore.** Resta in
+`--foreground` pieno, esattamente come un saldo positivo, perché è la stessa
+specie di affermazione. Quello che cambia è:
+
+1. **il segno**, un meno vero (−) davanti a un numero da 27px, che non è una cosa
+   che si può non vedere;
+2. **una frase**, «Il conto è in negativo.», sotto la data.
+
+Una frase invece di una tinta è anche il modo meno drammatico che esista di dire
+una cosa: il colore urla o non urla, una frase constata. E ha il vantaggio di
+funzionare per chi i colori non li distingue, che sulla scala del giudizio è un
+problema che questo documento ha già dichiarato di non poter risolvere.
+
+Prevedo l'obiezione, e la scrivo per esteso perché è la sola vera: *senza il
+rosso non si nota.* L'ho guardata con un saldo negativo vero, dal vivo, nei due
+temi. Il meno a 27px in inchiostro pieno è più visibile del corallo di prima,
+che a quel corpo su una tinta chiara legge come una decorazione. Ma è la nota su
+cui voglio un occhio umano, ed è la 35.
+
+## L'invito alla prima apertura
+
+Il requisito del fondatore è esplicito, e la parte difficile non è mostrarlo: è
+non trasformarlo in un muro. Quindi, prima di tutto, **cosa non è**: non è un
+modale. Un modale all'apertura blocca l'app per chiedere una cosa che non è
+urgente, e la prima reazione imparata a un modale all'avvio è cercare la X. Chi
+lo chiude una volta ha imparato a chiuderlo, e la funzione è morta il primo
+giorno.
+
+È **un pannello che galleggia sopra la barra inferiore**, con lo stesso
+alloggiamento che l'app usa già per il permesso alle notifiche: stessa quota
+(`--nlc-chrome-bottom`, sopra il velo e non dentro la sua sfumatura), stesso
+fondo opaco, stessa larghezza massima. Non ho inventato un secondo modo di
+chiedere qualcosa: ne esisteva uno e l'ho riusato. Dietro, la dashboard è intera
+e si scorre; il saldo si può ignorare guardando la spesa del mese, che è quello
+che uno era venuto a fare.
+
+Dice una domanda — **«Quanto hai adesso?»**, la stessa che fa il pannello che
+apre, così quello che si aprirà è già stato annunciato — una riga che spiega a
+cosa serve, e due uscite: «Non adesso» e «Imposta il saldo». Più una X, perché il
+rifiuto dev'essere raggiungibile da due punti diversi. Entra scorrendo dal basso
+in 280ms, la stessa curva e la stessa durata della scivolata fra i passi
+dell'aggiunta rapida; con `prefers-reduced-motion` compare e basta.
+
+Compare **1200 millisecondi dopo il montaggio**, non subito. È l'unica cosa
+temporizzata di questo giro e ha una ragione: un invito che nasce insieme al
+contenuto si legge come parte della pagina, e quando lo si guarda meglio è già
+stato scartato con lo sguardo. Deve arrivare quando si è già capito cosa si sta
+guardando.
+
+**Chi lo vede:** chiunque non abbia un saldo. Non ho scritto una riga di codice
+per distinguere chi aggiorna da chi si registra oggi, e non serve: le colonne
+sono nullable, quindi *«non impostato»* è già la condizione che li accomuna. Un
+flag «ha visto l'aggiornamento» sarebbe stato un secondo modo di dire la stessa
+cosa, e questo documento ha già contato quattro volte in cui due modi di dire la
+stessa cosa hanno finito per divergere.
+
+### Dove tengo memoria del «non adesso», e perché lì
+
+**`localStorage`, con una data e non un booleano.**
+
+Le alternative erano tre e le ho scartate per ragioni diverse. `sessionStorage`
+non serve: sparisce alla chiusura, quindi l'invito tornerebbe a ogni apertura,
+che è precisamente il muro. Una colonna sul database sarebbe stata la scelta
+robusta — sopravvive al cambio di telefono — ma costa una migrazione per
+registrare una preferenza di interfaccia, e soprattutto **è concettualmente
+sbagliata**: «non adesso» non è un fatto sulla persona, è un fatto su *questo
+momento su questo telefono*, che è esattamente la portata di `localStorage`. Un
+cookie avrebbe fatto lo stesso lavoro facendosi mandare al server a ogni
+richiesta per un dato che al server non serve.
+
+La parte su cui ho pensato di più non è dove, è **cosa** ci scrivo. Un booleano
+dice «mai più», e mai più sbaglia in tutte e due le direzioni. Chi dice di no
+mentre è in fila alla cassa non sta dichiarando che la funzione non gli
+interessa; e una funzione che dopo un rifiuto non si ripropone mai è una
+funzione che, per quella persona, non esiste più. Quindi ci scrivo **una data**,
+e l'invito può tornare dopo **trenta giorni**. Non è un compromesso timido: è la
+differenza fra chiedere due volte in un anno e chiedere una volta sola nel
+momento sbagliato.
+
+E comunque la porta non si chiude mai: dentro la scheda il pulsante «Imposta il
+saldo» resta lì tutti i giorni. **L'invito è l'annuncio, non l'unico accesso** —
+ed è per questo che nell'invito il pulsante è lime pieno, perché lì è *l'*azione
+della superficie, mentre nella scheda è in tratto, perché lì è una possibilità
+fra i contenuti. Stessa azione, due pesi, e il peso lo detta il contesto.
+
+Verificato dal vivo, non dedotto: l'invito compare a un utente senza saldo, la
+sua regione è annunciata, «Non adesso» scrive la data, il pannello sparisce, e
+**al ricaricamento non torna**.
+
+## I due pannelli, e la grammatica che adesso è una sola
+
+`BalanceSetupDialog` e `IncomeDialog` erano due moduli grezzi: `Label` sopra,
+`Input` sotto, `Label` sopra, `Input` sotto. Cioè esattamente la forma che
+l'aggiunta rapida aveva smesso di avere, con il rilievo del fondatore che l'aveva
+causata — «non voglio righe con una sola parola per riga».
+
+Non ho ridisegnato: ho **applicato la regola che c'era già**. Una riga porta una
+parola solo se accanto a quella parola c'è la sostanza a cui si riferisce.
+Etichetta a sinistra, controllo a destra, sulla stessa riga; dove l'etichetta non
+serve, non c'è.
+
+- **Il saldo di partenza** ha due righe: *Saldo attuale*, con l'importo scritto a
+  23px semibold tabulare, e *Vale da*, con il segmentato a tre celle — Oggi,
+  Ieri, e la terza che è il calendario di sistema e che quando la data è
+  personalizzata smette di dire «Altra» e scrive la data. Sopra, la frase che
+  spiega la data di partenza, perché è l'unica cosa non ovvia di questo pannello.
+  Sotto, il gesto in campitura lime e «Non adesso» come riga di servizio:
+  saltare dev'essere a un tocco, ma non è un'azione pari al salvataggio, e due
+  pulsanti affiancati direbbero che lo è.
+- **L'entrata** ha quattro righe con lo stesso ritmo: il titolo a riga intera
+  senza etichetta — è l'unico campo a testo libero, di lunghezza imprevedibile, e
+  il segnaposto «Stipendio» dice cosa scrivere meglio di quanto lo direbbe la
+  parola «Cos'è» sospesa sopra il vuoto; l'etichetta vera c'è, `sr-only` — poi
+  *Importo*, *Quando* e *Conto*. In uno spazio privato la quarta riga non c'è,
+  perché la domanda non esiste: il conto è uno.
+
+Le righe del conto e della data sono tutte e due segmentati a tre celle, e questa
+volta la forma ripetuta è **corretta**: sono tutte e due scelte esclusive fra tre,
+ed è la stessa regola per cui «Vale per» ha dovuto diventare chip. La forma segue
+il comportamento, non il posto in cui capita.
+
+Sulla riservatezza, una cosa che vale la pena dichiarare: nello spazio condiviso
+la riga *Conto* elenca le due persone e il comune. Sembra una crepa e non lo è —
+dice **su quale conto è arrivata un'entrata**, non quanto c'è su quel conto.
+Registrare uno stipendio arrivato all'altra persona non fa vedere il suo saldo:
+fa sparire quel numero dentro un saldo che resta invisibile.
+
+### La grammatica è uscita dal file in cui era nata
+
+I fogli adesso sono tre. La stessa forma scritta in tre posti è la condizione da
+cui nascono le divergenze, e questo documento ha già una regola: se due elementi
+devono assomigliarsi, la misura la pubblica uno solo. Quindi la geometria del
+foglio, il corpo scorrevole, la lastra piatta, la cella del segmentato, la
+campitura della CTA, la riga della data e **la lettura della tastiera da
+`visualViewport`** vivono in `src/components/shared/panel-grammar.tsx` e in
+`src/hooks/use-keyboard-inset.ts`. L'aggiunta rapida non ne ha una copia: le
+importa. Non ho cambiato una riga del suo comportamento, e la prova è che
+`e2e/entry-money-flow.spec.ts` — che la attraversa per intero — resta verde.
+
+## Tre difetti di correttezza, corretti e dichiarati
+
+Come nei giri precedenti: se è aritmetica o è rottura, si corregge e si scrive.
+
+**1. Il saldo negativo scriveva il numero senza segno.** Descritto sopra. È il
+più grave dei tre perché non era un problema di stile: la scheda dichiarava
+€300,00 quando il conto era a −300,00 €.
+
+**2. Gli importi dentro i pannelli uscivano in monospace.** `.font-num` in
+`:root` è **Geist Mono**; l'Instrument Sans tabulare arriva da
+`.nlc-glass-home`, che è la dashboard. Un pannello Radix vive in un portale, cioè
+**fuori da quello scope** — quindi ogni importo scritto dentro un foglio usciva
+nel carattere da cui questa direzione artistica ha esplicitamente tolto i numeri
+(«niente monospace: il numero grande non sembra uno scontrino»). Vale anche per
+l'importo dell'aggiunta rapida, quello che questo documento descrive come «23px
+in semibold tabulare»: non lo era. I campi importo adesso portano `.nlc-amount`,
+cioè la tipografia dei soldi dell'app — **il numero che si scrive deve avere la
+faccia del numero che poi si legge**. La correzione più larga (`.font-num` che
+non sia il monospace in `:root`) tocca 48 usi in venti file e non l'ho fatta da
+dentro una funzione sul saldo: è la nota 38.
+
+**3. Un contrasto sotto soglia che il test verde non vedeva.** La riga serif
+della data, in `--ink-3` sopra il vetro della scheda in tema chiaro, misurata sui
+pixel realmente resi: **4,43:1**. Sotto la soglia AA, e axe la classificava
+`incomplete`, quindi la suite passava. È lo stesso difetto già trovato su
+`/more`, con la stessa causa: `--ink-3` è tarato sul fondo piatto, e qui il fondo
+non è una costante ma vetro sopra la stanza. Stessa cura: i testi secondari di
+queste superfici passano a `--muted-foreground`. Dopo la correzione la peggiore
+di quelle righe sta a **6,56:1** in chiaro e 9,03:1 in scuro, e la misura più
+bassa di tutta la funzione è **4,95:1** — i centesimi dentro le postille, che
+restano su `--ink-3` perché sono una decisione globale di `Amount` e non di
+questa scheda.
+
+Ho anche tolto due cose che dicevano il falso. La riga sotto il saldo scriveva
+sempre tutte e due le voci, quindi su un saldo appena impostato diceva **«+0,00
+in entrata, −0,00 in uscita»**: due quantità che non erano ancora successe, e uno
+zero con un meno davanti, che non è una quantità. Adesso ogni voce compare solo
+se è maggiore di zero, ed è la stessa cura già data alle postille della testata
+di `/entries`. E l'azione «Entrata» non c'è finché non esiste nessun saldo: il
+calcolo parte da una data di partenza, quindi un'entrata registrata prima
+finisce in un posto che non si vede. Un gesto che non produce niente è peggio di
+un gesto che manca.
+
+## Come l'ho verificato
+
+Contrariamente a quanto questo documento riporta per il giro precedente, **in
+questo ambiente `next dev` idrata**: `main` è visibile, la pagina contiene testo
+vero, e i pannelli si aprono. Quindi qui non c'è nessun banco di prova statico:
+tutto quello che è scritto sopra è stato guardato in pagina.
+
+Verde: `npm run lint`, `npx tsc --noEmit`, `npm run test` (583 test),
+`npm run build`, `npx playwright test e2e/a11y.spec.ts` (8/8) e
+`e2e/entry-money-flow.spec.ts`.
+
+Axe sulle superfici che quella suite **non apre mai** — la scheda, i due pannelli
+aperti e l'invito, a 390px nei due temi: **zero violazioni serious o critical**,
+otto passaggi su otto. Gli `incomplete` di contrasto restano (una ottantina di
+nodi sulla dashboard, e c'erano anche prima: sono i fondi compositi del vetro
+sopra la stanza), e per questo il verdetto sul contrasto non viene dal semaforo
+ma dai rapporti calcolati sui pixel, riportati sopra.
+
+Schermate a 360, 390 e 430px nei due temi, in spazio condiviso e privato, con
+saldo impostato, non impostato e negativo: nessun troncamento oltre quello
+dichiarato alla nota 36, `scrollWidth == clientWidth` ovunque, pannelli alti 353
+e 392px a 360px di larghezza.
+
+**Una cosa che ho trovato e non ho toccato**, perché precede il mio lavoro e l'ho
+verificata tornando sul commit base: `e2e/authenticated-home.spec.ts` fallisce sul
+primo test, che cerca un movimento chiamato «Caffe e2e evitato». Quel movimento
+**il seed non lo crea** — l'ho controllato nel database dopo un seed pulito. Non
+è un caso limite di dati: è un test che cerca una riga che non esiste. Fallisce
+identico con le mie modifiche riposte.
+
+## Cosa ho deliberatamente non fatto
+
+- **Non ho toccato la logica dei saldi.** `computeBalance`,
+  `splitBalanceMovements` e le due azioni server sono esattamente quelle che ho
+  ricevuto, riga per riga. La regola di chi paga non l'ho nemmeno sfiorata, e non
+  ho trovato difetti da segnalarci dentro.
+- **Non ho promosso il saldo a numero eroe**, e sopra c'è l'argomento per esteso.
+  È la scelta più contestabile di questo giro ed è quella che ho difeso meglio.
+- **Nessun grafico, andamento, proiezione o categoria sulle entrate.** Il saldo è
+  un numero e una data; un'entrata è un titolo, un importo, un giorno e un conto.
+  Non ho aggiunto un elenco delle entrate in dashboard, né un totale del mese, né
+  una freccia che dica se il saldo sta salendo. La tentazione c'era:
+  `getIncomesForMonth` esiste già ed è pronta. **Il fatto che una funzione esista
+  non è un argomento per disegnarci sopra qualcosa.**
+- **Nessuna metrica derivata.** Niente «ti restano N giorni a questo ritmo»,
+  niente saldo previsto a fine mese, niente percentuali. Sono tutte cose che si
+  ottengono incrociando il saldo con la spesa corrente, ed è esattamente per
+  questo che le due schede sono adiacenti: **l'incrocio lo fa l'utente
+  guardando**, e finché lo fa lui non mettiamo la firma su una previsione.
+- **Nessun materiale nuovo.** La scheda è `.nlc-glass-card`, i pannelli sono il
+  foglio che esisteva, l'invito è la carta opaca del prompt delle notifiche. Il
+  pallino lilla è l'unico segno nuovo, ed è largo sei pixel.
+- **Nessun colore nuovo, e nessun ruolo di colore riusato per un lavoro che non
+  era il suo.** Vedi tutta la sezione sul negativo.
+- **Non ho tradotto i messaggi d'errore delle azioni server.** Sono italiano
+  scritto a mano dentro `src/actions/balances.ts` e `incomes.ts`, quindi in
+  inglese restano in italiano. Non li ho toccati perché quelle azioni sono
+  verificate da tredici test e il brief dice di non riscriverle per comodità di
+  layout. Quello che ho fatto è **ridurne l'esposizione**: i casi verificabili
+  prima del server — importo mancante o non numerico, titolo troppo corto, data
+  non valida — li verifica il pulsante, che resta spento con le stesse soglie del
+  server. Restano visibili solo i messaggi degli errori veri. È un debito, ed è la
+  nota 39.
+- **Nessuna dipendenza nuova.** CSS, SVG inline e lucide.
+
+## Dove voglio un occhio umano
+
+35. **Il negativo senza rosso.** È la decisione di cui sono più convinto e quella
+    che ha più probabilità di essere ribaltata da un utente vero. La mia tesi è
+    che un meno in inchiostro pieno a 27px, più una frase, dicano il fatto meglio
+    e più onestamente di una tinta che nell'app significa già un'altra cosa. Ma
+    va guardata da qualcuno che sta davvero in rosso, non da me con un dato di
+    prova. **Se servisse un rinforzo, la strada giusta non è il corallo del
+    budget**: è dare al negativo un gradino di materiale — la riga del saldo su
+    un incasso appena inchiostrato — perché il materiale non ha ancora un
+    significato occupato, e il colore sì.
+36. **I nomi nella riga «Conto» del pannello entrate.** A 360px ogni cella ha
+    circa cinquantacinque pixel per il nome. «Marian» e «Sara» stanno larghi; con
+    la coppia del database di prova — «Marian E2E» e «Martina E2E» — si tronca, e
+    per un momento durante il lavoro le due celle scrivevano tutte e due «Mar…»,
+    cioè due bersagli diversi con lo stesso testo. Ho accorciato l'etichetta a
+    «Conto» e adesso si distinguono, ma è una vittoria di due caratteri. Se in
+    uso reale i nomi sono lunghi, la strada è mandare quel segmentato a riga
+    intera sotto la sua etichetta: costa una riga in più al pannello, ed è un
+    prezzo che pagherei volentieri per non far scegliere fra due celle identiche.
+37. **Il ritorno dell'invito dopo trenta giorni.** Il numero è ragionato, non
+    misurato: mi sembra abbastanza lungo da non essere insistenza e abbastanza
+    corto da recuperare un rifiuto dato nel momento sbagliato. È una costante
+    sola (`DISMISS_DAYS`). Se dopo il rilascio qualcuno lo vede tornare e lo
+    trova invadente, il numero sale; se nessuno imposta mai il saldo, scende. Non
+    ho modo di deciderlo da qui.
+38. **`.font-num` è il monospace, e nessuno se n'era accorto.** L'ho corretto
+    dentro i campi importo dei pannelli, che è dove me ne sono accorto e dove ne
+    rispondo. Ma il token globale resta in contraddizione con la regola scritta
+    in cima a questo documento, e riguarda 48 usi in venti file: `Mono`, le liste
+    delle abitudini, i form degli obiettivi, la landing pubblica. **Questa è la
+    prima cosa che guarderei**, ed è un lavoro suo, non una riga da infilare qui:
+    va aperta ogni schermata che usa `Mono` e guardata, perché in qualche punto
+    il monospace potrebbe essere voluto.
+39. **Gli errori delle azioni del saldo non passano da `src/lib/i18n`.** Sono
+    sette stringhe. Non le ho toccate per non entrare in file coperti da test che
+    non ho scritto io, ma è un debito che si paga alla prima persona che apre
+    l'app in inglese e sbaglia una data.
+40. **La scheda quando non c'è niente da mostrare.** In uno spazio nuovo la prima
+    cosa della griglia è una scheda che dice «non impostato» e un pulsante. L'ho
+    resa il più corta possibile — l'annuncio lo fa l'invito, la scheda è solo la
+    porta — ma resta un blocco quasi vuoto in cima. L'alternativa sarebbe non
+    renderla affatto finché il saldo non esiste, lasciando che l'unico accesso
+    sia l'invito: non l'ho fatto perché dopo un «non adesso» la funzione
+    diventerebbe invisibile per trenta giorni. Se in uso reale quel riquadro dà
+    fastidio, la scelta è fra le due, e nessuna delle due è gratis.
+41. **La distanza fra 27 e 19 pixel**, cioè fra il mio saldo e il conto comune.
+    Sulla carta sono due gradini della scala; sullo schermo, con il numero del
+    comune allineato a destra, la differenza si legge meno di quanto si legga
+    scritta qui. Regge perché intorno ai due numeri c'è tutto il resto — il
+    paragrafo contro la riga — ma se in uso i due si sentissero pari, il rimedio
+    è togliere peso al comune (`font-medium` invece di `semibold`), non
+    aggiungerne al personale: il personale è già al suo posto nella scala.
+
+## Nota tecnica per chi tocca questo codice
+
+`src/components/shared/panel-grammar.tsx` è la grammatica dei fogli e la usano in
+tre. Chi ne aggiunge un quarto la importi invece di copiarla; chi cambia una di
+quelle costanti sappia che sta cambiando anche l'aggiunta rapida, che è il gesto
+più ripetuto dell'app. `useKeyboardInset` sta in `src/hooks` per la stessa
+ragione: l'offset della tastiera e l'altezza massima del pannello vanno insieme,
+e alzare il pannello senza accorciarlo lo fa uscire dallo schermo dall'alto.
+
+`PANEL_MONEY_INPUT_CLASS` porta `.nlc-amount` e **non** `font-num`: vedi il
+difetto 2. Se qualcuno lo «semplifica» rimettendo `font-num`, gli importi dei
+pannelli tornano in monospace senza che nessun test se ne accorga.
+`moneyFieldWidth` misura il campo sul contenuto in `ch`, e serve a tenere il
+simbolo di valuta attaccato al numero: con un input a larghezza piena e il testo
+allineato a destra, la `€` resta appiccicata all'etichetta a mezza riga dalle
+cifre che dovrebbe introdurre.
+
+`BalanceCard` entra nella griglia della dashboard come **nodo** (`balanceSlot`),
+non come dati. È voluto: il saldo ha le sue azioni server e i suoi pannelli, e
+farlo passare da `buildCraftedDashboardProps` significherebbe far conoscere alla
+dashboard una funzione che non è sua. La dashboard decide una cosa sola, ed è la
+sua: dove sta.
+
+`BalanceInvite` si rende in un **portale su `document.body`**, e non è una
+finezza: la scheda vive dentro un elemento con la parallasse, cioè una
+trasformata permanente, e una trasformata crea un contenitore per il
+`position: fixed`. Senza portale l'invito si ancorerebbe alla card invece che al
+viewport. È lo stesso inciampo già documentato per la CTA di `/entries/new`.
+
+La chiave del rifiuto è `nlc:balance-invite` e contiene una data ISO, non un
+booleano. Chi la legge come booleano rompe il ritorno dopo trenta giorni senza
+che niente diventi rosso.
+
+`normalizeSignedMoneyInput` esiste perché un saldo di partenza può essere
+negativo. Le spese restano su `normalizeMoneyInput`, che il segno lo mangia: non
+scambiarle, o si potranno registrare spese negative.
+
+Gli strumenti con cui ho misurato — le schermate, il contrasto campionato sui
+pixel resi, axe sui pannelli aperti, la prova di comportamento dell'invito — sono
+script usa e getta e non stanno nel repository. I numeri che contano sono scritti
+qui.
