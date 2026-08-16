@@ -18,8 +18,15 @@ type AmountProps = {
    * `delta` è il terzo caso, ed è l'opposto degli altri due: una differenza
    * fra due periodi non ha un verso implicito, quindi lì il segno *è* il
    * contenuto e si scrive sempre — meno vero (−), non un trattino.
+   *
+   * `minus` è il quarto, ed è la regola originale applicata a una colonna che
+   * di norma è positiva: il saldo. Lì il negativo è **l'eccezione da leggere**,
+   * quindi il meno si scrive quando c'è e non si scrive quando non c'è. Senza
+   * questo il saldo passava da `none`, che manda il valore in `Math.abs`: un
+   * conto a −300 si scriveva «€300,00», e l'unica cosa che diceva «sotto zero»
+   * era una tinta. Un numero che perde il segno non è arrotondato, è sbagliato.
    */
-  sign?: "none" | "plus" | "delta";
+  sign?: "none" | "plus" | "delta" | "minus";
   className?: string;
 };
 
@@ -57,7 +64,7 @@ export function Amount({
     <span className={cn("nlc-amount", className)}>
       {sign === "plus" ? "+" : null}
       {sign === "delta" && value > 0 ? "+" : null}
-      {sign === "delta" && value < 0 ? "−" : null}
+      {(sign === "delta" || sign === "minus") && value < 0 ? "−" : null}
       <span className="nlc-currency">{symbol}</span>
       {integer}
       {fraction ? (

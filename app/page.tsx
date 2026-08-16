@@ -449,18 +449,25 @@ export default async function Home({ searchParams }: HomePageProps) {
         </div>
       ) : null}
 
-      {balances ? (
-        <BalanceCard
-          personal={balances.balances.personal}
-          joint={balances.balances.joint}
-          isShared={balances.balances.isShared}
-          members={balances.members}
-          currentUserId={balances.currentUserId}
-          todayDateKey={balances.todayDateKey}
-        />
-      ) : null}
-
-      <CraftedDashboard {...craftedProps} />
+      {/* La scheda non sta più sopra il foglio: entra nella griglia della
+          dashboard, primo blocco, dove il vetro e la stanza sono già quelli
+          giusti. Sopra l'hero era l'elemento più largo della pagina e l'unico
+          opaco — la cosa meno importante che sembrava la più importante. */}
+      <CraftedDashboard
+        {...craftedProps}
+        balanceSlot={
+          balances ? (
+            <BalanceCard
+              personal={balances.balances.personal}
+              joint={balances.balances.joint}
+              isShared={balances.balances.isShared}
+              members={balances.members}
+              currentUserId={balances.currentUserId}
+              todayDateKey={balances.todayDateKey}
+            />
+          ) : null
+        }
+      />
     </>
   );
 }

@@ -47,6 +47,21 @@ import { getCategoryIdentity } from "@/src/lib/category-identity";
 import { EntryPeopleFields } from "@/src/components/entries/entry-people-fields";
 import { ExpenseSuggestionCard } from "@/src/components/entries/expense-suggestion-card";
 import { FormFieldError } from "@/src/components/shared/form-field-error";
+/* La grammatica del pannello vive fuori da qui: è nata in questo file, ma
+   adesso i fogli sono tre (aggiunta rapida, saldo, entrata) e la stessa forma
+   scritta in tre posti è la condizione da cui nascono le divergenze. */
+import {
+  DateSegmentedRow,
+  PANEL_BODY_CLASS,
+  PANEL_CTA_CLASS,
+  PANEL_MONEY_INPUT_CLASS,
+  PANEL_MONEY_SYMBOL_CLASS,
+  PANEL_SHEET_CLASS,
+  PANEL_SLAB_CLASS,
+  segmentClassName,
+  segmentGroupClassName,
+} from "@/src/components/shared/panel-grammar";
+import { useKeyboardInset } from "@/src/hooks/use-keyboard-inset";
 import { getCurrentWorkspaceMembersAction } from "@/src/actions/workspace";
 import {
   getDefaultBeneficiaryUserIds,
@@ -60,7 +75,6 @@ import { trackPostHogEvent } from "@/src/lib/posthog";
 import {
   getBrowserTodayDateKey,
   isDateKey,
-  shiftDateKey,
 } from "@/src/lib/workspace-dates";
 import {
   normalizeMoneyInput,
@@ -194,40 +208,6 @@ function getSearchHref(
   return query ? `/entries/new?${query}` : "/entries/new";
 }
 
-function formatShortDate(dateKey: string, locale: string) {
-  const [yearPart, monthPart, dayPart] = dateKey.split("-");
-  const year = Number(yearPart);
-  const month = Number(monthPart);
-  const day = Number(dayPart);
-
-  if (
-    !Number.isFinite(year) ||
-    !Number.isFinite(month) ||
-    !Number.isFinite(day)
-  ) {
-    return dateKey;
-  }
-
-  return new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    timeZone: "UTC",
-  }).format(new Date(Date.UTC(year, month - 1, day)));
-}
-
-/** Una cella di un segmentato: lo stato si dice con il materiale, mai col lime. */
-function segmentClassName(active: boolean) {
-  return cn(
-    "flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-[calc(var(--r-control)-4px)] px-2 py-1.5",
-    "text-center text-[13px] font-medium leading-4 outline-none",
-    "transition-colors duration-150 motion-reduce:transition-none",
-    "focus-visible:ring-2 focus-visible:ring-ring/50",
-    active
-      ? "bg-foreground text-background"
-      : "text-muted-text hover:bg-surface-muted hover:text-foreground",
-  );
-}
-
 export function QuickAddSheet({
   categories,
   workspace,
@@ -275,7 +255,7 @@ export function QuickAddSheet({
   const [viewportHeight, setViewportHeight] = useState<number | undefined>(
     undefined,
   );
-  const [keyboardInset, setKeyboardInset] = useState(0);
+  const keyboardInset = useKeyboardInset(open);
   const [liveMessage, setLiveMessage] = useState("");
   /* Quale dei due pulsanti ha inviato: decide se dopo il salvataggio il
      pannello si chiude o si svuota e resta. */
@@ -348,7 +328,6 @@ export function QuickAddSheet({
   });
   const showSuggestionLookupState = expenseSuggestion.isLoading;
   const todayKey = getTodayLocal();
-  const yesterdayKey = shiftDateKey(todayKey, -1);
   const hiddenAmountSpent = toHiddenMoneyValue(draft.amountSpent);
   const suggestion =
     expenseSuggestion.suggestion &&
@@ -388,7 +367,6 @@ export function QuickAddSheet({
     !pending &&
     !membersLoading &&
     activeMembers.length > 0;
-  const isCustomDate = draft.date !== todayKey && draft.date !== yesterdayKey;
 
   useEffect(() => {
     let active = true;
@@ -466,34 +444,6 @@ export function QuickAddSheet({
 
     setDraft(getInitialDraft(activeMembers, currentUserId));
   }, [activeMembers, currentUserId, membersLoading]);
-
-  /* Il pannello sta incollato al bordo basso: quando la tastiera si apre, senza
-     questo il gruppo dei pulsanti finisce sotto i tasti. `visualViewport` è
-     l'unica misura che tutti i browser mobili aggiornano davvero; dove non
-     esiste, l'offset resta zero e il pannello si comporta come prima. */
-  useEffect(() => {
-    const viewport = typeof window === "undefined" ? null : window.visualViewport;
-
-    if (!open || !viewport) {
-      return;
-    }
-
-    const update = () => {
-      const overlap =
-        window.innerHeight - viewport.height - viewport.offsetTop;
-      setKeyboardInset(overlap > 24 ? Math.round(overlap) : 0);
-    };
-
-    update();
-    viewport.addEventListener("resize", update);
-    viewport.addEventListener("scroll", update);
-
-    return () => {
-      viewport.removeEventListener("resize", update);
-      viewport.removeEventListener("scroll", update);
-      setKeyboardInset(0);
-    };
-  }, [open]);
 
   /* L'altezza del pannello segue il gruppo attivo, e lo fa con la stessa curva
      della scivolata: i due passi non sono alti uguale, e far finta di sì
@@ -765,67 +715,26 @@ export function QuickAddSheet({
 
   function renderDateRow() {
     return (
-      <div className="flex items-center gap-3 px-3.5 py-2.5">
-        <Eyebrow className="shrink-0 text-muted-foreground">
-          {t.quickAdd.whenLabel}
-        </Eyebrow>
-        <div
-          role="group"
-          aria-label={t.quickAdd.dateLabel}
-          className="ml-auto grid min-w-0 flex-1 grid-cols-3 gap-1 rounded-[var(--r-control)] bg-background p-1"
-        >
-          <button
-            type="button"
-            className={segmentClassName(draft.date === todayKey)}
-            aria-pressed={draft.date === todayKey}
-            onClick={() => updateDraft({ date: todayKey })}
-          >
-            {t.quickAdd.todayButton}
-          </button>
-          <button
-            type="button"
-            className={segmentClassName(draft.date === yesterdayKey)}
-            aria-pressed={draft.date === yesterdayKey}
-            onClick={() => updateDraft({ date: yesterdayKey })}
-          >
-            {t.quickAdd.yesterdayButton}
-          </button>
-          {/* La terza cella è il calendario di sistema: l'input copre la cella,
-              così un dito lo apre e una tastiera lo raggiunge. */}
-          <label className={cn("relative", segmentClassName(isCustomDate))}>
-            <span className="truncate">
-              {isCustomDate
-                ? formatShortDate(draft.date, locale)
-                : t.quickAdd.otherDateButton}
-            </span>
-            <input
-              type="date"
-              value={draft.date}
-              aria-label={t.quickAdd.otherDateLabel}
-              onClick={(event) => {
-                try {
-                  event.currentTarget.showPicker?.();
-                } catch {
-                  /* Safari e i browser che non lo espongono aprono comunque il
-                     loro selettore al tocco: qui non c'è niente da fare. */
-                }
-              }}
-              onChange={(event) => {
-                if (event.target.value) {
-                  updateDraft({ date: event.target.value });
-                }
-              }}
-              className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
-            />
-          </label>
-        </div>
-      </div>
+      <DateSegmentedRow
+        value={draft.date}
+        onChange={(next) => updateDraft({ date: next })}
+        todayKey={todayKey}
+        locale={locale}
+        labels={{
+          row: t.quickAdd.whenLabel,
+          group: t.quickAdd.dateLabel,
+          today: t.quickAdd.todayButton,
+          yesterday: t.quickAdd.yesterdayButton,
+          other: t.quickAdd.otherDateButton,
+          otherAria: t.quickAdd.otherDateLabel,
+        }}
+      />
     );
   }
 
   function renderStepOneFields() {
     return (
-      <div className="grid divide-y divide-line overflow-hidden rounded-[var(--r-card)] bg-surface-muted">
+      <div className={PANEL_SLAB_CLASS}>
         <div className="px-3.5 py-2.5">
           <label htmlFor="quick-title" className="sr-only">
             {t.quickAdd.titleLabel}
@@ -858,10 +767,7 @@ export function QuickAddSheet({
               </Eyebrow>
             </label>
             <div className="mt-0.5 flex items-baseline gap-1">
-              <span
-                className="font-num text-[15px] text-ink-3"
-                aria-hidden="true"
-              >
+              <span className={PANEL_MONEY_SYMBOL_CLASS} aria-hidden="true">
                 {currencySymbol}
               </span>
               <input
@@ -878,10 +784,7 @@ export function QuickAddSheet({
                 enterKeyHint={isTwoStep ? "next" : "done"}
                 onKeyDown={handleStepOneEnter}
                 aria-invalid={Boolean(state.errors?.amountSpent)}
-                className={cn(
-                  "w-full min-w-0 bg-transparent font-num text-[23px] font-semibold leading-7 text-foreground outline-none",
-                  "placeholder:font-normal placeholder:text-ink-3/60",
-                )}
+                className={cn(PANEL_MONEY_INPUT_CLASS, "w-full")}
               />
             </div>
             <FormFieldError
@@ -951,7 +854,7 @@ export function QuickAddSheet({
 
   function renderStepTwoFields() {
     return (
-      <div className="grid divide-y divide-line overflow-hidden rounded-[var(--r-card)] bg-surface-muted">
+      <div className={PANEL_SLAB_CLASS}>
         {renderDateRow()}
 
         {canUseJointPayment ? (
@@ -959,7 +862,7 @@ export function QuickAddSheet({
             <div
               role="group"
               aria-label={t.quickAdd.paymentGroupLabel}
-              className="grid grid-cols-2 gap-1 rounded-[var(--r-control)] bg-background p-1"
+              className={cn(segmentGroupClassName(2), "ml-0 flex-none")}
             >
               <button
                 type="button"
@@ -1048,8 +951,7 @@ export function QuickAddSheet({
         disabled={!canSubmit}
         onClick={() => setSavingIntent("save")}
         className={cn(
-          "flex h-[52px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] text-[15.5px] font-bold",
-          "transition-[opacity,transform,background-color] duration-200 motion-reduce:transition-none",
+          PANEL_CTA_CLASS,
           canSubmit
             ? "bg-accent text-accent-foreground active:scale-[0.98] active:opacity-90"
             : "bg-surface-muted text-muted-foreground",
@@ -1144,22 +1046,14 @@ export function QuickAddSheet({
              non esiste più: dichiararlo assente evita di puntare al vuoto. */
           aria-describedby={undefined}
           style={{ "--nlc-kb": `${keyboardInset}px` } as React.CSSProperties}
-          className={cn(
-            "inset-x-2 top-auto bottom-[var(--nlc-kb,0px)] w-auto max-w-none translate-x-0 translate-y-0",
-            "overflow-x-hidden rounded-t-[var(--r-sheet)] rounded-b-none border-border bg-surface p-0",
-            "shadow-[var(--shadow-sheet)]",
-            "data-open:animate-in data-open:slide-in-from-bottom-4 data-closed:animate-out data-closed:slide-out-to-bottom-4",
-            "sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2",
-            "sm:rounded-[var(--r-sheet)] sm:data-open:zoom-in-95 sm:data-closed:zoom-out-95",
-          )}
+          className={PANEL_SHEET_CLASS}
           onOpenAutoFocus={(event) => {
             event.preventDefault();
           }}
         >
           <div
             className={cn(
-              "flex max-h-[min(88vh,calc(100vh-var(--nlc-kb,0px)-1.5rem))] min-w-0 flex-col",
-              "overflow-y-auto overflow-x-hidden overscroll-contain",
+              PANEL_BODY_CLASS,
               "transition-[opacity,transform,filter] duration-200 ease-out motion-reduce:transition-none",
               successStage === "closing" && "translate-y-1 opacity-0 blur-[1px]",
             )}
@@ -1341,8 +1235,7 @@ export function QuickAddSheet({
                     disabled={!isStepOneReady}
                     onClick={() => goToStep(2)}
                     className={cn(
-                      "flex h-[52px] w-full items-center justify-center gap-2 rounded-[var(--r-cta)] text-[15.5px] font-bold",
-                      "transition-[opacity,transform,background-color] duration-200 motion-reduce:transition-none",
+                      PANEL_CTA_CLASS,
                       isStepOneReady
                         ? "bg-accent text-accent-foreground active:scale-[0.98] active:opacity-90"
                         : "bg-surface-muted text-muted-foreground",
