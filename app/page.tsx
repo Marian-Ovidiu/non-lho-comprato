@@ -24,6 +24,13 @@ import {
   type MonthSpendBreakdown,
 } from "@/src/actions/entries";
 import { getHomeDashboardMetrics } from "@/src/actions/dashboard";
+import { getWorkspaceBalances } from "@/src/actions/balances";
+import { BalanceCard } from "@/src/components/balances/balance-card";
+import {
+  getCurrentUser,
+  getCurrentWorkspaceMembers,
+} from "@/src/lib/workspace-context";
+import { getTodayDateKey } from "@/src/lib/workspace-dates";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
 import { buildCraftedDashboardProps } from "@/src/lib/crafted-dashboard-build";
@@ -355,6 +362,32 @@ export default async function Home({ searchParams }: HomePageProps) {
         })
       : null;
 
+  /* Il saldo e' facoltativo: se il caricamento fallisce la dashboard resta
+     quella di prima invece di andare in errore per una scheda in piu'. */
+  const balances = await (async () => {
+    try {
+      const [state, members, currentUser] = await Promise.all([
+        getWorkspaceBalances(),
+        getCurrentWorkspaceMembers(),
+        getCurrentUser(),
+      ]);
+
+      return {
+        balances: state,
+        members: members.map((member) => ({
+          userId: member.userId,
+          label: member.label,
+        })),
+        currentUserId: currentUser.id,
+        todayDateKey: getTodayDateKey(timeZone),
+      };
+    } catch (error) {
+      unstable_rethrow(error);
+      console.error("Failed to load balances:", error);
+      return null;
+    }
+  })();
+
   const craftedProps = buildCraftedDashboardProps({
     monthRealSpent,
     monthFixedSpent: spendBreakdown.fixedSpent,
@@ -414,6 +447,17 @@ export default async function Home({ searchParams }: HomePageProps) {
             message={dashboardLoadError}
           />
         </div>
+      ) : null}
+
+      {balances ? (
+        <BalanceCard
+          personal={balances.balances.personal}
+          joint={balances.balances.joint}
+          isShared={balances.balances.isShared}
+          members={balances.members}
+          currentUserId={balances.currentUserId}
+          todayDateKey={balances.todayDateKey}
+        />
       ) : null}
 
       <CraftedDashboard {...craftedProps} />

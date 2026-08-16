@@ -27,6 +27,30 @@ export type Translations = {
 
   language: "it" | "en";
 
+  balances: {
+    sectionTitle: string;
+    yourBalance: string;
+    jointBalance: string;
+    notSet: string;
+    setUpCta: string;
+    setUpTitle: string;
+    setUpDesc: string;
+    amountLabel: string;
+    fromDateLabel: string;
+    saveButton: string;
+    skipButton: string;
+    sinceLine: (from: string, incoming: string, outgoing: string) => string;
+    addIncome: string;
+    incomeTitle: string;
+    incomeTitleLabel: string;
+    incomeAmountLabel: string;
+    incomeTitlePlaceholder: string;
+    incomeDateLabel: string;
+    incomeWhoLabel: string;
+    incomeJointOption: string;
+    incomeSaveButton: string;
+    incomeEmpty: string;
+  };
   budgetAlerts: {
     overBudgetTitle: string;
     paceTitle: string;

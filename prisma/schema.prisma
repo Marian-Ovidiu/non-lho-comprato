@@ -351,6 +351,8 @@ model User {
   targetGoals          Goal[]              @relation("GoalTargetUser")
   feedbacks            Feedback[]          @relation("FeedbackUser")
   createdImportBatches ImportBatch[]
+  incomesReceived      Income[]            @relation("IncomeReceivedBy")
+  incomesCreated       Income[]            @relation("IncomeCreatedBy")
 }
 
 model Workspace {
@@ -361,6 +363,10 @@ model Workspace {
   currency       String            @default("EUR")
   language       String            @default("it")
   setupCompleted Boolean           @default(false)
+  /// Il saldo del conto comune. Ha senso solo negli spazi condivisi, dove le
+  /// spese segnate come cointestate escono da qui invece che dal conto di uno.
+  jointBalanceStart     Decimal?  @db.Decimal(12, 2)
+  jointBalanceStartDate DateTime?
   ownerUserId    String
   owner        User              @relation(fields: [ownerUserId], references: [id], onDelete: Restrict)
   members      WorkspaceMember[]
@@ -371,6 +377,7 @@ model Workspace {
   importBatches ImportBatch[]
   importedTransactions ImportedTransaction[]
   entries      Entry[]
+  incomes      Income[]
   habits       Habit[]
   goals        Goal[]
   feedbacks    Feedback[]        @relation("FeedbackWorkspace")
@@ -378,6 +385,33 @@ model Workspace {
   updatedAt    DateTime          @updatedAt
 
   @@index([ownerUserId])
+}
+
+/// Le entrate stanno fuori da Entry di proposito. Trentasei file e duecento
+/// punti del codice leggono Entry e sommano realCost, e quasi nessuno filtra
+/// per tipo: un'entrata dentro quella tabella verrebbe sommata come una spesa
+/// finche' non si controllano tutti. Qui invece nessun calcolo esistente
+/// cambia comportamento, perche' proprio non la vede.
+model Income {
+  id               String    @id @default(cuid())
+  workspaceId      String
+  workspace        Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  title            String
+  amount           Decimal   @db.Decimal(10, 2)
+  /// Mezzanotte del giorno nel fuso dello spazio, come per Entry.
+  date             DateTime
+  /// Chi l'ha incassata. Nullo significa che e' finita sul conto comune.
+  receivedByUserId String?
+  receivedByUser   User?     @relation("IncomeReceivedBy", fields: [receivedByUserId], references: [id], onDelete: SetNull)
+  createdByUserId  String?
+  createdBy        User?     @relation("IncomeCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  note             String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([workspaceId, date])
+  @@index([receivedByUserId])
+  @@index([createdByUserId])
 }
 
 model Feedback {
@@ -423,6 +457,10 @@ model WorkspaceMember {
   userId      String
   role        WorkspaceMemberRole @default(member)
   lastSelectedAt DateTime?
+  /// Il saldo dichiarato da questa persona in questo spazio, e da quando vale.
+  /// Nullo finche' non lo imposta: il saldo e' facoltativo, non un requisito.
+  balanceStart     Decimal?  @db.Decimal(12, 2)
+  balanceStartDate DateTime?
   workspace   Workspace           @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime            @default(now())

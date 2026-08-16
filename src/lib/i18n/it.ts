@@ -29,6 +29,32 @@ export const it: Translations = {
 
   language: "it",
 
+  balances: {
+    sectionTitle: "Saldo",
+    yourBalance: "Il tuo saldo",
+    jointBalance: "Cointestato",
+    notSet: "Saldo non impostato",
+    setUpCta: "Imposta il saldo",
+    setUpTitle: "Quanto hai adesso?",
+    setUpDesc:
+      "Da questo momento in poi il saldo segue quello che registri. Quello che c'era prima resta dov'è.",
+    amountLabel: "Saldo attuale",
+    fromDateLabel: "Vale da",
+    saveButton: "Salva saldo",
+    skipButton: "Non adesso",
+    sinceLine: (from: string, incoming: string, outgoing: string) =>
+      `Dal ${from}: ${incoming} in entrata, ${outgoing} in uscita`,
+    addIncome: "Aggiungi entrata",
+    incomeTitle: "Nuova entrata",
+    incomeTitleLabel: "Cos'è",
+    incomeTitlePlaceholder: "Stipendio",
+    incomeAmountLabel: "Importo",
+    incomeDateLabel: "Quando",
+    incomeWhoLabel: "Su quale conto",
+    incomeJointOption: "Conto comune",
+    incomeSaveButton: "Salva entrata",
+    incomeEmpty: "Nessuna entrata questo mese",
+  },
   budgetAlerts: {
     overBudgetTitle: "Budget superato",
     paceTitle: "Ritmo troppo alto",

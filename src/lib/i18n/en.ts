@@ -29,6 +29,32 @@ export const en: Translations = {
 
   language: "en",
 
+  balances: {
+    sectionTitle: "Balance",
+    yourBalance: "Your balance",
+    jointBalance: "Joint",
+    notSet: "Balance not set",
+    setUpCta: "Set your balance",
+    setUpTitle: "How much do you have right now?",
+    setUpDesc:
+      "From now on the balance follows what you log. Whatever came before stays where it is.",
+    amountLabel: "Current balance",
+    fromDateLabel: "Valid from",
+    saveButton: "Save balance",
+    skipButton: "Not now",
+    sinceLine: (from: string, incoming: string, outgoing: string) =>
+      `Since ${from}: ${incoming} in, ${outgoing} out`,
+    addIncome: "Add income",
+    incomeTitle: "New income",
+    incomeTitleLabel: "What is it",
+    incomeTitlePlaceholder: "Salary",
+    incomeAmountLabel: "Amount",
+    incomeDateLabel: "When",
+    incomeWhoLabel: "Which account",
+    incomeJointOption: "Joint account",
+    incomeSaveButton: "Save income",
+    incomeEmpty: "No income this month",
+  },
   budgetAlerts: {
     overBudgetTitle: "Over budget",
     paceTitle: "Pace too fast",
