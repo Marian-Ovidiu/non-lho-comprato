@@ -110,8 +110,20 @@ export function BalanceCard({
       />
 
       <BalanceSetupDialog
+        /* Rimontando a ogni cambio di bersaglio, i valori di partenza entrano
+           dagli inizializzatori di stato invece che da un effetto. */
+        key={setupTarget ?? "chiuso"}
         target={setupTarget}
         todayDateKey={todayDateKey}
+        initial={
+          setupTarget === "joint"
+            ? joint?.configured
+              ? { amount: joint.start.amount, dateKey: joint.start.dateKey }
+              : null
+            : personal.configured
+              ? { amount: personal.start.amount, dateKey: personal.start.dateKey }
+              : null
+        }
         onClose={() => setSetupTarget(null)}
       />
 
@@ -225,9 +237,21 @@ function PersonalBalance({
           isShared ? "mt-1" : undefined,
         )}
       />
-      <Serif className="mt-1.5 block text-[13px] text-muted-foreground">
-        {t.balances.fromDay(formatDay(state.start.dateKey, locale))}
-      </Serif>
+      {/* La correzione entra da qui e non da un pulsante suo: la riga dice gia'
+          da quando vale il saldo, quindi e' il punto in cui uno guarda quando
+          si accorge di averlo sbagliato. Resta testo all'aspetto — il saldo si
+          muove con le spese e le entrate, e un pulsante «modifica» in evidenza
+          inviterebbe a usarlo come scorciatoia per quelle. */}
+      <button
+        type="button"
+        onClick={onSetUp}
+        aria-label={t.balances.correctCta}
+        className="mt-1.5 block rounded-[6px] text-left outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+      >
+        <Serif className="block text-[13px] text-muted-foreground">
+          {t.balances.fromDay(formatDay(state.start.dateKey, locale))}
+        </Serif>
+      </button>
 
       {isNegative ? (
         <p className="mt-1.5 text-[12.5px] leading-4 text-muted-foreground">
@@ -301,11 +325,23 @@ function JointBalance({
           />
           <span className="truncate">{t.balances.jointBalance}</span>
         </span>
-        <span className="mt-0.5 block pl-[14px] text-[11px] text-muted-foreground">
-          {state.configured
-            ? t.balances.fromDay(formatDay(state.start.dateKey, locale))
-            : t.balances.notSet}
-        </span>
+        {/* Stessa porta del saldo personale: la riga che dice da quando vale
+            e' anche il modo per correggerla. Quando non c'e' ancora un saldo
+            resta testo, perche' l'invito ce l'ha gia' il pulsante accanto. */}
+        {state.configured ? (
+          <button
+            type="button"
+            onClick={onSetUp}
+            aria-label={t.balances.correctCta}
+            className="mt-0.5 block rounded-[6px] pl-[14px] text-left text-[11px] text-muted-foreground outline-none transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+          >
+            {t.balances.fromDay(formatDay(state.start.dateKey, locale))}
+          </button>
+        ) : (
+          <span className="mt-0.5 block pl-[14px] text-[11px] text-muted-foreground">
+            {t.balances.notSet}
+          </span>
+        )}
       </div>
 
       {state.configured ? (

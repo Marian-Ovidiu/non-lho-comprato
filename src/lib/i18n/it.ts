@@ -36,6 +36,10 @@ export const it: Translations = {
     notSet: "Non impostato",
     setUpCta: "Imposta il saldo",
     setUpTitle: "Quanto hai adesso?",
+    correctTitle: "Correggi il saldo di partenza",
+    correctDesc:
+      "Serve solo se ti eri sbagliato a scriverlo. Le spese e le entrate lo muovono da sole: non passare da qui per registrarle.",
+    correctCta: "Correggi il saldo di partenza",
     setUpDesc:
       "Da questo momento in poi il saldo segue quello che registri. Quello che c'era prima resta dov'è.",
     amountLabel: "Saldo attuale",

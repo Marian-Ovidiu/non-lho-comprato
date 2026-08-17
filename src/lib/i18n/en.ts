@@ -36,6 +36,10 @@ export const en: Translations = {
     notSet: "Not set",
     setUpCta: "Set your balance",
     setUpTitle: "How much do you have right now?",
+    correctTitle: "Correct the starting balance",
+    correctDesc:
+      "Only for when you typed it wrong. Expenses and income move it on their own: don't come here to record them.",
+    correctCta: "Correct the starting balance",
     setUpDesc:
       "From now on the balance follows what you log. Whatever came before stays where it is.",
     amountLabel: "Current balance",

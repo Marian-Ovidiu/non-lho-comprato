@@ -45,11 +45,18 @@ export type BalanceSetupTarget = "personal" | "joint";
 export function BalanceSetupDialog({
   target,
   todayDateKey,
+  initial,
   onClose,
   onSaved,
 }: {
   target: BalanceSetupTarget | null;
   todayDateKey: string;
+  /* Valorizzato quando si sta correggendo un saldo gia' dichiarato: il
+     pannello si apre sui numeri di adesso invece che vuoto, perche' chi
+     corregge un errore di battitura non vuole riscrivere anche cio' che era
+     giusto. Il componente si rimonta quando cambia il bersaglio, quindi questi
+     valori entrano dagli inizializzatori e non da un effetto. */
+  initial?: { amount: number; dateKey: string } | null;
   onClose: () => void;
   onSaved?: () => void;
 }) {
@@ -57,8 +64,10 @@ export function BalanceSetupDialog({
   const currencySymbol = useCurrencySymbol();
   const { locale } = useLocaleFormatters();
   const [pending, startTransition] = useTransition();
-  const [amount, setAmount] = useState("");
-  const [dateKey, setDateKey] = useState(todayDateKey);
+  const [amount, setAmount] = useState(() =>
+    initial ? String(initial.amount).replace(".", ",") : "",
+  );
+  const [dateKey, setDateKey] = useState(initial?.dateKey ?? todayDateKey);
   const [error, setError] = useState<string | null>(null);
   const open = target !== null;
   const keyboardInset = useKeyboardInset(open);
@@ -67,9 +76,11 @@ export function BalanceSetupDialog({
      evento, e un importo lasciato lì da un ripensamento precedente è il modo
      più silenzioso di dichiarare il falso. È la stessa strada dell'aggiunta
      rapida, che azzera la bozza in `onOpenChange`. */
+  const isCorrection = Boolean(initial);
+
   function close() {
-    setAmount("");
-    setDateKey(todayDateKey);
+    setAmount(initial ? String(initial.amount).replace(".", ",") : "");
+    setDateKey(initial?.dateKey ?? todayDateKey);
     setError(null);
     onClose();
   }
@@ -117,9 +128,11 @@ export function BalanceSetupDialog({
           <div className="px-4 pt-3.5">
             <div className="flex min-w-0 items-center gap-2">
               <DialogTitle className="min-w-0 flex-1 text-[17px] font-semibold tracking-tight">
-                {target === "joint"
-                  ? t.balances.setUpTitleJoint
-                  : t.balances.setUpTitle}
+                {isCorrection
+                  ? t.balances.correctTitle
+                  : target === "joint"
+                    ? t.balances.setUpTitleJoint
+                    : t.balances.setUpTitle}
               </DialogTitle>
               <button
                 type="button"
@@ -132,7 +145,7 @@ export function BalanceSetupDialog({
             </div>
 
             <p className="mt-1 pb-2.5 text-[12.5px] leading-4 text-muted-foreground">
-              {t.balances.setUpDesc}
+              {isCorrection ? t.balances.correctDesc : t.balances.setUpDesc}
             </p>
           </div>
 

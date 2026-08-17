@@ -34,6 +34,9 @@ export type Translations = {
     notSet: string;
     setUpCta: string;
     setUpTitle: string;
+    correctTitle: string;
+    correctDesc: string;
+    correctCta: string;
     setUpDesc: string;
     amountLabel: string;
     fromDateLabel: string;
