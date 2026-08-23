@@ -6,6 +6,7 @@ import type {
   CsvImportRow,
   ImportedTransactionDraft,
   ImportedTransactionDraftStatus,
+  ImportedTransactionFlowValue,
 } from "@/src/lib/imports/import-domain";
 import {
   normalizeHeader,
@@ -120,22 +121,43 @@ export function validateCsvImportMapping(
   return hasErrors ? { ok: false, errors } : { ok: true, errors: {} as Record<string, never> };
 }
 
+/**
+ * Da che parte vanno i soldi di questa riga, secondo la convenzione dichiarata
+ * nella mappatura. È l'unico posto in cui il segno letto dal CSV viene ancora
+ * guardato: subito dopo l'importo diventa un valore assoluto.
+ */
+function resolveDraftFlow(
+  parsedAmount: number | null,
+  amountConvention: CsvImportAmountConvention,
+): ImportedTransactionFlowValue {
+  if (parsedAmount === null) {
+    return "outgoing";
+  }
+
+  const isCredit =
+    amountConvention === "negative_is_expense"
+      ? parsedAmount > 0
+      : parsedAmount < 0;
+
+  return isCredit ? "incoming" : "outgoing";
+}
+
+/**
+ * Gli accrediti non vengono più scartati.
+ *
+ * Prima finivano in `ignored`, che però è anche lo stato di ciò che l'utente
+ * mette da parte a mano: le due cose diventavano indistinguibili, e uno
+ * stipendio spariva nello stesso mucchio di una riga scartata apposta. Ora
+ * restano `pending` come tutto il resto — c'è una decisione da prendere anche
+ * su di loro — e a dire che sono in entrata è `flow`.
+ */
 function resolveDraftStatus(
   parsedAmount: number | null,
   date: Date | null,
   description: string,
-  amountConvention: CsvImportAmountConvention,
 ): ImportedTransactionDraftStatus {
   if (!date || !description || parsedAmount === null) {
     return "error";
-  }
-
-  if (amountConvention === "negative_is_expense" && parsedAmount > 0) {
-    return "ignored";
-  }
-
-  if (amountConvention === "positive_is_expense" && parsedAmount < 0) {
-    return "ignored";
   }
 
   return "pending";
@@ -163,12 +185,8 @@ export function mapCsvRowToImportedTransactionDraft(
     getFieldValue(resolvedRow.values, mapping.date),
     mapping.dateFormat,
   );
-  const status = resolveDraftStatus(
-    parsedAmount,
-    date,
-    description,
-    mapping.amountConvention,
-  );
+  const status = resolveDraftStatus(parsedAmount, date, description);
+  const flow = resolveDraftFlow(parsedAmount, mapping.amountConvention);
 
   if (status === "error") {
     const missing: string[] = [];
@@ -191,21 +209,9 @@ export function mapCsvRowToImportedTransactionDraft(
       amount: null,
       currency,
       raw: resolvedRow.values,
+      flow,
       status,
       errorMessage: missing.length > 0 ? `Dati mancanti o non validi: ${missing.join(", ")}` : "Riga non valida",
-    };
-  }
-
-  if (status === "ignored") {
-    return {
-      sourceRowIndex,
-      date,
-      description,
-      merchantName,
-      amount: parsedAmount === null ? null : Math.abs(parsedAmount),
-      currency,
-      raw: resolvedRow.values,
-      status,
     };
   }
 
@@ -217,6 +223,7 @@ export function mapCsvRowToImportedTransactionDraft(
     amount: parsedAmount === null ? null : Math.abs(parsedAmount),
     currency,
     raw: resolvedRow.values,
+    flow,
     status,
   };
 }

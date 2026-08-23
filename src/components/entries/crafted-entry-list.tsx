@@ -1,11 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Loader2, Receipt, Search, SlidersHorizontal, X } from "lucide-react";
+import {
+  Check,
+  Loader2,
+  Receipt,
+  Search,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Amount, Eyebrow, Rule, Serif } from "@/components/crafted";
-import { getEntriesPage } from "@/src/actions/entries";
+import { getMovementsPage, type FeedItem } from "@/src/actions/movements";
+import {
+  CraftedMoneyRow,
+  type CraftedMoneyRowItem,
+} from "@/src/components/entries/crafted-money-row";
+import {
+  IncomeDialog,
+  type IncomeMemberOption,
+} from "@/src/components/balances/income-dialog";
+import { TransferDialog } from "@/src/components/balances/transfer-dialog";
 import {
   CraftedEntryRow,
   type CraftedEntryRowItem,
@@ -16,7 +32,10 @@ import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
 import { getCategoryCraftedIcon } from "@/src/lib/category-crafted-icon";
 import { getDateKey, shiftDateKey } from "@/src/lib/workspace-dates";
 import { cn } from "@/lib/utils";
-import { useTranslations, useWorkspaceLanguage } from "@/src/components/language/language-context";
+import {
+  useTranslations,
+  useWorkspaceLanguage,
+} from "@/src/components/language/language-context";
 import { languageToLocale } from "@/src/lib/i18n";
 import { getLocalizedCategoryName } from "@/src/lib/category-locale";
 import {
@@ -64,7 +83,15 @@ type CategoryOption = {
 };
 
 type CraftedEntryListProps = {
-  initialEntries: EntryItem[];
+  initialItems: FeedItem[];
+  /* Serve ai pannelli che si aprono toccando un'entrata o un giroconto. Senza
+     spazio condiviso i giroconti non esistono, e il pannello non si apre. */
+  moneyPanel: {
+    members: IncomeMemberOption[];
+    currentUserId: string;
+    isShared: boolean;
+    todayDateKey: string;
+  };
   initialNextCursor: string | null;
   initialHasMore: boolean;
   newEntryHref: string;
@@ -86,7 +113,7 @@ type DayGroupData = {
   relative: "today" | "yesterday" | null;
   count: number;
   dayTotal: number;
-  entries: CraftedEntryRowItem[];
+  rows: FeedRow[];
 };
 
 const PAGE_SIZE = 20;
@@ -107,11 +134,22 @@ function getEntryKind(entry: EntryItem): EntryKind {
   return "spesa";
 }
 
+/**
+ * Una riga pronta da disegnare. Resta un'unione discriminata fino all'ultimo
+ * momento: una spesa apre la sua pagina di modifica, un'entrata apre un
+ * pannello, e appiattirle costringerebbe la riga a indovinare quale delle due
+ * è guardando i campi che non ha.
+ */
+type FeedRow =
+  | { kind: "entry"; id: string; row: CraftedEntryRowItem }
+  | { kind: "money"; id: string; row: CraftedMoneyRowItem };
+
 function toRowEntry(entry: EntryItem, language: string): CraftedEntryRowItem {
   const metrics = calculateEntryMetrics(entry);
   const kind = getEntryKind(entry);
   const categoryName =
-    getLocalizedCategoryName(entry.category.slug, language) ?? entry.category.name;
+    getLocalizedCategoryName(entry.category.slug, language) ??
+    entry.category.name;
 
   return {
     id: entry.id,
@@ -142,7 +180,11 @@ function formatDayLabel(
 ) {
   const { year, month, day } = parseDateKey(dateKey);
 
-  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+  if (
+    !Number.isFinite(year) ||
+    !Number.isFinite(month) ||
+    !Number.isFinite(day)
+  ) {
     return dateKey;
   }
 
@@ -170,25 +212,75 @@ function getRelativeLabel(dateKey: string): DayGroupData["relative"] {
   return null;
 }
 
+function toFeedRow(
+  item: FeedItem,
+  language: string,
+  labels: { income: string; transferIn: string; transferOut: string },
+): FeedRow {
+  if (item.kind === "entry") {
+    return {
+      kind: "entry",
+      id: item.entry.id,
+      row: toRowEntry(item.entry as EntryItem, language),
+    };
+  }
+
+  if (item.kind === "income") {
+    return {
+      kind: "money",
+      id: item.income.id,
+      row: {
+        id: item.income.id,
+        kind: "income",
+        title: item.income.title,
+        detail: item.income.receivedByLabel,
+        note: item.income.note,
+        amount: item.income.amount,
+      },
+    };
+  }
+
+  const verso = item.transfer.direction === "to_joint";
+
+  return {
+    kind: "money",
+    id: item.transfer.id,
+    row: {
+      id: item.transfer.id,
+      kind: verso ? "transfer-in" : "transfer-out",
+      title: verso ? labels.transferIn : labels.transferOut,
+      detail: item.transfer.userLabel,
+      note: item.transfer.note,
+      amount: item.transfer.amount,
+    },
+  };
+}
+
 function groupByDay(
-  entries: EntryItem[],
+  items: FeedItem[],
   locale: string,
   language: string,
+  labels: { income: string; transferIn: string; transferOut: string },
 ): DayGroupData[] {
-  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const groups = new Map<string, DayGroupData>();
 
-  for (const entry of entries) {
-    const dateKey = getDateKey(new Date(entry.date), browserTz);
-    const rowEntry = toRowEntry(entry, language);
+  for (const item of items) {
+    /* Il giorno lo decide il server, nel fuso dello spazio. Prima lo decideva
+       il browser: chi apriva l'app da un altro fuso vedeva i movimenti di
+       mezzanotte scivolare nel giorno prima, e adesso che nello stesso elenco
+       ci sono tre tabelle il disallineamento si vedrebbe anche fra righe. */
+    const dateKey = item.dateKey;
+    const row = toFeedRow(item, language, labels);
+    /* Il totale del giorno è quello di sempre: i soldi usciti. Un'entrata non
+       lo gonfia e un giroconto non lo tocca — quei soldi non sono usciti di
+       casa, hanno solo cambiato conto. Mescolarli darebbe un numero che non
+       risponde a nessuna domanda. */
+    const dayTotal =
+      row.kind === "entry" && row.row.kind !== "evitata" ? row.row.amount : 0;
     const existing = groups.get(dateKey);
-    // Il totale del giorno è la stessa cosa del totale in testata: i soldi
-    // usciti davvero. Esclude la spesa evitata, e nient'altro — prima
-    // scartava anche i confronti, e la colonna degli importi non tornava.
-    const dayTotal = rowEntry.kind === "evitata" ? 0 : rowEntry.amount;
 
     if (existing) {
-      existing.entries.push(rowEntry);
+      existing.rows.push(row);
       existing.count += 1;
       existing.dayTotal += dayTotal;
       continue;
@@ -208,7 +300,7 @@ function groupByDay(
       relative: getRelativeLabel(dateKey),
       count: 1,
       dayTotal,
-      entries: [rowEntry],
+      rows: [row],
     });
   }
 
@@ -280,7 +372,8 @@ function EmptyState({
 }
 
 export function CraftedEntryList({
-  initialEntries,
+  initialItems,
+  moneyPanel,
   initialNextCursor,
   initialHasMore,
   newEntryHref,
@@ -299,8 +392,21 @@ export function CraftedEntryList({
     { id: "confronto", label: t.entries.filterComparisons },
   ];
 
-  const [entries, setEntries] = useState(initialEntries);
-  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
+  const [items, setItems] = useState<FeedItem[]>(initialItems);
+  /* Le spese estratte dal feed: le usano il riquadro vuoto, l'evidenziazione
+     dei movimenti appena creati e il ripristino della posizione, che parlano
+     tutti di spese e non sanno niente di entrate e giroconti. */
+  const entries = useMemo(
+    () =>
+      items.flatMap((item) =>
+        item.kind === "entry" ? [item.entry as unknown as EntryItem] : [],
+      ),
+    [items],
+  );
+  const [openMoneyId, setOpenMoneyId] = useState<string | null>(null);
+  const [nextCursor, setNextCursor] = useState<string | null>(
+    initialNextCursor,
+  );
   const [hasMore, setHasMore] = useState(initialHasMore);
   const [searchValue, setSearchValue] = useState("");
   const [debouncedSearchValue, setDebouncedSearchValue] = useState("");
@@ -311,12 +417,31 @@ export function CraftedEntryList({
   const [searchError, setSearchError] = useState<string | null>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [highlightedRecentEntryIds, setHighlightedRecentEntryIds] = useState<string[]>([]);
+  const [highlightedRecentEntryIds, setHighlightedRecentEntryIds] = useState<
+    string[]
+  >([]);
   const requestIdRef = useRef(0);
 
+  const rowLabels = useMemo(
+    () => ({
+      income: t.balances.rowIncome,
+      transferIn: t.balances.rowTransferIn,
+      transferOut: t.balances.rowTransferOut,
+    }),
+    [t.balances.rowIncome, t.balances.rowTransferIn, t.balances.rowTransferOut],
+  );
   const groups = useMemo(
-    () => groupByDay(entries, locale, language),
-    [entries, locale, language],
+    () => groupByDay(items, locale, language, rowLabels),
+    [items, locale, language, rowLabels],
+  );
+  const openMoneyItem = useMemo(
+    () =>
+      items.find(
+        (item) =>
+          (item.kind === "income" && item.income.id === openMoneyId) ||
+          (item.kind === "transfer" && item.transfer.id === openMoneyId),
+      ) ?? null,
+    [items, openMoneyId],
   );
   const hasSearchTerm = searchValue.trim().length > 0;
   const hasActiveFilters = hasSearchTerm || selectedCategoryIds.length > 0;
@@ -325,7 +450,8 @@ export function CraftedEntryList({
       categories
         .map((category) => ({
           id: category.id,
-          label: getLocalizedCategoryName(category.slug, language) ?? category.name,
+          label:
+            getLocalizedCategoryName(category.slug, language) ?? category.name,
         }))
         .sort((left, right) => left.label.localeCompare(right.label, locale)),
     [categories, language, locale],
@@ -393,7 +519,7 @@ export function CraftedEntryList({
       setSearchError(null);
 
       try {
-        const result = await getEntriesPage({
+        const result = await getMovementsPage({
           q: debouncedSearchValue,
           limit: PAGE_SIZE,
           monthKey,
@@ -405,7 +531,7 @@ export function CraftedEntryList({
           return;
         }
 
-        setEntries(result.entries);
+        setItems(result.items);
         setNextCursor(result.nextCursor);
         setHasMore(result.hasMore);
       } catch (error) {
@@ -415,7 +541,7 @@ export function CraftedEntryList({
 
         console.error("Failed to search entries:", error);
         setSearchError(t.entries.searchError);
-        setEntries([]);
+        setItems([]);
         setNextCursor(null);
         setHasMore(false);
       } finally {
@@ -440,7 +566,7 @@ export function CraftedEntryList({
     setIsLoading(true);
 
     try {
-      const result = await getEntriesPage({
+      const result = await getMovementsPage({
         cursor: nextCursor,
         limit: PAGE_SIZE,
         q: debouncedSearchValue,
@@ -453,7 +579,7 @@ export function CraftedEntryList({
         return;
       }
 
-      setEntries((current) => [...current, ...result.entries]);
+      setItems((current) => [...current, ...result.items]);
       setNextCursor(result.nextCursor);
       setHasMore(result.hasMore);
     } catch (error) {
@@ -474,7 +600,8 @@ export function CraftedEntryList({
   // ricaricano tutte le pagine che erano state caricate e si torna sulla riga
   // da cui si era usciti.
   useEffect(() => {
-    const storage = typeof window === "undefined" ? null : window.sessionStorage;
+    const storage =
+      typeof window === "undefined" ? null : window.sessionStorage;
     const snapshot = readSnapshot(storage);
 
     if (!isSnapshotUsable(snapshot, monthKey, Date.now())) {
@@ -486,7 +613,7 @@ export function CraftedEntryList({
 
     void (async () => {
       try {
-        const result = await getEntriesPage({
+        const result = await getMovementsPage({
           q: snapshot.query,
           limit: clampRestoredCount(snapshot.loadedCount, PAGE_SIZE),
           monthKey,
@@ -505,7 +632,7 @@ export function CraftedEntryList({
         setDebouncedSearchValue(snapshot.query);
         setActiveFilterId(snapshot.kind);
         setSelectedCategoryIds(snapshot.categoryIds);
-        setEntries(result.entries);
+        setItems(result.items);
         setNextCursor(result.nextCursor);
         setHasMore(result.hasMore);
       } catch (error) {
@@ -527,10 +654,7 @@ export function CraftedEntryList({
         const rect = anchor.getBoundingClientRect();
         const destination = Math.max(
           0,
-          rect.top +
-            window.scrollY -
-            window.innerHeight / 2 +
-            rect.height / 2,
+          rect.top + window.scrollY - window.innerHeight / 2 + rect.height / 2,
         );
         const plan = planRestoreScroll({
           currentScroll: window.scrollY,
@@ -560,15 +684,18 @@ export function CraftedEntryList({
   }, [monthKey]);
 
   function rememberPosition(entryId: string) {
-    writeSnapshot(typeof window === "undefined" ? null : window.sessionStorage, {
-      monthKey,
-      query: debouncedSearchValue,
-      kind: activeFilterId,
-      categoryIds: selectedCategoryIds,
-      loadedCount: entries.length,
-      anchorEntryId: entryId,
-      savedAt: Date.now(),
-    });
+    writeSnapshot(
+      typeof window === "undefined" ? null : window.sessionStorage,
+      {
+        monthKey,
+        query: debouncedSearchValue,
+        kind: activeFilterId,
+        categoryIds: selectedCategoryIds,
+        loadedCount: items.length,
+        anchorEntryId: entryId,
+        savedAt: Date.now(),
+      },
+    );
   }
 
   function handleSearchChange(value: string) {
@@ -615,7 +742,10 @@ export function CraftedEntryList({
               className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-ink-3"
             />
             {isSearching ? (
-              <Loader2 className="size-4 shrink-0 animate-spin text-ink-3" aria-hidden="true" />
+              <Loader2
+                className="size-4 shrink-0 animate-spin text-ink-3"
+                aria-hidden="true"
+              />
             ) : null}
             {searchValue ? (
               <button
@@ -720,7 +850,10 @@ export function CraftedEntryList({
                     )}
                   >
                     {selected ? (
-                      <Check className="-ml-0.5 size-3.5 shrink-0" aria-hidden="true" />
+                      <Check
+                        className="-ml-0.5 size-3.5 shrink-0"
+                        aria-hidden="true"
+                      />
                     ) : null}
                     {category.label}
                   </button>
@@ -737,8 +870,11 @@ export function CraftedEntryList({
         </p>
       ) : null}
 
-      {entries.length === 0 ? (
-        <EmptyState hasActiveFilters={hasActiveFilters} newEntryHref={newEntryHref} />
+      {items.length === 0 ? (
+        <EmptyState
+          hasActiveFilters={hasActiveFilters}
+          newEntryHref={newEntryHref}
+        />
       ) : (
         groups.map((group) => (
           <section key={group.dateKey}>
@@ -759,26 +895,64 @@ export function CraftedEntryList({
               />
             </div>
             <div className="px-[var(--sp-page-x)]">
-              {group.entries.map((entry, index) => (
-                <CraftedEntryRow
-                  key={entry.id}
-                  entry={entry}
-                  onOpen={rememberPosition}
-                  returnTo={`/entries?month=${monthKey}`}
-                  className={cn(
-                    highlightedRecentEntryIds.includes(entry.id) &&
-                      "nlc-row-in nlc-flash",
-                  )}
-                  showDivider={index < group.entries.length - 1}
-                />
-              ))}
+              {group.rows.map((item, index) =>
+                item.kind === "entry" ? (
+                  <CraftedEntryRow
+                    key={item.id}
+                    entry={item.row}
+                    onOpen={rememberPosition}
+                    returnTo={`/entries?month=${monthKey}`}
+                    className={cn(
+                      highlightedRecentEntryIds.includes(item.id) &&
+                        "nlc-row-in nlc-flash",
+                    )}
+                    showDivider={index < group.rows.length - 1}
+                  />
+                ) : (
+                  <CraftedMoneyRow
+                    key={item.id}
+                    item={item.row}
+                    labels={rowLabels}
+                    onOpen={setOpenMoneyId}
+                    showDivider={index < group.rows.length - 1}
+                  />
+                ),
+              )}
             </div>
           </section>
         ))
       )}
 
+      {/* I pannelli si montano solo quando servono, con `key` sull'id: cosi' i
+          valori di partenza entrano dagli inizializzatori di stato invece che
+          da un effetto, come fa gia' il pannello del saldo. */}
+      {openMoneyItem?.kind === "income" ? (
+        <IncomeDialog
+          key={openMoneyItem.income.id}
+          open
+          onClose={() => setOpenMoneyId(null)}
+          income={openMoneyItem.income}
+          members={moneyPanel.members}
+          currentUserId={moneyPanel.currentUserId}
+          isShared={moneyPanel.isShared}
+          todayDateKey={moneyPanel.todayDateKey}
+        />
+      ) : null}
+
+      {openMoneyItem?.kind === "transfer" ? (
+        <TransferDialog
+          key={openMoneyItem.transfer.id}
+          open
+          onClose={() => setOpenMoneyId(null)}
+          transfer={openMoneyItem.transfer}
+          todayDateKey={moneyPanel.todayDateKey}
+        />
+      ) : null}
+
       <div className="space-y-3 px-[var(--sp-page-x)] pb-2 pt-8">
-        {loadError ? <p className="text-sm text-destructive">{loadError}</p> : null}
+        {loadError ? (
+          <p className="text-sm text-destructive">{loadError}</p>
+        ) : null}
 
         {hasMore ? (
           <Button
@@ -797,7 +971,7 @@ export function CraftedEntryList({
               t.entries.loadMore
             )}
           </Button>
-        ) : entries.length > 0 ? (
+        ) : items.length > 0 ? (
           // Un solo finale, e dice il vero: "fine agosto" quando si sono viste
           // tutte le voci del mese, "hai visto tutto" quando la lista è filtrata
           // e quindi non è il mese ad essere finito. Prima compariva comunque,

@@ -1,6 +1,10 @@
 "use client";
 
-import { confirmImportedTransactionsAction, ignoreImportedTransactionsAction } from "@/src/actions/imports";
+import {
+  confirmImportedTransactionsAction,
+  confirmImportedTransactionsAsAction,
+  ignoreImportedTransactionsAction,
+} from "@/src/actions/imports";
 import { Button } from "@/components/ui/button";
 import { Label, Mono, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
@@ -20,6 +24,7 @@ type ImportedTransactionPreview = {
   merchantName: string | null;
   amount: string | number | null;
   currency: string | null;
+  flow: "outgoing" | "incoming";
   status: "pending" | "confirmed" | "ignored" | "duplicate" | "error";
   categoryIdSuggested: string | null;
   categoryIdConfirmed: string | null;
@@ -31,6 +36,8 @@ type CraftedImportPreviewTableProps = {
   transactions: ImportedTransactionPreview[];
   categories: ImportCategoryOption[];
   currency: string;
+  /** Senza conto comune non c'è dove girare i soldi, e il pulsante non c'è. */
+  isShared: boolean;
 };
 
 function formatMoneyBase(
@@ -75,11 +82,13 @@ export function CraftedImportPreviewTable({
   transactions,
   categories,
   currency,
+  isShared,
 }: CraftedImportPreviewTableProps) {
   const formatMoney = useBoundLocale(formatMoneyBase);
   const formatDate = useBoundLocale(formatDateBase);
   const pendingRows = transactions.filter((transaction) => transaction.status === "pending");
   const hasSelectableRows = pendingRows.length > 0;
+  const hasIncomingRows = pendingRows.some((row) => row.flow === "incoming");
   const defaultCategoryId = categories[0]?.id ?? "";
   const categoryNameById = new Map(categories.map((category) => [category.id, category.name]));
 
@@ -89,6 +98,16 @@ export function CraftedImportPreviewTable({
 
   async function handleIgnoreAction(formData: FormData): Promise<void> {
     await ignoreImportedTransactionsAction(formData);
+  }
+
+  async function handleIncomeAction(formData: FormData): Promise<void> {
+    formData.set("target", "income");
+    await confirmImportedTransactionsAsAction(formData);
+  }
+
+  async function handleTransferAction(formData: FormData): Promise<void> {
+    formData.set("target", "transfer");
+    await confirmImportedTransactionsAsAction(formData);
   }
 
   if (transactions.length === 0) {
@@ -144,6 +163,29 @@ export function CraftedImportPreviewTable({
             >
               Conferma selezionate
             </Button>
+            {/* Gli accrediti non si confermano come spese: il pulsante qui
+                sopra li rifiuta. Diventano un'entrata, oppure — se sono soldi
+                arrivati dal conto comune — un giroconto. */}
+            <Button
+              type="submit"
+              formAction={handleIncomeAction}
+              disabled={!hasIncomingRows}
+              variant="outline"
+              className="h-10 rounded-[var(--r-cta)] border-line px-4"
+            >
+              Registra come entrata
+            </Button>
+            {isShared ? (
+              <Button
+                type="submit"
+                formAction={handleTransferAction}
+                disabled={!hasSelectableRows}
+                variant="outline"
+                className="h-10 rounded-[var(--r-cta)] border-line px-4"
+              >
+                Registra come giroconto
+              </Button>
+            ) : null}
             <Button
               type="submit"
               formAction={handleIgnoreAction}
@@ -212,7 +254,13 @@ export function CraftedImportPreviewTable({
                     </div>
                   </td>
                   <td className="px-3 py-3 align-top font-medium">
-                    <Mono className="text-sm">{formatMoney(transaction.amount, transaction.currency ?? currency)}</Mono>
+                    <Mono className="text-sm">
+                      {/* Il segno non è nel dato — l'importo è salvato in
+                          valore assoluto — quindi lo mette la vista, leggendo
+                          il verso che il parser ha registrato. */}
+                      {transaction.flow === "incoming" ? "+" : "−"}
+                      {formatMoney(transaction.amount, transaction.currency ?? currency)}
+                    </Mono>
                   </td>
                   <td className="px-3 py-3 align-top text-ink-3">
                     {transaction.categoryIdConfirmed

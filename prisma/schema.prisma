@@ -53,6 +53,14 @@ enum EntryPaymentMode {
   joint_account
 }
 
+/// Le due sole direzioni che un giroconto puo' avere. Un enum invece di una
+/// coppia origine/destinazione perche' cosi' "comune verso comune" e "mio
+/// verso mio" non sono nemmeno scrivibili.
+enum TransferDirection {
+  to_joint
+  to_personal
+}
+
 enum HabitOccurrenceStatus {
   pending
   spent
@@ -80,6 +88,21 @@ enum ImportBatchStatus {
   partial
   completed
   failed
+}
+
+/// Da dove arriva un'entrata. Non riusa EntrySource perche' quello ha `habit`,
+/// e un'abitudine ricorrente che produce entrate non esiste.
+enum IncomeSource {
+  manual
+  imported
+}
+
+/// Il verso di una riga importata. Esiste perche' il parser lo sa e prima lo
+/// buttava via: l'importo veniva salvato in valore assoluto, e da quel momento
+/// un accredito era indistinguibile da un addebito.
+enum ImportedTransactionFlow {
+  outgoing
+  incoming
 }
 
 enum ImportedTransactionStatus {
@@ -306,8 +329,10 @@ model ImportedTransaction {
   date              DateTime?
   description       String
   merchantName      String?
+  /// Sempre positivo. Il verso lo dice `flow`, non il segno.
   amount            Decimal?                  @db.Decimal(10, 2)
   currency          String?
+  flow              ImportedTransactionFlow   @default(outgoing)
   status            ImportedTransactionStatus @default(pending)
   categoryIdSuggested String?
   categorySuggested Category?                 @relation("ImportedTransactionCategorySuggested", fields: [categoryIdSuggested], references: [id], onDelete: SetNull)
@@ -315,6 +340,15 @@ model ImportedTransaction {
   categoryConfirmed Category?                 @relation("ImportedTransactionCategoryConfirmed", fields: [categoryIdConfirmed], references: [id], onDelete: SetNull)
   entryId           String?
   entry             Entry?                    @relation("ImportedTransactionEntry", fields: [entryId], references: [id], onDelete: SetNull)
+  /// Il gemello di `entryId` per le righe in entrata: una riga importata
+  /// diventa una spesa oppure un'entrata, mai tutte e due.
+  incomeId          String?
+  income            Income?                   @relation("ImportedTransactionIncome", fields: [incomeId], references: [id], onDelete: SetNull)
+  /// Il terzo bersaglio. Nel CSV del conto personale il versamento sul
+  /// cointestato e' un addebito: senza questa colonna diventerebbe una spesa,
+  /// gonfiando le uscite del mese con soldi che non sono usciti di casa.
+  transferId        String?
+  transfer          Transfer?                 @relation("ImportedTransactionTransfer", fields: [transferId], references: [id], onDelete: SetNull)
   duplicateOfId     String?
   duplicateOf       ImportedTransaction?      @relation("ImportedTransactionDuplicate", fields: [duplicateOfId], references: [id], onDelete: SetNull)
   duplicateTransactions ImportedTransaction[] @relation("ImportedTransactionDuplicate")
@@ -327,6 +361,8 @@ model ImportedTransaction {
   @@index([workspaceId, source, fingerprint])
   @@index([workspaceId, status])
   @@index([entryId])
+  @@index([incomeId])
+  @@index([transferId])
   @@index([importBatchId])
 }
 
@@ -353,6 +389,8 @@ model User {
   createdImportBatches ImportBatch[]
   incomesReceived      Income[]            @relation("IncomeReceivedBy")
   incomesCreated       Income[]            @relation("IncomeCreatedBy")
+  transfersMade        Transfer[]          @relation("TransferUser")
+  transfersCreated     Transfer[]          @relation("TransferCreatedBy")
 }
 
 model Workspace {
@@ -378,6 +416,7 @@ model Workspace {
   importedTransactions ImportedTransaction[]
   entries      Entry[]
   incomes      Income[]
+  transfers    Transfer[]
   habits       Habit[]
   goals        Goal[]
   feedbacks    Feedback[]        @relation("FeedbackWorkspace")
@@ -400,17 +439,53 @@ model Income {
   amount           Decimal   @db.Decimal(10, 2)
   /// Mezzanotte del giorno nel fuso dello spazio, come per Entry.
   date             DateTime
-  /// Chi l'ha incassata. Nullo significa che e' finita sul conto comune.
+  /// Chi l'ha incassata. Un'entrata arriva sempre su un conto personale: sul
+  /// conto comune i soldi ci arrivano solo con un Transfer. Nullo qui non
+  /// significa "comune", significa che quella persona non e' piu' nello
+  /// spazio, e un'entrata orfana non entra in nessun saldo.
   receivedByUserId String?
   receivedByUser   User?     @relation("IncomeReceivedBy", fields: [receivedByUserId], references: [id], onDelete: SetNull)
   createdByUserId  String?
   createdBy        User?     @relation("IncomeCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  source           IncomeSource @default(manual)
   note             String?
+  importedTransactions ImportedTransaction[] @relation("ImportedTransactionIncome")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
   @@index([workspaceId, date])
   @@index([receivedByUserId])
+  @@index([createdByUserId])
+}
+
+/// Un giroconto fra un conto personale e il cointestato. Non e' un'entrata: i
+/// soldi non arrivano da fuori, si spostano dentro casa, quindi il totale
+/// delle entrate del mese non lo vede. Non e' nemmeno un regolamento: quello
+/// pareggia un debito fra due persone ed e' vincolato alla differenza, questo
+/// muove la cifra che vuoi fra due conti.
+model Transfer {
+  id              String            @id @default(cuid())
+  workspaceId     String
+  workspace       Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  /// Chi muove i soldi. L'altro capo e' sempre il conto comune, per questo non
+  /// c'e' una seconda colonna. Nullo significa persona non piu' nello spazio:
+  /// il comune continua a vedere il movimento, nessun personale lo vede.
+  userId          String?
+  user            User?             @relation("TransferUser", fields: [userId], references: [id], onDelete: SetNull)
+  direction       TransferDirection
+  /// Sempre positivo: il verso lo dice direction, non il segno.
+  amount          Decimal           @db.Decimal(10, 2)
+  /// Mezzanotte del giorno nel fuso dello spazio, come per Entry e Income.
+  date            DateTime
+  note            String?
+  createdByUserId String?
+  createdBy       User?             @relation("TransferCreatedBy", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  importedTransactions ImportedTransaction[] @relation("ImportedTransactionTransfer")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([workspaceId, date])
+  @@index([userId])
   @@index([createdByUserId])
 }
 

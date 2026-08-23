@@ -118,6 +118,15 @@ type ImportPrismaLike = {
     findFirst(args: Record<string, unknown>): Promise<ImportCategoryRecord | null>;
     findMany(args: Record<string, unknown>): Promise<ImportCategoryRecord[]>;
   };
+  workspaceMember: {
+    findMany(args: Record<string, unknown>): Promise<Array<{ userId: string }>>;
+  };
+  income: {
+    create(args: Record<string, unknown>): Promise<{ id: string }>;
+  };
+  transfer: {
+    create(args: Record<string, unknown>): Promise<{ id: string }>;
+  };
 };
 
 type ImportActionsDeps = {
@@ -438,6 +447,148 @@ async function updateTransactionsFromMapping(params: {
   }
 }
 
+/**
+ * Conferma righe importate come entrate o come giroconti.
+ *
+ * Il gemello di `confirmImportedTransactions`, per i due bersagli che non sono
+ * una spesa. Il verso non si sceglie: lo dice `flow`, che il parser ha letto
+ * dal segno nel CSV. Un accredito puo' diventare un'entrata o un prelievo dal
+ * conto comune; un addebito puo' diventare solo un versamento sul comune —
+ * un'entrata da un addebito non ha senso, e infatti viene rifiutata.
+ */
+async function confirmImportedTransactionsAsMoney(
+  deps: ImportActionsDeps,
+  batch: ImportBatchRecord,
+  workspace: ImportWorkspaceRecord,
+  user: ImportUserRecord,
+  selectedIds: string[],
+  target: "income" | "transfer",
+): Promise<ImportBatchActionResult> {
+  const t = await deps.getTranslations();
+  const members = await deps.prisma.workspaceMember.findMany({
+    where: { workspaceId: workspace.id },
+    select: { userId: true },
+  });
+
+  if (target === "transfer" && members.length < 2) {
+    return {
+      success: false,
+      message: t.importActions.transfersNeedSharedWorkspace,
+    };
+  }
+
+  const transactions = decryptImportedTransactionRecords(
+    await deps.prisma.importedTransaction.findMany({
+      where: { importBatchId: batch.id, workspaceId: workspace.id },
+      orderBy: [{ sourceRowIndex: "asc" }],
+    }),
+  );
+  const transactionsById = new Map(
+    transactions.map((transaction) => [transaction.id, transaction]),
+  );
+
+  const errors: Record<string, string> = {};
+  const confirmable: ImportedTransactionRecord[] = [];
+
+  for (const transactionId of selectedIds) {
+    const transaction = transactionsById.get(transactionId);
+
+    if (!transaction) {
+      errors[transactionId] = t.importActions.txNotFound;
+      continue;
+    }
+
+    if (transaction.status !== "pending") {
+      errors[transactionId] = t.importActions.onlyPendingConfirmable;
+      continue;
+    }
+
+    if (!transaction.date || transaction.amount === null) {
+      errors[transactionId] = t.importActions.rowInsufficientData;
+      continue;
+    }
+
+    if (normalizeTransactionAmount(transaction.amount) <= 0) {
+      errors[transactionId] = "L'importo deve essere maggiore di zero.";
+      continue;
+    }
+
+    if (target === "income" && transaction.flow !== "incoming") {
+      errors[transactionId] = t.importActions.rowIsNotIncoming;
+      continue;
+    }
+
+    confirmable.push(transaction);
+  }
+
+  if (Object.keys(errors).length > 0) {
+    return {
+      success: false,
+      message: t.importActions.checkSelectedRows,
+      errors,
+    };
+  }
+
+  for (const transaction of confirmable) {
+    const amount = normalizeTransactionAmount(transaction.amount);
+    const date = transaction.date as Date;
+
+    if (target === "income") {
+      const income = await deps.prisma.income.create({
+        data: {
+          workspaceId: workspace.id,
+          title: transaction.description,
+          amount: amount.toFixed(2),
+          date,
+          receivedByUserId: user.id,
+          createdByUserId: user.id,
+          source: "imported",
+        },
+        select: { id: true },
+      });
+
+      await deps.prisma.importedTransaction.update({
+        where: { id: transaction.id, workspaceId: workspace.id },
+        data: { status: "confirmed", incomeId: income.id },
+      });
+      continue;
+    }
+
+    /* Il verso segue il conto personale, che e' quello che il CSV racconta:
+       un addebito e' uscito da qui, quindi e' finito nel comune; un accredito
+       e' arrivato qui, quindi dal comune e' uscito. */
+    const transfer = await deps.prisma.transfer.create({
+      data: {
+        workspaceId: workspace.id,
+        userId: user.id,
+        direction: transaction.flow === "outgoing" ? "to_joint" : "to_personal",
+        amount: amount.toFixed(2),
+        date,
+        note: transaction.description,
+        createdByUserId: user.id,
+      },
+      select: { id: true },
+    });
+
+    await deps.prisma.importedTransaction.update({
+      where: { id: transaction.id, workspaceId: workspace.id },
+      data: { status: "confirmed", transferId: transfer.id },
+    });
+  }
+
+  await syncImportBatchCounters(deps, batch.id, workspace.id);
+  invalidateEntryPaths(workspace.id, deps.revalidatePath, deps.updateTag);
+
+  return {
+    success: true,
+    message:
+      target === "income"
+        ? t.importActions.rowsConfirmedAsIncome
+        : t.importActions.rowsConfirmedAsTransfer,
+    count: confirmable.length,
+  };
+}
+
 async function confirmImportedTransactions(
   deps: ImportActionsDeps,
   batch: ImportBatchRecord,
@@ -481,6 +632,15 @@ async function confirmImportedTransactions(
     const amount = normalizeTransactionAmount(transaction.amount);
     if (amount <= 0) {
       errors[transactionId] = "L'importo deve essere maggiore di zero.";
+      continue;
+    }
+
+    /* Un accredito non puo' diventare una spesa. Prima non serviva dirlo
+       perche' gli accrediti venivano scartati in lettura; ora restano in
+       elenco, e senza questa riga lo stipendio diventerebbe un'uscita da
+       millecinquecento euro. */
+    if (transaction.flow === "incoming") {
+      errors[transactionId] = t.importActions.rowIsIncoming;
       continue;
     }
 
@@ -921,6 +1081,52 @@ function buildImportActions(depsOverrides: Partial<ImportActionsDeps> = {}) {
       );
     },
 
+    async confirmImportedTransactionsAsAction(
+      formData: FormData,
+    ): Promise<ImportBatchActionResult> {
+      const t = await deps.getTranslations();
+      await deps.refreshSupabaseSessionForAction();
+
+      const batchId = getFormText(formData, "batchId");
+      const selectedIds = toSelectedIds(formData);
+      const rawTarget = getFormText(formData, "target");
+      const target = rawTarget === "transfer" ? "transfer" : "income";
+
+      if (!batchId) {
+        return { success: false, message: t.importActions.batchInvalid };
+      }
+
+      if (selectedIds.length === 0) {
+        return {
+          success: false,
+          message: t.importActions.selectAtLeastOneToConfirm,
+        };
+      }
+
+      if (selectedIds.length > MAX_CONFIRM_BATCH_SIZE) {
+        return {
+          success: false,
+          message: t.importActions.maxConfirm(MAX_CONFIRM_BATCH_SIZE),
+        };
+      }
+
+      const { user, workspace } = await loadCurrentWorkspace(deps);
+      const batch = await ensureBatchBelongsToWorkspace(deps, batchId, workspace.id);
+
+      if (!batch) {
+        return { success: false, message: t.importActions.batchNotFound };
+      }
+
+      return confirmImportedTransactionsAsMoney(
+        deps,
+        batch,
+        workspace,
+        user,
+        selectedIds,
+        target,
+      );
+    },
+
     async ignoreImportedTransactionsAction(
       formData: FormData,
     ): Promise<ImportBatchActionResult> {
@@ -1103,6 +1309,14 @@ export async function confirmImportedTransactionsAction(
   formData: FormData,
 ): Promise<ImportBatchActionResult> {
   return (await defaultImportActionsPromise).confirmImportedTransactionsAction(formData);
+}
+
+export async function confirmImportedTransactionsAsAction(
+  formData: FormData,
+): Promise<ImportBatchActionResult> {
+  return (await defaultImportActionsPromise).confirmImportedTransactionsAsAction(
+    formData,
+  );
 }
 
 export async function ignoreImportedTransactionsAction(

@@ -24,7 +24,7 @@ import {
   type MonthSpendBreakdown,
 } from "@/src/actions/entries";
 import { getHomeDashboardMetrics } from "@/src/actions/dashboard";
-import { getWorkspaceBalances } from "@/src/actions/balances";
+import { getMonthlyNet, getWorkspaceBalances } from "@/src/actions/balances";
 import { BalanceCard } from "@/src/components/balances/balance-card";
 import {
   getCurrentUser,
@@ -366,14 +366,16 @@ export default async function Home({ searchParams }: HomePageProps) {
      quella di prima invece di andare in errore per una scheda in piu'. */
   const balances = await (async () => {
     try {
-      const [state, members, currentUser] = await Promise.all([
+      const [state, members, currentUser, monthlyNet] = await Promise.all([
         getWorkspaceBalances(),
         getCurrentWorkspaceMembers(),
         getCurrentUser(),
+        getMonthlyNet(),
       ]);
 
       return {
         balances: state,
+        monthlyNet,
         members: members.map((member) => ({
           userId: member.userId,
           label: member.label,
@@ -462,6 +464,7 @@ export default async function Home({ searchParams }: HomePageProps) {
               joint={balances.balances.joint}
               isShared={balances.balances.isShared}
               members={balances.members}
+              monthlyNet={balances.monthlyNet}
               currentUserId={balances.currentUserId}
               todayDateKey={balances.todayDateKey}
             />

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus } from "lucide-react";
+import { ArrowLeftRight, Plus } from "lucide-react";
 
 import { Amount, Eyebrow, Serif } from "@/components/crafted";
 import { cn } from "@/lib/utils";
@@ -11,7 +11,10 @@ import {
 } from "@/src/components/language/language-context";
 import { languageToLocale } from "@/src/lib/i18n";
 import type { BalanceState } from "@/src/features/balances/balance";
+import type { MonthlyNet } from "@/src/features/balances/monthly-net";
 import { BalanceInvite } from "@/src/components/balances/balance-invite";
+import { MonthlyNetRow } from "@/src/components/balances/monthly-net-row";
+import { TransferDialog } from "@/src/components/balances/transfer-dialog";
 import {
   BalanceSetupDialog,
   type BalanceSetupTarget,
@@ -28,6 +31,8 @@ type BalanceCardProps = {
   members: IncomeMemberOption[];
   currentUserId: string;
   todayDateKey: string;
+  /** Entrate e uscite del mese. I giroconti non ci sono, per costruzione. */
+  monthlyNet: MonthlyNet;
 };
 
 /**
@@ -51,6 +56,7 @@ export function BalanceCard({
   members,
   currentUserId,
   todayDateKey,
+  monthlyNet,
 }: BalanceCardProps) {
   const t = useTranslations();
   const locale = languageToLocale(useWorkspaceLanguage());
@@ -58,6 +64,7 @@ export function BalanceCard({
     null,
   );
   const [incomeOpen, setIncomeOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
 
   /* Un'entrata registrata prima che esista un saldo finisce in un posto che
      non si vede: il calcolo parte da una data di partenza, e senza partenza non
@@ -75,14 +82,29 @@ export function BalanceCard({
           {/* Le entrate restano marginali per scelta: una riga quieta in cima
               alla scheda, non un gesto dell'app. */}
           {hasAnyBalance ? (
-            <button
-              type="button"
-              onClick={() => setIncomeOpen(true)}
-              className="-mt-1.5 -mr-1.5 flex min-h-9 shrink-0 items-center gap-1 rounded-[var(--r-control)] px-1.5 text-[12px] text-muted-foreground outline-none transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
-            >
-              <Plus className="size-3.5" aria-hidden="true" />
-              {t.balances.addIncome}
-            </button>
+            <div className="-mt-1.5 -mr-1.5 flex shrink-0 items-center">
+              <button
+                type="button"
+                onClick={() => setIncomeOpen(true)}
+                className="flex min-h-9 shrink-0 items-center gap-1 rounded-[var(--r-control)] px-1.5 text-[12px] text-muted-foreground outline-none transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+              >
+                <Plus className="size-3.5" aria-hidden="true" />
+                {t.balances.addIncome}
+              </button>
+
+              {/* Il giroconto compare solo dove esiste un conto comune: in uno
+                  spazio privato non c'è un secondo conto verso cui girare. */}
+              {isShared ? (
+                <button
+                  type="button"
+                  onClick={() => setTransferOpen(true)}
+                  className="flex min-h-9 shrink-0 items-center gap-1 rounded-[var(--r-control)] px-1.5 text-[12px] text-muted-foreground outline-none transition-colors hover:bg-surface-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50"
+                >
+                  <ArrowLeftRight className="size-3.5" aria-hidden="true" />
+                  {t.balances.addTransfer}
+                </button>
+              ) : null}
+            </div>
           ) : null}
         </div>
 
@@ -102,6 +124,8 @@ export function BalanceCard({
             onSetUp={() => setSetupTarget("joint")}
           />
         ) : null}
+
+        <MonthlyNetRow net={monthlyNet} />
       </section>
 
       <BalanceInvite
@@ -121,7 +145,10 @@ export function BalanceCard({
               ? { amount: joint.start.amount, dateKey: joint.start.dateKey }
               : null
             : personal.configured
-              ? { amount: personal.start.amount, dateKey: personal.start.dateKey }
+              ? {
+                  amount: personal.start.amount,
+                  dateKey: personal.start.dateKey,
+                }
               : null
         }
         onClose={() => setSetupTarget(null)}
@@ -133,6 +160,13 @@ export function BalanceCard({
         members={members}
         currentUserId={currentUserId}
         isShared={isShared}
+        todayDateKey={todayDateKey}
+      />
+
+      <TransferDialog
+        key={transferOpen ? "giroconto-aperto" : "giroconto-chiuso"}
+        open={transferOpen}
+        onClose={() => setTransferOpen(false)}
         todayDateKey={todayDateKey}
       />
     </>
@@ -186,7 +220,9 @@ function PersonalBalance({
      In uno spazio privato l'eyebrow della scheda dice già «Saldo», e ripeterlo
      due righe sotto è una riga in più che non aggiunge una parola. */
   const label = isShared ? (
-    <p className="text-[13px] text-muted-foreground">{t.balances.yourBalance}</p>
+    <p className="text-[13px] text-muted-foreground">
+      {t.balances.yourBalance}
+    </p>
   ) : null;
 
   if (!state.configured) {
@@ -288,7 +324,11 @@ function BalanceFlow({ state, t }: { state: BalanceState; t: Translations }) {
       {state.outgoing > 0 ? (
         <span className="inline-flex items-baseline gap-1">
           {t.balances.outgoingLabel}
-          <Amount value={-state.outgoing} sign="minus" className="text-[12px]" />
+          <Amount
+            value={-state.outgoing}
+            sign="minus"
+            className="text-[12px]"
+          />
         </span>
       ) : null}
     </p>
@@ -348,9 +388,7 @@ function JointBalance({
         <Amount
           value={state.current}
           sign="minus"
-          className={cn(
-            "shrink-0 text-[length:var(--num-mid)] font-semibold",
-          )}
+          className={cn("shrink-0 text-[length:var(--num-mid)] font-semibold")}
         />
       ) : (
         <button

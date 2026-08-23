@@ -6,11 +6,11 @@ import { Check, Loader2, X } from "lucide-react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import {
-  createIncomeAction,
-  deleteIncomeAction,
-  updateIncomeAction,
-  type IncomeListItem,
-} from "@/src/actions/incomes";
+  createTransferAction,
+  deleteTransferAction,
+  updateTransferAction,
+  type TransferListItem,
+} from "@/src/actions/transfers";
 import { useCurrencySymbol } from "@/src/components/currency/currency-context";
 import { useTranslations } from "@/src/components/language/language-context";
 import { useLocaleFormatters } from "@/src/components/language/use-locale-formatters";
@@ -35,91 +35,76 @@ import {
 import { useKeyboardInset } from "@/src/hooks/use-keyboard-inset";
 import { isDateKey } from "@/src/lib/workspace-dates";
 
-export type IncomeMemberOption = {
-  userId: string;
-  label: string;
-};
-
 /**
- * Il pannello dell'entrata: quattro righe, stessa grammatica dell'aggiunta
- * rapida. Le entrate restano volutamente marginali — ci si arriva da una riga
- * quieta in cima alla scheda del saldo, non da un gesto dell'app — ma una volta
- * aperto il pannello deve avere la stessa cura di quello delle spese, perché è
- * lo stesso lavoro: dire un numero e da dove viene.
+ * Il pannello del giroconto: stessa grammatica di quello dell'entrata, tre
+ * righe invece di quattro.
+ *
+ * Manca il campo che tutti si aspettano — *chi* — e non è una dimenticanza: un
+ * giroconto parte sempre dal conto di chi lo registra. Se ci fosse quel campo,
+ * ci sarebbe anche il modo di far scendere il saldo dell'altra persona senza
+ * che lei tocchi niente.
+ *
+ * Manca anche il titolo. Un giroconto è una cosa sola e la dice la direzione:
+ * chiedere di battezzarlo sarebbe chiedere di riscrivere ogni volta la stessa
+ * parola. Se c'è qualcosa da dire, c'è la nota.
  */
-export function IncomeDialog({
+export function TransferDialog({
   open,
   onClose,
-  members,
-  currentUserId,
-  isShared,
   todayDateKey,
-  income,
+  transfer,
 }: {
   open: boolean;
   onClose: () => void;
-  members: IncomeMemberOption[];
-  currentUserId: string;
-  isShared: boolean;
   todayDateKey: string;
   /** Presente solo in modifica: lo stesso pannello, precompilato. */
-  income?: IncomeListItem | null;
+  transfer?: TransferListItem | null;
 }) {
   const t = useTranslations();
   const currencySymbol = useCurrencySymbol();
   const { locale } = useLocaleFormatters();
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const isEdit = Boolean(income);
-  const [title, setTitle] = useState(income?.title ?? "");
+  const isEdit = Boolean(transfer);
+  const [direction, setDirection] = useState<"to_joint" | "to_personal">(
+    transfer?.direction ?? "to_joint",
+  );
   const [amount, setAmount] = useState(
-    income ? income.amount.toFixed(2).replace(".", ",") : "",
+    transfer ? transfer.amount.toFixed(2).replace(".", ",") : "",
   );
-  const [dateKey, setDateKey] = useState(income?.dateKey ?? todayDateKey);
-  const [account, setAccount] = useState(
-    income?.receivedByUserId ?? currentUserId,
-  );
-  const [note, setNote] = useState(income?.note ?? "");
+  const [dateKey, setDateKey] = useState(transfer?.dateKey ?? todayDateKey);
+  const [note, setNote] = useState(transfer?.note ?? "");
   const keyboardInset = useKeyboardInset(open);
 
-  /* Si svuota chiudendo, non aprendo: chiudere è un evento. Stessa strada
-     dell'aggiunta rapida. */
   function close() {
-    setTitle("");
+    setDirection("to_joint");
     setAmount("");
     setDateKey(todayDateKey);
-    setAccount(currentUserId);
     setNote("");
     setErrors({});
     onClose();
   }
 
-  /* Le stesse tre condizioni che il server verifica. Il pulsante non inventa
-     una regola: mostra prima quella che esiste già. */
   const parsedAmount = parseMoneyString(amount);
   const canSubmit =
-    title.trim().length >= 2 &&
     Number.isFinite(parsedAmount) &&
     parsedAmount > 0 &&
     isDateKey(dateKey) &&
     !pending;
 
-  /* Il conto comune non compare: un'entrata arriva sempre su un conto
-     personale. Sul comune i soldi ci arrivano versati da qualcuno, ed è un
-     giroconto — un movimento diverso, con un pannello suo. */
-  const accountOptions = members.map((member) => ({
-    value: member.userId,
-    label: member.label,
-  }));
+  const directionOptions = [
+    { value: "to_joint" as const, label: t.balances.transferToJoint },
+    { value: "to_personal" as const, label: t.balances.transferToPersonal },
+  ];
 
   function submit(formData: FormData) {
     startTransition(async () => {
-      const result = income
-        ? await updateIncomeAction(income.id, formData)
-        : await createIncomeAction(formData);
+      const result = transfer
+        ? await updateTransferAction(transfer.id, formData)
+        : await createTransferAction(formData);
 
       if (!result.success) {
-        setErrors(result.errors ?? {});
+        setErrors(result.errors ?? { amount: result.message });
         return;
       }
 
@@ -128,12 +113,12 @@ export function IncomeDialog({
   }
 
   function remove() {
-    if (!income) {
+    if (!transfer) {
       return;
     }
 
     startTransition(async () => {
-      const result = await deleteIncomeAction(income.id);
+      const result = await deleteTransferAction(transfer.id);
 
       if (!result.success) {
         setErrors({ amount: result.message });
@@ -156,7 +141,9 @@ export function IncomeDialog({
           <div className="px-4 pt-3.5 pb-2.5">
             <div className="flex min-w-0 items-center gap-2">
               <DialogTitle className="min-w-0 flex-1 text-[17px] font-semibold tracking-tight">
-                {isEdit ? t.balances.incomeEditTitle : t.balances.incomeTitle}
+                {isEdit
+                  ? t.balances.transferEditTitle
+                  : t.balances.transferTitle}
               </DialogTitle>
               <button
                 type="button"
@@ -175,52 +162,40 @@ export function IncomeDialog({
 
           <form action={submit} className="flex min-w-0 flex-col pt-3.5">
             <input type="hidden" name="date" value={dateKey} />
-            <input
-              type="hidden"
-              name="receivedByUserId"
-              value={isShared ? account : currentUserId}
-            />
+            <input type="hidden" name="direction" value={direction} />
 
             <div className="px-4">
               <div className={PANEL_SLAB_CLASS}>
-                {/* Il titolo prende la riga intera e non ha etichetta: è
-                    l'unico campo a testo libero, di lunghezza imprevedibile, e
-                    il segnaposto dice cosa scrivere meglio di quanto lo direbbe
-                    la parola «Cos'è» sospesa sopra il vuoto. */}
-                <div className="px-3.5 py-2.5">
-                  <label htmlFor="income-title" className="sr-only">
-                    {t.balances.incomeTitleLabel}
-                  </label>
-                  <input
-                    id="income-title"
-                    name="title"
-                    value={title}
-                    onChange={(event) => setTitle(event.target.value)}
-                    placeholder={t.balances.incomeTitlePlaceholder}
-                    autoComplete="off"
-                    enterKeyHint="next"
-                    aria-invalid={Boolean(errors.title)}
-                    className={cn(
-                      "h-9 w-full min-w-0 bg-transparent text-[16px] font-medium text-foreground outline-none",
-                      "placeholder:font-normal placeholder:text-ink-3/75",
-                    )}
-                  />
-                  <FormFieldError message={errors.title} className="text-xs" />
-                </div>
+                <PanelRow label={t.balances.transferDirectionLabel}>
+                  <div
+                    role="group"
+                    aria-label={t.balances.transferDirectionLabel}
+                    className={segmentGroupClassName(directionOptions.length)}
+                  >
+                    {directionOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        className={segmentClassName(direction === option.value)}
+                        aria-pressed={direction === option.value}
+                        onClick={() => setDirection(option.value)}
+                      >
+                        <span className="truncate">{option.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </PanelRow>
 
                 <PanelRow
-                  label={t.balances.incomeAmountLabel}
-                  labelFor="income-amount"
+                  label={t.balances.transferAmountLabel}
+                  labelFor="transfer-amount"
                 >
                   <div className="ml-auto flex min-w-0 items-baseline justify-end gap-1">
-                    <span
-                      className={PANEL_MONEY_SYMBOL_CLASS}
-                      aria-hidden="true"
-                    >
+                    <span className={PANEL_MONEY_SYMBOL_CLASS} aria-hidden="true">
                       {currencySymbol}
                     </span>
                     <input
-                      id="income-amount"
+                      id="transfer-amount"
                       name="amount"
                       type="text"
                       inputMode="decimal"
@@ -243,8 +218,8 @@ export function IncomeDialog({
                   todayKey={todayDateKey}
                   locale={locale}
                   labels={{
-                    row: t.balances.incomeDateLabel,
-                    group: t.balances.incomeDateLabel,
+                    row: t.balances.transferDateLabel,
+                    group: t.balances.transferDateLabel,
                     today: t.quickAdd.todayButton,
                     yesterday: t.quickAdd.yesterdayButton,
                     other: t.quickAdd.otherDateButton,
@@ -253,11 +228,11 @@ export function IncomeDialog({
                 />
 
                 <PanelRow
-                  label={t.balances.incomeNoteLabel}
-                  labelFor="income-note"
+                  label={t.balances.transferNoteLabel}
+                  labelFor="transfer-note"
                 >
                   <input
-                    id="income-note"
+                    id="transfer-note"
                     name="note"
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
@@ -266,37 +241,10 @@ export function IncomeDialog({
                     className="ml-auto h-9 w-full min-w-0 bg-transparent text-right text-[15px] text-foreground outline-none placeholder:text-ink-3/75"
                   />
                 </PanelRow>
-
-                {/* Chi l'ha incassata: una scelta sola fra le persone dello
-                    spazio, quindi un segmentato. Negli spazi privati la domanda
-                    non esiste — la persona è una — e la riga non c'è. */}
-                {isShared ? (
-                  <PanelRow label={t.balances.incomeWhoLabel}>
-                    <div
-                      role="group"
-                      aria-label={t.balances.incomeAccountGroupLabel}
-                      className={segmentGroupClassName(accountOptions.length)}
-                    >
-                      {accountOptions.map((option) => (
-                        <button
-                          key={option.value}
-                          type="button"
-                          className={segmentClassName(account === option.value)}
-                          aria-pressed={account === option.value}
-                          onClick={() => setAccount(option.value)}
-                        >
-                          <span className="truncate">{option.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </PanelRow>
-                ) : null}
               </div>
 
               <FormFieldError
-                message={
-                  errors.amount ?? errors.receivedByUserId ?? errors.date
-                }
+                message={errors.amount ?? errors.direction ?? errors.date}
                 className="mt-2.5 text-[13px]"
               />
             </div>
@@ -320,12 +268,9 @@ export function IncomeDialog({
                 ) : (
                   <Check className="size-4" aria-hidden="true" />
                 )}
-                {t.balances.incomeSaveButton}
+                {t.balances.transferSaveButton}
               </button>
 
-              {/* In modifica la cancellazione sta qui e non altrove: e' il solo
-                  posto in cui l'utente ha davanti l'entrata che sta per
-                  eliminare, con i suoi numeri sotto gli occhi. */}
               {isEdit ? (
                 <button
                   type="button"
@@ -333,7 +278,7 @@ export function IncomeDialog({
                   disabled={pending}
                   className="mt-2 h-11 w-full rounded-[var(--r-cta)] text-[14px] font-medium text-destructive outline-none transition-colors hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring/50 disabled:opacity-50"
                 >
-                  {t.balances.incomeDeleteButton}
+                  {t.balances.transferDeleteButton}
                 </button>
               ) : null}
             </div>

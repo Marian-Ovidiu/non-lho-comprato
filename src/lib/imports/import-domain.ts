@@ -27,14 +27,23 @@ export type CsvImportParsedRow = {
   values: CsvImportRow;
 };
 
+export type ImportedTransactionFlowValue = "outgoing" | "incoming";
+
 export type ImportedTransactionDraft = {
   sourceRowIndex: number;
   date: Date | null;
   description: string;
   merchantName: string | null;
+  /** Sempre positivo. Il verso lo dice `flow`, non il segno. */
   amount: number | null;
   currency: string;
   raw: CsvImportRow;
+  /**
+   * Da che parte vanno i soldi, deciso dal segno letto nel CSV e dalla
+   * convenzione dichiarata nella mappatura. Va registrato qui perché l'importo
+   * viene salvato in valore assoluto: dopo, il segno non c'è più.
+   */
+  flow: ImportedTransactionFlowValue;
   status: ImportedTransactionDraftStatus;
   errorMessage?: string;
 };

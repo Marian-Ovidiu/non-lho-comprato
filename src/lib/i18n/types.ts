@@ -52,6 +52,28 @@ export type Translations = {
     incomeJointOption: string;
     incomeSaveButton: string;
     incomeEmpty: string;
+    rowIncome: string;
+    rowTransferIn: string;
+    rowTransferOut: string;
+    addTransfer: string;
+    transferTitle: string;
+    transferEditTitle: string;
+    transferDesc: string;
+    transferDirectionLabel: string;
+    transferToJoint: string;
+    transferToPersonal: string;
+    transferAmountLabel: string;
+    transferDateLabel: string;
+    transferNoteLabel: string;
+    transferSaveButton: string;
+    transferDeleteButton: string;
+    incomeEditTitle: string;
+    incomeDeleteButton: string;
+    incomeNoteLabel: string;
+    netThisMonth: string;
+    netLabel: string;
+    netPositiveNote: string;
+    netNegativeNote: string;
     setUpTitleJoint: string;
     setUpJointCta: string;
     fromDay: (day: string) => string;
@@ -204,6 +226,13 @@ export type Translations = {
     batchNotFound: string;
     batchInvalid: string;
     txNotFound: string;
+    rowIsIncoming: string;
+    rowIsNotIncoming: string;
+    rowsConfirmedAsIncome: string;
+    rowsConfirmedAsTransfer: string;
+    transfersNeedSharedWorkspace: string;
+    confirmAsIncome: string;
+    confirmAsTransfer: string;
     invalidFile: string;
     fileTooLarge: string;
     csvUnreadable: string;
@@ -235,7 +264,7 @@ export type Translations = {
     importedTxInvalid: string;
     workspaceInvalid: string;
     jointNeedsTwoMembers: string;
-    incomeSaved: string;
+    entrySaved: string;
   };
 
 

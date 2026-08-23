@@ -42,10 +42,13 @@ type SeedTransaction = {
   merchantName: string | null;
   amount: string | number | null;
   currency: string | null;
+  flow: "outgoing" | "incoming";
   status: "pending" | "confirmed" | "ignored" | "duplicate" | "error";
   categoryIdSuggested: string | null;
   categoryIdConfirmed: string | null;
   entryId: string | null;
+  incomeId: string | null;
+  transferId: string | null;
   duplicateOfId: string | null;
   rawJson: Record<string, string> | null;
   errorMessage: string | null;
@@ -170,6 +173,9 @@ async function createImportWorld() {
   const batches: SeedBatch[] = [];
   const transactions: SeedTransaction[] = [];
   const createdEntries: CreatedEntryInput[] = [];
+  const createdIncomes: Array<Record<string, unknown>> = [];
+  const createdTransfers: Array<Record<string, unknown>> = [];
+  let workspaceMemberIds = ["user-1"];
   const invalidations = {
     paths: [] as string[],
     tags: [] as string[],
@@ -306,12 +312,15 @@ async function createImportWorld() {
           merchantName: (data.merchantName as string | null | undefined) ?? null,
           amount: (data.amount as string | number | null | undefined) ?? null,
           currency: (data.currency as string | null | undefined) ?? null,
+          flow: (data.flow as SeedTransaction["flow"] | undefined) ?? "outgoing",
           status: data.status as SeedTransaction["status"],
           categoryIdSuggested:
             (data.categoryIdSuggested as string | null | undefined) ?? null,
           categoryIdConfirmed:
             (data.categoryIdConfirmed as string | null | undefined) ?? null,
           entryId: (data.entryId as string | null | undefined) ?? null,
+          incomeId: (data.incomeId as string | null | undefined) ?? null,
+          transferId: (data.transferId as string | null | undefined) ?? null,
           duplicateOfId:
             (data.duplicateOfId as string | null | undefined) ?? null,
           rawJson: (data.rawJson as Record<string, string> | null | undefined) ?? null,
@@ -335,6 +344,7 @@ async function createImportWorld() {
             (data.merchantName as string | null | undefined) ?? transaction.merchantName,
           amount: (data.amount as string | number | null | undefined) ?? transaction.amount,
           currency: (data.currency as string | null | undefined) ?? transaction.currency,
+          flow: (data.flow as SeedTransaction["flow"] | undefined) ?? transaction.flow,
           status: (data.status as SeedTransaction["status"] | undefined) ?? transaction.status,
           categoryIdSuggested:
             (data.categoryIdSuggested as string | null | undefined) ??
@@ -343,6 +353,9 @@ async function createImportWorld() {
             (data.categoryIdConfirmed as string | null | undefined) ??
             transaction.categoryIdConfirmed,
           entryId: (data.entryId as string | null | undefined) ?? transaction.entryId,
+          incomeId: (data.incomeId as string | null | undefined) ?? transaction.incomeId,
+          transferId:
+            (data.transferId as string | null | undefined) ?? transaction.transferId,
           duplicateOfId:
             (data.duplicateOfId as string | null | undefined) ?? transaction.duplicateOfId,
           rawJson: (data.rawJson as Record<string, string> | null | undefined) ??
@@ -397,6 +410,25 @@ async function createImportWorld() {
           .map((category) => ({ ...category }));
       },
     },
+    workspaceMember: {
+      async findMany() {
+        return workspaceMemberIds.map((userId) => ({ userId }));
+      },
+    },
+    income: {
+      async create(args: Record<string, unknown>) {
+        const data = args.data as Record<string, unknown>;
+        createdIncomes.push(data);
+        return { id: `income-${createdIncomes.length}` };
+      },
+    },
+    transfer: {
+      async create(args: Record<string, unknown>) {
+        const data = args.data as Record<string, unknown>;
+        createdTransfers.push(data);
+        return { id: `transfer-${createdTransfers.length}` };
+      },
+    },
   };
 
   const actions = await createImportActions({
@@ -438,6 +470,11 @@ async function createImportWorld() {
       batches,
       transactions,
       createdEntries,
+      createdIncomes,
+      createdTransfers,
+      setWorkspaceMemberIds: (ids: string[]) => {
+        workspaceMemberIds = ids;
+      },
       invalidations,
     },
   };
@@ -923,7 +960,7 @@ describe("import actions", () => {
     assert.equal(state.createdEntries.length, 0);
   });
 
-  it("confirm duplicate/ignored/error non crea Entry", async () => {
+  it("confirm su duplicato, accredito o riga rotta non crea Entry", async () => {
     const { actions, state } = await createImportWorld();
 
     const uploadData = new FormData();
@@ -950,23 +987,143 @@ describe("import actions", () => {
     await actions.saveImportMappingAction(mappingData);
 
     const duplicateRow = state.transactions.find((transaction) => transaction.status === "duplicate");
-    const ignoredRow = state.transactions.find((transaction) => transaction.status === "ignored");
+    /* Il salario non e' piu' scartato in lettura: resta in elenco, marcato in
+       entrata, e proprio per questo confermarlo come spesa deve fallire. */
+    const incomingRow = state.transactions.find((transaction) => transaction.flow === "incoming");
     const errorRow = state.transactions.find((transaction) => transaction.status === "error");
 
     assert.ok(duplicateRow);
-    assert.ok(ignoredRow);
+    assert.ok(incomingRow);
+    assert.equal(incomingRow!.status, "pending");
     assert.ok(errorRow);
 
     const confirmData = new FormData();
     confirmData.append("batchId", String(uploadResult.batchId));
     confirmData.append("categoryId", "category-1");
     confirmData.append("transactionIds", duplicateRow!.id);
-    confirmData.append("transactionIds", ignoredRow!.id);
+    confirmData.append("transactionIds", incomingRow!.id);
     confirmData.append("transactionIds", errorRow!.id);
 
     const confirmResult = await actions.confirmImportedTransactionsAction(confirmData);
 
     assert.equal(confirmResult.success, false);
+    assert.equal(state.createdEntries.length, 0);
+  });
+
+  it("registra un accredito come entrata, non come spesa", async () => {
+    const { actions, state } = await createImportWorld();
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Descrizione,Importo
+        01/06/2026,Caffè,-2
+        02/06/2026,Stipendio,1500
+      `)),
+    );
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+    await actions.saveImportMappingAction(mappingData);
+
+    const incoming = state.transactions.find((t) => t.flow === "incoming");
+    assert.ok(incoming);
+
+    const data = new FormData();
+    data.append("batchId", String(uploadResult.batchId));
+    data.append("target", "income");
+    data.append("transactionIds", incoming!.id);
+
+    const result = await actions.confirmImportedTransactionsAsAction(data);
+
+    assert.equal(result.success, true);
+    assert.equal(state.createdEntries.length, 0);
+    assert.equal(state.createdIncomes.length, 1);
+    assert.equal(state.createdIncomes[0]!.source, "imported");
+    assert.equal(state.createdIncomes[0]!.amount, "1500.00");
+    // La riga resta agganciata all'entrata: senza il collegamento, cancellare
+    // l'entrata lascerebbe la riga confermata e invisibile per sempre.
+    const aggiornata = state.transactions.find((t) => t.id === incoming!.id);
+    assert.equal(aggiornata!.status, "confirmed");
+    assert.equal(aggiornata!.incomeId, "income-1");
+  });
+
+  it("rifiuta di trasformare un addebito in un'entrata", async () => {
+    const { actions, state } = await createImportWorld();
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Descrizione,Importo
+        01/06/2026,Caffè,-2
+      `)),
+    );
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+    await actions.saveImportMappingAction(mappingData);
+
+    const outgoing = state.transactions.find((t) => t.flow === "outgoing");
+    const data = new FormData();
+    data.append("batchId", String(uploadResult.batchId));
+    data.append("target", "income");
+    data.append("transactionIds", outgoing!.id);
+
+    const result = await actions.confirmImportedTransactionsAsAction(data);
+
+    assert.equal(result.success, false);
+    assert.equal(state.createdIncomes.length, 0);
+  });
+
+  it("il verso del giroconto segue il conto personale raccontato dal CSV", async () => {
+    const { actions, state } = await createImportWorld();
+    state.setWorkspaceMemberIds(["user-1", "user-2"]);
+
+    const uploadData = new FormData();
+    uploadData.append(
+      "file",
+      makeCsvFile(csv(`
+        Data,Descrizione,Importo
+        01/06/2026,Giroconto al comune,-400
+      `)),
+    );
+    const uploadResult = await actions.uploadImportBatchAction(uploadData);
+
+    const mappingData = new FormData();
+    mappingData.append("batchId", String(uploadResult.batchId));
+    mappingData.append("date", "Data");
+    mappingData.append("description", "Descrizione");
+    mappingData.append("amount", "Importo");
+    mappingData.append("dateFormat", "DD/MM/YYYY");
+    mappingData.append("amountConvention", "negative_is_expense");
+    await actions.saveImportMappingAction(mappingData);
+
+    const row = state.transactions.find((t) => t.status === "pending");
+    const data = new FormData();
+    data.append("batchId", String(uploadResult.batchId));
+    data.append("target", "transfer");
+    data.append("transactionIds", row!.id);
+
+    const result = await actions.confirmImportedTransactionsAsAction(data);
+
+    assert.equal(result.success, true);
+    // Uscito dal conto personale, quindi entrato nel comune. Senza questo, i
+    // 400 euro sarebbero diventati una spesa e avrebbero gonfiato le uscite.
+    assert.equal(state.createdTransfers[0]!.direction, "to_joint");
     assert.equal(state.createdEntries.length, 0);
   });
 

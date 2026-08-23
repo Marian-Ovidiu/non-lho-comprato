@@ -234,7 +234,7 @@ export async function createEntryFromNormalizedInput(
 
     return {
       success: true,
-      message: t.entryActions.incomeSaved,
+      message: t.entryActions.entrySaved,
       entryId: entry.id,
       isFirstEntryCreated,
       isFirstEntryOfDay,

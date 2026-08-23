@@ -93,7 +93,7 @@ describe("mapCsvRowToImportedTransactionDraft", () => {
     assert.equal(draft.date?.toISOString(), "2026-06-18T00:00:00.000Z");
   });
 
-  it("marks positive inflows as ignored in negative_is_expense mode", () => {
+  it("tiene in elenco gli accrediti, marcandoli in entrata", () => {
     const draft = mapCsvRowToImportedTransactionDraft(
       {
         "Data operazione": "18/06/2026",
@@ -105,8 +105,28 @@ describe("mapCsvRowToImportedTransactionDraft", () => {
       baseMapping,
     );
 
-    assert.equal(draft.status, "ignored");
+    // Prima finivano in "ignored", nello stesso mucchio di cio' che l'utente
+    // scarta a mano, e uno stipendio spariva li' dentro. Ora restano da
+    // decidere come tutto il resto, e a dire il verso e' `flow`.
+    assert.equal(draft.status, "pending");
+    assert.equal(draft.flow, "incoming");
     assert.equal(draft.amount, 2500);
+  });
+
+  it("marca in uscita un addebito, con l'importo gia' senza segno", () => {
+    const draft = mapCsvRowToImportedTransactionDraft(
+      {
+        "Data operazione": "18/06/2026",
+        Descrizione: "Spesa",
+        Importo: "-42,00",
+        Valuta: "EUR",
+        Merchant: "Coop",
+      },
+      baseMapping,
+    );
+
+    assert.equal(draft.flow, "outgoing");
+    assert.equal(draft.amount, 42);
   });
 
   it("marks invalid rows as errors", () => {

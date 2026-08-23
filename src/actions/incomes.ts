@@ -4,6 +4,10 @@ import { revalidatePath, updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 
 import { withDatabaseRetry } from "@/src/lib/db-retry";
+import {
+  decryptOptionalText,
+  encryptOptionalText,
+} from "@/src/lib/field-encryption";
 import { prisma } from "@/src/lib/prisma";
 import {
   getCurrentUser,
@@ -20,6 +24,7 @@ export type IncomeListItem = {
   dateKey: string;
   receivedByUserId: string | null;
   receivedByLabel: string | null;
+  note: string | null;
 };
 
 export type IncomeActionResult = {
@@ -64,6 +69,7 @@ export async function getIncomesForMonth(
         amount: true,
         date: true,
         receivedByUserId: true,
+        note: true,
       },
     }),
   );
@@ -81,6 +87,7 @@ export async function getIncomesForMonth(
     receivedByLabel: row.receivedByUserId
       ? (labels.get(row.receivedByUserId) ?? null)
       : null,
+    note: decryptOptionalText(row.note),
   }));
 }
 
@@ -116,21 +123,20 @@ export async function createIncomeAction(
       errors.date = "Data non valida.";
     }
 
-    /* Stringa vuota significa "sul conto comune": la colonna resta nulla, che
-       e' come il saldo comune riconosce le proprie entrate. */
-    const rawReceivedBy = String(formData.get("receivedByUserId") ?? "").trim();
-    const receivedByUserId = rawReceivedBy === "" ? null : rawReceivedBy;
+    /* Un'entrata arriva sempre su un conto personale. Sul conto comune i soldi
+       ci arrivano solo versati da qualcuno, e quello e' un giroconto: vedi
+       src/actions/transfers.ts. Il campo vuoto qui significava "comune" fino
+       alla migrazione dei trasferimenti, per questo lo rifiutiamo invece di
+       interpretarlo -- indovinare avrebbe attribuito a una persona un'entrata
+       che chi scrive voleva mettere altrove. */
+    const receivedByUserId = String(
+      formData.get("receivedByUserId") ?? "",
+    ).trim();
 
-    if (
-      receivedByUserId &&
-      !members.some((member) => member.userId === receivedByUserId)
-    ) {
+    if (!receivedByUserId) {
+      errors.receivedByUserId = "Scegli chi ha incassato l'entrata.";
+    } else if (!members.some((member) => member.userId === receivedByUserId)) {
       errors.receivedByUserId = "Persona non valida per questo spazio.";
-    }
-
-    if (receivedByUserId === null && members.length < 2) {
-      errors.receivedByUserId =
-        "Il conto comune esiste solo negli spazi condivisi.";
     }
 
     if (Object.keys(errors).length > 0) {
@@ -146,7 +152,9 @@ export async function createIncomeAction(
           date,
           receivedByUserId,
           createdByUserId: currentUser.id,
-          note: String(formData.get("note") ?? "").trim() || null,
+          note: encryptOptionalText(
+            String(formData.get("note") ?? "").trim() || null,
+          ),
         },
       }),
     );
@@ -162,6 +170,134 @@ export async function createIncomeAction(
     return {
       success: false,
       message: "Non sono riuscito a registrare l'entrata.",
+    };
+  }
+}
+
+export async function getIncomeById(
+  incomeId: string,
+): Promise<IncomeListItem | null> {
+  const [workspaceId, members, timezone] = await Promise.all([
+    getCurrentWorkspaceId(),
+    getCurrentWorkspaceMembers(),
+    getCurrentWorkspaceTimezone(),
+  ]);
+
+  const row = await withDatabaseRetry(() =>
+    prisma.income.findFirst({
+      where: { id: incomeId, workspaceId },
+      select: {
+        id: true,
+        title: true,
+        amount: true,
+        date: true,
+        receivedByUserId: true,
+        note: true,
+      },
+    }),
+  );
+
+  if (!row) {
+    return null;
+  }
+
+  return {
+    id: row.id,
+    title: row.title,
+    amount: toNumber(row.amount),
+    dateKey: getDateKey(row.date, timezone),
+    receivedByUserId: row.receivedByUserId,
+    receivedByLabel: row.receivedByUserId
+      ? (members.find((member) => member.userId === row.receivedByUserId)
+          ?.label ?? null)
+      : null,
+    note: decryptOptionalText(row.note),
+  };
+}
+
+/**
+ * Fino a ieri un'entrata sbagliata restava sbagliata: si poteva solo creare.
+ * Un numero che non si puo' correggere e in cui il saldo crede e' peggio di
+ * un numero che non c'e'.
+ */
+export async function updateIncomeAction(
+  incomeId: string,
+  formData: FormData,
+): Promise<IncomeActionResult> {
+  try {
+    const [workspaceId, members, timezone] = await Promise.all([
+      getCurrentWorkspaceId(),
+      getCurrentWorkspaceMembers(),
+      getCurrentWorkspaceTimezone(),
+    ]);
+
+    const errors: Record<string, string> = {};
+
+    const title = String(formData.get("title") ?? "").trim();
+    if (title.length < 2) {
+      errors.title = "Serve un titolo di almeno due caratteri.";
+    }
+
+    const amount = Number(
+      String(formData.get("amount") ?? "").replace(",", "."),
+    );
+    if (!Number.isFinite(amount) || amount <= 0) {
+      errors.amount = "L'importo deve essere maggiore di zero.";
+    }
+
+    const dateKey =
+      String(formData.get("date") ?? "").trim() || getTodayDateKey(timezone);
+    const date = new Date(`${dateKey}T00:00:00.000Z`);
+    if (Number.isNaN(date.getTime())) {
+      errors.date = "Data non valida.";
+    }
+
+    const receivedByUserId = String(
+      formData.get("receivedByUserId") ?? "",
+    ).trim();
+
+    if (!receivedByUserId) {
+      errors.receivedByUserId = "Scegli chi ha incassato l'entrata.";
+    } else if (!members.some((member) => member.userId === receivedByUserId)) {
+      errors.receivedByUserId = "Persona non valida per questo spazio.";
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return { success: false, message: "Controlla i campi.", errors };
+    }
+
+    /* Come per la cancellazione: senza il filtro sullo spazio un id indovinato
+       riscriverebbe l'entrata di qualcun altro. */
+    const updated = await withDatabaseRetry(() =>
+      prisma.income.updateMany({
+        where: { id: incomeId, workspaceId },
+        data: {
+          title,
+          amount: amount.toFixed(2),
+          date,
+          receivedByUserId,
+          note: encryptOptionalText(
+            String(formData.get("note") ?? "").trim() || null,
+          ),
+        },
+      }),
+    );
+
+    if (updated.count === 0) {
+      return { success: false, message: "Entrata non trovata." };
+    }
+
+    revalidatePath("/");
+    revalidatePath("/entries");
+    updateTag(`entries:${workspaceId}`);
+
+    return { success: true, message: "Entrata aggiornata." };
+  } catch (error) {
+    unstable_rethrow(error);
+    console.error("Failed to update income:", error);
+    return {
+      success: false,
+      message: "Non sono riuscito ad aggiornare l'entrata.",
     };
   }
 }

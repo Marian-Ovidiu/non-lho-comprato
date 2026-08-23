@@ -10,6 +10,7 @@ import {
 import type {
   CsvImportRow,
   ImportedTransactionDraft,
+  ImportedTransactionFlowValue,
 } from "@/src/lib/imports/import-domain";
 import { toMoneyNumber } from "@/src/lib/money-number";
 
@@ -33,10 +34,13 @@ export type ImportedTransactionRecord = {
   merchantName: string | null;
   amount: Prisma.Decimal | string | number | null;
   currency: string | null;
+  flow: ImportedTransactionFlowValue;
   status: ImportedTransactionStatus;
   categoryIdSuggested: string | null;
   categoryIdConfirmed: string | null;
   entryId: string | null;
+  incomeId: string | null;
+  transferId: string | null;
   duplicateOfId: string | null;
   rawJson: Prisma.JsonValue | null;
   errorMessage: string | null;
@@ -146,6 +150,9 @@ export function mapTransactionUpdatePayload(
     merchantName: encryptOptionalText(draft.merchantName),
     amount: draft.amount === null ? null : toDecimalString(draft.amount),
     currency: draft.currency,
+    /* Il verso va scritto qui perche' l'importo qui sopra e' gia' assoluto:
+       superato questo punto, il segno letto nel CSV non esiste piu'. */
+    flow: draft.flow,
     categoryIdSuggested,
     status:
       draft.status === "error"

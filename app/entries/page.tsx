@@ -1,15 +1,25 @@
 import { unstable_rethrow } from "next/navigation";
 
 import { getWorkspaceCategories } from "@/src/actions/categories";
-import { getDashboardSummary, getEntriesPage } from "@/src/actions/entries";
+import { getDashboardSummary } from "@/src/actions/entries";
+import { getMovementsFeed } from "@/src/actions/movements";
 import { getMonthlyStats } from "@/src/actions/stats";
 import { CraftedEntryList } from "@/src/components/entries/crafted-entry-list";
 import { CraftedEntriesHeader } from "@/src/components/entries/crafted-entries-header";
 import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-banner";
 import { formatEntryLoadError } from "@/src/lib/entry-load-debug";
-import { getCurrentWorkspaceLanguage, getCurrentWorkspaceMembers, getCurrentWorkspaceTimezone } from "@/src/lib/workspace-context";
+import {
+  getCurrentUser,
+  getCurrentWorkspaceLanguage,
+  getCurrentWorkspaceMembers,
+  getCurrentWorkspaceTimezone,
+} from "@/src/lib/workspace-context";
 import { getTranslations, languageToLocale } from "@/src/lib/i18n";
-import { formatMonthLabel, normalizeMonthKey } from "@/src/lib/workspace-dates";
+import {
+  formatMonthLabel,
+  getTodayDateKey,
+  normalizeMonthKey,
+} from "@/src/lib/workspace-dates";
 
 
 type EntriesPageProps = {
@@ -68,8 +78,11 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
   );
   const selectedMonthDate = getDateFromMonthKey(selectedMonthKey);
   const newEntryHref = getNewEntryHref(selectedMonthKey);
-  const membersPromise = getCurrentWorkspaceMembers();
-  let entriesPage: Awaited<ReturnType<typeof getEntriesPage>> | null = null;
+  const [members, currentUser] = await Promise.all([
+    getCurrentWorkspaceMembers(),
+    getCurrentUser(),
+  ]);
+  let entriesPage: Awaited<ReturnType<typeof getMovementsFeed>> | null = null;
   let monthSummary: Awaited<ReturnType<typeof getDashboardSummary>> | null = null;
   let monthlyStats: Awaited<ReturnType<typeof getMonthlyStats>> = [];
   let categories: Awaited<ReturnType<typeof getWorkspaceCategories>> = [];
@@ -77,7 +90,7 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
 
   try {
     [entriesPage, monthSummary, monthlyStats, categories] = await Promise.all([
-      getEntriesPage({ limit: 20, members: membersPromise, monthKey: selectedMonthKey }),
+      getMovementsFeed({ limit: 20, monthKey: selectedMonthKey }),
       getDashboardSummary(selectedMonthKey),
       getMonthlyStats(),
       getWorkspaceCategories(),
@@ -136,7 +149,16 @@ export default async function EntriesPage({ searchParams }: EntriesPageProps) {
 
       <CraftedEntryList
         key={selectedMonthKey}
-        initialEntries={entriesPage?.entries ?? []}
+        initialItems={entriesPage?.items ?? []}
+        moneyPanel={{
+          members: members.map((member) => ({
+            userId: member.userId,
+            label: member.label,
+          })),
+          currentUserId: currentUser.id,
+          isShared: members.length > 1,
+          todayDateKey: getTodayDateKey(timeZone),
+        }}
         initialNextCursor={entriesPage?.nextCursor ?? null}
         initialHasMore={entriesPage?.hasMore ?? false}
         newEntryHref={newEntryHref}

@@ -6,7 +6,10 @@ import { DataLoadErrorBanner } from "@/src/components/shared/data-load-error-ban
 import { getImportBatchAction } from "@/src/actions/imports";
 import { getAuthenticatedUser } from "@/src/lib/auth/session";
 import { prisma } from "@/src/lib/prisma";
-import { getCurrentWorkspace } from "@/src/lib/workspace-context";
+import {
+  getCurrentWorkspace,
+  getCurrentWorkspaceMembers,
+} from "@/src/lib/workspace-context";
 import { formatDataLoadError } from "@/src/lib/data-load-error";
 import { CraftedImportMappingForm } from "@/src/components/workspace/crafted-import-mapping-form";
 import { CraftedImportPreviewTable } from "@/src/components/workspace/crafted-import-preview-table";
@@ -57,11 +60,12 @@ export default async function WorkspaceImportBatchPage({
   let workspace = null as Awaited<ReturnType<typeof getCurrentWorkspace>> | null;
   let batch = null as Awaited<ReturnType<typeof getImportBatchAction>>;
   let categories: ImportCategoryOption[] = [];
+  let members: Awaited<ReturnType<typeof getCurrentWorkspaceMembers>> = [];
   const importPrisma = prisma as unknown as ImportPagePrismaLike;
 
   try {
     workspace = await getCurrentWorkspace();
-    [batch, categories] = await Promise.all([
+    [batch, categories, members] = await Promise.all([
       getImportBatchAction(batchId),
       importPrisma.category.findMany({
         where: {
@@ -74,6 +78,7 @@ export default async function WorkspaceImportBatchPage({
           name: true,
         },
       }),
+      getCurrentWorkspaceMembers(),
     ]);
   } catch (error) {
     unstable_rethrow(error);
@@ -150,6 +155,7 @@ export default async function WorkspaceImportBatchPage({
             transactions={previewTransactions}
             categories={categories}
             currency={workspace.currency}
+            isShared={members.length > 1}
           />
         )}
       </section>
