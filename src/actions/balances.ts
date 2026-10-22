@@ -11,6 +11,7 @@ import {
   computeMonthlyNet,
   type MonthlyNet,
 } from "@/src/features/balances/monthly-net";
+import { loadBalanceSources } from "@/src/features/balances/load";
 import { splitBalanceMovements } from "@/src/features/balances/split";
 import { withDatabaseRetry } from "@/src/lib/db-retry";
 import { prisma } from "@/src/lib/prisma";
@@ -21,7 +22,6 @@ import {
   getCurrentWorkspaceTimezone,
 } from "@/src/lib/workspace-context";
 import {
-  getDateKey,
   getMonthRangeForMonthKey,
   getTodayDateKey,
   normalizeMonthKey,
@@ -59,100 +59,25 @@ export async function getWorkspaceBalances(): Promise<WorkspaceBalances> {
 
   const isShared = members.length > 1;
 
-  const [membership, workspace, entries, incomes, transfers, settlements] =
-    await withDatabaseRetry(() =>
-      Promise.all([
-        prisma.workspaceMember.findUnique({
-          where: {
-            workspaceId_userId: { workspaceId, userId: currentUser.id },
-          },
-          select: { balanceStart: true, balanceStartDate: true },
-        }),
-        prisma.workspace.findUnique({
-          where: { id: workspaceId },
-          select: { jointBalanceStart: true, jointBalanceStartDate: true },
-        }),
-        prisma.entry.findMany({
-          where: { workspaceId, mode: { not: "avoided" } },
-          select: {
-            realCost: true,
-            date: true,
-            paidByUserId: true,
-            paymentMode: true,
-          },
-        }),
-        prisma.income.findMany({
-          where: { workspaceId },
-          select: { amount: true, date: true, receivedByUserId: true },
-        }),
-        /* Nessun giroconto puo' esistere in uno spazio privato: il conto comune
-         non c'e'. La query resta incondizionata perche' costa meno di un ramo,
-         e su uno spazio privato torna vuota. */
-        prisma.transfer.findMany({
-          where: { workspaceId },
-          select: { amount: true, date: true, userId: true, direction: true },
-        }),
-        /* I regolamenti spostano soldi veri fra due persone. Per mesi il saldo
-         non li ha visti: pareggiavi un debito, il denaro usciva dal conto, e
-         il numero restava fermo. */
-        prisma.workspaceSettlement.findMany({
-          where: { workspaceId },
-          select: {
-            amount: true,
-            date: true,
-            fromUserId: true,
-            toUserId: true,
-          },
-        }),
-      ]),
-    );
+  const sources = await loadBalanceSources(
+    workspaceId,
+    currentUser.id,
+    timezone,
+  );
 
   const { personalIn, personalOut, jointIn, jointOut } = splitBalanceMovements(
-    entries.map((entry) => ({
-      dateKey: getDateKey(entry.date, timezone),
-      amount: toNumber(entry.realCost),
-      paidByUserId: entry.paidByUserId,
-      isJointAccount: entry.paymentMode === "joint_account",
-    })),
-    incomes.map((income) => ({
-      dateKey: getDateKey(income.date, timezone),
-      amount: toNumber(income.amount),
-      receivedByUserId: income.receivedByUserId,
-    })),
-    transfers.map((transfer) => ({
-      dateKey: getDateKey(transfer.date, timezone),
-      amount: toNumber(transfer.amount),
-      userId: transfer.userId,
-      direction: transfer.direction,
-    })),
-    settlements.map((settlement) => ({
-      dateKey: getDateKey(settlement.date, timezone),
-      amount: toNumber(settlement.amount),
-      fromUserId: settlement.fromUserId,
-      toUserId: settlement.toUserId,
-    })),
+    sources.entries,
+    sources.incomes,
+    sources.transfers,
+    sources.settlements,
     currentUser.id,
   );
 
-  const personalStart =
-    membership?.balanceStart != null && membership.balanceStartDate
-      ? {
-          amount: toNumber(membership.balanceStart),
-          dateKey: getDateKey(membership.balanceStartDate, timezone),
-        }
-      : null;
-
-  const jointStart =
-    workspace?.jointBalanceStart != null && workspace.jointBalanceStartDate
-      ? {
-          amount: toNumber(workspace.jointBalanceStart),
-          dateKey: getDateKey(workspace.jointBalanceStartDate, timezone),
-        }
-      : null;
-
   return {
-    personal: computeBalance(personalStart, personalIn, personalOut),
-    joint: isShared ? computeBalance(jointStart, jointIn, jointOut) : null,
+    personal: computeBalance(sources.personalStart, personalIn, personalOut),
+    joint: isShared
+      ? computeBalance(sources.jointStart, jointIn, jointOut)
+      : null,
     isShared,
   };
 }

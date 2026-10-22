@@ -147,6 +147,27 @@ describe("buildAiExpenseExportRow", () => {
     assert.equal(row.comparisonOverspent, "0.00");
   });
 
+  it("says which account paid, separately from how many people benefit", () => {
+    // "Condiviso" in `person` only means two beneficiaries; reconciling the
+    // joint account needs to know which of those actually left it.
+    const joint = buildAiExpenseExportRow(
+      createEntry({ paymentMode: "joint_account" }),
+      "Workspace",
+      "Europe/Rome",
+    );
+    const legacy = buildAiExpenseExportRow(createEntry({}), "Workspace", "Europe/Rome");
+    const csv = serializeAiExpenseExportEntries(
+      [createEntry({ paymentMode: "joint_account" })],
+      "Workspace",
+      "Europe/Rome",
+    );
+
+    assert.equal(joint.paymentMode, "joint_account");
+    assert.equal(legacy.paymentMode, "single_payer");
+    assert.equal(AI_EXPENSE_EXPORT_COLUMNS.at(-1), "paymentMode");
+    assert.ok(csv.trimEnd().endsWith(",joint_account"));
+  });
+
   it("exports sharing columns for a shared entry with two beneficiaries", () => {
     const row = buildAiExpenseExportRow(
       createEntry({

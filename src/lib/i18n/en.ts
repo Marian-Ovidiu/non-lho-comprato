@@ -1048,6 +1048,8 @@ export const en: Translations = {
     errorToast: "Export failed",
     currentMonthOption: "Export current month",
     allOption: "Export all entries",
+    balancesOption: "Balance statement",
+    balancesHint: "Every movement that touched your account and the joint one, with a running balance: compare it line by line with your bank statement.",
   },
 
 

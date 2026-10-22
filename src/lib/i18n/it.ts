@@ -1072,6 +1072,8 @@ export const it: Translations = {
     errorToast: "Export non riuscito",
     currentMonthOption: "Export mese corrente",
     allOption: "Export tutti i movimenti",
+    balancesOption: "Estratto dei saldi",
+    balancesHint: "Ogni movimento che ha toccato il tuo conto e il comune, con il saldo progressivo: da confrontare riga per riga con l'estratto della banca.",
   },
 
 

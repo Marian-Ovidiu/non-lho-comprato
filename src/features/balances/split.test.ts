@@ -261,4 +261,14 @@ describe("splitBalanceMovements", () => {
     assert.ok(toccati <= spese.length);
     assert.equal(toccati, 2); // la terza è dell'altra persona: non mi riguarda
   });
+
+  it("il giroconto porta la stessa provenienza su entrambi i conti che tocca", () => {
+    // L'estratto dei saldi riconosce il movimento da qui: se il ref si
+    // perdesse su uno dei due lati, il versamento comparirebbe senza nome.
+    const ref = { kind: "transfer" as const, id: "g1" };
+    const out = splitBalanceMovements([], [], [giroconto({ ref })], [], IO);
+
+    assert.deepEqual(out.personalOut, [{ dateKey: giorno, amount: 400, ref }]);
+    assert.deepEqual(out.jointIn, [{ dateKey: giorno, amount: 400, ref }]);
+  });
 });

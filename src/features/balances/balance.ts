@@ -25,9 +25,20 @@ export type BalanceStart = {
   dateKey: string;
 };
 
+/**
+ * Da quale riga del database viene un movimento. Il calcolo del saldo non lo
+ * guarda; serve all'estratto dei saldi, che deve poter dire "questi 40 euro
+ * sono la spesa X" senza rifare per conto suo le regole di chi paga.
+ */
+export type BalanceMovementRef = {
+  kind: "entry" | "income" | "transfer" | "settlement";
+  id: string;
+};
+
 export type BalanceMovement = {
   dateKey: string;
   amount: number;
+  ref?: BalanceMovementRef;
 };
 
 export type BalanceState =

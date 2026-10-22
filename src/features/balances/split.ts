@@ -28,13 +28,17 @@
  * di entrambi, mentre il saldo dell'altra persona non esce da qui.
  */
 
-import type { BalanceMovement } from "@/src/features/balances/balance";
+import type {
+  BalanceMovement,
+  BalanceMovementRef,
+} from "@/src/features/balances/balance";
 
 export type BalanceEntryInput = {
   dateKey: string;
   amount: number;
   paidByUserId: string | null;
   isJointAccount: boolean;
+  ref?: BalanceMovementRef;
 };
 
 export type BalanceIncomeInput = {
@@ -42,6 +46,7 @@ export type BalanceIncomeInput = {
   amount: number;
   /** Nullo significa persona non più nello spazio, non conto comune. */
   receivedByUserId: string | null;
+  ref?: BalanceMovementRef;
 };
 
 export type BalanceTransferInput = {
@@ -51,6 +56,7 @@ export type BalanceTransferInput = {
   /** Chi versa o preleva. L'altro capo è sempre il conto comune. */
   userId: string | null;
   direction: "to_joint" | "to_personal";
+  ref?: BalanceMovementRef;
 };
 
 export type BalanceSettlementInput = {
@@ -60,6 +66,7 @@ export type BalanceSettlementInput = {
   fromUserId: string;
   /** Chi incassa. */
   toUserId: string;
+  ref?: BalanceMovementRef;
 };
 
 export type BalanceMovements = {
@@ -68,6 +75,18 @@ export type BalanceMovements = {
   jointIn: BalanceMovement[];
   jointOut: BalanceMovement[];
 };
+
+/* Il ref passa solo se c'e': chi non lo chiede riceve i movimenti nella forma
+   di sempre, senza un campo vuoto in piu'. */
+function toMovement(input: {
+  dateKey: string;
+  amount: number;
+  ref?: BalanceMovementRef;
+}): BalanceMovement {
+  return input.ref
+    ? { dateKey: input.dateKey, amount: input.amount, ref: input.ref }
+    : { dateKey: input.dateKey, amount: input.amount };
+}
 
 export function splitBalanceMovements(
   entries: BalanceEntryInput[],
@@ -84,7 +103,7 @@ export function splitBalanceMovements(
   };
 
   for (const entry of entries) {
-    const movement = { dateKey: entry.dateKey, amount: entry.amount };
+    const movement = toMovement(entry);
 
     if (entry.isJointAccount) {
       result.jointOut.push(movement);
@@ -101,15 +120,12 @@ export function splitBalanceMovements(
        entra in nessun saldo. Metterla sul comune sarebbe la vecchia regola,
        ed è quella che confondeva "di nessuno" con "di tutti e due". */
     if (income.receivedByUserId === currentUserId) {
-      result.personalIn.push({
-        dateKey: income.dateKey,
-        amount: income.amount,
-      });
+      result.personalIn.push(toMovement(income));
     }
   }
 
   for (const transfer of transfers) {
-    const movement = { dateKey: transfer.dateKey, amount: transfer.amount };
+    const movement = toMovement(transfer);
     const isMine = transfer.userId === currentUserId;
 
     if (transfer.direction === "to_joint") {
@@ -132,7 +148,7 @@ export function splitBalanceMovements(
      contarlo in modo diverso, qui i due saldi coinvolti sono privati e non si
      vedono mai insieme. */
   for (const settlement of settlements) {
-    const movement = { dateKey: settlement.dateKey, amount: settlement.amount };
+    const movement = toMovement(settlement);
 
     if (settlement.fromUserId === currentUserId) {
       result.personalOut.push(movement);

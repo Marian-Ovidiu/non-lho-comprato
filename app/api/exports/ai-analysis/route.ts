@@ -33,6 +33,7 @@ const exportSelect = {
   savedAmount: true,
   mode: true,
   savingContext: true,
+  paymentMode: true,
   paidByUserId: true,
   paidByUser: {
     select: {
@@ -133,6 +134,7 @@ async function fetchEntriesBatch(
     savedAmount: entry.savedAmount,
     mode: entry.mode,
     savingContext: entry.savingContext,
+    paymentMode: entry.paymentMode,
     paidByUserId: entry.paidByUserId,
     paidByUserName: entry.paidByUser?.name ?? null,
     paidByUserEmail: entry.paidByUser?.email ?? null,

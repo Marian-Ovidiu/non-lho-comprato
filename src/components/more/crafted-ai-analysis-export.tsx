@@ -16,6 +16,9 @@ type ToastState = {
 } | null;
 
 const EXPORT_URL = "/api/exports/ai-analysis";
+const BALANCES_EXPORT_URL = "/api/exports/balances";
+
+type ExportKind = AiExpenseExportRange | "balances";
 
 function getFilenameFromContentDisposition(header: string | null): string | null {
   if (!header) return null;
@@ -35,11 +38,12 @@ function getFilenameFromContentDisposition(header: string | null): string | null
 
 export function CraftedAiAnalysisExport() {
   const t = useTranslations();
-  const exportOptions: Array<{ range: AiExpenseExportRange; label: string }> = [
+  const exportOptions: Array<{ range: ExportKind; label: string }> = [
     { range: "current-month", label: t.aiExport.currentMonthOption },
     { range: "all", label: t.aiExport.allOption },
+    { range: "balances", label: t.aiExport.balancesOption },
   ];
-  const [exportingRange, setExportingRange] = useState<AiExpenseExportRange | null>(null);
+  const [exportingRange, setExportingRange] = useState<ExportKind | null>(null);
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
@@ -48,12 +52,15 @@ export function CraftedAiAnalysisExport() {
     return () => window.clearTimeout(timeout);
   }, [toast]);
 
-  async function handleExport(range: AiExpenseExportRange) {
+  async function handleExport(range: ExportKind) {
     setExportingRange(range);
 
     try {
-      const searchParams = new URLSearchParams({ range });
-      const response = await fetch(`${EXPORT_URL}?${searchParams.toString()}`, {
+      const url =
+        range === "balances"
+          ? BALANCES_EXPORT_URL
+          : `${EXPORT_URL}?${new URLSearchParams({ range }).toString()}`;
+      const response = await fetch(url, {
         method: "GET",
         credentials: "same-origin",
       });
@@ -65,7 +72,9 @@ export function CraftedAiAnalysisExport() {
       const blob = await response.blob();
       const fileName =
         getFilenameFromContentDisposition(response.headers.get("content-disposition")) ??
-        getAiExpenseExportFilename(Intl.DateTimeFormat().resolvedOptions().timeZone, new Date(), range);
+        (range === "balances"
+          ? "nlc-saldi.csv"
+          : getAiExpenseExportFilename(Intl.DateTimeFormat().resolvedOptions().timeZone, new Date(), range));
       const objectUrl = URL.createObjectURL(blob);
       const anchor = document.createElement("a");
 
@@ -115,7 +124,10 @@ export function CraftedAiAnalysisExport() {
                 disabled={exportingRange !== null}
                 onClick={() => handleExport(option.range)}
                 aria-busy={isCurrentExport}
-                className="nlc-press flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--r-control)] border border-line bg-background px-3 text-[13.5px] font-semibold transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-muted disabled:cursor-not-allowed disabled:opacity-50"
+                className={cn(
+                  option.range === "balances" && "sm:col-span-2",
+                  "nlc-press flex min-h-11 w-full items-center justify-center gap-2 rounded-[var(--r-control)] border border-line bg-background px-3 text-[13.5px] font-semibold transition-colors hover:bg-surface focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-surface-muted disabled:cursor-not-allowed disabled:opacity-50",
+                )}
               >
                 {isCurrentExport ? (
                   <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
@@ -127,6 +139,9 @@ export function CraftedAiAnalysisExport() {
             );
           })}
         </div>
+        <p className="text-[12px] leading-[18px] text-muted-foreground">
+          {t.aiExport.balancesHint}
+        </p>
       </div>
 
       {toast ? (

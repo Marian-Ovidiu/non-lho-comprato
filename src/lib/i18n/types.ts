@@ -1026,6 +1026,8 @@ export type Translations = {
     errorToast: string;
     currentMonthOption: string;
     allOption: string;
+    balancesOption: string;
+    balancesHint: string;
   };
 
 

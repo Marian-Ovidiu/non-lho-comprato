@@ -1,6 +1,7 @@
 import { round2 } from "@/src/lib/money-number";
 import { toEntryMoneyView } from "@/src/lib/entry-domain";
 import { calculateEntryMetrics } from "@/src/lib/entry-metrics";
+import { csvLine } from "@/src/lib/csv";
 
 
 export const AI_EXPENSE_EXPORT_COLUMNS = [
@@ -54,6 +55,10 @@ export const AI_EXPENSE_EXPORT_COLUMNS = [
   "sharePerBeneficiary",
   "beneficiaryShares",
   "isShared",
+  // In coda perche' chi legge per posizione non veda spostarsi le altre.
+  // Dice da quale conto sono usciti i soldi: "Condiviso" in `person` vuol dire
+  // solo che i beneficiari sono due, non che ha pagato il cointestato.
+  "paymentMode",
 ] as const;
 
 export type AiExpenseExportEntry = {
@@ -72,6 +77,7 @@ export type AiExpenseExportEntry = {
   amountSpent?: unknown;
   comparisonAmount?: unknown;
   savingImpact?: unknown;
+  paymentMode?: string | null;
   // Sharing fields (present for new entries; absent for legacy entries)
   paidByUserId?: string | null;
   paidByUserName?: string | null;
@@ -139,6 +145,7 @@ export type AiExpenseExportRow = {
   sharePerBeneficiary: string;
   beneficiaryShares: string;
   isShared: boolean;
+  paymentMode: string;
 };
 
 export type AiExpenseExportSummary = {
@@ -201,42 +208,6 @@ function formatLocalWeekday(date: Date, timeZone: string): string {
     timeZone,
     weekday: "long",
   }).format(date);
-}
-
-// Cells opened in Excel/Sheets execute as formulas when they start with one of
-// these characters, so user text (titles, notes, names) written by one member
-// could attack another member's spreadsheet. Plain numbers such as "-10.00"
-// are exempt: a leading minus on a numeric cell is data, not a formula.
-const CSV_FORMULA_TRIGGER_PATTERN = /^[=+\-@\t\r]/u;
-const CSV_PLAIN_NUMBER_PATTERN = /^-?\d+(?:\.\d+)?$/u;
-
-function neutralizeCsvFormulaValue(value: string): string {
-  if (
-    CSV_FORMULA_TRIGGER_PATTERN.test(value) &&
-    !CSV_PLAIN_NUMBER_PATTERN.test(value)
-  ) {
-    return `'${value}`;
-  }
-
-  return value;
-}
-
-function escapeCsvValue(value: string): string {
-  const neutralized = neutralizeCsvFormulaValue(value);
-
-  if (
-    /[",\r\n]/.test(neutralized) ||
-    neutralized.startsWith(" ") ||
-    neutralized.endsWith(" ")
-  ) {
-    return `"${neutralized.replace(/"/g, '""')}"`;
-  }
-
-  return neutralized;
-}
-
-function csvLine(values: Array<string | number | boolean>): string {
-  return `${values.map((value) => escapeCsvValue(String(value))).join(",")}\n`;
 }
 
 export function createAiExpenseExportSummary(): AiExpenseExportSummary {
@@ -348,6 +319,7 @@ export function buildAiExpenseExportRow(
       .map(formatMoneyValue)
       .join("|"),
     isShared: entryMetrics.isShared,
+    paymentMode: entry.paymentMode ?? "single_payer",
   };
 }
 
@@ -423,6 +395,7 @@ export function serializeAiExpenseExportRow(row: AiExpenseExportRow): string {
     row.sharePerBeneficiary,
     row.beneficiaryShares,
     row.isShared,
+    row.paymentMode,
   ]);
 }
 
